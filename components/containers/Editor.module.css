@@ -9,3 +9,8 @@
 .container h1 {
   font-size: 4rem;
 }
+
+.recordAndSendBar {
+  display: flex;
+  flex-direction: row;
+}

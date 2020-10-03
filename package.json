@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@ant-design/icons": "^4.2.2",
     "antd": "^4.6.6",
     "aws-sdk": "^2.765.0",
     "formidable": "^1.2.2",

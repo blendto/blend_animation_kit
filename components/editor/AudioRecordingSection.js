@@ -1,6 +1,7 @@
 import { Button } from "antd";
 import { useState, useCallback, useContext } from "react";
 import { EditorContext } from "../data/EditorContext";
+import { AudioOutlined, AudioFilled } from "@ant-design/icons";
 import dynamic from "next/dynamic";
 
 const DynamicallyLoadedReactMic = dynamic(
@@ -9,9 +10,14 @@ const DynamicallyLoadedReactMic = dynamic(
 );
 
 export default function AudioRecordingSection() {
-  const { onRecordingDone } = useContext(EditorContext);
+  const { collab, onRecordingDone, onRecordingStart } = useContext(
+    EditorContext
+  );
   const [isRecording, setRecordingState] = useState(false);
   const toggleRecordingState = useCallback(() => {
+    if (!isRecording) {
+      onRecordingStart();
+    }
     setRecordingState(!isRecording);
   }, [isRecording]);
 
@@ -22,7 +28,14 @@ export default function AudioRecordingSection() {
         onStop={onRecordingDone}
         visualSetting="sinewave"
       />
-      <Button onClick={toggleRecordingState}>Record</Button>
+      <Button
+        type="primary"
+        shape="circle"
+        size="large"
+        icon={isRecording ? <AudioFilled /> : <AudioOutlined />}
+        onClick={toggleRecordingState}
+        disabled={collab.get("audios").length}
+      ></Button>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import AudioRecordingSection from "../editor/AudioRecordingSection";
 
 import ImagePickerSection from "../editor/ImagePickerSection";
 import ActiveCanvas from "../editor/ActiveCanvas";
+import CreateVideoButton from "../editor/CreateVideoButton";
 
 const { Title } = Typography;
 
@@ -17,7 +18,10 @@ export default function EditorContainer() {
         <CollabTitle />
         <ActiveCanvas />
         <ImagePickerSection />
-        <AudioRecordingSection />
+        <div className={styles.recordAndSendBar}>
+          <AudioRecordingSection />
+          <CreateVideoButton />
+        </div>
       </div>
     </EditorContextProvider>
   );
