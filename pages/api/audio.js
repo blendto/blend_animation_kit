@@ -6,14 +6,14 @@ export default async (req, res) => {
 
   switch (method) {
     case "POST":
-      await uploadImage(req, res);
+      await uploadAudio(req, res);
       break;
     default:
       res.status(500).json({ code: 500, message: "Something went wrong!" });
   }
 };
 
-const uploadImage = async (req, res) => {
+const uploadAudio = async (req, res) => {
   try {
     const fileDetails = await uploadTempUserContent(req);
     res.send(fileDetails);
