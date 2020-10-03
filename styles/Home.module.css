@@ -8,8 +8,7 @@
 }
 
 .main {
-  padding: 5rem 0;
-  flex: 1;
+  flex: 1 0;
   display: flex;
   flex-direction: column;
   justify-content: center;

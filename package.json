@@ -8,8 +8,14 @@
     "start": "next start"
   },
   "dependencies": {
+    "antd": "^4.6.6",
+    "aws-sdk": "^2.765.0",
+    "formidable": "^1.2.2",
+    "immutable": "^4.0.0-rc.12",
+    "nanoid": "^3.1.12",
     "next": "9.5.3",
     "react": "16.13.1",
-    "react-dom": "16.13.1"
+    "react-dom": "16.13.1",
+    "react-mic": "^12.4.6"
   }
 }
