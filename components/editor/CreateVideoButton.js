@@ -2,6 +2,8 @@ import { useState, useCallback, useContext } from "react";
 import { EditorContext } from "../data/EditorContext";
 import { SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { Button, Modal } from "antd";
+import Paragraph from "antd/lib/skeleton/Paragraph";
+import Link from "next/link";
 
 const uploadAudioAndCreateCollab = async (collab) => {
   const audio = collab.get("audios")[0];
@@ -56,11 +58,8 @@ const pollUntilCreation = async (collab) => {
   return await pollUntilCreation(collab);
 };
 
-const OUTPUT_BUCKET_BASE_PATH =
-  "https://collabice-output.s3.us-east-2.amazonaws.com/";
-
 const createLink = (generatedCollab) => {
-  return OUTPUT_BUCKET_BASE_PATH + generatedCollab?.filePath;
+  return process.env.NEXT_PUBLIC_SELF_BASE_PATH + "v/" + generatedCollab?.id;
 };
 
 export default function CreateVideoButton() {
@@ -78,13 +77,18 @@ export default function CreateVideoButton() {
     setGeneratedCollab(generatedCollab);
   });
 
+  const linkToView = createLink(generatedCollab);
+
   return (
     <>
       <Modal visible={isCreating} closable={false} footer={null}>
         Generating the video. Please be patient
       </Modal>
       <Modal visible={!!generatedCollab} closable={false} footer={null}>
-        Here is the link to the video: {createLink(generatedCollab)}
+        Here is the link to the video:{" "}
+        <Link href={`/v/${generatedCollab?.id}`}>
+          {createLink(generatedCollab)}
+        </Link>
       </Modal>
       <Button
         type="primary"
