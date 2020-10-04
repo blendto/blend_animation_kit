@@ -18,7 +18,8 @@ AWS.config.update({ region: "us-east-2" });
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
-const TEMP_FILE_STORE_BUCKET = "collabice-temp-file-store";
+export const TEMP_FILE_STORE_BUCKET = "collabice-temp-file-store";
+export const COLLAB_REQ_STORE_BUCKET = "collabice-request-store";
 
 const TEMP_WEB_BASE_URL =
   "https://collabice-temp-file-store.s3.us-east-2.amazonaws.com/";
@@ -36,8 +37,9 @@ export const uploadTempUserContent = async (req) => {
     [fields, files] = await new Promise((resolve, reject) => {
       formParser.parse(req, (err, fields, files) => {
         if (err) {
-          console.log(err);
+          console.error(err);
           reject(err);
+          return;
         }
 
         resolve([fields, files]);
@@ -48,8 +50,6 @@ export const uploadTempUserContent = async (req) => {
     throw new UserError("file upload failed");
   }
 
-  console.log(fields);
-  console.log(files);
   const file = files["file"];
 
   if (!file) {
@@ -80,6 +80,7 @@ export const uploadTempUserContent = async (req) => {
       s3.upload(uploadParams, function (err, data) {
         if (err) {
           reject(err);
+          return;
         }
         resolve(data.Key);
       });
@@ -90,4 +91,21 @@ export const uploadTempUserContent = async (req) => {
   }
 
   return { fileKey, url: TEMP_WEB_BASE_URL + fileKey };
+};
+
+export const copyObject = (Bucket, CopySource, Key) => {
+  const params = {
+    Bucket,
+    CopySource,
+    Key,
+  };
+  return new Promise((resolve, reject) => {
+    s3.copyObject(params, (err, data) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(data);
+    });
+  });
 };
