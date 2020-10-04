@@ -1,8 +1,4 @@
-var AWS = require("aws-sdk");
-
-AWS.config.update({
-  region: "us-east-2",
-});
+import AWS from "./aws";
 
 var docClient = new AWS.DynamoDB.DocumentClient();
 
