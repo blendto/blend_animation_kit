@@ -78,6 +78,10 @@ export default function CollabViewerPage() {
       <SizeMe noPlaceholder>
         {({ size }) => {
           const { width, height } = optimalVideDimensions(size);
+
+          if (!size.width && !size.height) {
+            return <div style={{ width: "100%", height: "100%" }}></div>;
+          }
           return (
             <div className={styles.innerContainer} style={{ width }}>
               <Space direction="vertical">
