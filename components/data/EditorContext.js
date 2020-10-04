@@ -70,7 +70,7 @@ export default function EditorContextProvider({ children }) {
     setCollab((collab) => collab.set("images", imagesList));
   });
 
-  const onImageSelect = useCallback((imageUid) => {
+  const onImageSelect = useCallback((imageUid, filePreview) => {
     setCollab((collab) => {
       let interactions = collab.get("interactions");
       const images = collab.get("images");
@@ -78,6 +78,11 @@ export default function EditorContextProvider({ children }) {
       if (imageIndex < 0) {
         throw new Error("No such image found");
       }
+      const updatedImages = [...images];
+      updatedImages[imageIndex] = {
+        ...updatedImages[imageIndex],
+        preview: filePreview,
+      };
       const newInteraction = {
         action: "DISPLAY",
         index: imageIndex,
@@ -106,10 +111,14 @@ export default function EditorContextProvider({ children }) {
           // Then its not recording. replace the last interaction
           const newInteractions = [...interactions];
           newInteractions[newInteractions.length - 1] = newInteraction;
-          return collab.set("interactions", newInteractions);
+          return collab
+            .set("interactions", newInteractions)
+            .set("images", updatedImages);
         }
       }
-      return collab.set("interactions", [...interactions, newInteraction]);
+      return collab
+        .set("interactions", [...interactions, newInteraction])
+        .set("images", updatedImages);
     });
   });
 

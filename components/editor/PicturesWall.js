@@ -25,18 +25,8 @@ export default class PicturesWall extends React.Component {
   handleCancel = () => this.setState({ previewVisible: false });
 
   handlePreview = async (file) => {
-    this.props.onPreview?.(file.uid);
-
-    // if (!file.url && !file.preview) {
-    //   file.preview = await getBase64(file.originFileObj);
-    // }
-
-    // this.setState({
-    //   previewImage: file.url || file.preview,
-    //   previewVisible: true,
-    //   previewTitle:
-    //     file.name || file.url.substring(file.url.lastIndexOf("/") + 1),
-    // });
+    const filePreview = await getBase64(file.originFileObj);
+    this.props.onPreview?.(file.uid, filePreview);
   };
 
   handleChange = ({ fileList }) => {
