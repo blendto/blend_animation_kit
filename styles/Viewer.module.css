@@ -1,0 +1,23 @@
+.container {
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+}
+
+.container.loader {
+  align-items: center;
+}
+
+.innerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 100vw;
+}
+
+@media only screen and (min-width: 768px) {
+  .innerContainer {
+    width: 80vw;
+  }
+}
