@@ -2,8 +2,10 @@
   height: 100vh;
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: space-between;
   flex-direction: column;
+  width: 100vw;
+  padding: 10px;
 }
 
 .container h1 {
@@ -13,4 +15,13 @@
 .recordAndSendBar {
   display: flex;
   flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+@media only screen and (min-width: 1200px) {
+  .container {
+    width: 80vw;
+  }
 }

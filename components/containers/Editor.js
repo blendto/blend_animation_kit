@@ -1,6 +1,6 @@
 import styles from "./Editor.module.css";
 
-import { Typography } from "antd";
+import { Typography, Space } from "antd";
 import EditorContextProvider, { EditorContext } from "../data/EditorContext";
 import { useContext } from "react";
 import AudioRecordingSection from "../editor/AudioRecordingSection";
@@ -15,12 +15,16 @@ export default function EditorContainer() {
   return (
     <EditorContextProvider>
       <div className={styles.container}>
-        <CollabTitle />
-        <ActiveCanvas />
-        <ImagePickerSection />
+        <Space direction="vertical">
+          <CollabTitle />
+          <ActiveCanvas />
+          <ImagePickerSection />
+        </Space>
         <div className={styles.recordAndSendBar}>
-          <AudioRecordingSection />
-          <CreateVideoButton />
+          <Space>
+            <AudioRecordingSection />
+            <CreateVideoButton />
+          </Space>
         </div>
       </div>
     </EditorContextProvider>
@@ -31,6 +35,8 @@ function CollabTitle() {
   const { collab, onChangeTitle } = useContext(EditorContext);
 
   return (
-    <Title editable={{ onChange: onChangeTitle }}>{collab.get("title")}</Title>
+    <Title level={2} editable={{ onChange: onChangeTitle }}>
+      {collab.get("title")}
+    </Title>
   );
 }

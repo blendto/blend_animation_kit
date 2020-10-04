@@ -1,6 +1,6 @@
 .activeCanvas {
-  width: 50vw;
-  height: 28vw;
+  width: calc(100vw - 20px);
+  height: calc((100vw - 20px) * 9 / 16);
   border: 1px solid black;
   border-radius: 5px;
   display: flex;
@@ -12,4 +12,23 @@
   width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.audioControls {
+  display: flex;
+  align-items: center;
+}
+
+.audioControls .audioWave {
+  height: 10vh;
+  width: 10vh;
+  border: 2px solid black;
+  border-radius: 5vw;
+}
+
+@media only screen and (min-width: 1200px) {
+  .activeCanvas {
+    width: calc(80vw - 20px);
+    height: calc((80vw - 20px) * 9 / 16);
+  }
 }

@@ -13,8 +13,6 @@ export default function Home() {
       <main className={styles.main}>
         <EditorContainer />
       </main>
-
-      <footer className={styles.footer}></footer>
     </div>
   );
 }
