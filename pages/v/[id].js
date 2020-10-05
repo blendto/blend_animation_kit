@@ -1,15 +1,29 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Spin, Typography, Card, Space } from "antd";
+import { Spin, Typography, Card, Space, Result } from "antd";
 import { SizeMe } from "react-sizeme";
 import Head from "next/head";
 
 import styles from "../../styles/Viewer.module.css";
+import { _getCollab } from "../api/collab/[id]";
 
 const { Title, Paragraph } = Typography;
 
+const fetchData = async (id) => {
+  return await fetch(`/api/collab/${id}`).then((res) => {
+    if (res.status === 404) {
+      return null;
+    }
+    return res.json();
+  });
+};
+
 const pollUntilCreation = async (id) => {
-  const collab = await fetch(`/api/collab/${id}`).then((res) => res.json());
+  const collab = await fetchData(id);
+
+  if (!collab) {
+    return null;
+  }
 
   if (collab.status === "GENERATED") {
     return collab;
@@ -39,7 +53,7 @@ const createLink = (id) => {
   return `${process.env.NEXT_PUBLIC_SELF_BASE_PATH}v/${id}`;
 };
 
-export default function CollabViewerPage() {
+export default function CollabViewerPage(props) {
   const router = useRouter();
   const { id } = router.query;
   const [isLoading, setIsLoading] = useState(true);
@@ -47,10 +61,20 @@ export default function CollabViewerPage() {
 
   useEffect(() => {
     async function fetchData() {
+      // Use collab from props
+      let fetchedCollab = props.collab;
+      setCollab(fetchedCollab);
+
+      if (!fetchedCollab || fetchedCollab.status === "GENERATED") {
+        // 404 or is generated, stop loading
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
 
-      const collab = await pollUntilCreation(id);
-      setCollab(collab);
+      fetchedCollab = await pollUntilCreation(id);
+      setCollab(fetchedCollab);
 
       setIsLoading(false);
     }
@@ -66,6 +90,16 @@ export default function CollabViewerPage() {
       <div className={`${styles.container} ${styles.loader}`}>
         <Spin />
       </div>
+    );
+  }
+
+  if (!collab) {
+    return (
+      <Result
+        status="404"
+        title="404"
+        subTitle="Sorry, the collab you are looking for does not exist."
+      />
     );
   }
 
@@ -102,4 +136,16 @@ export default function CollabViewerPage() {
       </SizeMe>
     </div>
   );
+}
+
+export async function getServerSideProps({ params }) {
+  const { id } = params;
+
+  const collab = (await _getCollab(id)) || null;
+
+  return {
+    props: {
+      collab,
+    },
+  };
 }
