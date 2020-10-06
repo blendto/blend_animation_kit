@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Spin, Typography, Card, Space, Result } from "antd";
-import { SizeMe } from "react-sizeme";
 import Head from "next/head";
 
 import styles from "../../styles/Viewer.module.css";
@@ -56,14 +55,13 @@ const createLink = (id) => {
 export default function CollabViewerPage(props) {
   const router = useRouter();
   const { id } = router.query;
-  const [isLoading, setIsLoading] = useState(true);
-  const [collab, setCollab] = useState(null);
+  const [isLoading, setIsLoading] = useState(!props.collab);
+  const [collab, setCollab] = useState(props.collab);
 
   useEffect(() => {
     async function fetchData() {
-      // Use collab from props
+      // Check collab from props
       let fetchedCollab = props.collab;
-      setCollab(fetchedCollab);
 
       if (!fetchedCollab || fetchedCollab.status === "GENERATED") {
         // 404 or is generated, stop loading
@@ -88,7 +86,11 @@ export default function CollabViewerPage(props) {
   if (isLoading) {
     return (
       <div className={`${styles.container} ${styles.loader}`}>
-        <Spin />
+        <Spin
+          tip={
+            "Hey, This video is still being generated. You can hang around here while our lazy ass servers do their job, or check back in later."
+          }
+        />
       </div>
     );
   }
@@ -109,31 +111,21 @@ export default function CollabViewerPage(props) {
         <title>{collab ? collab.title : "Collabice"}</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <SizeMe noPlaceholder>
-        {({ size }) => {
-          const { width, height } = optimalVideDimensions(size);
 
-          if (!size.width && !size.height) {
-            return <div style={{ width: "100%", height: "100%" }}></div>;
-          }
-          return (
-            <div className={styles.innerContainer} style={{ width }}>
-              <Space direction="vertical">
-                <Title level={2}>{collab.title}</Title>
-                <video width={width} height={height} controls>
-                  <source src={createVideoLink(collab)} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-                <Card title="Share">
-                  <span>
-                    <Paragraph copyable>{createLink(collab.id)}</Paragraph>
-                  </span>
-                </Card>
-              </Space>
-            </div>
-          );
-        }}
-      </SizeMe>
+      <div className={styles.innerContainer}>
+        <Space direction="vertical">
+          <Title level={2}>{collab.title}</Title>
+          <video controls autoPlay>
+            <source src={createVideoLink(collab)} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <Card title="Share">
+            <span>
+              <Paragraph copyable>{createLink(collab.id)}</Paragraph>
+            </span>
+          </Card>
+        </Space>
+      </div>
     </div>
   );
 }
