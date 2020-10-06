@@ -4,12 +4,15 @@
   align-items: flex-start;
   justify-content: space-between;
   flex-direction: column;
-  width: 100vw;
   padding: 10px;
 }
 
 .container h1 {
   font-size: 4rem;
+}
+
+.titleSection {
+  max-height: 10vh;
 }
 
 .recordAndSendBar {
@@ -18,10 +21,5 @@
   align-items: center;
   justify-content: flex-end;
   width: 100%;
-}
-
-@media only screen and (min-width: 1200px) {
-  .container {
-    width: 80vw;
-  }
+  height: 10vh;
 }

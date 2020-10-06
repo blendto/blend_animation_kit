@@ -6,10 +6,14 @@ import { useContext } from "react";
 import AudioRecordingSection from "../editor/AudioRecordingSection";
 
 import ImagePickerSection from "../editor/ImagePickerSection";
-import ActiveCanvas from "../editor/ActiveCanvas";
 import CreateVideoButton from "../editor/CreateVideoButton";
+import dynamic from "next/dynamic";
 
 const { Title } = Typography;
+
+const ActiveCanvasWithNoSSR = dynamic(() => import("../editor/ActiveCanvas"), {
+  ssr: false,
+});
 
 export default function EditorContainer() {
   return (
@@ -17,7 +21,7 @@ export default function EditorContainer() {
       <div className={styles.container}>
         <Space direction="vertical">
           <CollabTitle />
-          <ActiveCanvas />
+          <ActiveCanvasWithNoSSR />
           <ImagePickerSection />
         </Space>
         <div className={styles.recordAndSendBar}>
@@ -35,8 +39,10 @@ function CollabTitle() {
   const { collab, onChangeTitle } = useContext(EditorContext);
 
   return (
-    <Title level={2} editable={{ onChange: onChangeTitle }}>
-      {collab.get("title")}
-    </Title>
+    <div className={styles.titleSection}>
+      <Title level={2} editable={{ onChange: onChangeTitle }}>
+        {collab.get("title")}
+      </Title>
+    </div>
   );
 }

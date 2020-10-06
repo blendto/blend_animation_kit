@@ -25,5 +25,9 @@ export default function ImagePickerSection() {
     [onImageFilesChange]
   );
 
-  return <PicturesWall onChange={onChange} onPreview={onImageSelect} />;
+  return (
+    <div className={styles.imagePicker}>
+      <PicturesWall onChange={onChange} onPreview={onImageSelect} />
+    </div>
+  );
 }

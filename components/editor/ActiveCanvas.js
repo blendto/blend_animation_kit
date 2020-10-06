@@ -16,13 +16,36 @@ const getCurrentActiveImage = (collab) => {
   return null;
 };
 
+const calculateOptimalCanvasSize = () => {
+  const vw = Math.max(
+    document.documentElement.clientWidth || 0,
+    window.innerWidth || 0
+  );
+  const vh = Math.max(
+    document.documentElement.clientHeight || 0,
+    window.innerHeight || 0
+  );
+
+  let canvasWidth = vw - 20;
+  let canvasHeight = (canvasWidth * 9) / 16;
+
+  if (canvasHeight > 0.6 * vh) {
+    canvasHeight = 0.6 * vh;
+    canvasWidth = (canvasHeight * 16) / 9;
+  }
+
+  return { width: canvasWidth, height: canvasHeight };
+};
+
 export default function ActiveCanvas() {
   const { collab } = useContext(EditorContext);
 
   const image = getCurrentActiveImage(collab);
 
+  const { width, height } = calculateOptimalCanvasSize();
+
   return (
-    <div className={styles.activeCanvas}>
+    <div className={styles.activeCanvas} style={{ width, height }}>
       {!image && <span>Choose an image</span>}
       {image && (
         <img className={styles.imagePreview} src={image.preview || image.url} />

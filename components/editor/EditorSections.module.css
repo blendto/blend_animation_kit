@@ -1,6 +1,4 @@
 .activeCanvas {
-  width: calc(100vw - 20px);
-  height: calc((100vw - 20px) * 9 / 16);
   border: 1px solid black;
   border-radius: 5px;
   display: flex;
@@ -14,6 +12,10 @@
   object-fit: contain;
 }
 
+.imagePicker {
+  max-height: 20vh;
+}
+
 .audioControls {
   display: flex;
   align-items: center;
@@ -24,11 +26,4 @@
   width: 10vh;
   border: 2px solid black;
   border-radius: 5vw;
-}
-
-@media only screen and (min-width: 1200px) {
-  .activeCanvas {
-    width: calc(80vw - 20px);
-    height: calc((80vw - 20px) * 9 / 16);
-  }
 }
