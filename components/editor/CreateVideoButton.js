@@ -1,15 +1,23 @@
 import { useState, useCallback, useContext } from "react";
 import { EditorContext } from "../data/EditorContext";
-import { SendOutlined, SyncOutlined } from "@ant-design/icons";
-import { Button, Modal } from "antd";
+import {
+  CheckCircleTwoTone,
+  SendOutlined,
+  SyncOutlined,
+} from "@ant-design/icons";
+import { Button, Modal, Typography } from "antd";
 import Paragraph from "antd/lib/skeleton/Paragraph";
 import Link from "next/link";
 
+const { Text } = Typography;
+
 const uploadAudioAndCreateCollab = async (collab) => {
   const audio = collab.get("audios")[0];
+  const collabId = collab.get("id");
 
   const formData = new FormData();
   formData.append("file", audio.blob, "audio.webm");
+  formData.append("collabId", collabId);
 
   let audioFileData = await fetch("/api/audio", {
     method: "POST",
@@ -28,7 +36,7 @@ const uploadAudioAndCreateCollab = async (collab) => {
     audios: [{ fileKey: audioFileData.fileKey }],
   };
 
-  const collabResult = await fetch("/api/collab", {
+  const collabResult = await fetch(`/api/collab/${collabId}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,10 +78,11 @@ export default function CreateVideoButton() {
   const createVideo = useCallback(async () => {
     setCreationState(true);
     const uploadedCollab = await uploadAudioAndCreateCollab(collab);
+    setCreationState(false);
+    setGeneratedCollab(uploadedCollab);
 
     const generatedCollab = await pollUntilCreation(uploadedCollab);
 
-    setCreationState(false);
     setGeneratedCollab(generatedCollab);
   });
 
@@ -82,10 +91,32 @@ export default function CreateVideoButton() {
   return (
     <>
       <Modal visible={isCreating} closable={false} footer={null}>
-        Generating the video. Please be patient
+        Uploading assets: <br />
+        <Text>
+          <CheckCircleTwoTone twoToneColor="#52c41a" /> Images
+        </Text>
+        <br />
+        <Text>
+          <SyncOutlined spin /> Audio
+        </Text>
       </Modal>
       <Modal visible={!!generatedCollab} closable={false} footer={null}>
-        Here is the link to the video:{" "}
+        {generatedCollab?.status === "SUBMITTED" && (
+          <>
+            <Text>
+              Our servers are hard at work generating your amazing video.
+              Meanwhile you can share the link, and the video will be available
+              there once ready.
+            </Text>
+            <br />
+          </>
+        )}
+        {generatedCollab?.status === "GENERATED" && (
+          <>
+            <Text>Yay, Your video is now generated.</Text> <br />
+          </>
+        )}
+        Here is the link to it:{" "}
         <Link href={`/v/${generatedCollab?.id}`}>
           {createLink(generatedCollab)}
         </Link>

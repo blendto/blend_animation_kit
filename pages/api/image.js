@@ -21,7 +21,8 @@ const uploadImage = async (req, res) => {
     if (err instanceof UserError) {
       res.status(400).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Something went wrong!" });
   }
 };
 

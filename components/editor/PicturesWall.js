@@ -37,7 +37,7 @@ export default class PicturesWall extends React.Component {
   render() {
     const { previewVisible, previewImage, fileList, previewTitle } = this.state;
 
-    const { action } = this.props;
+    const { action, id } = this.props;
     const uploadButton = (
       <div>
         <PlusOutlined />
@@ -50,7 +50,7 @@ export default class PicturesWall extends React.Component {
           multiple
           accept="image/*"
           action={"/api/image"}
-          data={(file) => ({ file })}
+          data={(file) => ({ file, collabId: id })}
           listType="picture-card"
           fileList={fileList}
           showUploadList={iconOptions}

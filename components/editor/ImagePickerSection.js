@@ -4,7 +4,9 @@ import PicturesWall from "./PicturesWall";
 import styles from "./EditorSections.module.css";
 
 export default function ImagePickerSection() {
-  const { onImageFilesChange, onImageSelect } = useContext(EditorContext);
+  const { collab, onImageFilesChange, onImageSelect } = useContext(
+    EditorContext
+  );
 
   const onChange = useCallback(
     (filesList) => {
@@ -27,7 +29,11 @@ export default function ImagePickerSection() {
 
   return (
     <div className={styles.imagePicker}>
-      <PicturesWall onChange={onChange} onPreview={onImageSelect} />
+      <PicturesWall
+        id={collab.get("id")}
+        onChange={onChange}
+        onPreview={onImageSelect}
+      />
     </div>
   );
 }

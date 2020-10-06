@@ -8,16 +8,15 @@ import AWS from "./aws";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
-export const TEMP_FILE_STORE_BUCKET = "collabice-temp-file-store";
 export const COLLAB_REQ_STORE_BUCKET = "collabice-request-store";
 
-const TEMP_WEB_BASE_URL =
-  "https://collabice-temp-file-store.s3.us-east-2.amazonaws.com/";
+const COLLAB_FILES_BASE_URL =
+  "https://collabice-request-store.s3.us-east-2.amazonaws.com/";
 
 const fileOptions = {
   multiple: false, //one file per request
   maxFileSize: 10 * 1024 * 1024, //10 mb
-  maxFields: 1, //one file per request
+  maxFields: 2, //one file + id
 };
 
 export const uploadTempUserContent = async (req) => {
@@ -41,6 +40,11 @@ export const uploadTempUserContent = async (req) => {
   }
 
   const file = files["file"];
+  const collabId = fields["collabId"];
+
+  if (!collabId) {
+    throw new UserError("No collabId found in the request");
+  }
 
   if (!file) {
     throw new UserError("No file found");
@@ -56,10 +60,10 @@ export const uploadTempUserContent = async (req) => {
   const fileExtension =
     uploadedFileNameSplits[uploadedFileNameSplits.length - 1];
 
-  const fileNameToStore = `${nanoid()}.${fileExtension}`;
+  const fileNameToStore = `${collabId}/${nanoid()}.${fileExtension}`;
 
   const uploadParams = {
-    Bucket: TEMP_FILE_STORE_BUCKET,
+    Bucket: COLLAB_REQ_STORE_BUCKET,
     Body: fileStream,
     Key: fileNameToStore,
   };
@@ -80,7 +84,7 @@ export const uploadTempUserContent = async (req) => {
     throw new ServerError("Something went wrong!");
   }
 
-  return { fileKey, url: TEMP_WEB_BASE_URL + fileKey };
+  return { fileKey, url: COLLAB_FILES_BASE_URL + fileKey };
 };
 
 export const copyObject = (Bucket, CopySource, Key) => {

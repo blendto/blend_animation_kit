@@ -1,13 +1,7 @@
 import { Map } from "immutable";
 import { useCallback, useState, useEffect } from "react";
 
-const defaulEditorState = Map({
-  title: "Untitled Collab",
-  images: [],
-  audios: [],
-  interactions: [],
-  isRecording: false,
-});
+const defaulEditorState = null;
 
 export const EditorContext = React.createContext(defaulEditorState);
 
@@ -25,7 +19,7 @@ export default function EditorContextProvider({ children }) {
   const [collab, setCollab] = useState(defaulEditorState);
 
   useEffect(() => {
-    const isRecording = collab.get("isRecording");
+    const isRecording = collab?.get("isRecording");
     const wasRecording = !!timeTracker.lastStartTime;
 
     if (isRecording) {
@@ -46,7 +40,20 @@ export default function EditorContextProvider({ children }) {
     }
 
     return () => {};
-  }, [collab.get("isRecording")]);
+  }, [collab?.get("isRecording")]);
+
+  const initialize = useCallback((id) => {
+    setCollab(
+      Map({
+        id,
+        title: "Untitled Collab",
+        images: [],
+        audios: [],
+        interactions: [],
+        isRecording: false,
+      })
+    );
+  });
 
   const onChangeTitle = useCallback((value) => {
     setCollab((collab) => collab.set("title", value));
@@ -66,7 +73,6 @@ export default function EditorContextProvider({ children }) {
   }, []);
 
   const onImageFilesChange = useCallback((imagesList) => {
-    console.log(imagesList);
     setCollab((collab) => collab.set("images", imagesList));
   });
 
@@ -124,6 +130,7 @@ export default function EditorContextProvider({ children }) {
 
   const contextValue = {
     collab,
+    initialize,
     onChangeTitle,
     onRecordingStart,
     onRecordingDone,
