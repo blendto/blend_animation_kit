@@ -1,4 +1,4 @@
-import { Button, Space } from "antd";
+import { Button, Space, Tooltip } from "antd";
 import { useState, useCallback, useContext } from "react";
 import { EditorContext } from "../data/EditorContext";
 import { AudioOutlined, AudioFilled } from "@ant-design/icons";
@@ -15,12 +15,31 @@ export default function AudioRecordingSection() {
     EditorContext
   );
   const [isRecording, setRecordingState] = useState(false);
+  const [micPermissionStatus, setMicPermissionStatus] = useState(null);
   const toggleRecordingState = useCallback(() => {
     if (!isRecording) {
-      onRecordingStart();
+      if (micPermissionStatus !== null && micPermissionStatus !== "denied") {
+        onRecordingStart();
+        setRecordingState(true);
+      } else if (micPermissionStatus === null) {
+        navigator.permissions
+          .query({ name: "microphone" })
+          .then((permissionStatus) => {
+            setMicPermissionStatus(permissionStatus.state);
+
+            if (permissionStatus.state !== "denied") {
+              onRecordingStart();
+              setRecordingState(true);
+            }
+            permissionStatus.onchange = function () {
+              setMicPermissionStatus(this.state);
+            };
+          });
+      }
+      return;
     }
-    setRecordingState(!isRecording);
-  }, [isRecording]);
+    setRecordingState(false);
+  }, [isRecording, micPermissionStatus]);
 
   return (
     <div className={styles.audioControls}>
@@ -31,14 +50,19 @@ export default function AudioRecordingSection() {
           onStop={onRecordingDone}
           visualSetting="sinewave"
         />
-        <Button
-          type="primary"
-          shape="circle"
-          size="large"
-          icon={isRecording ? <AudioFilled /> : <AudioOutlined />}
-          onClick={toggleRecordingState}
-          disabled={collab.get("audios").length}
-        />
+        <Tooltip
+          visible={micPermissionStatus === "denied"}
+          title="Audio permission is denied. Please allow the permission and retry."
+        >
+          <Button
+            type="primary"
+            shape="circle"
+            size="large"
+            icon={isRecording ? <AudioFilled /> : <AudioOutlined />}
+            onClick={toggleRecordingState}
+            disabled={collab.get("audios").length}
+          />
+        </Tooltip>
       </Space>
     </div>
   );
