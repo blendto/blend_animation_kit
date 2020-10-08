@@ -26,7 +26,7 @@ const calculateOptimalCanvasSize = () => {
     window.innerHeight || 0
   );
 
-  let canvasWidth = vw - 20;
+  let canvasWidth = vw;
   let canvasHeight = (canvasWidth * 9) / 16;
 
   if (canvasHeight > 0.6 * vh) {

@@ -1,14 +1,28 @@
 .container {
   height: 100vh;
+  width: 100vw;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   flex-direction: column;
-  padding: 10px;
 }
 
-.container h1 {
-  font-size: 4rem;
+.header {
+  background-color: white;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thinSeperator {
+  margin: 0;
+}
+
+.thinSeperator.vertical {
+  height: 100%;
 }
 
 .titleSection {
