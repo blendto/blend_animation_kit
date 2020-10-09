@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "flow": "flow"
   },
   "dependencies": {
     "@ant-design/icons": "^4.2.2",
@@ -17,6 +18,11 @@
     "next": "9.5.3",
     "react": "16.13.1",
     "react-dom": "16.13.1",
-    "react-mic": "^12.4.6"
+    "react-mic": "^12.4.6",
+    "react-pdf": "^5.0.0"
+  },
+  "devDependencies": {
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
+    "flow-bin": "^0.135.0"
   }
 }

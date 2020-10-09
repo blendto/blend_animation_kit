@@ -63,11 +63,13 @@ const submitCollab = async (req, res) => {
     body: collabRequest,
   } = req;
 
-  const { title, images, audios, interactions } = collabRequest;
+  const { title, images, audios, slides, interactions } = collabRequest;
 
   const imageObjects = images.map(({ fileKey }) => ({ uri: fileKey }));
 
   const audioObjects = audios.map(({ fileKey }) => ({ uri: fileKey }));
+
+  const slideObjects = slides.map(({ fileKey }) => ({ uri: fileKey }));
 
   const collabDBObject = {
     id,
@@ -75,6 +77,7 @@ const submitCollab = async (req, res) => {
     interactions,
     images: imageObjects,
     audios: audioObjects,
+    slides: slideObjects,
     status: "SUBMITTED",
   };
 

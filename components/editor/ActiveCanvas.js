@@ -1,6 +1,7 @@
 import styles from "./EditorSections.module.css";
 import { useState, useCallback, useContext } from "react";
 import { EditorContext } from "../data/EditorContext";
+import { Page } from "react-pdf";
 
 const getCurrentActiveImage = (collab) => {
   const interactions = collab.get("interactions");
@@ -14,6 +15,30 @@ const getCurrentActiveImage = (collab) => {
   }
 
   return null;
+};
+
+const getLastActivePrimaryElement = (collab) => {
+  const interactions = collab.get("interactions");
+  const _parsedPdf = collab.get("_currentParsedPdf");
+
+  for (let i = interactions.length - 1; i >= 0; i--) {
+    const { action, index, slideIndex, type } = interactions[i];
+
+    if (action === "DISPLAY") {
+      if (type === "IMAGE") {
+        return { images: collab.get("images")[index] };
+      }
+      if (type === "SLIDE") {
+        return {
+          slideFile: collab.get("slides")[index],
+          slideIndex,
+          _parsedPdf,
+        };
+      }
+    }
+  }
+
+  return {};
 };
 
 const calculateOptimalCanvasSize = () => {
@@ -40,15 +65,23 @@ const calculateOptimalCanvasSize = () => {
 export default function ActiveCanvas() {
   const { collab } = useContext(EditorContext);
 
-  const image = getCurrentActiveImage(collab);
+  const {
+    image,
+    slideFile,
+    slideIndex,
+    _parsedPdf,
+  } = getLastActivePrimaryElement(collab);
 
   const { width, height } = calculateOptimalCanvasSize();
 
   return (
     <div className={styles.activeCanvas} style={{ width, height }}>
-      {!image && <span>Choose an image</span>}
+      {!(image || slideFile) && <span>Choose an image</span>}
       {image && (
         <img className={styles.imagePreview} src={image.preview || image.url} />
+      )}
+      {slideFile && (
+        <Page pdf={_parsedPdf} pageIndex={slideIndex} width={width} />
       )}
     </div>
   );

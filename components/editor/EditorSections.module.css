@@ -27,3 +27,30 @@
   border: 2px solid black;
   border-radius: 5vw;
 }
+
+.sideBar {
+  height: 100%;
+  overflow-y: scroll;
+}
+
+.sideBar .fileTile {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  width: 100%;
+  padding: 0 24px 0 12px;
+}
+
+.sideBar .fileTile .numberSection {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 24px;
+}
+
+.sideBar .fileTile .image {
+  border: 1px solid #d9d9d9;
+  border-radius: 3px;
+  overflow: hidden;
+}

@@ -17,6 +17,10 @@ const ActiveCanvasWithNoSSR = dynamic(() => import("../editor/ActiveCanvas"), {
   ssr: false,
 });
 
+const FileBrowserWithNoSSR = dynamic(() => import("../editor/FileBrowser"), {
+  ssr: false,
+});
+
 export default function EditorContainer() {
   return (
     <EditorContextProvider>
@@ -63,7 +67,7 @@ function InitializeAndShowEditor() {
       <Divider className={styles.thinSeperator} />
       <Layout>
         <Sider theme="light" width={220}>
-          Blah
+          <FileBrowserWithNoSSR />
         </Sider>
         <Divider
           className={`${styles.thinSeperator} ${styles.vertical}`}

@@ -11,7 +11,7 @@ import Link from "next/link";
 
 const { Text } = Typography;
 
-const uploadAudioAndCreateCollab = async (collab) => {
+const uploadAudio = (collab) => {
   const audio = collab.get("audios")[0];
   const collabId = collab.get("id");
 
@@ -19,7 +19,7 @@ const uploadAudioAndCreateCollab = async (collab) => {
   formData.append("file", audio.blob, "audio.webm");
   formData.append("collabId", collabId);
 
-  let audioFileData = await fetch("/api/audio", {
+  return fetch("/api/audio", {
     method: "POST",
     body: formData,
   }).then((response) => {
@@ -28,12 +28,52 @@ const uploadAudioAndCreateCollab = async (collab) => {
     }
     return response.json();
   });
+};
+
+const uploadSlides = (collab) => {
+  const slides = collab.get("slides");
+  const collabId = collab.get("id");
+
+  return slides.map((slide) => {
+    const formData = new FormData();
+    formData.append("file", slide.file);
+    formData.append("collabId", collabId);
+
+    return fetch("/api/slides", {
+      method: "POST",
+      body: formData,
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error(response.message);
+      }
+      return response.json();
+    });
+  });
+};
+
+const uploadStuffAndCreateCollab = async (collab) => {
+  let audioFileData = null;
+  let slidesDataList = [];
+  try {
+    [audioFileData, ...slidesDataList] = await Promise.all([
+      uploadAudio(collab),
+      ...uploadSlides(collab),
+    ]);
+  } catch (err) {
+    console.err(err);
+    throw new Error(err.message);
+  }
+
+  const collabId = collab.get("id");
 
   const collabRequestBody = {
     title: collab.get("title"),
     interactions: collab.get("interactions"),
     images: collab.get("images").map(({ fileKey }) => ({ fileKey })),
     audios: [{ fileKey: audioFileData.fileKey }],
+    slides: slidesDataList.map((slidesData) => ({
+      fileKey: slidesData.fileKey,
+    })),
   };
 
   const collabResult = await fetch(`/api/collab/${collabId}`, {
@@ -77,7 +117,7 @@ export default function CreateVideoButton() {
 
   const createVideo = useCallback(async () => {
     setCreationState(true);
-    const uploadedCollab = await uploadAudioAndCreateCollab(collab);
+    const uploadedCollab = await uploadStuffAndCreateCollab(collab);
     setCreationState(false);
     setGeneratedCollab(uploadedCollab);
 
@@ -98,6 +138,9 @@ export default function CreateVideoButton() {
         <br />
         <Text>
           <SyncOutlined spin /> Audio
+        </Text>
+        <Text>
+          <SyncOutlined spin /> Slides
         </Text>
       </Modal>
       <Modal visible={!!generatedCollab} closable={false} footer={null}>

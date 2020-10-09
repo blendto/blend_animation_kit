@@ -10,6 +10,13 @@ let timeTracker = {
   lastStartTime: null,
 };
 
+export const FileStatus = {
+  Selected: "SELECTED",
+  Uploading: "UPLOADING",
+  Uploaded: "UPLOADED",
+  Error: "ERROR",
+};
+
 const currentRecordedTime = () => {
   const { completedMillis, lastStartTime } = timeTracker;
   return completedMillis + (lastStartTime ? Date.now() - lastStartTime : 0);
@@ -49,8 +56,10 @@ export default function EditorContextProvider({ children }) {
         title: "Untitled Collab",
         images: [],
         audios: [],
+        slides: [],
         interactions: [],
         isRecording: false,
+        _currentParsedPdf: null,
       })
     );
   });
@@ -96,35 +105,48 @@ export default function EditorContextProvider({ children }) {
         type: "IMAGE",
       };
 
-      const lastInteraction =
-        interactions.length > 0 ? interactions[interactions.length - 1] : null;
-      if (lastInteraction) {
-        if (
-          newInteraction.action === lastInteraction.action &&
-          newInteraction.index === lastInteraction.index &&
-          newInteraction.type === lastInteraction.type
-        ) {
-          // Doing the same thing over and over ? Ignore
-          return collab;
-        }
+      return addInteractionToCollab(collab, newInteraction, { updatedImages });
+    });
+  });
 
-        if (
-          newInteraction.action === lastInteraction.action &&
-          newInteraction.type === lastInteraction.type &&
-          newInteraction.time === lastInteraction.time
-        ) {
-          // Doing the same thing but on a different index, at same time
-          // Then its not recording. replace the last interaction
-          const newInteractions = [...interactions];
-          newInteractions[newInteractions.length - 1] = newInteraction;
-          return collab
-            .set("interactions", newInteractions)
-            .set("images", updatedImages);
-        }
+  const onSlideSelect = useCallback((fileUid, slideIndex, _parsedPdf) => {
+    setCollab((collab) => {
+      let interactions = collab.get("interactions");
+      const slides = collab.get("slides");
+      const slideFileIndex = slides.findIndex(
+        (slide) => slide.file.uid === fileUid
+      );
+      if (slideFileIndex < 0) {
+        throw new Error("No such slide file found");
       }
-      return collab
-        .set("interactions", [...interactions, newInteraction])
-        .set("images", updatedImages);
+
+      const newInteraction = {
+        action: "DISPLAY",
+        index: slideFileIndex,
+        slideIndex,
+        time: currentRecordedTime(),
+        type: "SLIDE",
+      };
+
+      const updatedCollab = collab.set("_currentParsedPdf", _parsedPdf);
+
+      return addInteractionToCollab(updatedCollab, newInteraction);
+    });
+  });
+
+  const onFileDrop = useCallback((file, fileType) => {
+    setCollab((collab) => {
+      if (fileType === "SLIDE") {
+        const slides = collab.get("slides");
+
+        const updatedSlides = [
+          ...slides,
+          { file, uploadStatus: FileStatus.Selected },
+        ];
+
+        return collab.set("slides", updatedSlides);
+      }
+      throw new Error("Unknown file type: " + fileType);
     });
   });
 
@@ -136,6 +158,8 @@ export default function EditorContextProvider({ children }) {
     onRecordingDone,
     onImageFilesChange,
     onImageSelect,
+    onSlideSelect,
+    onFileDrop,
   };
   return (
     <EditorContext.Provider value={contextValue}>
@@ -143,3 +167,43 @@ export default function EditorContextProvider({ children }) {
     </EditorContext.Provider>
   );
 }
+
+const addInteractionToCollab = (
+  collab,
+  newInteraction,
+  { updatedImages } = {}
+) => {
+  let interactions = collab.get("interactions");
+
+  let updatedCollab = collab;
+  if (updatedImages) {
+    updatedCollab = collab.set("images", updatedImages);
+  }
+  const lastInteraction =
+    interactions.length > 0 ? interactions[interactions.length - 1] : null;
+  if (lastInteraction) {
+    if (
+      newInteraction.action === lastInteraction.action &&
+      newInteraction.index === lastInteraction.index &&
+      newInteraction.slideIndex === lastInteraction.slideIndex &&
+      newInteraction.type === lastInteraction.type
+    ) {
+      // Doing the same thing over and over ? Ignore
+      return collab;
+    }
+
+    if (
+      newInteraction.action === lastInteraction.action &&
+      newInteraction.type === lastInteraction.type &&
+      newInteraction.time === lastInteraction.time
+    ) {
+      // Doing the same thing but on a different index, at same time
+      // Then its not recording. replace the last interaction
+      const newInteractions = [...interactions];
+      newInteractions[newInteractions.length - 1] = newInteraction;
+
+      return updatedCollab.set("interactions", newInteractions);
+    }
+  }
+  return updatedCollab.set("interactions", [...interactions, newInteraction]);
+};
