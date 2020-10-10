@@ -34,6 +34,18 @@
   height: 100%;
 }
 
+.listContainer {
+  margin-top: 5px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.listContainer::-webkit-scrollbar {
+  /* WebKit */
+  width: 0;
+  height: 0;
+}
+
 .sideBar .fileTileWrap {
   display: flex;
   align-items: center;
@@ -78,7 +90,7 @@
   flex-direction: row;
   justify-content: flex-end;
   width: 100%;
-  padding: 0 24px 0 12px;
+  margin-right: 24px;
   z-index: 2;
 }
 

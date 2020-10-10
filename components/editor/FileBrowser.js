@@ -142,7 +142,7 @@ function FileBrowser(props: Props) {
           return (
             <List
               className={styles.listContainer}
-              height={height}
+              height={height - 5} // 5px margin top
               width={width}
               itemCount={fileListOrder.length}
               itemSize={100}
