@@ -134,30 +134,40 @@ function FileBrowser(props: Props) {
             key={index}
             file={file.file}
             onLoadSuccess={(...args) => onDocumentLoad(index, ...args)}
+            loading={null}
           />
         );
       })}
-      <AutoSizer>
-        {({ height, width }) => {
-          return (
-            <List
-              className={styles.listContainer}
-              height={height - 5} // 5px margin top
-              width={width}
-              itemCount={fileListOrder.length}
-              itemSize={100}
-              itemData={{
-                items: fileListOrder,
-                onToggleSlideFile,
-                onSlideSelect,
-                selectedItemIndex,
-              }}
-            >
-              {FileListItem}
-            </List>
-          );
-        }}
-      </AutoSizer>
+
+      <Dragger
+        {...DraggerUploadProps}
+        action={onFileChosen}
+        className={styles.dragger}
+        openFileDialogOnClick={false}
+        showUploadList={false}
+      >
+        <AutoSizer>
+          {({ height, width }) => {
+            return (
+              <List
+                className={styles.listContainer}
+                height={height - 5} // 5px margin top
+                width={width}
+                itemCount={fileListOrder.length}
+                itemSize={100}
+                itemData={{
+                  items: fileListOrder,
+                  onToggleSlideFile,
+                  onSlideSelect,
+                  selectedItemIndex,
+                }}
+              >
+                {FileListItem}
+              </List>
+            );
+          }}
+        </AutoSizer>
+      </Dragger>
     </div>
   );
 }

@@ -32,6 +32,25 @@
 
 .sideBar {
   height: 100%;
+  position: relative;
+}
+
+.sideBar .dragger {
+  position: absolute;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  border: none;
+}
+
+.sideBar .dragger :global(.ant-upload-drag-container) {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.sideBar .dragger :global(.ant-upload) {
+  padding: 0;
 }
 
 .listContainer {
