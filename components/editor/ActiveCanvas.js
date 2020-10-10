@@ -81,7 +81,13 @@ export default function ActiveCanvas() {
         <img className={styles.imagePreview} src={image.preview || image.url} />
       )}
       {slideFile && (
-        <Page pdf={_parsedPdf} pageIndex={slideIndex} width={width} />
+        <Page
+          className={styles.imagePreview}
+          pdf={_parsedPdf}
+          pageIndex={slideIndex}
+          width={width}
+          renderTextLayer={false}
+        />
       )}
     </div>
   );

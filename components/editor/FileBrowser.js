@@ -1,6 +1,7 @@
 //@flow
 import React, { type Node, useMemo } from "react";
-import { Upload, Image, Typography, List, Card } from "antd";
+import { Upload, Image, Typography, Card, Skeleton } from "antd";
+import { FixedSizeList as List } from "react-window";
 import {
   CaretRightFilled,
   CaretDownFilled,
@@ -16,6 +17,7 @@ import { pdfjs } from "react-pdf";
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 import type { RecordFactory, RecordOf } from "immutable";
+import AutoSizer from "react-virtualized-auto-sizer";
 
 const { Dragger } = Upload;
 const { Text, Title } = Typography;
@@ -72,6 +74,11 @@ function FileBrowser(props: Props) {
     });
     onFileDrop(file, fileType);
   };
+
+  const selectedItemIndex = useMemo(
+    () => getLastActivePrimaryElementIndex(collab),
+    [collab.get("interactions")]
+  );
 
   const fileListOrder = useMemo(() => {
     return computeFileOrder(files);
@@ -130,43 +137,60 @@ function FileBrowser(props: Props) {
           />
         );
       })}
-      <List
-        dataSource={fileListOrder}
-        split={false}
-        renderItem={(fileDesc) => {
-          const { fileIndex } = fileDesc;
-          const fileRecord: FileRecord = files.get(fileIndex);
-
+      <AutoSizer>
+        {({ height, width }) => {
           return (
-            <FileListItem
-              fileDesc={fileDesc}
-              fileRecord={fileRecord}
-              onToggleSlideFile={onToggleSlideFile}
-              onSlideSelect={onSlideSelect}
-            />
+            <List
+              className={styles.listContainer}
+              height={height}
+              width={width}
+              itemCount={fileListOrder.length}
+              itemSize={100}
+              itemData={{
+                items: fileListOrder,
+                onToggleSlideFile,
+                onSlideSelect,
+                selectedItemIndex,
+              }}
+            >
+              {FileListItem}
+            </List>
           );
         }}
-      />
+      </AutoSizer>
     </div>
   );
 }
 
 type FileListItemProps = {
-  fileRecord: FileRecord,
-  fileDesc: FileOrderDesc,
+  items: Array<FileOrderDesc>,
   onToggleSlideFile: (number) => void,
   onSlideSelect: (string, number, Object) => void,
+  selectedItemIndex: {
+    type: "IMAGE" | "SLIDE",
+    index: number,
+    slideIndex?: number,
+  },
 };
 
 function FileListItem({
-  fileRecord,
-  fileDesc,
-  onToggleSlideFile,
-  onSlideSelect,
-}: FileListItemProps) {
-  const { fileIndex, slideIndex, type } = fileDesc;
-  const pdf = fileRecord._parsedPdfDoc;
-  const { isOpen } = fileRecord;
+  data,
+  index,
+  style,
+}: {
+  data: FileListItemProps,
+  index: number,
+  style: Object,
+}) {
+  const { items, onToggleSlideFile, onSlideSelect, selectedItemIndex } = data;
+  const {
+    type: selectedItemType,
+    index: selectedIndex,
+    slideIndex: selectedSlideIndex,
+  } = selectedItemIndex;
+  const fileDesc = items[index];
+  const { fileIndex, slideIndex, type, fileRecord } = fileDesc;
+  const { _parsedPdfDoc: pdf, isOpen } = fileRecord;
 
   const onSlideFileClick = useCallback(() => onToggleSlideFile(fileIndex), [
     fileIndex,
@@ -177,9 +201,19 @@ function FileListItem({
     [fileDesc]
   );
 
+  const isFileSelected = selectedIndex === fileIndex;
+
+  const isSlideSelected = isFileSelected && selectedSlideIndex === slideIndex;
+
   if (type === "INDEX_SLIDE") {
     return (
-      <List.Item onClick={onSlideFileClick}>
+      <div
+        style={style}
+        className={`${styles.fileTileWrap} ${
+          isFileSelected ? styles.selected : ""
+        }`}
+        onClick={onSlideFileClick}
+      >
         <div className={styles.fileTile}>
           <div className={styles.numberSection}>
             {isOpen ? <CaretDownOutlined /> : <CaretRightFilled />}
@@ -191,35 +225,44 @@ function FileListItem({
               pageIndex={slideIndex}
               width={150}
               pdf={fileRecord._parsedPdfDoc}
+              renderTextLayer={false}
             />
           ) : (
-            <Card style={{ width: 150 }}>Loading</Card>
+            <Skeleton.Image active style={{ width: 150, height: 84 }} />
           )}
         </div>
-      </List.Item>
+      </div>
     );
   }
 
   if (type === "PRESENTATION_SLIDE") {
     return (
-      <List.Item onClick={onSlideClick}>
+      <div
+        style={style}
+        className={`${styles.fileTileWrap} ${
+          isSlideSelected ? styles.selected : ""
+        }`}
+        onClick={onSlideClick}
+      >
         <div className={styles.fileTile}>
           <div className={styles.numberSection}>
             <span />
             <span>{Number(slideIndex) + 1}</span>
           </div>
+
           {pdf ? (
             <Page
               className={styles.image}
               pageIndex={slideIndex}
               width={135}
               pdf={fileRecord._parsedPdfDoc}
+              renderTextLayer={false}
             />
           ) : (
-            <Card style={{ width: 135 }}>Loading</Card>
+            <Skeleton.Image active style={{ width: 135, height: 76 }} />
           )}
         </div>
-      </List.Item>
+      </div>
     );
   }
 }
@@ -228,13 +271,19 @@ type FileOrderDesc = {
   type: "INDEX_SLIDE" | "PRESENTATION_SLIDE" | "IMAGE",
   fileIndex: number,
   slideIndex?: number,
+  fileRecord: FileRecord,
 };
 
 const computeFileOrder = (files: ImmutableList<FileRecord>) => {
   const fileDisplayOrder: Array<FileOrderDesc> = [];
 
   files.forEach((fileRecord, fileIndex) => {
-    fileDisplayOrder.push({ type: "INDEX_SLIDE", fileIndex, slideIndex: 0 });
+    fileDisplayOrder.push({
+      type: "INDEX_SLIDE",
+      fileIndex,
+      slideIndex: 0,
+      fileRecord,
+    });
 
     if (fileRecord.isOpen) {
       if (!fileRecord.numOfPages) {
@@ -249,12 +298,36 @@ const computeFileOrder = (files: ImmutableList<FileRecord>) => {
             type: "PRESENTATION_SLIDE",
             fileIndex,
             slideIndex: i,
+            fileRecord,
           });
         });
     }
   });
 
   return fileDisplayOrder;
+};
+
+const getLastActivePrimaryElementIndex = (collab) => {
+  const interactions = collab.get("interactions");
+
+  for (let i = interactions.length - 1; i >= 0; i--) {
+    const { action, index, slideIndex, type } = interactions[i];
+
+    if (action === "DISPLAY") {
+      if (type === "IMAGE") {
+        return { type, index };
+      }
+      if (type === "SLIDE") {
+        return {
+          type,
+          index,
+          slideIndex,
+        };
+      }
+    }
+  }
+
+  return {};
 };
 
 export default FileBrowser;
