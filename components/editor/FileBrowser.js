@@ -231,7 +231,7 @@ function FileListItem({
           </div>
           {pdf ? (
             <Page
-              className={styles.image}
+              className={`${styles.image} ${styles.pdfFileTile}`}
               pageIndex={slideIndex}
               width={150}
               pdf={fileRecord._parsedPdfDoc}
@@ -265,7 +265,7 @@ function FileListItem({
 
           {pdf ? (
             <Page
-              className={styles.image}
+              className={`${styles.image} ${styles.pdfSlideTile}`}
               pageIndex={slideIndex}
               width={135}
               pdf={fileRecord._parsedPdfDoc}

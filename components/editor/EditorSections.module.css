@@ -125,9 +125,16 @@
   border: 1px solid #d9d9d9;
   border-radius: 3px;
   overflow: hidden;
-  max-height: 98px; /** max height of tile - 2px **/
 }
 
 .sideBar .selected .fileTile .image {
   border: 2px solid #10239e;
+}
+
+.fileTile .image.pdfFileTile {
+  max-height: 85px; /** 150px * 9/16 **/
+}
+
+.fileTile .image.pdfSlideTile {
+  max-height: 76px; /** 135px * 9/16 **/
 }
