@@ -236,6 +236,9 @@ function FileListItem({
               width={150}
               pdf={fileRecord._parsedPdfDoc}
               renderTextLayer={false}
+              loading={
+                <Skeleton.Image active style={{ width: 150, height: 84 }} />
+              }
             />
           ) : (
             <Skeleton.Image active style={{ width: 150, height: 84 }} />
@@ -267,6 +270,9 @@ function FileListItem({
               width={135}
               pdf={fileRecord._parsedPdfDoc}
               renderTextLayer={false}
+              loading={
+                <Skeleton.Image active style={{ width: 135, height: 76 }} />
+              }
             />
           ) : (
             <Skeleton.Image active style={{ width: 135, height: 76 }} />
