@@ -4660,6 +4660,10 @@ readdirp@~3.4.0:
   dependencies:
     picomatch "^2.2.1"
 
+recordrtc@midori0507/RecordRTC#fix/prevent-override-url-on-server:
+  version "5.6.1"
+  resolved "https://codeload.github.com/midori0507/RecordRTC/tar.gz/62d366927e536d97f71ce5813085d86785d01db3"
+
 regenerate-unicode-properties@^8.2.0:
   version "8.2.0"
   resolved "https://registry.yarnpkg.com/regenerate-unicode-properties/-/regenerate-unicode-properties-8.2.0.tgz#e5de7111d655e7ba60c057dbe9ff37c87e65cdec"

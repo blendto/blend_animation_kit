@@ -8,6 +8,7 @@ import AudioRecordingSection from "../editor/AudioRecordingSection";
 import ImagePickerSection from "../editor/ImagePickerSection";
 import CreateVideoButton from "../editor/CreateVideoButton";
 import dynamic from "next/dynamic";
+import VideoRecordingTools from "../editor/VideoRecordingTools";
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -80,7 +81,7 @@ function InitializeAndShowEditor() {
                 <ActiveCanvasWithNoSSR />
               </Row>
               <Row>
-                <ImagePickerSection />
+                <VideoRecordingTools />
               </Row>
             </Col>
           </Content>

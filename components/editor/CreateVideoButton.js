@@ -30,6 +30,27 @@ const uploadAudio = (collab) => {
   });
 };
 
+const uploadCameraClips = (collab) => {
+  const cameraClips = collab.get("cameraClips");
+  const collabId = collab.get("id");
+
+  return cameraClips.map((clip) => {
+    const formData = new FormData();
+    formData.append("file", clip.blob, "video.webm");
+    formData.append("collabId", collabId);
+
+    return fetch("/api/cameraClip", {
+      method: "POST",
+      body: formData,
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error(response.message);
+      }
+      return response.json();
+    });
+  });
+};
+
 const uploadSlides = (collab) => {
   const slides = collab.get("slides");
   const collabId = collab.get("id");
@@ -76,11 +97,18 @@ const uploadStuffAndCreateCollab = async (collab) => {
   let audioFileData = null;
   let slidesDataList = [];
   let imagesDataList = [];
+  let cameraClipList = [];
   try {
-    [audioFileData, slidesDataList, imagesDataList] = await Promise.all([
+    [
+      audioFileData,
+      slidesDataList,
+      imagesDataList,
+      cameraClipList,
+    ] = await Promise.all([
       uploadAudio(collab),
       Promise.all(uploadSlides(collab)),
       Promise.all(uploadImages(collab)),
+      Promise.all(uploadCameraClips(collab)),
     ]);
   } catch (err) {
     console.error(err);
@@ -95,6 +123,9 @@ const uploadStuffAndCreateCollab = async (collab) => {
     images: imagesDataList.map(({ fileKey }) => ({ fileKey })),
     audios: [{ fileKey: audioFileData.fileKey }],
     slides: slidesDataList.map((slidesData) => ({
+      fileKey: slidesData.fileKey,
+    })),
+    cameraClip: cameraClipList.map((slidesData) => ({
       fileKey: slidesData.fileKey,
     })),
   };

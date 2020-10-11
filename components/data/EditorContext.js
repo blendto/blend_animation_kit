@@ -24,6 +24,7 @@ const currentRecordedTime = () => {
 
 export default function EditorContextProvider({ children }) {
   const [collab, setCollab] = useState(defaulEditorState);
+  const [cameraStream, setCameraStream] = useState(null);
 
   useEffect(() => {
     const isRecording = collab?.get("isRecording");
@@ -57,6 +58,7 @@ export default function EditorContextProvider({ children }) {
         images: [],
         audios: [],
         slides: [],
+        cameraClips: [],
         interactions: [],
         isRecording: false,
         _currentParsedPdf: null,
@@ -160,6 +162,55 @@ export default function EditorContextProvider({ children }) {
     });
   });
 
+  const onVideoRecordingStart = useCallback(() => {
+    setCollab((collab) => {
+      const newInteraction = {
+        action: "DISPLAY",
+        index: -1, // To be updated on recording end
+        time: currentRecordedTime(),
+        type: "CAMERA_CLIP",
+      };
+
+      return addInteractionToCollab(collab, newInteraction);
+    });
+  });
+
+  const onVideoRecordingStop = useCallback((blob) => {
+    setCollab((collab) => {
+      const cameraClips = collab.get("cameraClips");
+
+      const updatedCameraClips = [
+        ...cameraClips,
+        { blob, uploadStatus: FileStatus.Added },
+      ];
+
+      const interactionIndex = getLastCameraClipDisplayInteractionIndex(collab);
+
+      if (interactionIndex < 0) {
+        throw new Error("No interaction found to add video to");
+      }
+
+      const displayVideoStartInteraction = collab.get("interactions")[
+        interactionIndex
+      ];
+
+      const updatedInteraction = {
+        ...displayVideoStartInteraction,
+        index: updatedCameraClips.length - 1,
+      };
+
+      const updatedInteractions = Object.assign(
+        [],
+        collab.get("interactions"),
+        { [interactionIndex]: updatedInteraction }
+      );
+
+      return collab
+        .set("cameraClips", updatedCameraClips)
+        .set("interactions", updatedInteractions);
+    });
+  });
+
   const contextValue = {
     collab,
     initialize,
@@ -170,6 +221,10 @@ export default function EditorContextProvider({ children }) {
     onImageSelect,
     onSlideSelect,
     onFileDrop,
+    cameraStream,
+    setCameraStream,
+    onVideoRecordingStart,
+    onVideoRecordingStop,
   };
   return (
     <EditorContext.Provider value={contextValue}>
@@ -177,6 +232,22 @@ export default function EditorContextProvider({ children }) {
     </EditorContext.Provider>
   );
 }
+
+const getLastCameraClipDisplayInteractionIndex = (collab) => {
+  const interactions = collab.get("interactions");
+
+  for (let i = interactions.length - 1; i >= 0; i--) {
+    const { action, index, slideIndex, type } = interactions[i];
+
+    if (action === "DISPLAY") {
+      if (type === "CAMERA_CLIP") {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+};
 
 const addInteractionToCollab = (collab, newInteraction) => {
   const interactions = collab.get("interactions");

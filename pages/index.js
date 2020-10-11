@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <Layout className={styles.container}>
       <Head>
-        <title>Collabice</title>
+        <title>DJfy.io</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 

@@ -65,7 +65,7 @@ function FileBrowser(props: Props) {
   const onFileChosen = useCallback(
     async (file: AntdFileType) => {
       let fileType;
-      console.log(file.type);
+
       switch (file.type) {
         case "application/pdf":
           fileType = "SLIDE";
@@ -144,8 +144,6 @@ function FileBrowser(props: Props) {
       </Dragger>
     );
   }
-
-  console.log(fileListOrder);
 
   return (
     <div className={styles.sideBar}>
@@ -353,8 +351,6 @@ type FileOrderDesc = {
 
 const computeFileOrder = (files: ImmutableList<FileRecord>) => {
   const fileDisplayOrder: Array<FileOrderDesc> = [];
-
-  console.log(files.toString());
 
   files.forEach((fileRecord, fileIndex) => {
     if (fileRecord.type === "IMAGE") {

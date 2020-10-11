@@ -5,6 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .activeCanvas .imagePreview {
@@ -12,6 +13,14 @@
   max-height: 100%;
   object-fit: contain;
   overflow: hidden;
+}
+
+.activeCanvas .camera {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .imagePicker {
