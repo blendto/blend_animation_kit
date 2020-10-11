@@ -31,12 +31,15 @@ type Props = {
   children?: Node,
 };
 
+type AntdFileType = File & { uid: string };
+
 type FileTypeProps = {
   type: "SLIDE" | "IMAGE",
-  file: ?File,
+  file: ?AntdFileType,
   isOpen: boolean,
   numOfPages?: number,
   _parsedPdfDoc: ?Object,
+  _preview: null | ArrayBuffer | string,
 };
 
 const defaultFileType: FileTypeProps = {
@@ -45,35 +48,54 @@ const defaultFileType: FileTypeProps = {
   isOpen: false,
   numOfPages: 0,
   _parsedPdfDoc: null,
+  _preview: null,
 };
 
 const makeFileRecord: RecordFactory<FileTypeProps> = Record(defaultFileType);
 
 type FileRecord = RecordOf<FileTypeProps>;
 
+//$FlowFixMe
 function FileBrowser(props: Props) {
-  const { collab, onFileDrop, onSlideSelect } = useContext(EditorContext);
+  const { collab, onFileDrop, onSlideSelect, onImageSelect } = useContext(
+    EditorContext
+  );
   const [files, setFiles] = useState(ImmutableList<FileRecord>());
 
-  const onFileChosen = (file: File) => {
-    let fileType;
+  const onFileChosen = useCallback(
+    async (file: AntdFileType) => {
+      let fileType;
+      console.log(file.type);
+      switch (file.type) {
+        case "application/pdf":
+          fileType = "SLIDE";
+          break;
+        case "image/jpg":
+        case "image/jpeg":
+          fileType = "IMAGE";
+          break;
+        default:
+          //ignore file
+          return;
+      }
 
-    switch (file.type) {
-      case "application/pdf":
-        fileType = "SLIDE";
-        break;
-      default:
-        //ignore file
-        return;
-    }
+      const filePreview = await getBase64(file);
 
-    setFiles((files) => {
-      return files.push(
-        makeFileRecord({ type: fileType, file, isOpen: false })
-      );
-    });
-    onFileDrop(file, fileType);
-  };
+      setFiles((files) => {
+        return files.push(
+          makeFileRecord({
+            type: fileType,
+            file,
+            isOpen: false,
+            _preview: filePreview,
+          })
+        );
+      });
+
+      onFileDrop(file, fileType, filePreview);
+    },
+    [onFileDrop]
+  );
 
   const selectedItemIndex = useMemo(
     () => getLastActivePrimaryElementIndex(collab),
@@ -110,7 +132,7 @@ function FileBrowser(props: Props) {
     });
   });
 
-  if (collab.get("slides").length === 0) {
+  if (collab.get("slides").length === 0 && collab.get("images").length === 0) {
     return (
       <Dragger {...DraggerUploadProps} action={onFileChosen}>
         <Image width={75} preview={false} src={"/image-editing.svg"} />
@@ -122,6 +144,8 @@ function FileBrowser(props: Props) {
       </Dragger>
     );
   }
+
+  console.log(fileListOrder);
 
   return (
     <div className={styles.sideBar}>
@@ -159,6 +183,7 @@ function FileBrowser(props: Props) {
                   items: fileListOrder,
                   onToggleSlideFile,
                   onSlideSelect,
+                  onImageSelect,
                   selectedItemIndex,
                 }}
               >
@@ -176,6 +201,7 @@ type FileListItemProps = {
   items: Array<FileOrderDesc>,
   onToggleSlideFile: (number) => void,
   onSlideSelect: (string, number, Object) => void,
+  onImageSelect: (string) => void,
   selectedItemIndex: {
     type: "IMAGE" | "SLIDE",
     index: number,
@@ -192,7 +218,13 @@ function FileListItem({
   index: number,
   style: Object,
 }) {
-  const { items, onToggleSlideFile, onSlideSelect, selectedItemIndex } = data;
+  const {
+    items,
+    onToggleSlideFile,
+    onSlideSelect,
+    onImageSelect,
+    selectedItemIndex,
+  } = data;
   const {
     type: selectedItemType,
     index: selectedIndex,
@@ -200,13 +232,18 @@ function FileListItem({
   } = selectedItemIndex;
   const fileDesc = items[index];
   const { fileIndex, slideIndex, type, fileRecord } = fileDesc;
-  const { _parsedPdfDoc: pdf, isOpen } = fileRecord;
+  const { _parsedPdfDoc: pdf, isOpen, _preview } = fileRecord;
 
   const onSlideFileClick = useCallback(() => onToggleSlideFile(fileIndex), [
     fileIndex,
   ]);
 
+  if (!fileRecord.file) {
+    throw new Error("Unexpected: file should not be empty");
+  }
+
   const onSlideClick = useCallback(
+    //$FlowIgnore
     () => onSlideSelect(fileRecord.file.uid, Number(slideIndex), pdf),
     [fileDesc]
   );
@@ -214,6 +251,30 @@ function FileListItem({
   const isFileSelected = selectedIndex === fileIndex;
 
   const isSlideSelected = isFileSelected && selectedSlideIndex === slideIndex;
+
+  if (type === "IMAGE") {
+    return (
+      <div
+        style={style}
+        className={`${styles.fileTileWrap} ${
+          isFileSelected ? styles.selected : ""
+        }`}
+        /* $FlowIgnore */
+        onClick={() => onImageSelect(fileRecord.file.uid)}
+      >
+        <div className={styles.fileTile}>
+          <div className={styles.numberSection}>
+            <span />
+            <span>{fileIndex + 1}</span>
+          </div>
+          <img
+            className={`${styles.image} ${styles.imageTile}`}
+            src={_preview}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (type === "INDEX_SLIDE") {
     return (
@@ -293,7 +354,14 @@ type FileOrderDesc = {
 const computeFileOrder = (files: ImmutableList<FileRecord>) => {
   const fileDisplayOrder: Array<FileOrderDesc> = [];
 
+  console.log(files.toString());
+
   files.forEach((fileRecord, fileIndex) => {
+    if (fileRecord.type === "IMAGE") {
+      fileDisplayOrder.push({ type: "IMAGE", fileIndex, fileRecord });
+      return;
+    }
+
     fileDisplayOrder.push({
       type: "INDEX_SLIDE",
       fileIndex,
@@ -345,5 +413,14 @@ const getLastActivePrimaryElementIndex = (collab) => {
 
   return {};
 };
+
+function getBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+}
 
 export default FileBrowser;

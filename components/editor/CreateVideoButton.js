@@ -39,7 +39,28 @@ const uploadSlides = (collab) => {
     formData.append("file", slide.file);
     formData.append("collabId", collabId);
 
-    return fetch("/api/slides", {
+    return fetch("/api/slide", {
+      method: "POST",
+      body: formData,
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error(response.message);
+      }
+      return response.json();
+    });
+  });
+};
+
+const uploadImages = (collab) => {
+  const images = collab.get("images");
+  const collabId = collab.get("id");
+
+  return images.map((image) => {
+    const formData = new FormData();
+    formData.append("file", image.file);
+    formData.append("collabId", collabId);
+
+    return fetch("/api/image", {
       method: "POST",
       body: formData,
     }).then((response) => {
@@ -54,13 +75,15 @@ const uploadSlides = (collab) => {
 const uploadStuffAndCreateCollab = async (collab) => {
   let audioFileData = null;
   let slidesDataList = [];
+  let imagesDataList = [];
   try {
-    [audioFileData, ...slidesDataList] = await Promise.all([
+    [audioFileData, slidesDataList, imagesDataList] = await Promise.all([
       uploadAudio(collab),
-      ...uploadSlides(collab),
+      Promise.all(uploadSlides(collab)),
+      Promise.all(uploadImages(collab)),
     ]);
   } catch (err) {
-    console.err(err);
+    console.error(err);
     throw new Error(err.message);
   }
 
@@ -69,7 +92,7 @@ const uploadStuffAndCreateCollab = async (collab) => {
   const collabRequestBody = {
     title: collab.get("title"),
     interactions: collab.get("interactions"),
-    images: collab.get("images").map(({ fileKey }) => ({ fileKey })),
+    images: imagesDataList.map(({ fileKey }) => ({ fileKey })),
     audios: [{ fileKey: audioFileData.fileKey }],
     slides: slidesDataList.map((slidesData) => ({
       fileKey: slidesData.fileKey,
@@ -139,6 +162,7 @@ export default function CreateVideoButton() {
         <Text>
           <SyncOutlined spin /> Audio
         </Text>
+        <br />
         <Text>
           <SyncOutlined spin /> Slides
         </Text>

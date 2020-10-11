@@ -11,7 +11,7 @@ let timeTracker = {
 };
 
 export const FileStatus = {
-  Selected: "SELECTED",
+  Added: "ADDED",
   Uploading: "UPLOADING",
   Uploaded: "UPLOADED",
   Error: "ERROR",
@@ -85,19 +85,18 @@ export default function EditorContextProvider({ children }) {
     setCollab((collab) => collab.set("images", imagesList));
   });
 
-  const onImageSelect = useCallback((imageUid, filePreview) => {
+  const onImageSelect = useCallback((imageUid) => {
     setCollab((collab) => {
       let interactions = collab.get("interactions");
       const images = collab.get("images");
-      const imageIndex = images.findIndex((image) => image.uid === imageUid);
+      const imageIndex = images.findIndex(
+        (image) => image.file.uid === imageUid
+      );
+
       if (imageIndex < 0) {
         throw new Error("No such image found");
       }
-      const updatedImages = [...images];
-      updatedImages[imageIndex] = {
-        ...updatedImages[imageIndex],
-        preview: filePreview,
-      };
+
       const newInteraction = {
         action: "DISPLAY",
         index: imageIndex,
@@ -105,7 +104,7 @@ export default function EditorContextProvider({ children }) {
         type: "IMAGE",
       };
 
-      return addInteractionToCollab(collab, newInteraction, { updatedImages });
+      return addInteractionToCollab(collab, newInteraction);
     });
   });
 
@@ -134,17 +133,28 @@ export default function EditorContextProvider({ children }) {
     });
   });
 
-  const onFileDrop = useCallback((file, fileType) => {
+  const onFileDrop = useCallback((file, fileType, preview) => {
     setCollab((collab) => {
       if (fileType === "SLIDE") {
         const slides = collab.get("slides");
 
         const updatedSlides = [
           ...slides,
-          { file, uploadStatus: FileStatus.Selected },
+          { file, uploadStatus: FileStatus.Added },
         ];
 
         return collab.set("slides", updatedSlides);
+      }
+
+      if (fileType === "IMAGE") {
+        const images = collab.get("images");
+
+        const updatedImages = [
+          ...images,
+          { file, uploadStatus: FileStatus.Added, preview },
+        ];
+
+        return collab.set("images", updatedImages);
       }
       throw new Error("Unknown file type: " + fileType);
     });
@@ -168,17 +178,9 @@ export default function EditorContextProvider({ children }) {
   );
 }
 
-const addInteractionToCollab = (
-  collab,
-  newInteraction,
-  { updatedImages } = {}
-) => {
-  let interactions = collab.get("interactions");
+const addInteractionToCollab = (collab, newInteraction) => {
+  const interactions = collab.get("interactions");
 
-  let updatedCollab = collab;
-  if (updatedImages) {
-    updatedCollab = collab.set("images", updatedImages);
-  }
   const lastInteraction =
     interactions.length > 0 ? interactions[interactions.length - 1] : null;
   if (lastInteraction) {
@@ -202,8 +204,8 @@ const addInteractionToCollab = (
       const newInteractions = [...interactions];
       newInteractions[newInteractions.length - 1] = newInteraction;
 
-      return updatedCollab.set("interactions", newInteractions);
+      return collab.set("interactions", newInteractions);
     }
   }
-  return updatedCollab.set("interactions", [...interactions, newInteraction]);
+  return collab.set("interactions", [...interactions, newInteraction]);
 };

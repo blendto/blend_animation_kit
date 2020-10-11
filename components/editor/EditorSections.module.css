@@ -138,3 +138,12 @@
 .fileTile .image.pdfSlideTile {
   max-height: 76px; /** 135px * 9/16 **/
 }
+
+.fileTile .image.imageTile {
+  width: 150px;
+  height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: contain;
+}

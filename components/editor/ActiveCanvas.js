@@ -26,7 +26,7 @@ const getLastActivePrimaryElement = (collab) => {
 
     if (action === "DISPLAY") {
       if (type === "IMAGE") {
-        return { images: collab.get("images")[index] };
+        return { image: collab.get("images")[index] };
       }
       if (type === "SLIDE") {
         return {
