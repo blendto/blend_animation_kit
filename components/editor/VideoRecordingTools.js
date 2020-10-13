@@ -26,33 +26,9 @@ export default function VideoRecordingTools() {
   const [recorder, setRecorder] = useState(null);
   const videoPlayerRef = useRef(null);
 
-  const startCamera = useCallback(async () => {
-    const stream = await captureUserMedia();
-    if (!stream) {
-      return;
-    }
-    setCameraStream(stream);
-    setCameraStatus(true);
-  });
-
-  const stopCamera = useCallback(async () => {
-    setCameraStream((stream) => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-
-      return null;
-    });
-    setCameraStatus(false);
-  });
-
   const startRecording = useCallback(async () => {
     let recorder = new RecordRTCPromisesHandler(cameraStream, {
       type: "video",
-      ondataavailable: (blob) => {
-        console.log("blob available");
-        console.log(blob);
-      },
     });
     recorder.startRecording();
     setRecorder(recorder);
@@ -73,21 +49,77 @@ export default function VideoRecordingTools() {
     setRecorder(null);
   }, [recorder]);
 
+  const startCamera = useCallback(async () => {
+    const stream = await captureUserMedia();
+    if (!stream) {
+      return;
+    }
+    setCameraStream(stream);
+    setCameraStatus(true);
+  });
+
+  const stopCamera = useCallback(async () => {
+    setCameraStream((stream) => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+
+      return null;
+    });
+    setCameraStatus(false);
+  });
+
   useEffect(() => {
-    const isRecording = collab.get("isRecording");
+    // Toggles recording when the global audio state changes
+    const toggleRecording = async () => {
+      const isRecording = collab.get("isRecording");
 
-    if (isRecording && !recorder) {
-      startRecording();
-      return;
-    }
+      if (isRecording && !recorder && cameraStream) {
+        await startRecording();
+        return;
+      }
 
-    if (!isRecording && recorder) {
-      stopRecording();
-      return;
-    }
+      if (!isRecording && recorder) {
+        await stopRecording();
+        return;
+      }
+    };
 
+    toggleRecording();
     return () => {};
-  }, [collab.get("isRecording"), recorder]);
+  }, [
+    collab.get("isRecording"),
+    recorder,
+    cameraStream,
+    startRecording,
+    stopRecording,
+  ]);
+
+  useEffect(() => {
+    // When camera stream state changes, check global recording state,
+    // and start or stop the state
+    const toggleRecordingOnCameraStreamChange = async () => {
+      const isRecording = collab.get("isRecording");
+
+      if (!cameraStream && recorder) {
+        await stopRecording();
+        return;
+      }
+
+      if (cameraStream && isRecording && !recorder) {
+        await startRecording();
+        return;
+      }
+    };
+
+    toggleRecordingOnCameraStreamChange();
+  }, [
+    cameraStream,
+    recorder,
+    startRecording,
+    stopRecording,
+    collab.get("isRecording"),
+  ]);
 
   return (
     <Row>
