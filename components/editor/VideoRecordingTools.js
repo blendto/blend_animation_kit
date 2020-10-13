@@ -3,7 +3,6 @@ import React, { useCallback, useContext, useEffect, useRef } from "react";
 import { VideoCameraTwoTone } from "@ant-design/icons";
 import { Button, Row } from "antd";
 import { useState } from "react";
-import { RecordRTCPromisesHandler } from "recordrtc";
 import { EditorContext } from "../data/EditorContext";
 
 const captureUserMedia = async () => {
@@ -27,7 +26,8 @@ export default function VideoRecordingTools() {
   const videoPlayerRef = useRef(null);
 
   const startRecording = useCallback(async () => {
-    let recorder = new RecordRTCPromisesHandler(cameraStream, {
+    const RecordRTC = await import("recordrtc");
+    let recorder = new RecordRTC.RecordRTCPromisesHandler(cameraStream, {
       type: "video",
     });
     recorder.startRecording();
