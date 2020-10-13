@@ -8,7 +8,12 @@ import { EditorContext } from "../data/EditorContext";
 const captureUserMedia = async () => {
   var params = {
     audio: false,
-    video: { width: 640, height: 480, facingMode: "user" },
+    video: {
+      width: 640,
+      height: 480,
+      facingMode: "user",
+      frameRate: { ideal: 30, max: 30 },
+    },
   };
   return await navigator.mediaDevices?.getUserMedia(params);
 };
