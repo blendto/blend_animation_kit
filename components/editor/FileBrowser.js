@@ -72,6 +72,7 @@ function FileBrowser(props: Props) {
           break;
         case "image/jpg":
         case "image/jpeg":
+        case "image/png":
           fileType = "IMAGE";
           break;
         default:
