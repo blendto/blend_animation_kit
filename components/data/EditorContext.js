@@ -1,9 +1,24 @@
+//@flow
 import { Map } from "immutable";
 import { useCallback, useState, useEffect } from "react";
 
-const defaulEditorState = null;
+import type { RecordFactory, RecordOf } from "immutable";
 
-export const EditorContext = React.createContext(defaulEditorState);
+import { List as ImmutableList, Record } from "immutable";
+import * as React from "react";
+import invariant from "tiny-invariant";
+
+const defaultCollabState = {
+  id: "",
+  title: "Untitled Collab",
+  images: [],
+  audios: [],
+  slides: [],
+  cameraClips: [],
+  interactions: [],
+  isRecording: false,
+  _currentParsedPdf: null,
+};
 
 let timeTracker = {
   completedMillis: 0,
@@ -17,17 +32,65 @@ export const FileStatus = {
   Error: "ERROR",
 };
 
+type CollabPropsType = {
+  id: string,
+  title: string,
+  audios: Array<any>,
+  images: Array<any>,
+  slides: Array<any>,
+  cameraClips: Array<any>,
+  interactions: Array<any>,
+  isRecording: boolean,
+  _currentParsedPdf: ?any,
+};
+
+const makeCollab: RecordFactory<CollabPropsType> = Record(defaultCollabState);
+
+type CollabRecord = RecordOf<CollabPropsType>;
+
+type EditorContextRecord = {
+  collab: ?CollabRecord,
+  initialize: (string) => void,
+  onChangeTitle: (string) => void,
+  onRecordingStart: () => void,
+  onRecordingDone: (Blob) => void,
+  onImageSelect: (string) => void,
+  onSlideSelect: (fileUid: string, slideIndex: number, _parsedPdf: any) => void,
+  onFileDrop: (File, string, string) => void,
+  cameraStream: ?MediaStream,
+  setCameraStream: ?(((?MediaStream) => ?MediaStream) | MediaStream),
+  onVideoRecordingStart: () => void,
+  onVideoRecordingStop: (Blob) => void,
+};
+
+export const EditorContext: React$Context<EditorContextRecord> = React.createContext();
+
 const currentRecordedTime = () => {
   const { completedMillis, lastStartTime } = timeTracker;
   return completedMillis + (lastStartTime ? Date.now() - lastStartTime : 0);
 };
 
-export default function EditorContextProvider({ children }) {
-  const [collab, setCollab] = useState(defaulEditorState);
-  const [cameraStream, setCameraStream] = useState(null);
+type Props = {
+  children: React.Node,
+};
+
+export default function EditorContextProvider({
+  children,
+}: Props): React$Element<
+  React$ComponentType<{
+    children?: React$Node,
+    value: ?EditorContextRecord,
+    ...
+  }>
+> {
+  const [collab, setCollab] = useState<?CollabRecord>(null);
+  const [cameraStream, setCameraStream] = useState<?MediaStream>(null);
 
   useEffect(() => {
-    const isRecording = collab?.get("isRecording");
+    if (!collab) {
+      return;
+    }
+    const { isRecording } = collab;
     const wasRecording = !!timeTracker.lastStartTime;
 
     if (isRecording) {
@@ -39,6 +102,10 @@ export default function EditorContextProvider({ children }) {
     }
 
     if (!isRecording && wasRecording) {
+      invariant(
+        timeTracker.lastStartTime,
+        "lastStartTime is expected to be filled"
+      );
       timeTracker = {
         completedMillis:
           timeTracker.completedMillis +
@@ -48,30 +115,18 @@ export default function EditorContextProvider({ children }) {
     }
 
     return () => {};
-  }, [collab?.get("isRecording")]);
+  }, [collab?.isRecording]);
 
-  const initialize = useCallback((id) => {
-    setCollab(
-      Map({
-        id,
-        title: "Untitled Collab",
-        images: [],
-        audios: [],
-        slides: [],
-        cameraClips: [],
-        interactions: [],
-        isRecording: false,
-        _currentParsedPdf: null,
-      })
-    );
+  const initialize = useCallback((id: string) => {
+    setCollab(makeCollab({ ...defaultCollabState, id }));
   });
 
-  const onChangeTitle = useCallback((value) => {
-    setCollab((collab) => collab.set("title", value));
+  const onChangeTitle = useCallback((value: string) => {
+    setCollab((collab) => collab?.set("title", value));
   }, []);
 
   const onRecordingStart = useCallback(() =>
-    setCollab((collab) => collab.set("isRecording", true))
+    setCollab((collab) => collab?.set("isRecording", true))
   );
 
   const onRecordingDone = useCallback((recordedBlob) => {
@@ -79,18 +134,14 @@ export default function EditorContextProvider({ children }) {
     // when we add collab to deps, stupid React-Mic only accepts onStart on mount, and
     // ignores subsequent changes
     setCollab((collab) =>
-      collab.set("audios", [recordedBlob]).set("isRecording", false)
+      collab?.set("audios", [recordedBlob]).set("isRecording", false)
     );
   }, []);
 
-  const onImageFilesChange = useCallback((imagesList) => {
-    setCollab((collab) => collab.set("images", imagesList));
-  });
-
-  const onImageSelect = useCallback((imageUid) => {
+  const onImageSelect = useCallback((imageUid: string) => {
     setCollab((collab) => {
-      let interactions = collab.get("interactions");
-      const images = collab.get("images");
+      invariant(collab);
+      const { images, interactions } = collab;
       const imageIndex = images.findIndex(
         (image) => image.file.uid === imageUid
       );
@@ -110,35 +161,38 @@ export default function EditorContextProvider({ children }) {
     });
   });
 
-  const onSlideSelect = useCallback((fileUid, slideIndex, _parsedPdf) => {
-    setCollab((collab) => {
-      let interactions = collab.get("interactions");
-      const slides = collab.get("slides");
-      const slideFileIndex = slides.findIndex(
-        (slide) => slide.file.uid === fileUid
-      );
-      if (slideFileIndex < 0) {
-        throw new Error("No such slide file found");
-      }
+  const onSlideSelect = useCallback(
+    (fileUid: string, slideIndex: number, _parsedPdf: any) => {
+      setCollab((collab) => {
+        invariant(collab);
+        const { slides, interactions } = collab;
+        const slideFileIndex = slides.findIndex(
+          (slide) => slide.file.uid === fileUid
+        );
+        if (slideFileIndex < 0) {
+          throw new Error("No such slide file found");
+        }
 
-      const newInteraction = {
-        action: "DISPLAY",
-        index: slideFileIndex,
-        slideIndex,
-        time: currentRecordedTime(),
-        type: "SLIDE",
-      };
+        const newInteraction = {
+          action: "DISPLAY",
+          index: slideFileIndex,
+          slideIndex,
+          time: currentRecordedTime(),
+          type: "SLIDE",
+        };
 
-      const updatedCollab = collab.set("_currentParsedPdf", _parsedPdf);
+        const updatedCollab = collab.set("_currentParsedPdf", _parsedPdf);
 
-      return addInteractionToCollab(updatedCollab, newInteraction);
-    });
-  });
+        return addInteractionToCollab(updatedCollab, newInteraction);
+      });
+    }
+  );
 
   const onFileDrop = useCallback((file, fileType, preview) => {
     setCollab((collab) => {
+      invariant(collab);
       if (fileType === "SLIDE") {
-        const slides = collab.get("slides");
+        const { slides } = collab;
 
         const updatedSlides = [
           ...slides,
@@ -149,7 +203,7 @@ export default function EditorContextProvider({ children }) {
       }
 
       if (fileType === "IMAGE") {
-        const images = collab.get("images");
+        const { images } = collab;
 
         const updatedImages = [
           ...images,
@@ -164,6 +218,8 @@ export default function EditorContextProvider({ children }) {
 
   const onVideoRecordingStart = useCallback(() => {
     setCollab((collab) => {
+      invariant(collab);
+
       const newInteraction = {
         action: "DISPLAY",
         index: -1, // To be updated on recording end
@@ -177,7 +233,8 @@ export default function EditorContextProvider({ children }) {
 
   const onVideoRecordingStop = useCallback((blob) => {
     setCollab((collab) => {
-      const cameraClips = collab.get("cameraClips");
+      invariant(collab);
+      const { cameraClips, interactions } = collab;
 
       const updatedCameraClips = [
         ...cameraClips,
@@ -190,20 +247,16 @@ export default function EditorContextProvider({ children }) {
         throw new Error("No interaction found to add video to");
       }
 
-      const displayVideoStartInteraction = collab.get("interactions")[
-        interactionIndex
-      ];
+      const displayVideoStartInteraction = interactions[interactionIndex];
 
       const updatedInteraction = {
         ...displayVideoStartInteraction,
         index: updatedCameraClips.length - 1,
       };
 
-      const updatedInteractions = Object.assign(
-        [],
-        collab.get("interactions"),
-        { [interactionIndex]: updatedInteraction }
-      );
+      const updatedInteractions = Object.assign([], (interactions: Object), {
+        [interactionIndex]: updatedInteraction,
+      });
 
       return collab
         .set("cameraClips", updatedCameraClips)
@@ -217,7 +270,6 @@ export default function EditorContextProvider({ children }) {
     onChangeTitle,
     onRecordingStart,
     onRecordingDone,
-    onImageFilesChange,
     onImageSelect,
     onSlideSelect,
     onFileDrop,
@@ -249,8 +301,8 @@ const getLastCameraClipDisplayInteractionIndex = (collab) => {
   return -1;
 };
 
-const addInteractionToCollab = (collab, newInteraction) => {
-  const interactions = collab.get("interactions");
+const addInteractionToCollab = (collab: CollabRecord, newInteraction) => {
+  const { interactions } = collab;
 
   const lastInteraction =
     interactions.length > 0 ? interactions[interactions.length - 1] : null;
