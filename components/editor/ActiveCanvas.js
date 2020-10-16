@@ -3,35 +3,30 @@ import styles from "./EditorSections.module.css";
 import React, { useState, useCallback, useContext } from "react";
 import { EditorContext } from "../data/EditorContext";
 import { Page } from "react-pdf";
+import invariant from "tiny-invariant";
+import { Gif } from "@giphy/react-components";
 
-const getCurrentActiveImage = (collab) => {
-  const interactions = collab.get("interactions");
-
-  for (let i = interactions.length - 1; i >= 0; i--) {
-    const { action, index, type } = interactions[i];
-
-    if (action === "DISPLAY" && type === "IMAGE") {
-      return collab.get("images")[index];
-    }
-  }
-
-  return null;
-};
+import type { CollabImageItem } from "../data/EditorContext";
 
 const getLastActivePrimaryElement = (collab) => {
-  const interactions = collab.get("interactions");
-  const _parsedPdf = collab.get("_currentParsedPdf");
+  invariant(collab);
+  const {
+    interactions,
+    images,
+    slides,
+    _currentParsedPdf: _parsedPdf,
+  } = collab;
 
   for (let i = interactions.length - 1; i >= 0; i--) {
     const { action, index, slideIndex, type } = interactions[i];
 
     if (action === "DISPLAY") {
       if (type === "IMAGE") {
-        return { image: collab.get("images")[index] };
+        return { image: images[index] };
       }
       if (type === "SLIDE") {
         return {
-          slideFile: collab.get("slides")[index],
+          slideFile: slides[index],
           slideIndex,
           _parsedPdf,
         };
@@ -42,13 +37,33 @@ const getLastActivePrimaryElement = (collab) => {
   return {};
 };
 
+const getLastActiveSecondaryElement = (collab) => {
+  invariant(collab);
+  const { interactions, images } = collab;
+
+  for (let i = interactions.length - 1; i >= 0; i--) {
+    const { action, index, slideIndex, type } = interactions[i];
+
+    if (action === "DISPLAY") {
+      return null;
+    }
+
+    if (action === "DISPLAY_INLINE") {
+      if (type === "IMAGE") {
+        return { image: images[index] };
+      }
+      throw new Error(`Unsupported type ${type} for ${action}`);
+    }
+  }
+};
+
 const calculateOptimalCanvasSize = () => {
   const vw = Math.max(
-    document.documentElement.clientWidth || 0,
+    document.documentElement?.clientWidth || 0,
     window.innerWidth || 0
   );
   const vh = Math.max(
-    document.documentElement.clientHeight || 0,
+    document.documentElement?.clientHeight || 0,
     window.innerHeight || 0
   );
 
@@ -102,6 +117,8 @@ export default function ActiveCanvas() {
     _parsedPdf,
   } = getLastActivePrimaryElement(collab);
 
+  const secondaryItem = getLastActiveSecondaryElement(collab);
+
   const { width, height } = calculateOptimalCanvasSize();
 
   const { width: cameraWidth, height: cameraHeight } = getCameraDimensions(
@@ -111,9 +128,7 @@ export default function ActiveCanvas() {
   return (
     <div className={styles.activeCanvas} style={{ width, height }}>
       {!(image || slideFile) && <span>Choose an image</span>}
-      {image && (
-        <img className={styles.imagePreview} src={image.preview || image.url} />
-      )}
+      {image && <img className={styles.imagePreview} src={image.preview} />}
       {slideFile && (
         <Page
           className={styles.imagePreview}
@@ -138,6 +153,41 @@ export default function ActiveCanvas() {
           height={cameraHeight}
         />
       )}
+      {secondaryItem && (
+        <InlineItem item={secondaryItem} canvasSize={{ width, height }} />
+      )}
     </div>
   );
+}
+
+type InlineItemProps = {
+  image: CollabImageItem,
+};
+type InlineItemComponentsProps = {
+  item: InlineItemProps,
+  canvasSize: {
+    width: number,
+    height: number,
+  },
+};
+
+function InlineItem({ item, canvasSize }: InlineItemComponentsProps) {
+  const { width: canvasWidth, height: canvasHeight } = canvasSize;
+
+  const { image } = item;
+
+  if (image.imageType === "GIF") {
+    const { file } = image;
+    const original = file.images.original_mp4;
+
+    const optimalWidth = 0.3 * canvasWidth;
+
+    return (
+      <div className={styles.inline}>
+        <Gif gif={file} width={optimalWidth} />
+      </div>
+    );
+  }
+
+  throw new Error("Cant show this inline");
 }

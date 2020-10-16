@@ -37,3 +37,8 @@
   width: 100%;
   height: 10vh;
 }
+
+.sideBar :global(.ant-layout-sider-children) {
+  display: flex;
+  flex-direction: column;
+}

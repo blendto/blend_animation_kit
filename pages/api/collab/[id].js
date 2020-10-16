@@ -72,7 +72,11 @@ const submitCollab = async (req, res) => {
     interactions,
   } = collabRequest;
 
-  const imageObjects = images.map(({ fileKey }) => ({ uri: fileKey }));
+  const imageObjects = images.map(({ fileKey, file, imageType }) => ({
+    uri: fileKey,
+    file,
+    imageType,
+  }));
 
   const audioObjects = audios.map(({ fileKey }) => ({ uri: fileKey }));
 

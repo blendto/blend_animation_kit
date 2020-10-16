@@ -23,6 +23,12 @@
   object-fit: cover;
 }
 
+.activeCanvas .inline {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+
 .imagePicker {
   max-height: 20vh;
 }
@@ -40,8 +46,8 @@
 }
 
 .sideBar {
-  height: 100%;
   position: relative;
+  flex: 1;
 }
 
 .sideBar .dragger {

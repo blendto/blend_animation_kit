@@ -100,7 +100,7 @@ function FileBrowser(props: Props) {
 
   const selectedItemIndex = useMemo(
     () => getLastActivePrimaryElementIndex(collab),
-    [collab.get("interactions")]
+    [collab?.interactions]
   );
 
   const fileListOrder = useMemo(() => {
@@ -135,14 +135,16 @@ function FileBrowser(props: Props) {
 
   if (collab.get("slides").length === 0 && collab.get("images").length === 0) {
     return (
-      <Dragger {...DraggerUploadProps} action={onFileChosen}>
-        <Image width={75} preview={false} src={"/image-editing.svg"} />
-        <Title level={5}>Drag & Drop</Title>
-        <Text>
-          Drop any .pdf, .jpg, .gif, .png <br /> or{" "}
-          <Text underline>browse your files</Text>
-        </Text>
-      </Dragger>
+      <div className={styles.sideBar}>
+        <Dragger {...DraggerUploadProps} action={onFileChosen}>
+          <Image width={75} preview={false} src={"/image-editing.svg"} />
+          <Title level={5}>Drag & Drop</Title>
+          <Text>
+            Drop any .pdf, .jpg, .gif, .png <br /> or{" "}
+            <Text underline>browse your files</Text>
+          </Text>
+        </Dragger>
+      </div>
     );
   }
 

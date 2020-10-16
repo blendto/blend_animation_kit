@@ -32,14 +32,31 @@ export const FileStatus = {
   Error: "ERROR",
 };
 
+type ImageType = "NORMAL" | "GIF";
+
+export type CollabImageItem = {
+  file: File | Object,
+  imageType: ImageType,
+  preview?: string,
+  uploadStatus: "ADDED" | "UPLOADING" | "UPLOADED" | "ERROR",
+};
+
+type CollabInteractionItem = {
+  action: "DISPLAY" | "DISPLAY_INLINE",
+  index: number,
+  slideIndex?: number,
+  time: number,
+  type: "SLIDE" | "IMAGE",
+};
+
 type CollabPropsType = {
   id: string,
   title: string,
   audios: Array<any>,
-  images: Array<any>,
+  images: Array<CollabImageItem>,
   slides: Array<any>,
   cameraClips: Array<any>,
-  interactions: Array<any>,
+  interactions: Array<CollabInteractionItem>,
   isRecording: boolean,
   _currentParsedPdf: ?any,
 };
@@ -61,9 +78,10 @@ type EditorContextRecord = {
   setCameraStream: ?(((?MediaStream) => ?MediaStream) | MediaStream),
   onVideoRecordingStart: () => void,
   onVideoRecordingStop: (Blob) => void,
+  onGifSelect: (Object) => void,
 };
 
-export const EditorContext: React$Context<EditorContextRecord> = React.createContext();
+export const EditorContext: React$Context<EditorContextRecord> = React.createContext<EditorContextRecord>();
 
 const currentRecordedTime = () => {
   const { completedMillis, lastStartTime } = timeTracker;
@@ -207,7 +225,12 @@ export default function EditorContextProvider({
 
         const updatedImages = [
           ...images,
-          { file, uploadStatus: FileStatus.Added, preview },
+          {
+            file,
+            uploadStatus: FileStatus.Added,
+            preview,
+            imageType: "NORMAL",
+          },
         ];
 
         return collab.set("images", updatedImages);
@@ -264,6 +287,31 @@ export default function EditorContextProvider({
     });
   });
 
+  const onGifSelect = useCallback((gif: Object) => {
+    setCollab((collab) => {
+      invariant(collab);
+
+      const { images, interactions } = collab;
+
+      const updatedImages = [
+        ...images,
+        { file: gif, uploadStatus: FileStatus.Uploaded, imageType: "GIF" },
+      ];
+
+      const newInteraction = {
+        action: "DISPLAY_INLINE",
+        index: updatedImages.length - 1,
+        time: currentRecordedTime(),
+        type: "IMAGE",
+      };
+
+      return addInteractionToCollab(
+        collab.set("images", updatedImages),
+        newInteraction
+      );
+    });
+  });
+
   const contextValue = {
     collab,
     initialize,
@@ -277,6 +325,7 @@ export default function EditorContextProvider({
     setCameraStream,
     onVideoRecordingStart,
     onVideoRecordingStop,
+    onGifSelect,
   };
   return (
     <EditorContext.Provider value={contextValue}>

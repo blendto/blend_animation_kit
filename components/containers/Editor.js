@@ -9,6 +9,7 @@ import ImagePickerSection from "../editor/ImagePickerSection";
 import CreateVideoButton from "../editor/CreateVideoButton";
 import dynamic from "next/dynamic";
 import VideoRecordingTools from "../editor/VideoRecordingTools";
+import GifBrowser from "../editor/GifBrowser";
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -67,8 +68,9 @@ function InitializeAndShowEditor() {
       </Header>
       <Divider className={styles.thinSeperator} />
       <Layout>
-        <Sider theme="light" width={220}>
+        <Sider theme="light" width={220} className={styles.sideBar}>
           <FileBrowserWithNoSSR />
+          <GifBrowser />
         </Sider>
         <Divider
           className={`${styles.thinSeperator} ${styles.vertical}`}
@@ -112,7 +114,7 @@ function CollabTitle() {
   return (
     <div className={styles.titleSection}>
       <Title level={2} editable={{ onChange: onChangeTitle }}>
-        {collab.get("title")}
+        {collab?.get("title")}
       </Title>
     </div>
   );

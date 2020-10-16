@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.2.2",
+    "@giphy/js-fetch-api": "^1.7.0",
+    "@giphy/react-components": "^1.9.1",
     "antd": "^4.6.6",
     "aws-sdk": "^2.765.0",
     "formidable": "^1.2.2",

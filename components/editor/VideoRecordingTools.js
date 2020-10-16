@@ -4,6 +4,7 @@ import { VideoCameraTwoTone } from "@ant-design/icons";
 import { Button, Row } from "antd";
 import { useState } from "react";
 import { EditorContext } from "../data/EditorContext";
+import invariant from "tiny-invariant";
 
 const captureUserMedia = async () => {
   var params = {
@@ -64,7 +65,7 @@ export default function VideoRecordingTools() {
   });
 
   const stopCamera = useCallback(async () => {
-    setCameraStream((stream) => {
+    setCameraStream((stream: ?MediaStream) => {
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
@@ -77,6 +78,9 @@ export default function VideoRecordingTools() {
   useEffect(() => {
     // Toggles recording when the global audio state changes
     const toggleRecording = async () => {
+      if (!collab) {
+        return;
+      }
       const isRecording = collab.get("isRecording");
 
       if (isRecording && !recorder && cameraStream) {
@@ -93,7 +97,7 @@ export default function VideoRecordingTools() {
     toggleRecording();
     return () => {};
   }, [
-    collab.get("isRecording"),
+    collab?.get("isRecording"),
     recorder,
     cameraStream,
     startRecording,
@@ -104,6 +108,9 @@ export default function VideoRecordingTools() {
     // When camera stream state changes, check global recording state,
     // and start or stop the state
     const toggleRecordingOnCameraStreamChange = async () => {
+      if (!collab) {
+        return;
+      }
       const isRecording = collab.get("isRecording");
 
       if (!cameraStream && recorder) {
@@ -123,7 +130,7 @@ export default function VideoRecordingTools() {
     recorder,
     startRecording,
     stopRecording,
-    collab.get("isRecording"),
+    collab?.get("isRecording"),
   ]);
 
   return (

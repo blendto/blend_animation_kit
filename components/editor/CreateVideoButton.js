@@ -77,6 +77,14 @@ const uploadImages = (collab) => {
   const collabId = collab.get("id");
 
   return images.map((image) => {
+    if (image.uploadStatus === "UPLOADED") {
+      const { fileKey, imageType, file } = image;
+      return Promise.resolve({
+        fileKey,
+        imageType,
+        file,
+      });
+    }
     const formData = new FormData();
     formData.append("file", image.file);
     formData.append("collabId", collabId);
@@ -115,12 +123,18 @@ const uploadStuffAndCreateCollab = async (collab) => {
     throw new Error(err.message);
   }
 
+  console.log(imagesDataList);
+
   const collabId = collab.get("id");
 
   const collabRequestBody = {
     title: collab.get("title"),
     interactions: collab.get("interactions"),
-    images: imagesDataList.map(({ fileKey }) => ({ fileKey })),
+    images: imagesDataList.map(({ fileKey, imageType, file }) => ({
+      fileKey,
+      imageType,
+      file,
+    })),
     audios: [{ fileKey: audioFileData.fileKey }],
     slides: slidesDataList.map((slidesData) => ({
       fileKey: slidesData.fileKey,
@@ -129,6 +143,8 @@ const uploadStuffAndCreateCollab = async (collab) => {
       fileKey: slidesData.fileKey,
     })),
   };
+
+  console.log(collabRequestBody);
 
   const collabResult = await fetch(`/api/collab/${collabId}`, {
     method: "POST",
