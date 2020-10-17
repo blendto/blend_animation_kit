@@ -1,5 +1,9 @@
 import { ServerError, UserError } from "../../server/base/errors";
-import { uploadTempUserContent } from "../../server/external/s3uploader";
+import { createSignedUploadUrl } from "../../server/external/s3uploader";
+
+const VALID_EXTENSIONS = ["webm"];
+
+const MAX_FILE_SIZE_IN_BITS = 50 * 1024 * 1024 * 8; //50 Mbits
 
 export default async (req, res) => {
   const { method } = req;
@@ -15,18 +19,16 @@ export default async (req, res) => {
 
 const uploadCameraClip = async (req, res) => {
   try {
-    const fileDetails = await uploadTempUserContent(req);
-    res.send(fileDetails);
+    const urlDetails = await createSignedUploadUrl(
+      req,
+      VALID_EXTENSIONS,
+      MAX_FILE_SIZE_IN_BITS
+    );
+    res.send(urlDetails);
   } catch (err) {
     if (err instanceof UserError) {
       res.status(400).json({ message: err.message });
     }
     res.status(500).json({ message: err.message });
   }
-};
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
 };

@@ -1,5 +1,9 @@
 import { ServerError, UserError } from "../../server/base/errors";
-import { uploadTempUserContent } from "../../server/external/s3uploader";
+import { createSignedUploadUrl } from "../../server/external/s3uploader";
+
+const VALID_EXTENSIONS = ["png", "jpg", "jpeg"];
+
+const MAX_FILE_SIZE_IN_BITS = 10 * 1024 * 1024 * 8; //10 Mbits
 
 export default async (req, res) => {
   const { method } = req;
@@ -15,8 +19,13 @@ export default async (req, res) => {
 
 const uploadImage = async (req, res) => {
   try {
-    const fileDetails = await uploadTempUserContent(req);
-    res.send(fileDetails);
+    const urlDetails = await createSignedUploadUrl(
+      req,
+      VALID_EXTENSIONS,
+      MAX_FILE_SIZE_IN_BITS
+    );
+    console.log(urlDetails);
+    res.send(urlDetails);
   } catch (err) {
     if (err instanceof UserError) {
       res.status(400).json({ message: err.message });
@@ -24,10 +33,4 @@ const uploadImage = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
-};
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
 };

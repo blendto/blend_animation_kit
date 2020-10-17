@@ -8,6 +8,7 @@ import {
 import { Button, Modal, Typography } from "antd";
 import Paragraph from "antd/lib/skeleton/Paragraph";
 import Link from "next/link";
+import FileUploader from "../data/FileUploader";
 
 const { Text } = Typography;
 
@@ -15,19 +16,12 @@ const uploadAudio = (collab) => {
   const audio = collab.get("audios")[0];
   const collabId = collab.get("id");
 
-  const formData = new FormData();
-  formData.append("file", audio.blob, "audio.webm");
-  formData.append("collabId", collabId);
-
-  return fetch("/api/audio", {
-    method: "POST",
-    body: formData,
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(response.message);
-    }
-    return response.json();
-  });
+  return FileUploader.uploadFileToS3(
+    collabId,
+    audio.blob,
+    "AUDIO",
+    "audio.webm"
+  );
 };
 
 const uploadCameraClips = (collab) => {
@@ -35,19 +29,12 @@ const uploadCameraClips = (collab) => {
   const collabId = collab.get("id");
 
   return cameraClips.map((clip) => {
-    const formData = new FormData();
-    formData.append("file", clip.blob, "video.webm");
-    formData.append("collabId", collabId);
-
-    return fetch("/api/cameraClip", {
-      method: "POST",
-      body: formData,
-    }).then((response) => {
-      if (!response.ok) {
-        throw new Error(response.message);
-      }
-      return response.json();
-    });
+    return FileUploader.uploadFileToS3(
+      collabId,
+      clip.blob,
+      "CAMERA_CLIP",
+      "video.webm"
+    );
   });
 };
 
@@ -56,19 +43,7 @@ const uploadSlides = (collab) => {
   const collabId = collab.get("id");
 
   return slides.map((slide) => {
-    const formData = new FormData();
-    formData.append("file", slide.file);
-    formData.append("collabId", collabId);
-
-    return fetch("/api/slide", {
-      method: "POST",
-      body: formData,
-    }).then((response) => {
-      if (!response.ok) {
-        throw new Error(response.message);
-      }
-      return response.json();
-    });
+    return FileUploader.uploadFileToS3(collabId, slide.file, "SLIDE");
   });
 };
 
@@ -77,27 +52,17 @@ const uploadImages = (collab) => {
   const collabId = collab.get("id");
 
   return images.map((image) => {
-    if (image.uploadStatus === "UPLOADED") {
-      const { fileKey, imageType, file } = image;
+    const { fileKey, imageType, uploadStatus, file } = image;
+
+    if (uploadStatus === "UPLOADED") {
       return Promise.resolve({
         fileKey,
         imageType,
         file,
       });
     }
-    const formData = new FormData();
-    formData.append("file", image.file);
-    formData.append("collabId", collabId);
 
-    return fetch("/api/image", {
-      method: "POST",
-      body: formData,
-    }).then((response) => {
-      if (!response.ok) {
-        throw new Error(response.message);
-      }
-      return response.json();
-    });
+    return FileUploader.uploadFileToS3(collabId, file, "IMAGE");
   });
 };
 
@@ -123,8 +88,6 @@ const uploadStuffAndCreateCollab = async (collab) => {
     throw new Error(err.message);
   }
 
-  console.log(imagesDataList);
-
   const collabId = collab.get("id");
 
   const collabRequestBody = {
@@ -143,8 +106,6 @@ const uploadStuffAndCreateCollab = async (collab) => {
       fileKey: slidesData.fileKey,
     })),
   };
-
-  console.log(collabRequestBody);
 
   const collabResult = await fetch(`/api/collab/${collabId}`, {
     method: "POST",
