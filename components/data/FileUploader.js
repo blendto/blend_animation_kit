@@ -1,6 +1,5 @@
 //@flow
-
-type FileType = "IMAGE" | "SLIDE" | "CAMERA_CLIP" | "AUDIO";
+import type { FileType } from "../data/EditorContext";
 
 const apiPath = (fileType: FileType) => {
   switch (fileType) {

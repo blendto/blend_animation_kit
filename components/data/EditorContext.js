@@ -32,13 +32,18 @@ export const FileStatus = {
   Error: "ERROR",
 };
 
+export type FileType = "IMAGE" | "SLIDE" | "CAMERA_CLIP" | "AUDIO";
+
 type ImageType = "NORMAL" | "GIF";
+
+type UploadStatus = "ADDED" | "UPLOADING" | "UPLOADED" | "ERROR";
 
 export type CollabImageItem = {
   file: File | Object,
   imageType: ImageType,
   preview?: string,
-  uploadStatus: "ADDED" | "UPLOADING" | "UPLOADED" | "ERROR",
+  uploadStatus: UploadStatus,
+  fileKey?: ?string,
 };
 
 type CollabInteractionItem = {
@@ -63,7 +68,7 @@ type CollabPropsType = {
 
 const makeCollab: RecordFactory<CollabPropsType> = Record(defaultCollabState);
 
-type CollabRecord = RecordOf<CollabPropsType>;
+export type CollabRecord = RecordOf<CollabPropsType>;
 
 type EditorContextRecord = {
   collab: ?CollabRecord,
@@ -79,6 +84,12 @@ type EditorContextRecord = {
   onVideoRecordingStart: () => void,
   onVideoRecordingStop: (Blob) => void,
   onGifSelect: (Object) => void,
+  onFileUploadStatusChange: (
+    fileType: FileType,
+    index: number,
+    status: UploadStatus,
+    fileKey?: string
+  ) => void,
 };
 
 export const EditorContext: React$Context<EditorContextRecord> = React.createContext<EditorContextRecord>();
@@ -312,6 +323,61 @@ export default function EditorContextProvider({
     });
   });
 
+  const onFileUploadStatusChange = useCallback(
+    (
+      fileType: FileType,
+      index: number,
+      status: UploadStatus,
+      fileKey?: string
+    ) => {
+      // Is using index the right way? if people had option to delete files, things would fuck up.
+      setCollab((collab) => {
+        invariant(collab);
+        const { audios, slides, images, cameraClips } = collab;
+        let updatedCollab = collab;
+        switch (fileType) {
+          case "AUDIO": {
+            const audio = audios[index];
+            const updatedAudio = { ...audio, uploadStatus: status, fileKey };
+            updatedCollab = collab.set(
+              "audios",
+              Object.assign([...audios], { [index]: updatedAudio })
+            );
+            break;
+          }
+          case "CAMERA_CLIP": {
+            const clip = cameraClips[index];
+            const updatedClip = { ...clip, uploadStatus: status, fileKey };
+            updatedCollab = collab.set(
+              "cameraClips",
+              Object.assign([...cameraClips], { [index]: updatedClip })
+            );
+            break;
+          }
+          case "IMAGE": {
+            const image = images[index];
+            const updatedImage = { ...image, uploadStatus: status, fileKey };
+            updatedCollab = collab.set(
+              "images",
+              Object.assign([...images], { [index]: updatedImage })
+            );
+            break;
+          }
+          case "SLIDE": {
+            const slide = slides[index];
+            const updatedSlide = { ...slide, uploadStatus: status, fileKey };
+            updatedCollab = collab.set(
+              "slides",
+              Object.assign([...slides], { [index]: updatedSlide })
+            );
+            break;
+          }
+        }
+        return updatedCollab;
+      });
+    }
+  );
+
   const contextValue = {
     collab,
     initialize,
@@ -326,6 +392,7 @@ export default function EditorContextProvider({
     onVideoRecordingStart,
     onVideoRecordingStop,
     onGifSelect,
+    onFileUploadStatusChange,
   };
   return (
     <EditorContext.Provider value={contextValue}>
