@@ -131,6 +131,11 @@ export default function CollabViewerPage(props) {
         <meta property="og:image:height" content="628" />
 
         <meta property="fb:app_id" content="2680324515617353" />
+
+        <meta name="twitter:title" content={collab?.title} />
+        <meta name="twitter:description" content={"DJfy your ideas"} />
+        <meta name="twitter:image" content={createThumbnailLink(collab)} />
+        <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
       <div className={styles.innerContainer}>
