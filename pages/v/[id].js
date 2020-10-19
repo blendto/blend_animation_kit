@@ -110,6 +110,17 @@ export default function CollabViewerPage(props) {
       <Head>
         <title>{collab ? collab.title : "Collabice"}</title>
         <link rel="icon" href="/favicon.ico" />
+        <meta property="og:title" content={collab?.title} />
+        <meta property="og:type" content="video.other" />
+        <meta property="og:url" content={createLink(collab?.id)} />
+        <meta property="og:video" content={createVideoLink(collab)} />
+        <meta
+          property="og:video:secure_url"
+          content={createVideoLink(collab)}
+        />
+        <meta property="og:video:type" content="video/mp4" />
+        <meta property="og:video:width" content="1280" />
+        <meta property="og:video:height" content="720" />
       </Head>
 
       <div className={styles.innerContainer}>
