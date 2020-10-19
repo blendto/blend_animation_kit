@@ -40,6 +40,10 @@ const createVideoLink = (collab) => {
   return OUTPUT_BUCKET_BASE_PATH + collab?.filePath;
 };
 
+const createThumbnailLink = (collab) => {
+  return OUTPUT_BUCKET_BASE_PATH + collab?.thumbnail;
+};
+
 const optimalVideDimensions = ({ width, height }) => {
   const videoWidth = Math.min(...[width, height, 960].filter((dim) => dim > 0));
 
@@ -111,6 +115,7 @@ export default function CollabViewerPage(props) {
         <title>{collab ? collab.title : "Collabice"}</title>
         <link rel="icon" href="/favicon.ico" />
         <meta property="og:title" content={collab?.title} />
+        <meta property="og:description" content={"DJfy your ideas"} />
         <meta property="og:type" content="video.other" />
         <meta property="og:url" content={createLink(collab?.id)} />
         <meta property="og:video" content={createVideoLink(collab)} />
@@ -121,6 +126,9 @@ export default function CollabViewerPage(props) {
         <meta property="og:video:type" content="video/mp4" />
         <meta property="og:video:width" content="1280" />
         <meta property="og:video:height" content="720" />
+        <meta property="og:image" content={createThumbnailLink(collab)} />
+
+        <meta property="fb:app_id" content="2680324515617353" />
       </Head>
 
       <div className={styles.innerContainer}>
