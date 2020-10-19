@@ -127,6 +127,8 @@ export default function CollabViewerPage(props) {
         <meta property="og:video:width" content="1280" />
         <meta property="og:video:height" content="720" />
         <meta property="og:image" content={createThumbnailLink(collab)} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="628" />
 
         <meta property="fb:app_id" content="2680324515617353" />
       </Head>

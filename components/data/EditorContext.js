@@ -10,7 +10,7 @@ import invariant from "tiny-invariant";
 
 const defaultCollabState = {
   id: "",
-  title: "Untitled Collab",
+  title: "Untitled Video",
   images: [],
   audios: [],
   slides: [],
