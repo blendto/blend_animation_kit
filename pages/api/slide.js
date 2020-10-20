@@ -3,7 +3,7 @@ import { createSignedUploadUrl } from "../../server/external/s3uploader";
 
 const VALID_EXTENSIONS = ["pdf"];
 
-const MAX_FILE_SIZE_IN_BITS = 20 * 1024 * 1024 * 8; //20 Mbits
+const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
 
 export default async (req, res) => {
   const { method } = req;
@@ -22,7 +22,7 @@ const uploadSlides = async (req, res) => {
     const urlDetails = await createSignedUploadUrl(
       req,
       VALID_EXTENSIONS,
-      MAX_FILE_SIZE_IN_BITS
+      MAX_FILE_SIZE
     );
     res.send(urlDetails);
   } catch (err) {

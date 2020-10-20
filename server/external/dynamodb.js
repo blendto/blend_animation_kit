@@ -18,12 +18,33 @@ export default class DynamoDB {
     return new Promise((resolve, reject) => {
       docClient.put(params, (err, data) => {
         if (err) {
-          console.log(err);
+          console.error(err);
           // We expect an error coz document wont exist if unique
           return reject(err);
         }
         resolve(data);
       });
     });
+  }
+
+  static updateItem(params) {
+    return new Promise((resolve, reject) => {
+      docClient.update(params, (err, data) => {
+        if (err) {
+          console.error(err);
+          // We expect an error coz document wont exist if unique
+          return reject(err);
+        }
+        resolve(data);
+      });
+    });
+  }
+
+  static marshall(obj) {
+    return AWS.DynamoDB.Converter.marshall(obj);
+  }
+
+  static unmarshall(obj) {
+    return AWS.DynamoDB.Converter.unmarshall(obj);
   }
 }

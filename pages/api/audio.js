@@ -3,7 +3,7 @@ import { createSignedUploadUrl } from "../../server/external/s3uploader";
 
 const VALID_EXTENSIONS = ["webm"];
 
-const MAX_FILE_SIZE_IN_BITS = 25 * 1024 * 1024 * 8; //25 Mbits
+const MAX_FILE_SIZE = 25 * 1024 * 1024; //25 Mb
 
 export default async (req, res) => {
   const { method } = req;
@@ -22,7 +22,7 @@ const uploadAudio = async (req, res) => {
     const urlDetails = await createSignedUploadUrl(
       req,
       VALID_EXTENSIONS,
-      MAX_FILE_SIZE_IN_BITS
+      MAX_FILE_SIZE
     );
     res.send(urlDetails);
   } catch (err) {

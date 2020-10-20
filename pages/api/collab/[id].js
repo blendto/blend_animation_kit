@@ -84,22 +84,31 @@ const submitCollab = async (req, res) => {
 
   const cameraClipObjects = cameraClip.map(({ fileKey }) => ({ uri: fileKey }));
 
-  const collabDBObject = {
-    id,
-    title,
-    interactions,
-    images: imageObjects,
-    audios: audioObjects,
-    slides: slideObjects,
-    cameraClip: cameraClipObjects,
-    status: "SUBMITTED",
+  const params = {
+    UpdateExpression:
+      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips REMOVE expireAt",
+    ExpressionAttributeNames: {
+      "#st": "status",
+    },
+    ExpressionAttributeValues: {
+      ":s": "SUBMITTED",
+      ":update": [{ status: "SUBMITTED", on: Date.now() }],
+      ":title": title,
+      ":inter": interactions,
+      ":images": imageObjects,
+      ":audios": audioObjects,
+      ":slides": slideObjects,
+      ":clips": cameraClipObjects,
+    },
+    Key: { id: id },
+    TableName: COLLABS_TABLE,
+    ReturnValues: "ALL_NEW",
   };
 
+  let updatedCollab;
   try {
-    await DynamoDB.putItem({
-      TableName: COLLABS_TABLE,
-      Item: collabDBObject,
-    });
+    const dbUpdateResponse = await DynamoDB.updateItem(params);
+    updatedCollab = dbUpdateResponse.Attributes;
 
     await new SQS(COLLABS_QUEUE_URL).sendMessage({ id });
   } catch (err) {
@@ -107,5 +116,8 @@ const submitCollab = async (req, res) => {
     res.status(500).json({ message: "Something went wrong!" });
   }
 
-  res.send(collabDBObject);
+  // Add id
+  updatedCollab["id"] = id;
+
+  res.send(updatedCollab);
 };

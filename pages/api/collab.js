@@ -1,6 +1,7 @@
 import { ServerError, UserError } from "../../server/base/errors";
 import { nanoid } from "nanoid";
 import DynamoDB from "../../server/external/dynamodb";
+import { DateTime } from "luxon";
 
 const COLLABS_TABLE = "COLLABS";
 
@@ -48,6 +49,7 @@ const initCollab = async (req, res) => {
         on: Date.now(),
       },
     ],
+    expireAt: DateTime.local().plus({ days: 1 }).startOf("second").toSeconds(),
   };
 
   try {

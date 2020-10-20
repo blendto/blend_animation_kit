@@ -3,7 +3,7 @@ import { createSignedUploadUrl } from "../../server/external/s3uploader";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg"];
 
-const MAX_FILE_SIZE_IN_BITS = 10 * 1024 * 1024 * 8; //10 Mbits
+const MAX_FILE_SIZE = 10 * 1024 * 1024; //10 MB
 
 export default async (req, res) => {
   const { method } = req;
@@ -22,9 +22,8 @@ const uploadImage = async (req, res) => {
     const urlDetails = await createSignedUploadUrl(
       req,
       VALID_EXTENSIONS,
-      MAX_FILE_SIZE_IN_BITS
+      MAX_FILE_SIZE
     );
-    console.log(urlDetails);
     res.send(urlDetails);
   } catch (err) {
     if (err instanceof UserError) {

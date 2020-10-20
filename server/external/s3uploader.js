@@ -19,12 +19,12 @@ const fileOptions = {
   maxFields: 2, //one file + id
 };
 
-const TEN_MB_IN_BITS = 10 * 1024 * 1024 * 8;
+const TEN_MB = 10 * 1024 * 1024;
 
 export const createSignedUploadUrl = async (
   req,
   validExtensions,
-  maxSizeInBits = TEN_MB_IN_BITS
+  maxSize = TEN_MB
 ) => {
   const { body: uploadFileRequest } = req;
 
@@ -71,7 +71,7 @@ export const createSignedUploadUrl = async (
       {
         key: fileNameToStore, // our generated key
       },
-      ["content-length-range", 8000, maxSizeInBits], // from 1KB to 1 MB
+      ["content-length-range", 1024, maxSize], // from 1KB to 1 MB
     ],
   };
 
