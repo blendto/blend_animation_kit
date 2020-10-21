@@ -82,18 +82,12 @@ function InitializeAndShowEditor() {
               <Row justify="center">
                 <ActiveCanvasWithNoSSR />
               </Row>
-              <Row>
-                <VideoRecordingTools />
-              </Row>
             </Col>
           </Content>
-          <Footer>
-            <div className={styles.recordAndSendBar}>
-              <Space>
-                <AudioRecordingSection />
-                <CreateVideoButton />
-              </Space>
-            </div>
+          <Divider className={styles.thinSeperator} />
+          <Footer className={styles.recordAndSendBar}>
+            <AudioRecordingSection />
+            <CreateVideoButton />
           </Footer>
         </Layout>
         <Divider
@@ -101,7 +95,11 @@ function InitializeAndShowEditor() {
           type="vertical"
         />
         <Sider theme="light" width={64}>
-          Tools
+          <Row align="middle" justify="center" gutter={2}>
+            <Space direction="vertical">
+              <VideoRecordingTools />
+            </Space>
+          </Row>
         </Sider>
       </Layout>
     </Layout>

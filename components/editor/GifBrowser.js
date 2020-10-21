@@ -23,7 +23,7 @@ export default function GifBrowser(): React$Element<any> {
   if (!isExpanded) {
     return (
       <Button block onClick={toggleGifGrid}>
-        Add Gif
+        Add GIF
       </Button>
     );
   }

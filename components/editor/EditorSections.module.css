@@ -36,13 +36,12 @@
 .audioControls {
   display: flex;
   align-items: center;
+  margin-right: auto;
 }
 
 .audioControls .audioWave {
-  height: 10vh;
-  width: 10vh;
-  border: 2px solid black;
-  border-radius: 5vw;
+  height: 8vh;
+  flex: 1;
 }
 
 .sideBar {
@@ -66,6 +65,16 @@
 
 .sideBar .dragger :global(.ant-upload) {
   padding: 0;
+}
+
+.sideBar .addFiles {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+.sideBar .addFiles .addFilesBtn {
+  width: 220px;
 }
 
 .listContainer {

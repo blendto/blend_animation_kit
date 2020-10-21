@@ -54,14 +54,28 @@ export default function AudioRecordingSection() {
           visible={micPermissionStatus === "denied"}
           title="Audio permission is denied. Please allow the permission and retry."
         >
-          <Button
-            type="primary"
-            shape="circle"
-            size="large"
-            icon={isRecording ? <AudioFilled /> : <AudioOutlined />}
-            onClick={toggleRecordingState}
-            disabled={collab.get("audios").length}
-          />
+          {!isRecording ? (
+            <Button
+              shape="round"
+              size="large"
+              icon={<AudioFilled />}
+              onClick={toggleRecordingState}
+              disabled={collab.get("audios").length}
+              danger
+            >
+              Record
+            </Button>
+          ) : (
+            <Button
+              shape="round"
+              size="large"
+              icon={<AudioFilled />}
+              onClick={toggleRecordingState}
+              danger
+            >
+              Stop
+            </Button>
+          )}
         </Tooltip>
       </Space>
     </div>

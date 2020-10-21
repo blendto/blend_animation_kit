@@ -1,6 +1,6 @@
 //@flow
 import React, { type Node, useMemo } from "react";
-import { Upload, Image, Typography, Card, Skeleton } from "antd";
+import { Upload, Image, Typography, Card, Skeleton, Button } from "antd";
 import { FixedSizeList as List } from "react-window";
 import {
   CaretRightFilled,
@@ -140,7 +140,7 @@ function FileBrowser(props: Props) {
           <Image width={75} preview={false} src={"/image-editing.svg"} />
           <Title level={5}>Drag & Drop</Title>
           <Text>
-            Drop any .pdf, .jpg, .gif, .png <br /> or{" "}
+            Drop any .pdf, .jpg, .png <br /> or{" "}
             <Text underline>browse your files</Text>
           </Text>
         </Dragger>
@@ -176,7 +176,7 @@ function FileBrowser(props: Props) {
             return (
               <List
                 className={styles.listContainer}
-                height={height - 5} // 5px margin top
+                height={height - 5 - 32} // 5px margin top & 32px button below HACK?
                 width={width}
                 itemCount={fileListOrder.length}
                 itemSize={100}
@@ -194,6 +194,15 @@ function FileBrowser(props: Props) {
           }}
         </AutoSizer>
       </Dragger>
+      <Upload
+        action={onFileChosen}
+        className={styles.addFiles}
+        showUploadList={false}
+      >
+        <Button block className={styles.addFilesBtn}>
+          Add Files
+        </Button>
+      </Upload>
     </div>
   );
 }

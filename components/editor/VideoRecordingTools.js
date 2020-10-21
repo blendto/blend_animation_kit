@@ -133,23 +133,22 @@ export default function VideoRecordingTools() {
     collab?.get("isRecording"),
   ]);
 
+  if (isCameraOn) {
+    return (
+      <Button
+        size="large"
+        shape="circle"
+        icon={<VideoCameraTwoTone twoToneColor="#cf1322" />}
+        onClick={stopCamera}
+      />
+    );
+  }
   return (
-    <Row>
-      {!isCameraOn ? (
-        <Button
-          icon={<VideoCameraTwoTone twoToneColor="#389e0d" />}
-          onClick={startCamera}
-        >
-          Start Video
-        </Button>
-      ) : (
-        <Button
-          icon={<VideoCameraTwoTone twoToneColor="#cf1322" />}
-          onClick={stopCamera}
-        >
-          Stop Video
-        </Button>
-      )}
-    </Row>
+    <Button
+      size="large"
+      shape="circle"
+      icon={<VideoCameraTwoTone twoToneColor="#389e0d" />}
+      onClick={startCamera}
+    />
   );
 }

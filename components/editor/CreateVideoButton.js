@@ -1,11 +1,7 @@
 //@flow
 import { useState, useCallback, useContext, useEffect } from "react";
 import { EditorContext, FileStatus } from "../data/EditorContext";
-import {
-  CheckCircleTwoTone,
-  SendOutlined,
-  SyncOutlined,
-} from "@ant-design/icons";
+import { CheckCircleTwoTone, SyncOutlined } from "@ant-design/icons";
 import { Button, Modal, Row, Typography } from "antd";
 import Paragraph from "antd/lib/skeleton/Paragraph";
 import Link from "next/link";
@@ -336,13 +332,13 @@ export default function CreateVideoButton() {
         </Link>
       </Modal>
       <Button
-        type="primary"
-        shape="circle"
+        shape="round"
         size="large"
         disabled={collab?.audios.length === 0}
-        icon={<SendOutlined />}
         onClick={createVideo}
-      />
+      >
+        Publish
+      </Button>
     </>
   );
 }
