@@ -36,7 +36,7 @@ export default function VideoRecordingTools() {
     let recorder = new RecordRTC.RecordRTCPromisesHandler(cameraStream, {
       type: "video",
     });
-    recorder.startRecording();
+    await recorder.startRecording();
     setRecorder(recorder);
     onVideoRecordingStart();
   }, [cameraStream]);

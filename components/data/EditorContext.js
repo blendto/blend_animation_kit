@@ -47,11 +47,11 @@ export type CollabImageItem = {
 };
 
 type CollabInteractionItem = {
-  action: "DISPLAY" | "DISPLAY_INLINE",
+  action: "DISPLAY" | "DISPLAY_INLINE" | "STOP_DISPLAY",
   index: number,
   slideIndex?: number,
   time: number,
-  type: "SLIDE" | "IMAGE",
+  type: "SLIDE" | "IMAGE" | "CAMERA_CLIP",
 };
 
 type CollabPropsType = {
@@ -288,9 +288,18 @@ export default function EditorContextProvider({
         index: updatedCameraClips.length - 1,
       };
 
-      const updatedInteractions = Object.assign([], (interactions: Object), {
+      let updatedInteractions = Object.assign([], (interactions: Object), {
         [interactionIndex]: updatedInteraction,
       });
+
+      const stopVideoInteraction: CollabInteractionItem = {
+        action: "STOP_DISPLAY",
+        index: updatedCameraClips.length - 1,
+        time: currentRecordedTime(),
+        type: "CAMERA_CLIP",
+      };
+
+      updatedInteractions = [...updatedInteractions, stopVideoInteraction];
 
       return collab
         .set("cameraClips", updatedCameraClips)
