@@ -1,7 +1,7 @@
 import { ServerError, UserError } from "../../server/base/errors";
 import { createSignedUploadUrl } from "../../server/external/s3uploader";
 
-const VALID_EXTENSIONS = ["webm"];
+const VALID_EXTENSIONS = ["webm", "mp4"];
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; //50 MB
 
