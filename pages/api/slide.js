@@ -28,6 +28,7 @@ const uploadSlides = async (req, res) => {
   } catch (err) {
     if (err instanceof UserError) {
       res.status(400).json({ message: err.message });
+      return;
     }
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });

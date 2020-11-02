@@ -28,6 +28,7 @@ const uploadAudio = async (req, res) => {
   } catch (err) {
     if (err instanceof UserError) {
       res.status(400).json({ message: err.message });
+      return;
     }
     res.status(500).json({ message: err.message });
   }
