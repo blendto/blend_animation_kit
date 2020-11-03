@@ -80,7 +80,7 @@ const submitCollab = async (req, res) => {
 
   const audioObjects = audios.map(({ fileKey }) => ({ uri: fileKey }));
 
-  const slideObjects = slides.map(({ fileKey }) => ({ uri: fileKey }));
+  const slideObjects = (slides || []).map(({ fileKey }) => ({ uri: fileKey }));
 
   const cameraClipObjects = cameraClip.map(({ fileKey }) => ({ uri: fileKey }));
 
