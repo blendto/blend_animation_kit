@@ -173,7 +173,7 @@ const createCollab = async (collab: CollabRecord) => {
     slides: slides.map((slidesData) => ({
       fileKey: slidesData.fileKey,
     })),
-    cameraClip: cameraClips.map((slidesData) => ({
+    cameraClips: cameraClips.map((slidesData) => ({
       fileKey: slidesData.fileKey,
     })),
   };

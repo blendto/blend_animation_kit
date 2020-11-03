@@ -68,7 +68,7 @@ const submitCollab = async (req, res) => {
     images,
     audios,
     slides,
-    cameraClip,
+    cameraClips,
     interactions,
   } = collabRequest;
 
@@ -82,7 +82,9 @@ const submitCollab = async (req, res) => {
 
   const slideObjects = (slides || []).map(({ fileKey }) => ({ uri: fileKey }));
 
-  const cameraClipObjects = cameraClip.map(({ fileKey }) => ({ uri: fileKey }));
+  const cameraClipObjects = cameraClips.map(({ fileKey }) => ({
+    uri: fileKey,
+  }));
 
   const params = {
     UpdateExpression:
