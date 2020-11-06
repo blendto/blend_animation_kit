@@ -176,6 +176,9 @@ const createCollab = async (collab: CollabRecord) => {
     cameraClips: cameraClips.map((slidesData) => ({
       fileKey: slidesData.fileKey,
     })),
+    metadata: {
+      source: { type: "WEB", version: 0.1 },
+    },
   };
 
   const collabResult = await fetch(`/api/collab/${collabId}`, {

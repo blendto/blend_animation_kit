@@ -70,7 +70,27 @@ const submitCollab = async (req, res) => {
     slides,
     cameraClips,
     interactions,
+    metadata,
   } = collabRequest;
+
+  if (!metadata) {
+    return res.status(400).json({ message: "metadata expected" });
+  }
+  const { source } = metadata;
+
+  if (!source) {
+    return res.status(400).json({ message: "Expected source" });
+  }
+
+  const { type, version } = source;
+
+  if (!["WEB", "MOBILE"].includes(type)) {
+    return res.status(400).json({ message: "invalid source type" });
+  }
+
+  if (!version || version < 0.1) {
+    return res.status(400).json({ message: "unsupported source version" });
+  }
 
   const imageObjects = images.map(({ fileKey, file, imageType }) => ({
     uri: fileKey,
@@ -88,7 +108,7 @@ const submitCollab = async (req, res) => {
 
   const params = {
     UpdateExpression:
-      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips REMOVE expireAt",
+      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips, metadata = :metadata REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
     },
@@ -101,6 +121,7 @@ const submitCollab = async (req, res) => {
       ":audios": audioObjects,
       ":slides": slideObjects,
       ":clips": cameraClipObjects,
+      ":metadata": { source },
     },
     Key: { id: id },
     TableName: COLLABS_TABLE,
