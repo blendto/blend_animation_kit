@@ -1,0 +1,9 @@
+[{
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+        "namespace": "android_app",
+        "package_name": "app.djfy.mobile_app",
+        "sha256_cert_fingerprints":
+        ["B6:0C:DE:18:ED:58:93:29:06:29:80:D9:E0:52:E4:62:4C:48:0B:27:19:8D:92:AE:09:2A:93:D6:D5:92:F1:05"]
+    }
+}]
