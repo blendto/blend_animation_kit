@@ -88,7 +88,7 @@ const submitCollab = async (req, res) => {
     return res.status(400).json({ message: "invalid source type" });
   }
 
-  if (!version || version < 0.1) {
+  if (!version || version < 0.2) {
     return res.status(400).json({ message: "unsupported source version" });
   }
 
