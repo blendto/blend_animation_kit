@@ -109,7 +109,7 @@ const submitCollab = async (req, res) => {
 
   const params = {
     UpdateExpression:
-      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips, gifsAndStickers = :gifsOrStickers, metadata = :metadata REMOVE expireAt",
+      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, metadata = :metadata REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
     },
