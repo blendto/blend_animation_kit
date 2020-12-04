@@ -70,6 +70,7 @@ const submitCollab = async (req, res) => {
     slides,
     cameraClips,
     gifsOrStickers,
+    texts,
     interactions,
     metadata,
   } = collabRequest;
@@ -89,7 +90,7 @@ const submitCollab = async (req, res) => {
     return res.status(400).json({ message: "invalid source type" });
   }
 
-  if (!version || version < 0.3) {
+  if (!version || version < 0.4) {
     return res.status(400).json({ message: "unsupported source version" });
   }
 
@@ -109,7 +110,7 @@ const submitCollab = async (req, res) => {
 
   const params = {
     UpdateExpression:
-      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, metadata = :metadata REMOVE expireAt",
+      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, metadata = :metadata REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
     },
@@ -123,6 +124,7 @@ const submitCollab = async (req, res) => {
       ":slides": slideObjects,
       ":clips": cameraClipObjects,
       ":gifsOrStickers": gifsOrStickers,
+      ":texts": texts,
       ":metadata": { source },
     },
     Key: { id: id },
