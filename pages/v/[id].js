@@ -141,7 +141,7 @@ export default function CollabViewerPage(props) {
       <div className={styles.innerContainer}>
         <Space direction="vertical">
           <Title level={2}>{collab.title}</Title>
-          <video controls autoPlay loop>
+          <video controls autoPlay loop muted>
             <source src={createVideoLink(collab)} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
