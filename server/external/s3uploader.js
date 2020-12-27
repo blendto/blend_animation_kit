@@ -71,7 +71,7 @@ export const createSignedUploadUrl = async (
       {
         key: fileNameToStore, // our generated key
       },
-      ["content-length-range", 1024, maxSize], // from 1KB to 1 MB
+      ["content-length-range", 10, maxSize], // from 10 bytes to 1 MB
     ],
   };
 
