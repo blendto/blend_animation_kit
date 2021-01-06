@@ -10,7 +10,7 @@ const COLLABS_QUEUE_URL =
   "https://sqs.us-east-2.amazonaws.com/558879754161/collab-creation-queue";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 0.3;
-const CURRENT_ENCODER_VERSION = 1.1;
+const CURRENT_ENCODER_VERSION = 1.2;
 
 export const _getCollab = async (id) => {
   return await DynamoDB.getItem({
@@ -93,7 +93,11 @@ const submitCollab = async (req, res) => {
     return res.status(400).json({ message: "invalid source type" });
   }
 
-  if (!version || version < MIN_SUPPORTED_ENCODER_VERSION || version > CURRENT_ENCODER_VERSION) {
+  if (
+    !version ||
+    version < MIN_SUPPORTED_ENCODER_VERSION ||
+    version > CURRENT_ENCODER_VERSION
+  ) {
     return res.status(400).json({ message: "unsupported source version" });
   }
 
