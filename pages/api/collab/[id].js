@@ -69,6 +69,7 @@ const submitCollab = async (req, res) => {
   const {
     title,
     images,
+    externalImages,
     audios,
     slides,
     cameraClips,
@@ -117,7 +118,7 @@ const submitCollab = async (req, res) => {
 
   const params = {
     UpdateExpression:
-      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, audios = :audios, slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, metadata = :metadata REMOVE expireAt",
+      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, externalImages = :externalImages,   audios = :audios, slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, metadata = :metadata REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
     },
@@ -127,6 +128,7 @@ const submitCollab = async (req, res) => {
       ":title": title,
       ":inter": interactions,
       ":images": imageObjects,
+      ":externalImages": externalImages,
       ":audios": audioObjects,
       ":slides": slideObjects,
       ":clips": cameraClipObjects,
