@@ -48,13 +48,14 @@ const getCollab = async (req, res) => {
     return;
   }
 
-  const { id: collabId, title, status, filePath } = collab;
+  const { id: collabId, title, status, filePath, imagePath } = collab;
 
   const trimmedCollab = {
     id: collabId,
     title,
     status,
     filePath,
+    imagePath,
   };
 
   res.send(trimmedCollab);
