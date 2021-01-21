@@ -10,7 +10,7 @@ const COLLABS_QUEUE_URL =
   "https://sqs.us-east-2.amazonaws.com/558879754161/collab-creation-queue";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 0.3;
-const CURRENT_ENCODER_VERSION = 1.3;
+const CURRENT_ENCODER_VERSION = 1.6;
 
 export const _getCollab = async (id) => {
   return await DynamoDB.getItem({
@@ -76,6 +76,7 @@ const submitCollab = async (req, res) => {
     cameraClips,
     gifsOrStickers,
     texts,
+    buttons,
     interactions,
     metadata,
   } = collabRequest;
@@ -119,7 +120,9 @@ const submitCollab = async (req, res) => {
 
   const params = {
     UpdateExpression:
-      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title, interactions = :inter, images = :images, externalImages = :externalImages,   audios = :audios, slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, metadata = :metadata REMOVE expireAt",
+      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
+      "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
+      "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, metadata = :metadata REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
     },
@@ -135,6 +138,7 @@ const submitCollab = async (req, res) => {
       ":clips": cameraClipObjects,
       ":gifsOrStickers": gifsOrStickers,
       ":texts": texts,
+      ":buttons": buttons,
       ":metadata": { source },
     },
     Key: { id: id },
