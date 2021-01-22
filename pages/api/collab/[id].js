@@ -9,7 +9,7 @@ const COLLABS_TABLE = "COLLABS";
 const COLLABS_QUEUE_URL =
   "https://sqs.us-east-2.amazonaws.com/558879754161/collab-creation-queue";
 
-const MIN_SUPPORTED_ENCODER_VERSION = 0.3;
+const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 1.6;
 
 export const _getCollab = async (id) => {
@@ -138,7 +138,7 @@ const submitCollab = async (req, res) => {
       ":clips": cameraClipObjects,
       ":gifsOrStickers": gifsOrStickers,
       ":texts": texts,
-      ":buttons": buttons,
+      ":buttons": buttons || [],
       ":metadata": { source },
     },
     Key: { id: id },
