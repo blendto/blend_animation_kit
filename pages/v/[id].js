@@ -1,13 +1,14 @@
+import * as React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Spin, Typography, Card, Space, Result } from "antd";
+import { Spin, Typography, Card, Result } from "antd";
 import Head from "next/head";
 
 import styles from "../../styles/Viewer.module.css";
 import { _getCollab } from "../api/collab/[id]";
 import IntearctionLayer from "../../components/viewer/InteractionLayer";
 
-const { Title, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
 const fetchData = async (id) => {
   return await fetch(`/api/collab/${id}`).then((res) => {

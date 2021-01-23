@@ -1,18 +1,38 @@
 import Head from "next/head";
-import EditorContainer from "../components/containers/Editor";
 import styles from "../styles/Home.module.css";
-import { Layout, Row, Col } from "antd";
+import { Layout, Row, Col, Typography } from "antd";
 const { Header, Footer, Sider, Content } = Layout;
+const { Title, Text, Link } = Typography;
 
 export default function Home() {
   return (
-    <Layout className={styles.container}>
+    <Layout>
       <Head>
         <title>DJfy</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <EditorContainer />
+      <Content>
+        <Col>
+          <Row justify="center">
+            <Title>Why are you here?</Title>
+          </Row>
+        </Col>
+        <Col>
+          <Row justify="center">
+            <Col>
+              <Row>Hmm...</Row>
+              <Row>I see no reason for you to be here.</Row>
+              <Row>Are you lost?</Row>
+              <Row>
+                Send us a mail at &nbsp;
+                <Link href="mailto:hello@djfy.io">hello@djfy.io</Link> &nbsp; if
+                you are.
+              </Row>
+            </Col>
+          </Row>
+        </Col>
+      </Content>
     </Layout>
   );
 }
