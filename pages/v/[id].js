@@ -56,7 +56,10 @@ const createLink = (id) => {
 };
 
 function getWindowDimensions() {
-  const { innerWidth: width, innerHeight: height } = window;
+  const { width, height } = screen;
+
+  console.log(`screen size: ${width}x${height}`);
+
   return {
     width,
     height,
@@ -89,6 +92,7 @@ export default function CollabViewerPage(props) {
   const [collab, setCollab] = useState(props.collab);
   const dimensions = optimalVideoDimensions(useWindowDimensions());
   const { width, height } = dimensions;
+  console.log(`${width}x${height}`);
 
   useEffect(() => {
     async function fetchData() {
@@ -175,13 +179,13 @@ export default function CollabViewerPage(props) {
         </div>
         <IntearctionLayer collab={collab} dimensions={dimensions} />
       </div>
-      <div style={{ width }}>
+      {/* <div style={{ width }}>
         <Card title="Share">
           <span>
             <Paragraph copyable>{createLink(collab.id)}</Paragraph>
           </span>
         </Card>
-      </div>
+      </div> */}
     </div>
   );
 }
