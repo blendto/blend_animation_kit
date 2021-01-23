@@ -5,6 +5,7 @@ import Head from "next/head";
 
 import styles from "../../styles/Viewer.module.css";
 import { _getCollab } from "../api/collab/[id]";
+import IntearctionLayer from "../../components/viewer/InteractionLayer";
 
 const { Title, Paragraph } = Typography;
 
@@ -44,23 +45,50 @@ const createThumbnailLink = (collab) => {
   return OUTPUT_BUCKET_BASE_PATH + collab?.thumbnail;
 };
 
-const optimalVideDimensions = ({ width, height }) => {
-  const videoWidth = Math.min(...[width, height, 960].filter((dim) => dim > 0));
+const optimalVideoDimensions = ({ width, height }) => {
+  var scale = Math.min(width / 720, height / 1280);
 
-  const videoHeight = Math.floor((9 / 16) * videoWidth);
-
-  return { width: videoWidth, height: videoHeight };
+  return { width: Math.ceil(720 * scale), height: Math.ceil(1280 * scale) };
 };
 
 const createLink = (id) => {
   return `${process.env.NEXT_PUBLIC_SELF_BASE_PATH}v/${id}`;
 };
 
+function getWindowDimensions() {
+  const { innerWidth: width, innerHeight: height } = window;
+  return {
+    width,
+    height,
+  };
+}
+
+function useWindowDimensions() {
+  const [windowDimensions, setWindowDimensions] = useState({
+    width: 720,
+    height: 1280,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowDimensions(getWindowDimensions());
+    }
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return windowDimensions;
+}
+
 export default function CollabViewerPage(props) {
   const router = useRouter();
   const { id } = router.query;
   const [isLoading, setIsLoading] = useState(!props.collab);
   const [collab, setCollab] = useState(props.collab);
+  const dimensions = optimalVideoDimensions(useWindowDimensions());
+  const { width, height } = dimensions;
 
   useEffect(() => {
     async function fetchData() {
@@ -84,7 +112,7 @@ export default function CollabViewerPage(props) {
     if (id) {
       fetchData();
     }
-    return () => { };
+    return () => {};
   }, [id]);
 
   if (isLoading) {
@@ -112,7 +140,7 @@ export default function CollabViewerPage(props) {
   return (
     <div className={styles.container}>
       <Head>
-        <title>{collab ? collab.title : "Collabice"}</title>
+        <title>{collab?.title ?? "DJfy"}</title>
         <link rel="icon" href="/favicon.ico" />
         <meta property="og:title" content={collab?.title} />
         <meta property="og:description" content={"DJfy your ideas"} />
@@ -139,18 +167,20 @@ export default function CollabViewerPage(props) {
       </Head>
 
       <div className={styles.innerContainer}>
-        <Space direction="vertical">
-          <Title level={2}>{collab.title}</Title>
-          <video controls autoPlay loop muted>
+        <div style={{ width, height }}>
+          <video height={height} width={width} controls={false} autoPlay loop>
             <source src={createVideoLink(collab)} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <Card title="Share">
-            <span>
-              <Paragraph copyable>{createLink(collab.id)}</Paragraph>
-            </span>
-          </Card>
-        </Space>
+        </div>
+        <IntearctionLayer collab={collab} dimensions={dimensions} />
+      </div>
+      <div style={{ width }}>
+        <Card title="Share">
+          <span>
+            <Paragraph copyable>{createLink(collab.id)}</Paragraph>
+          </span>
+        </Card>
       </div>
     </div>
   );

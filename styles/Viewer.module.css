@@ -1,7 +1,9 @@
 .container {
   display: flex;
-  height: 100vh;
   justify-content: center;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .container.loader {
@@ -11,18 +13,13 @@
 .innerContainer {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  width: 100vw;
+  position: relative;
+  height: 100vh;
 }
 
 .innerContainer video {
   width: 100%;
   height: auto;
-}
-
-@media only screen and (min-width: 1200px) {
-  .innerContainer {
-    width: 80vw;
-  }
 }

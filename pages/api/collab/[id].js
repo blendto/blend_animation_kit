@@ -1,9 +1,5 @@
 import DynamoDB from "../../../server/external/dynamodb";
 import SQS from "../../../server/external/sqs";
-import {
-  COLLAB_REQ_STORE_BUCKET,
-  copyObject,
-} from "../../../server/external/s3uploader";
 
 const COLLABS_TABLE = "COLLABS";
 const COLLABS_QUEUE_URL =
@@ -36,6 +32,20 @@ export default async (req, res) => {
   }
 };
 
+const trimInteractions = (collab) => {
+  const { interactions } = collab;
+
+  const interactionsToRender = interactions
+    .filter((interaction) => !!interaction.userInteraction)
+    .map(({ assetType, metadata, userInteraction }) => ({
+      assetType,
+      metadata,
+      userInteraction,
+    }));
+
+  return interactionsToRender;
+};
+
 const getCollab = async (req, res) => {
   const {
     query: { id },
@@ -56,6 +66,7 @@ const getCollab = async (req, res) => {
     status,
     filePath,
     imagePath,
+    interactions: trimInteractions(collab),
   };
 
   res.send(trimmedCollab);
