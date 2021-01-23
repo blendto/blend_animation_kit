@@ -56,9 +56,7 @@ const createLink = (id) => {
 };
 
 function getWindowDimensions() {
-  const { width, height } = screen;
-
-  console.log(`screen size: ${width}x${height}`);
+  const { innerWidth: width, innerHeight: height } = window;
 
   return {
     width,
@@ -67,14 +65,12 @@ function getWindowDimensions() {
 }
 
 function useWindowDimensions() {
-  const [windowDimensions, setWindowDimensions] = useState({
-    width: 720,
-    height: 1280,
-  });
+  const [windowDimensions, setWindowDimensions] = useState(null);
 
   useEffect(() => {
     function handleResize() {
-      setWindowDimensions(getWindowDimensions());
+      const newDimensions = getWindowDimensions();
+      setWindowDimensions(newDimensions);
     }
 
     window.addEventListener("resize", handleResize);
@@ -90,9 +86,11 @@ export default function CollabViewerPage(props) {
   const { id } = router.query;
   const [isLoading, setIsLoading] = useState(!props.collab);
   const [collab, setCollab] = useState(props.collab);
-  const dimensions = optimalVideoDimensions(useWindowDimensions());
-  const { width, height } = dimensions;
-  console.log(`${width}x${height}`);
+  const windowDimensions = useWindowDimensions();
+  let videoDimensions;
+  if (windowDimensions) {
+    videoDimensions = optimalVideoDimensions(windowDimensions);
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -171,24 +169,51 @@ export default function CollabViewerPage(props) {
       </Head>
 
       <div className={styles.innerContainer}>
-        <div style={{ width, height }}>
-          <video height={height} width={width} controls={false} autoPlay loop>
-            <source src={createVideoLink(collab)} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-        <IntearctionLayer collab={collab} dimensions={dimensions} />
+        {videoDimensions ? (
+          <VideoLayer
+            collab={collab}
+            width={videoDimensions.width}
+            height={videoDimensions.height}
+          />
+        ) : null}
       </div>
-      {/* <div style={{ width }}>
-        <Card title="Share">
-          <span>
-            <Paragraph copyable>{createLink(collab.id)}</Paragraph>
-          </span>
-        </Card>
-      </div> */}
+      {/* <ShareCard collab={collab} dimensions={videoDimensions} /> */}
     </div>
   );
 }
+
+function ShareCard({ collab, dimensions }) {
+  if (!dimensions) {
+    return null;
+  }
+  const { width, height } = dimensions;
+
+  return (
+    <div style={{ width }}>
+      <Card title="Share">
+        <span>
+          <Paragraph copyable>{createLink(collab.id)}</Paragraph>
+        </span>
+      </Card>
+    </div>
+  );
+}
+
+const VideoLayer = React.memo(function ({ collab, width, height }) {
+  return [
+    <div key={"video-layer"} style={{ width, height }}>
+      <video height={height} width={width} controls={false} autoPlay loop>
+        <source src={createVideoLink(collab)} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>,
+    <IntearctionLayer
+      key={"il"}
+      collab={collab}
+      dimensions={{ width, height }}
+    />,
+  ];
+});
 
 export async function getServerSideProps({ params }) {
   const { id } = params;
