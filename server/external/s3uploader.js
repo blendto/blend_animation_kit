@@ -46,7 +46,7 @@ export const createSignedUploadUrl = async (
     throw new UserError("Invalid filename");
   }
 
-  const extension = fileNameParts[fileNameParts.length - 1];
+  const extension = fileNameParts[fileNameParts.length - 1].toLowerCase();
 
   if (!validExtensions.includes(extension)) {
     throw new UserError(
