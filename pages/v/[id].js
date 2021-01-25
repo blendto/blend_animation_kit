@@ -203,7 +203,15 @@ function ShareCard({ collab, dimensions }) {
 const VideoLayer = React.memo(function ({ collab, width, height }) {
   return [
     <div key={"video-layer"} style={{ width, height }}>
-      <video height={height} width={width} controls={false} autoPlay loop>
+      <video
+        height={height}
+        width={width}
+        controls={false}
+        autoPlay
+        muted
+        playsInline
+        loop
+      >
         <source src={createVideoLink(collab)} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
