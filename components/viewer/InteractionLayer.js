@@ -32,6 +32,21 @@ export default function IntearctionLayer({ collab, dimensions }) {
   return <div className={styles.interactionLayer}>{elements}</div>;
 }
 
+function cleanTarget(target) {
+  const hasProtoPrefixed = [
+    "http:",
+    "https:",
+    "tel:",
+    "mailto:",
+  ].some((prefix) => target.startsWith(prefix));
+
+  if (hasProtoPrefixed) {
+    return target;
+  }
+  // http fallback
+  return "http://" + target;
+}
+
 function ILLink({ metadata, options, dimensions }) {
   const { position, size, relativeSize } = metadata;
   const { width: canvasWidth, height: canvasHeight } = relativeSize;
@@ -46,5 +61,6 @@ function ILLink({ metadata, options, dimensions }) {
     width: size.width * widthScale,
     height: size.height * heightScale,
   };
-  return <a href={options.target} style={style} />;
+
+  return <a href={cleanTarget(options.target)} style={style} />;
 }
