@@ -80,6 +80,7 @@ const getBlend = async (req, res) => {
 
   if (format?.toUpperCase() == "RECIPE") {
     const recipe = {
+      id,
       images,
       externalImages,
       audios,
