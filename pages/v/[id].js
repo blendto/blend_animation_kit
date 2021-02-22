@@ -1,7 +1,9 @@
 import * as React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Spin, Typography, Card, Result } from "antd";
+import { Spin, Typography, Card, Result, Drawer, Button } from "antd";
+import { LinkOutlined } from "@ant-design/icons";
+
 import Head from "next/head";
 
 import styles from "../../styles/Viewer.module.css";
@@ -52,8 +54,12 @@ const optimalVideoDimensions = ({ width, height }) => {
   return { width: Math.ceil(720 * scale), height: Math.ceil(1280 * scale) };
 };
 
-const createLink = (id) => {
-  return `${process.env.NEXT_PUBLIC_SELF_BASE_PATH}v/${id}`;
+const createLink = (id, remix = false) => {
+  var link = `${process.env.NEXT_PUBLIC_SELF_BASE_PATH}v/${id}`;
+  if (remix) {
+    return `${link}?a=rx`;
+  }
+  return link;
 };
 
 function getWindowDimensions() {
@@ -87,6 +93,7 @@ export default function CollabViewerPage(props) {
   const { id } = router.query;
   const [isLoading, setIsLoading] = useState(!props.collab);
   const [collab, setCollab] = useState(props.collab);
+  const [isDrawerVisible, setDrawerVisibility] = useState(false);
   const windowDimensions = useWindowDimensions();
   let videoDimensions;
   if (windowDimensions) {
@@ -178,7 +185,41 @@ export default function CollabViewerPage(props) {
           />
         ) : null}
       </div>
+      <BlendButton onClick={() => setDrawerVisibility(true)} />
+      <BlendDrawer
+        collab={collab}
+        visible={isDrawerVisible}
+        onClose={() => setDrawerVisibility(false)}
+      />
       {/* <ShareCard collab={collab} dimensions={videoDimensions} /> */}
+    </div>
+  );
+}
+
+function BlendDrawer({ collab, visible, onClose }) {
+  const onClick = () => {
+    window.open(createLink(collab.id, true), "_blank");
+  };
+
+  return (
+    <Drawer
+      title="Blend"
+      placement={"bottom"}
+      closable={true}
+      onClose={onClose}
+      visible={visible}
+    >
+      <Button block type="primary" icon={<LinkOutlined />} onClick={onClick}>
+        Remix this Blend
+      </Button>
+    </Drawer>
+  );
+}
+
+function BlendButton({ onClick }) {
+  return (
+    <div className={styles.blendButton} onClick={onClick}>
+      <span className={styles.text}>Blend</span>
     </div>
   );
 }
