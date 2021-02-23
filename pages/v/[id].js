@@ -1,7 +1,16 @@
 import * as React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Spin, Typography, Card, Result, Drawer, Button } from "antd";
+import {
+  Spin,
+  Typography,
+  Card,
+  Result,
+  Drawer,
+  Button,
+  Row,
+  message,
+} from "antd";
 import { LinkOutlined } from "@ant-design/icons";
 
 import Head from "next/head";
@@ -10,7 +19,7 @@ import styles from "../../styles/Viewer.module.css";
 import { _getCollab } from "../api/collab/[id]";
 import IntearctionLayer from "../../components/viewer/InteractionLayer";
 
-const { Paragraph } = Typography;
+const { Paragraph, Text } = Typography;
 
 const fetchData = async (id) => {
   return await fetch(`/api/collab/${id}`).then((res) => {
@@ -59,6 +68,12 @@ const createLink = (id, remix = false) => {
   if (remix) {
     return `${link}?a=rx`;
   }
+  return link;
+};
+
+const createCustomSchemeLink = (id) => {
+  var link = `blend://blend.to/remix/${id}`;
+
   return link;
 };
 
@@ -198,7 +213,10 @@ export default function CollabViewerPage(props) {
 
 function BlendDrawer({ collab, visible, onClose }) {
   const onClick = () => {
-    window.open(createLink(collab.id, true), "_blank");
+    window.location.replace(createCustomSchemeLink(collab.id));
+    setTimeout(() => {
+      message.error("Couldn't open. Do you have the app?", 2000);
+    }, 1000);
   };
 
   return (
@@ -212,6 +230,9 @@ function BlendDrawer({ collab, visible, onClose }) {
       <Button block type="primary" icon={<LinkOutlined />} onClick={onClick}>
         Remix this Blend
       </Button>
+      <Row justify="end">
+        <Text>*requires app</Text>
+      </Row>
     </Drawer>
   );
 }
