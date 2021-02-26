@@ -2,13 +2,15 @@ import * as React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import {
+  List,
   Spin,
   Typography,
-  Card,
   Result,
   Drawer,
   Button,
   Row,
+  Col,
+  Image,
   message,
 } from "antd";
 import { LinkOutlined } from "@ant-design/icons";
@@ -19,7 +21,7 @@ import styles from "../../styles/Viewer.module.css";
 import { _getCollab } from "../api/collab/[id]";
 import IntearctionLayer from "../../components/viewer/InteractionLayer";
 
-const { Paragraph, Text } = Typography;
+const { Title, Text } = Typography;
 
 const fetchData = async (id) => {
   return await fetch(`/api/collab/${id}`).then((res) => {
@@ -226,6 +228,7 @@ function BlendDrawer({ collab, visible, onClose }) {
       closable={true}
       onClose={onClose}
       visible={visible}
+      height={"60vh"}
     >
       <Button block type="primary" icon={<LinkOutlined />} onClick={onClick}>
         Remix this Blend
@@ -233,7 +236,59 @@ function BlendDrawer({ collab, visible, onClose }) {
       <Row justify="end">
         <Text>*requires app</Text>
       </Row>
+
+      <Credits collab={collab} />
     </Drawer>
+  );
+}
+
+function Credits({ collab }) {
+  const credits = collab.externalImages.reduce((resultArray, extImg) => {
+    if (extImg.source == "UNSPLASH" && extImg.credit != null) {
+      const { credit } = extImg;
+      resultArray.push({
+        thumbnail: `${extImg.url}&fm=jpg&w=100&fit=max`,
+        authorName: credit.name,
+        authorUrl: `${credit.url}?utm_source=djfy&utm_medium=referral`,
+        sourceLabel: "Unsplash",
+        sourceUrl: "https://unsplash.com/?utm_source=djfy&utm_medium=referral",
+      });
+      return resultArray;
+    }
+    return resultArray;
+  }, []);
+  if (!credits.length) {
+    return null;
+  }
+  return (
+    <Col>
+      <Title level={3}>Credits</Title>
+      <List
+        itemLayout="horizontal"
+        dataSource={credits}
+        renderItem={(item) => (
+          <List.Item
+            extra={
+              <a href={item.sourceUrl} target="_blank">
+                {item.sourceLabel}
+              </a>
+            }
+          >
+            <List.Item.Meta
+              avatar={<Image width={50} src={item.thumbnail} preview={false} />}
+              title={
+                <span>
+                  Photo by{" "}
+                  <a href={item.authorUrl} target="_blank">
+                    {item.authorName}
+                  </a>
+                </span>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </Col>
   );
 }
 
@@ -241,23 +296,6 @@ function BlendButton({ onClick }) {
   return (
     <div className={styles.blendButton} onClick={onClick}>
       <span className={styles.text}>Blend</span>
-    </div>
-  );
-}
-
-function ShareCard({ collab, dimensions }) {
-  if (!dimensions) {
-    return null;
-  }
-  const { width, height } = dimensions;
-
-  return (
-    <div style={{ width }}>
-      <Card title="Share">
-        <span>
-          <Paragraph copyable>{createLink(collab.id)}</Paragraph>
-        </span>
-      </Card>
     </div>
   );
 }
