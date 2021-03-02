@@ -116,10 +116,9 @@ const submitCollab = async (req, res) => {
     return res.status(400).json({ message: "unsupported source version" });
   }
 
-  const imageObjects = images.map(({ fileKey, file, imageType }) => ({
+  const imageObjects = images.map(({ fileKey, uid }) => ({
     uri: fileKey,
-    file,
-    imageType,
+    uid,
   }));
 
   const audioObjects = audios.map(({ fileKey }) => ({ uri: fileKey }));
