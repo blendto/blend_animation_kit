@@ -7,7 +7,7 @@ const COLLABS_QUEUE_URL =
   "https://sqs.us-east-2.amazonaws.com/558879754161/collab-creation-queue";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
-const CURRENT_ENCODER_VERSION = 1.6;
+const CURRENT_ENCODER_VERSION = 2.0;
 
 export const _getBlend = async (id) => {
   return await DynamoDB.getItem({
