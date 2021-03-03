@@ -49,7 +49,7 @@ const trimInteractions = (collab) => {
 
 const getBlend = async (req, res) => {
   const {
-    query: { id, format },
+    query: { id, format, target },
   } = req;
 
   const blend = await _getBlend(id);
@@ -93,6 +93,17 @@ const getBlend = async (req, res) => {
       interactions,
       metadata,
     };
+
+    if (metadata.source.version >= 2.0 && target == null) {
+      return res.status(400).json({
+        message:
+          "This recipe cannot be remixed on this app version. Please upgrade the app.",
+      });
+    } else if (metadata.source.version < 2.0 && target >= 2.0) {
+      return res.status(400).json({
+        message: "This recipe is old and can no longer be blended :(",
+      });
+    }
 
     res.send(recipe);
     return;
