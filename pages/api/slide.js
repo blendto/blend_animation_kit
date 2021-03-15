@@ -1,5 +1,5 @@
 import { ServerError, UserError } from "../../server/base/errors";
-import { createSignedUploadUrl } from "../../server/external/s3uploader";
+import { createSignedUploadUrl } from "../../server/external/s3";
 
 const VALID_EXTENSIONS = ["pdf"];
 
