@@ -124,3 +124,20 @@ export const getObject = async (bucketName, fileKey) => {
     });
   });
 };
+
+export const uploadObject = async (bucketName, fileKey, stream) => {
+  return new Promise((resolve, reject) => {
+    const params = {
+      Bucket: bucketName,
+      Key: fileKey,
+      Body: stream,
+    };
+    s3.upload(params, (err, data) => {
+      if (err) {
+        console.error(err, err.stack);
+        return reject(new ServerError("Something went wrong!"));
+      }
+      return resolve(data);
+    });
+  });
+};

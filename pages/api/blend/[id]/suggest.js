@@ -1,14 +1,17 @@
 import { _getBlend } from "../[id]";
-import { UserError, ServerError } from "server/base/errors";
+import { UserError } from "server/base/errors";
 import ToolkitApi from "../../../../server/internal/toolkit";
 
 import {
   COLLAB_REQ_STORE_BUCKET,
   doesObjectExist,
   getObject,
+  uploadObject,
 } from "../../../../server/external/s3";
 
 const toolkitApi = new ToolkitApi();
+
+const STATIC_RECIPE_LIST = ["test-1"];
 
 export default async (req, res) => {
   const { method } = req;
@@ -45,15 +48,50 @@ const suggestRecipes = async (req, res) => {
   let originalImage;
   try {
     originalImage = await getObject(COLLAB_REQ_STORE_BUCKET, fileKeys.original);
+
+    const fileKeyParts = fileKeys.original.split("/");
+
+    const [fileNameWithExt] = fileKeyParts.slice(-1);
+
+    const fileNameWithoutExt = fileNameWithExt.split(".").slice(0, -1).join("");
+
+    const bgRemovedFileName = `${fileNameWithoutExt}-bg-removed.png`;
+
+    const bgRemovedFileKey = [
+      ...fileKeyParts.slice(0, -1),
+      "/",
+      bgRemovedFileName,
+    ].join("");
+
+    const bgRemovedElementExists = await doesObjectExist(
+      COLLAB_REQ_STORE_BUCKET,
+      bgRemovedFileKey
+    );
+
+    if (!bgRemovedElementExists) {
+      // As of now this logic just works by assuming file name is unique
+      // This works because we generate a random file name when we store the file name
+      // Re-evaluate in the future
+      const bgRemoved = await toolkitApi.removeBg(
+        originalImage,
+        fileNameWithExt
+      );
+
+      await uploadObject(COLLAB_REQ_STORE_BUCKET, bgRemovedFileKey, bgRemoved);
+    }
+
+    return res.send({
+      fileKeys: {
+        original: fileKeys.original,
+        bgRemoved: bgRemovedFileKey,
+      },
+      suggestedRecipes: STATIC_RECIPE_LIST,
+    });
   } catch (err) {
     if (err instanceof UserError) {
       return res.status(400).send({ message: err.message });
     }
-    return res.status(500).send({ message: err.message });
+    console.error(err);
+    return res.status(500).send({ message: "Something went wrong" });
   }
-
-  const bgRemoved = await toolkitApi.removeBg(originalImage);
-
-  res.setHeader("Content-Type", "image/png");
-  return res.send(bgRemoved);
 };
