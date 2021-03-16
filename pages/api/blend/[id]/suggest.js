@@ -8,6 +8,7 @@ import {
   getObject,
   uploadObject,
 } from "../../../../server/external/s3";
+import { handleNetworkExceptions } from "../../../../server/base/errors";
 
 const toolkitApi = new ToolkitApi();
 
@@ -46,7 +47,7 @@ const suggestRecipes = async (req, res) => {
   }
 
   let originalImage;
-  try {
+  return await handleNetworkExceptions(res, async () => {
     originalImage = await getObject(COLLAB_REQ_STORE_BUCKET, fileKeys.original);
 
     const fileKeyParts = fileKeys.original.split("/");
@@ -87,11 +88,5 @@ const suggestRecipes = async (req, res) => {
       },
       suggestedRecipes: STATIC_RECIPE_LIST,
     });
-  } catch (err) {
-    if (err instanceof UserError) {
-      return res.status(400).send({ message: err.message });
-    }
-    console.error(err);
-    return res.status(500).send({ message: "Something went wrong" });
-  }
+  });
 };
