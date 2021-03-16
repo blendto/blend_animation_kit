@@ -1,17 +1,11 @@
 import { UserError, ServerError } from "../base/errors";
-import { IncomingForm } from "formidable";
-import fs from "fs";
 import { nanoid } from "nanoid";
-import path from "path";
 
 import AWS from "./aws";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
 export const COLLAB_REQ_STORE_BUCKET = "collabice-request-store";
-
-const COLLAB_FILES_BASE_URL =
-  "https://collabice-request-store.s3.us-east-2.amazonaws.com/";
 
 const fileOptions = {
   multiple: false, //one file per request
@@ -88,87 +82,62 @@ export const createSignedUploadUrl = async (
   return signedPostReq;
 };
 
-export const uploadTempUserContent = async (req) => {
-  const formParser = new IncomingForm(fileOptions);
-  let [fields, files] = [];
-  try {
-    [fields, files] = await new Promise((resolve, reject) => {
-      formParser.parse(req, (err, fields, files) => {
-        if (err) {
-          console.error(err);
-          reject(err);
-          return;
+export const doesObjectExist = async (bucketName, fileKey) => {
+  return new Promise((resolve, reject) => {
+    const params = {
+      Bucket: bucketName,
+      Key: fileKey,
+    };
+    s3.headObject(params, (err, data) => {
+      if (err) {
+        if (err.code == "NotFound") {
+          return resolve(false);
         }
-
-        resolve([fields, files]);
-      });
+        console.error(err);
+        return reject(new ServerError("Something went wrong!"));
+      }
+      if (data) {
+        return resolve(true);
+      }
+      return resolve(false);
     });
-  } catch (err) {
-    console.error(err);
-    throw new UserError("file upload failed");
-  }
-
-  const file = files["file"];
-  const collabId = fields["collabId"];
-
-  if (!collabId) {
-    throw new UserError("No collabId found in the request");
-  }
-
-  if (!file) {
-    throw new UserError("No file found");
-  }
-
-  const fileStream = fs.createReadStream(file.path);
-  fileStream.on("error", function (err) {
-    console.error(err);
-    throw new ServerError("File stream error");
   });
-
-  const uploadedFileNameSplits = file.name.split(".");
-  const fileExtension =
-    uploadedFileNameSplits[uploadedFileNameSplits.length - 1];
-
-  const fileNameToStore = `${collabId}/${nanoid()}.${fileExtension}`;
-
-  const uploadParams = {
-    Bucket: COLLAB_REQ_STORE_BUCKET,
-    Body: fileStream,
-    Key: fileNameToStore,
-  };
-
-  let fileKey;
-  try {
-    fileKey = await new Promise((resolve, reject) => {
-      s3.upload(uploadParams, function (err, data) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(data.Key);
-      });
-    });
-  } catch (err) {
-    console.error(err);
-    throw new ServerError("Something went wrong!");
-  }
-
-  return { fileKey, url: COLLAB_FILES_BASE_URL + fileKey };
 };
 
-export const copyObject = (Bucket, CopySource, Key) => {
-  const params = {
-    Bucket,
-    CopySource,
-    Key,
-  };
+export const getObject = async (bucketName, fileKey) => {
   return new Promise((resolve, reject) => {
-    s3.copyObject(params, (err, data) => {
+    const params = {
+      Bucket: bucketName,
+      Key: fileKey,
+    };
+    s3.getObject(params, (err, data) => {
       if (err) {
-        reject(err);
-        return;
+        if (err.code == "NoSuchKey") {
+          return reject(
+            new UserError("Can't find an image with specified key!")
+          );
+        }
+        console.error(err);
+        return reject(new ServerError("Something went wrong!"));
       }
-      resolve(data);
+      return resolve(data.Body);
+    });
+  });
+};
+
+export const uploadObject = async (bucketName, fileKey, stream) => {
+  return new Promise((resolve, reject) => {
+    const params = {
+      Bucket: bucketName,
+      Key: fileKey,
+      Body: stream,
+    };
+    s3.upload(params, (err, data) => {
+      if (err) {
+        console.error(err, err.stack);
+        return reject(new ServerError("Something went wrong!"));
+      }
+      return resolve(data);
     });
   });
 };

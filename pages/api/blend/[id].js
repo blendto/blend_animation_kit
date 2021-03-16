@@ -1,4 +1,3 @@
-import { Empty } from "antd";
 import DynamoDB from "../../../server/external/dynamodb";
 import SQS from "../../../server/external/sqs";
 
