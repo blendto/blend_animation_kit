@@ -22,7 +22,9 @@ export default async (req, res) => {
       await suggestRecipes(req, res);
       break;
     default:
-      res.status(500).json({ code: 500, message: "Something went wrong!" });
+      return res
+        .status(500)
+        .json({ code: 500, message: "Something went wrong!" });
   }
 };
 
@@ -48,9 +50,7 @@ const suggestRecipes = async (req, res) => {
 
   let originalImage;
   return await handleNetworkExceptions(res, async () => {
-    console.log("Getting original object");
     originalImage = await getObject(COLLAB_REQ_STORE_BUCKET, fileKeys.original);
-    console.log("Got original object");
 
     const fileKeyParts = fileKeys.original.split("/");
 
@@ -70,7 +70,6 @@ const suggestRecipes = async (req, res) => {
       COLLAB_REQ_STORE_BUCKET,
       bgRemovedFileKey
     );
-    console.log("Object exists check done");
 
     if (!bgRemovedElementExists) {
       // As of now this logic just works by assuming file name is unique
@@ -81,11 +80,7 @@ const suggestRecipes = async (req, res) => {
         fileNameWithExt
       );
 
-      console.log("Removed BG");
-
       await uploadObject(COLLAB_REQ_STORE_BUCKET, bgRemovedFileKey, bgRemoved);
-
-      console.log("Uploaded Object");
     }
 
     return res.send({
