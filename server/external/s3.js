@@ -90,7 +90,10 @@ export const doesObjectExist = async (bucketName, fileKey) => {
     };
     s3.headObject(params, (err, data) => {
       if (err) {
-        if (err.code == "NotFound") {
+        // If object does not exist it gives:
+        // 404 NoSuchKey if user has ListBucket permission
+        // 403 AccessDenied if user does not have ListBucket permission
+        if (err.code == "NoSuchKey" || err.code == "AccessDenied") {
           return resolve(false);
         }
         console.error(err);
@@ -112,7 +115,10 @@ export const getObject = async (bucketName, fileKey) => {
     };
     s3.getObject(params, (err, data) => {
       if (err) {
-        if (err.code == "NoSuchKey") {
+        // If object does not exist it gives:
+        // 404 NoSuchKey if user has ListBucket permission
+        // 403 AccessDenied if user does not have ListBucket permission
+        if (err.code == "NoSuchKey" || err.code == "AccessDenied") {
           return reject(
             new UserError("Can't find an image with specified key!")
           );
