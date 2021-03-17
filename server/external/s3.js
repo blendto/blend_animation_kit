@@ -93,8 +93,7 @@ export const doesObjectExist = async (bucketName, fileKey) => {
         // If object does not exist it gives:
         // 404 NoSuchKey if user has ListBucket permission
         // 403 AccessDenied if user does not have ListBucket permission
-        console.log("amazon error code:" + err.code);
-        if (err.code == "NoSuchKey" || err.code == "AccessDenied") {
+        if (err.code == "NoSuchKey" || err.code == "Forbidden") {
           return resolve(false);
         }
         console.error(err);
@@ -118,9 +117,8 @@ export const getObject = async (bucketName, fileKey) => {
       if (err) {
         // If object does not exist it gives:
         // 404 NoSuchKey if user has ListBucket permission
-        // 403 AccessDenied if user does not have ListBucket permission
-        console.log("amazon error code:" + err.code);
-        if (err.code == "NoSuchKey" || err.code == "AccessDenied") {
+        // 403 Forbidden if user does not have ListBucket permission
+        if (err.code == "NoSuchKey" || err.code == "Forbidden") {
           return reject(
             new UserError("Can't find an image with specified key!")
           );
