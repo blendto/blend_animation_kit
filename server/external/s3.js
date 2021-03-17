@@ -93,6 +93,7 @@ export const doesObjectExist = async (bucketName, fileKey) => {
         // If object does not exist it gives:
         // 404 NoSuchKey if user has ListBucket permission
         // 403 AccessDenied if user does not have ListBucket permission
+        print("amazon error code:" + err.code);
         if (err.code == "NoSuchKey" || err.code == "AccessDenied") {
           return resolve(false);
         }
