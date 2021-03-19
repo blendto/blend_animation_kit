@@ -86,7 +86,7 @@ const suggestRecipes = async (req, res) => {
     return res.send({
       fileKeys: {
         original: fileKeys.original,
-        bgRemoved: bgRemovedFileKey,
+        withoutBg: bgRemovedFileKey,
       },
       suggestedRecipes: STATIC_RECIPE_LIST,
     });

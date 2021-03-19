@@ -7,7 +7,7 @@ export interface PreviewRequestParams {
   recipeId: string;
   fileKeys: {
     original: string;
-    bgRemoved: string;
+    withoutBg: string;
   };
 }
 
