@@ -12,7 +12,7 @@ import { handleNetworkExceptions } from "../../../../server/base/errors";
 
 const toolkitApi = new ToolkitApi();
 
-const STATIC_RECIPE_LIST = ["test-1"];
+const STATIC_RECIPE_LIST = ["fas-0001", "fas-0002", "fas-0003", "fas-0004"];
 
 export default async (req, res) => {
   const { method } = req;
