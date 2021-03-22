@@ -77,7 +77,8 @@ const suggestRecipes = async (req, res) => {
       // Re-evaluate in the future
       const bgRemoved = await toolkitApi.removeBg(
         originalImage,
-        fileNameWithExt
+        fileNameWithExt,
+        true
       );
 
       await uploadObject(COLLAB_REQ_STORE_BUCKET, bgRemovedFileKey, bgRemoved);
