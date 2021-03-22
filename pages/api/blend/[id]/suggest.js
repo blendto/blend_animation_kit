@@ -1,5 +1,4 @@
 import { _getBlend } from "../[id]";
-import { UserError } from "server/base/errors";
 import ToolkitApi from "../../../../server/internal/toolkit";
 
 import {
@@ -12,7 +11,16 @@ import { handleNetworkExceptions } from "../../../../server/base/errors";
 
 const toolkitApi = new ToolkitApi();
 
-const STATIC_RECIPE_LIST = ["fas-0001", "fas-0002", "fas-0003", "fas-0004"];
+const STATIC_RECIPE_LIST = [
+  "fas-0001",
+  "fas-0002",
+  "fas-0003",
+  "fas-0004",
+  "fas-0005",
+  "fas-0006",
+  "fas-0007",
+  "fas-0008",
+];
 
 export default async (req, res) => {
   const { method } = req;
