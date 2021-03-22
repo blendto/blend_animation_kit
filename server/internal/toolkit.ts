@@ -16,11 +16,13 @@ export default class ToolkitApi {
   ): Promise<IncomingMessage> => {
     const form = new FormData();
     form.append("file", fileBuffer, fileName);
-    form.append("crop", crop.toString());
     return (
       await this.httpClient.post("/images/removeBg", form, {
         headers: form.getHeaders(),
         responseType: "stream",
+        params: {
+          crop: crop.toString(),
+        },
       })
     ).data;
   };
