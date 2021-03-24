@@ -20,6 +20,10 @@ const STATIC_RECIPE_LIST = [
   "fas-0006",
   "fas-0007",
   "fas-0008",
+  "fas-0009",
+  "fas-0010",
+  "fas-0011",
+  "fas-0012",
 ];
 
 export default async (req, res) => {
