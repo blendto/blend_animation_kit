@@ -6,6 +6,7 @@ import AWS from "./aws";
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
 export const COLLAB_REQ_STORE_BUCKET = "collabice-request-store";
+export const RECIPE_INGREDIENTS_BUCKET = "blend-recipe-ingredient-store";
 
 const fileOptions = {
   multiple: false, //one file per request
@@ -139,6 +140,28 @@ export const uploadObject = async (bucketName, fileKey, stream) => {
       Body: stream,
     };
     s3.upload(params, (err, data) => {
+      if (err) {
+        console.error(err, err.stack);
+        return reject(new ServerError("Something went wrong!"));
+      }
+      return resolve(data);
+    });
+  });
+};
+
+export const copyObject = async (
+  sourceBucket,
+  sourceKey,
+  destBucket,
+  destKey
+) => {
+  return new Promise((resolve, reject) => {
+    const params = {
+      Bucket: destBucket,
+      CopySource: `/${sourceBucket}/${sourceKey}`,
+      Key: destKey,
+    };
+    s3.copyObject(params, (err, data) => {
       if (err) {
         console.error(err, err.stack);
         return reject(new ServerError("Something went wrong!"));
