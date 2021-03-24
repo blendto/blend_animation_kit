@@ -105,4 +105,5 @@ export interface Recipe {
   images: StoredImage[];
   recipeDetails: RecipeDetails;
   interactions: Interaction[];
+  metadata: RecipeMetadata;
 }
