@@ -30,7 +30,7 @@ export const _getRecipe = async (id: string): Promise<Recipe> => {
 
 const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
-    query: { id },
+    query: { id: blendId },
     body,
   } = req;
 
@@ -39,9 +39,11 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       .status(400)
       .json({ code: 400, message: "request body is mandatory!" });
   }
-  const { blendId, fileKeys } = req.body;
-  if (!blendId) {
-    return res.status(400).json({ code: 400, message: "blendId not present!" });
+  const { recipeId, fileKeys } = req.body;
+  if (!recipeId) {
+    return res
+      .status(400)
+      .json({ code: 400, message: "recipeId not present!" });
   }
 
   if (
@@ -56,7 +58,7 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   let recipe: Recipe;
 
   try {
-    recipe = await _getRecipe(id as string);
+    recipe = await _getRecipe(recipeId as string);
   } catch (ex) {
     if (!(ex instanceof ServerError)) {
       console.error(ex);
@@ -78,7 +80,7 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       return { ...image, uri: fileKeys.original };
     }
     let uriParts = image.uri.split("/");
-    uriParts[0] = blendId;
+    uriParts[0] = blendId as string;
     let targetUri = uriParts.join("/");
     copyFilePromises.push(
       copyObject(
