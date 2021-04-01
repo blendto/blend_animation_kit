@@ -11,20 +11,12 @@ import { handleNetworkExceptions } from "../../../../server/base/errors";
 
 const toolkitApi = new ToolkitApi();
 
-const STATIC_RECIPE_LIST = [
-  "fas-0001",
-  "fas-0002",
-  "fas-0003",
-  "fas-0004",
-  "fas-0005",
-  "fas-0006",
-  "fas-0007",
-  "fas-0008",
-  "fas-0009",
-  "fas-0010",
-  "fas-0011",
-  "fas-0012",
-];
+const FASHION_STATIC_TEMPLATE_COUNT = 51;
+
+const STATIC_RECIPE_LIST = Array.from(
+  new Array(FASHION_STATIC_TEMPLATE_COUNT),
+  (x, i) => "fas-" + (i + 1).toString().padStart(4, "0")
+);
 
 export default async (req, res) => {
   const { method } = req;
@@ -96,12 +88,16 @@ const suggestRecipes = async (req, res) => {
       await uploadObject(COLLAB_REQ_STORE_BUCKET, bgRemovedFileKey, bgRemoved);
     }
 
+    const randomTemplates = STATIC_RECIPE_LIST.sort(
+      () => 0.5 - Math.random()
+    ).slice(0, 20);
+
     return res.send({
       fileKeys: {
         original: fileKeys.original,
         withoutBg: bgRemovedFileKey,
       },
-      suggestedRecipes: STATIC_RECIPE_LIST,
+      suggestedRecipes: randomTemplates,
     });
   });
 };
