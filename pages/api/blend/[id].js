@@ -1,16 +1,12 @@
 import DynamoDB from "../../../server/external/dynamodb";
 import SQS from "../../../server/external/sqs";
 
-const COLLABS_TABLE = "COLLABS";
-const COLLABS_QUEUE_URL =
-  "https://sqs.us-east-2.amazonaws.com/558879754161/collab-creation-queue";
-
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 2.0;
 
 export const _getBlend = async (id) => {
   return await DynamoDB.getItem({
-    TableName: COLLABS_TABLE,
+    TableName: process.env.BLEND_DYNAMODB_TABLE,
     Key: {
       id,
     },
@@ -203,7 +199,7 @@ const submitBlend = async (req, res) => {
       ":metadata": { source },
     },
     Key: { id: id },
-    TableName: COLLABS_TABLE,
+    TableName: process.env.BLEND_DYNAMODB_TABLE,
     ReturnValues: "ALL_NEW",
   };
 
@@ -212,7 +208,7 @@ const submitBlend = async (req, res) => {
     const dbUpdateResponse = await DynamoDB.updateItem(params);
     updatedRecipe = dbUpdateResponse.Attributes;
 
-    await new SQS(COLLABS_QUEUE_URL).sendMessage({ id });
+    await new SQS(process.env.BLEND_GEN_QUEUE_URL).sendMessage({ id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });

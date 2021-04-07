@@ -1,8 +1,9 @@
 import { _getBlend } from "../[id]";
 import ToolkitApi from "../../../../server/internal/toolkit";
 
+import ConfigProvider from "../../../../server/base/ConfigProvider";
+
 import {
-  COLLAB_REQ_STORE_BUCKET,
   doesObjectExist,
   getObject,
   uploadObject,
@@ -54,7 +55,10 @@ const suggestRecipes = async (req, res) => {
 
   let originalImage;
   return await handleNetworkExceptions(res, async () => {
-    originalImage = await getObject(COLLAB_REQ_STORE_BUCKET, fileKeys.original);
+    originalImage = await getObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      fileKeys.original
+    );
 
     const fileKeyParts = fileKeys.original.split("/");
 
@@ -71,7 +75,7 @@ const suggestRecipes = async (req, res) => {
     ].join("");
 
     const bgRemovedElementExists = await doesObjectExist(
-      COLLAB_REQ_STORE_BUCKET,
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       bgRemovedFileKey
     );
 
@@ -85,7 +89,11 @@ const suggestRecipes = async (req, res) => {
         true
       );
 
-      await uploadObject(COLLAB_REQ_STORE_BUCKET, bgRemovedFileKey, bgRemoved);
+      await uploadObject(
+        ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+        bgRemovedFileKey,
+        bgRemoved
+      );
     }
 
     const randomTemplates = STATIC_RECIPE_LIST.sort(

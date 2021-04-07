@@ -3,8 +3,6 @@ import { nanoid } from "nanoid";
 import DynamoDB from "../../server/external/dynamodb";
 import { DateTime } from "luxon";
 
-const COLLABS_TABLE = "COLLABS";
-
 export default async (req, res) => {
   const { method } = req;
 
@@ -24,7 +22,7 @@ const initCollab = async (req, res) => {
     collabRequestId = nanoid(8);
     try {
       const item = await DynamoDB.getItem({
-        TableName: COLLABS_TABLE,
+        TableName: process.env.BLEND_DYNAMODB_TABLE,
         Key: {
           id: collabRequestId,
         },
@@ -54,7 +52,7 @@ const initCollab = async (req, res) => {
 
   try {
     await DynamoDB.putItem({
-      TableName: COLLABS_TABLE,
+      TableName: process.env.BLEND_DYNAMODB_TABLE,
       Item: collab,
     });
   } catch (err) {

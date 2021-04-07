@@ -2,17 +2,9 @@ import { UserError, ServerError } from "../base/errors";
 import { nanoid } from "nanoid";
 
 import AWS from "./aws";
+import ConfigProvider from "../base/ConfigProvider";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
-
-export const COLLAB_REQ_STORE_BUCKET = "collabice-request-store";
-export const RECIPE_INGREDIENTS_BUCKET = "blend-recipe-ingredient-store";
-
-const fileOptions = {
-  multiple: false, //one file per request
-  maxFileSize: 10 * 1024 * 1024, //10 mb
-  maxFields: 2, //one file + id
-};
 
 const TEN_MB = 10 * 1024 * 1024;
 
@@ -54,14 +46,14 @@ export const createSignedUploadUrl = async (
   const fileNameToStore = `${collabId}/${nanoid()}.${extension}`;
 
   const params = {
-    Bucket: COLLAB_REQ_STORE_BUCKET,
+    Bucket: ConfigProvider.BLEND_INGREDIENTS_BUCKET,
     Fields: {
       key: fileNameToStore,
     },
     Expires: 60 * 10, // 10 min
     Conditions: [
       {
-        bucket: COLLAB_REQ_STORE_BUCKET,
+        bucket: ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       },
       {
         key: fileNameToStore, // our generated key

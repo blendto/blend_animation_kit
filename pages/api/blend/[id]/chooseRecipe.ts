@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import DynamoDB from "server/external/dynamodb";
-import {
-  copyObject,
-  COLLAB_REQ_STORE_BUCKET,
-  RECIPE_INGREDIENTS_BUCKET,
-} from "server/external/s3";
+import ConfigProvider from "server/base/ConfigProvider";
+import { copyObject } from "server/external/s3";
 import { ServerError } from "server/base/errors";
 import type { Recipe, ImageMetadata } from "server/base/models/recipe";
 
@@ -84,9 +81,9 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     let targetUri = uriParts.join("/");
     copyFilePromises.push(
       copyObject(
-        RECIPE_INGREDIENTS_BUCKET,
+        ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
         image.uri,
-        COLLAB_REQ_STORE_BUCKET,
+        ConfigProvider.BLEND_INGREDIENTS_BUCKET,
         targetUri
       )
     );
