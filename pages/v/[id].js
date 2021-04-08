@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import ConfigProvider from "../../server/base/ConfigProvider";
 import {
   List,
   Spin,
@@ -48,15 +49,12 @@ const pollUntilCreation = async (id) => {
   return await pollUntilCreation(id);
 };
 
-const OUTPUT_BUCKET_BASE_PATH =
-  "https://collabice-output.s3.us-east-2.amazonaws.com/";
-
 const createVideoLink = (collab) => {
-  return OUTPUT_BUCKET_BASE_PATH + collab?.filePath;
+  return ConfigProvider.OUTPUT_BASE_PATH + collab?.filePath;
 };
 
 const createThumbnailLink = (collab) => {
-  return OUTPUT_BUCKET_BASE_PATH + collab?.thumbnail;
+  return ConfigProvider.OUTPUT_BASE_PATH + collab?.thumbnail;
 };
 
 const optimalVideoDimensions = ({ width, height }) => {

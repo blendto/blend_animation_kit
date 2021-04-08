@@ -14,6 +14,10 @@ class ConfigProvider {
   public get RECIPE_INGREDIENTS_BUCKET() {
     return this.retrieveOrCrash("RECIPE_INGREDIENTS_BUCKET");
   }
+
+  public get OUTPUT_BASE_PATH() {
+    return this.retrieveOrCrash("OUTPUT_BASE_PATH");
+  }
 }
 
 export default new ConfigProvider();
