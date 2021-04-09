@@ -18,6 +18,14 @@ class ConfigProvider {
   public get OUTPUT_BASE_PATH() {
     return this.retrieveOrCrash("OUTPUT_BASE_PATH");
   }
+
+  public get TOOLKIT_BASE_PATH() {
+    return this.retrieveOrCrash("TOOLKIT_BASE_PATH");
+  }
+
+  public get VES_API_BASE_PATH() {
+    return this.retrieveOrCrash("VES_API_BASE_PATH");
+  }
 }
 
 export default new ConfigProvider();

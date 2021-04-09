@@ -1,7 +1,8 @@
 import axios from "axios";
+import ConfigProvider from "server/base/ConfigProvider";
 import { handleAxiosCall } from "server/helpers/network";
 
-const VES_SERVICE_BASE_URL = "https://toolkit.djfy.io/ves";
+const VES_SERVICE_BASE_URL = ConfigProvider.VES_API_BASE_PATH;
 
 export interface PreviewRequestParams {
   recipeId: string;

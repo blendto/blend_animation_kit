@@ -1,9 +1,9 @@
 import FormData from "form-data";
 import axios from "axios";
 import { IncomingMessage } from "http";
+import ConfigProvider from "server/base/ConfigProvider";
 
-const TOOLKIT_BASE_URL = "https://toolkit.djfy.io";
-
+const TOOLKIT_BASE_URL = ConfigProvider.TOOLKIT_BASE_PATH;
 export default class ToolkitApi {
   httpClient = axios.create({
     baseURL: TOOLKIT_BASE_URL,
