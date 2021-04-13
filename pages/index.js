@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <Layout>
       <Head>
-        <title>DJfy</title>
+        <title>Blend</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -26,8 +26,10 @@ export default function Home() {
               <Row>Are you lost?</Row>
               <Row>
                 Send us a mail at &nbsp;
-                <Link href="mailto:hello@djfy.io">hello@djfy.io</Link> &nbsp; if
-                you are.
+                <Link href="mailto:contact@blend.to">
+                  contact@blend.to
+                </Link>{" "}
+                &nbsp; if you are.
               </Row>
             </Col>
           </Row>

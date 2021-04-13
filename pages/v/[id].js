@@ -165,10 +165,10 @@ export default function CollabViewerPage(props) {
   return (
     <div className={styles.container}>
       <Head>
-        <title>{collab?.title ?? "DJfy"}</title>
+        <title>{collab?.title ?? "Blend"}</title>
         <link rel="icon" href="/favicon.ico" />
         <meta property="og:title" content={collab?.title} />
-        <meta property="og:description" content={"DJfy your ideas"} />
+        <meta property="og:description" content={"Made with 😻 with Blend"} />
         <meta property="og:type" content="video.other" />
         <meta property="og:url" content={createLink(collab?.id)} />
         <meta property="og:video" content={createVideoLink(collab)} />
@@ -186,7 +186,7 @@ export default function CollabViewerPage(props) {
         <meta property="fb:app_id" content="2680324515617353" />
 
         <meta name="twitter:title" content={collab?.title} />
-        <meta name="twitter:description" content={"DJfy your ideas"} />
+        <meta name="twitter:description" content={"Made with 😻 with Blend"} />
         <meta name="twitter:image" content={createThumbnailLink(collab)} />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
