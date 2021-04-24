@@ -3,6 +3,17 @@ import AWS from "./aws";
 var docClient = new AWS.DynamoDB.DocumentClient();
 
 export default class DynamoDB {
+  static scanItems(params) {
+    return new Promise((resolve, reject) => {
+      docClient.scan(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(data.Items);
+      });
+    });
+  }
+
   static getItem(params) {
     return new Promise((resolve, reject) => {
       docClient.get(params, (err, data) => {

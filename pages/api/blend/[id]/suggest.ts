@@ -1,14 +1,15 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+
 import { _getBlend } from "../[id]";
-import ToolkitApi from "../../../../server/internal/toolkit";
+import ToolkitApi from "server/internal/toolkit";
+import DynamoDB from "server/external/dynamodb";
 
-import ConfigProvider from "../../../../server/base/ConfigProvider";
+import ConfigProvider from "server/base/ConfigProvider";
 
-import {
-  doesObjectExist,
-  getObject,
-  uploadObject,
-} from "../../../../server/external/s3";
-import { handleNetworkExceptions } from "../../../../server/base/errors";
+import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
+import { handleNetworkExceptions } from "server/base/errors";
+import { Blend } from "server/base/models/blend";
+import { RecipeList } from "server/base/models/recipeList";
 
 const toolkitApi = new ToolkitApi();
 
@@ -19,7 +20,17 @@ const STATIC_RECIPE_LIST = Array.from(
   (x, i) => "fas-" + (i + 1).toString().padStart(4, "0")
 );
 
-export default async (req, res) => {
+export const _getRecipeLists = async ({ isEnabled = true } = {}): Promise<
+  RecipeList[]
+> => {
+  return await DynamoDB.scanItems({
+    TableName: process.env.RECIPE_LISTS_DYNAMODB_TABLE,
+    FilterExpression: "isEnabled = :iE",
+    ExpressionAttributeValues: { ":iE": isEnabled },
+  });
+};
+
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
@@ -33,15 +44,23 @@ export default async (req, res) => {
   }
 };
 
-const suggestRecipes = async (req, res) => {
+interface HeroImageFileKeys {
+  original: String;
+}
+
+interface SuggestRecipesRequestBody {
+  fileKeys: HeroImageFileKeys;
+}
+
+const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
     query: { id },
     body,
   } = req;
 
-  const { fileKeys } = body;
+  const { fileKeys } = body as SuggestRecipesRequestBody;
 
-  const blend = await _getBlend(id);
+  const blend: Blend = await _getBlend(id);
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });
@@ -53,7 +72,7 @@ const suggestRecipes = async (req, res) => {
     return;
   }
 
-  let originalImage;
+  let originalImage: Buffer;
   return await handleNetworkExceptions(res, async () => {
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -100,12 +119,15 @@ const suggestRecipes = async (req, res) => {
       () => 0.5 - Math.random()
     ).slice(0, 20);
 
+    const recipeList = await _getRecipeLists();
+
     return res.send({
       fileKeys: {
         original: fileKeys.original,
         withoutBg: bgRemovedFileKey,
       },
       suggestedRecipes: randomTemplates,
+      otherRecipes: recipeList,
     });
   });
 };
