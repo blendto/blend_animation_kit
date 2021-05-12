@@ -4,6 +4,12 @@ import { IncomingMessage } from "http";
 import ConfigProvider from "server/base/ConfigProvider";
 
 const TOOLKIT_BASE_URL = ConfigProvider.TOOLKIT_BASE_PATH;
+
+export interface ToolkitErrorResponse {
+  code?: string;
+  message: string;
+}
+
 export default class ToolkitApi {
   httpClient = axios.create({
     baseURL: TOOLKIT_BASE_URL,

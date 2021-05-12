@@ -1,7 +1,8 @@
 class UserError extends Error {
-  constructor(message) {
+  constructor(message, code) {
     super(message);
     this.name = "UserError";
+    this.code = code;
   }
 }
 

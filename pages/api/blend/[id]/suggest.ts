@@ -1,15 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { _getBlend } from "../[id]";
-import ToolkitApi from "server/internal/toolkit";
+import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
 import DynamoDB from "server/external/dynamodb";
 
 import ConfigProvider from "server/base/ConfigProvider";
 
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
-import { handleNetworkExceptions } from "server/base/errors";
+import { handleNetworkExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import { RecipeList } from "server/base/models/recipeList";
+import axios from "axios";
 
 const toolkitApi = new ToolkitApi();
 
@@ -102,17 +103,30 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       // As of now this logic just works by assuming file name is unique
       // This works because we generate a random file name when we store the file name
       // Re-evaluate in the future
-      const bgRemoved = await toolkitApi.removeBg(
-        originalImage,
-        fileNameWithExt,
-        true
-      );
+      try {
+        const bgRemoved = await toolkitApi.removeBg(
+          originalImage,
+          fileNameWithExt,
+          true
+        );
 
-      await uploadObject(
-        ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-        bgRemovedFileKey,
-        bgRemoved
-      );
+        await uploadObject(
+          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+          bgRemovedFileKey,
+          bgRemoved
+        );
+      } catch (ex) {
+        if (axios.isAxiosError(ex)) {
+          let data = "";
+          for await (const chunk of ex.response.data) {
+            data += chunk;
+          }
+          let error: ToolkitErrorResponse = JSON.parse(data);
+
+          throw new UserError(error.message, error.code);
+        }
+        throw ex;
+      }
     }
 
     const randomTemplates = STATIC_RECIPE_LIST.sort(

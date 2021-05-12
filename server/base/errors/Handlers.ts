@@ -10,7 +10,7 @@ export const handleNetworkExceptions = async (
     return await errorThrowingFunction();
   } catch (err) {
     if (err instanceof UserError) {
-      return res.status(400).send({ message: err.message });
+      return res.status(400).send({ message: err.message, code: err.code });
     } else if (err instanceof ServerError) {
       return res.status(500).send({ message: "Something went wrong!" });
     }
