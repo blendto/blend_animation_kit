@@ -135,6 +135,12 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const recipeList = await _getRecipeLists();
 
+    recipeList.sort(
+      (a, b) =>
+        (a.sortOrder || Number.MAX_SAFE_INTEGER) -
+        (b.sortOrder || Number.MAX_SAFE_INTEGER)
+    );
+
     return res.send({
       fileKeys: {
         original: fileKeys.original,

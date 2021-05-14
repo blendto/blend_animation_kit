@@ -3,4 +3,5 @@ export interface RecipeList {
   isEnabled: boolean;
   title: String;
   recipeIds: String[];
+  sortOrder?: number;
 }
