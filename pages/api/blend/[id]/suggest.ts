@@ -123,7 +123,13 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
           }
           let error: ToolkitErrorResponse = JSON.parse(data);
 
-          throw new UserError(error.message, error.code);
+          let errorMessage = error.message;
+
+          if (error.code == "unknown_foreground") {
+            errorMessage = "Unable to remove background";
+          }
+
+          throw new UserError(errorMessage, error.code);
         }
         throw ex;
       }
