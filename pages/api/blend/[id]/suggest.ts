@@ -14,13 +14,6 @@ import axios from "axios";
 
 const toolkitApi = new ToolkitApi();
 
-const FASHION_STATIC_TEMPLATE_COUNT = 51;
-
-const STATIC_RECIPE_LIST = Array.from(
-  new Array(FASHION_STATIC_TEMPLATE_COUNT),
-  (x, i) => "fas-" + (i + 1).toString().padStart(4, "0")
-);
-
 export const _getRecipeLists = async ({ isEnabled = true } = {}): Promise<
   RecipeList[]
 > => {
@@ -135,10 +128,6 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    const randomTemplates = STATIC_RECIPE_LIST.sort(
-      () => 0.5 - Math.random()
-    ).slice(0, 20);
-
     const recipeList = await _getRecipeLists();
 
     recipeList.sort(
@@ -146,6 +135,12 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
         (a.sortOrder || Number.MAX_SAFE_INTEGER) -
         (b.sortOrder || Number.MAX_SAFE_INTEGER)
     );
+
+    const randomTemplates = recipeList
+      .map((list) => list.recipeIds)
+      .flat()
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 20);
 
     return res.send({
       fileKeys: {
