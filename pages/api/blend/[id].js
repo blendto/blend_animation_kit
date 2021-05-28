@@ -111,6 +111,7 @@ const getBlend = async (req, res) => {
     filePath,
     imagePath,
     interactions: trimInteractions(blend),
+    isStatic: gifsOrStickers?.length <= 0 ?? true,
   };
 
   res.send(trimmedBlend);
