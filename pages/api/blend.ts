@@ -58,6 +58,7 @@ const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
+    return;
   }
 
   res.send(collab);
