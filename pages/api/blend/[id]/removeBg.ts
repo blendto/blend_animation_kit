@@ -1,56 +1,42 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import Joi from "joi";
+
 import { _getBlend } from "../[id]";
-import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
-import DynamoDB from "server/external/dynamodb";
-
-import ConfigProvider from "server/base/ConfigProvider";
-
-import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
-import { handleNetworkExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
-import { RecipeList } from "server/base/models/recipeList";
+import { handleNetworkExceptions, UserError } from "server/base/errors";
+import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
+import ConfigProvider from "server/base/ConfigProvider";
+import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
 import axios from "axios";
 
 const toolkitApi = new ToolkitApi();
-
-export const _getRecipeLists = async ({ isEnabled = true } = {}): Promise<
-  RecipeList[]
-> => {
-  return await DynamoDB.scanItems({
-    TableName: process.env.RECIPE_LISTS_DYNAMODB_TABLE,
-    FilterExpression: "isEnabled = :iE",
-    ExpressionAttributeValues: { ":iE": isEnabled },
-  });
-};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
     case "POST":
-      await suggestRecipes(req, res);
+      await removeBgAndStore(req, res);
       break;
     default:
-      return res.status(404).json({ code: 404, message: "Wrong page/" });
+      return res.status(404).json({ code: 404, message: "Wrong page/method" });
   }
 };
 
-interface HeroImageFileKeys {
-  original: String;
+interface RemoveBgRequest {
+  fileKey: String;
 }
 
-interface SuggestRecipesRequestBody {
-  fileKeys: HeroImageFileKeys;
-}
+export const RemoveBgRequestSchema = Joi.object({
+  fileKey: Joi.string().required(),
+});
 
-const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
+const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
     query: { id },
     body,
   } = req;
-
-  const { fileKeys } = body as SuggestRecipesRequestBody;
 
   const blend: Blend = await _getBlend(id);
 
@@ -59,19 +45,23 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  if (!fileKeys || typeof fileKeys != "object" || !fileKeys.original) {
-    res.status(400).send({ message: "Invalid filekeys" });
+  const { error } = RemoveBgRequestSchema.validate(body);
+
+  if (error) {
+    res.status(400).send({ message: error.details[0].message });
     return;
   }
+
+  const { fileKey } = body as RemoveBgRequest;
 
   let originalImage: Buffer;
   return await handleNetworkExceptions(res, async () => {
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-      fileKeys.original
+      fileKey
     );
 
-    const fileKeyParts = fileKeys.original.split("/");
+    const fileKeyParts = fileKey.split("/");
 
     const [fileNameWithExt] = fileKeyParts.slice(-1);
 
@@ -126,27 +116,9 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    const recipeList = await _getRecipeLists();
-
-    recipeList.sort(
-      (a, b) =>
-        (a.sortOrder || Number.MAX_SAFE_INTEGER) -
-        (b.sortOrder || Number.MAX_SAFE_INTEGER)
-    );
-
-    const randomTemplates = recipeList
-      .map((list) => list.recipeIds)
-      .flat()
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 20);
-
-    return res.send({
-      fileKeys: {
-        original: fileKeys.original,
-        withoutBg: bgRemovedFileKey,
-      },
-      suggestedRecipes: randomTemplates,
-      otherRecipes: recipeList,
+    res.send({
+      original: fileKey,
+      withoutBg: bgRemovedFileKey,
     });
   });
 };
