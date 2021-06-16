@@ -2,7 +2,7 @@ import DynamoDB from "../../../server/external/dynamodb";
 import SQS from "../../../server/external/sqs";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
-const CURRENT_ENCODER_VERSION = 2.0;
+const CURRENT_ENCODER_VERSION = 2.1;
 
 export const _getBlend = async (id) => {
   return await DynamoDB.getItem({
