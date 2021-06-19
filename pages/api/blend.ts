@@ -54,9 +54,9 @@ const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-export const addBlendToDB = async (id: string, userId: string) => {
+export const addBlendToDB = async (id: string, userId?: string) => {
   const now = Date.now();
-  const blend = {
+  let blend = {
     id: id,
     status: "INITIALIZED",
     statusUpdates: [
@@ -66,8 +66,8 @@ export const addBlendToDB = async (id: string, userId: string) => {
       },
     ],
     expireAt: DateTime.local().plus({ days: 1 }).startOf("second").toSeconds(),
-    createdBy: userId,
     createdAt: now,
+    ...(userId !== null && { createdBy: userId }),
   };
 
   await DynamoDB.putItem({
