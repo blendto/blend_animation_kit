@@ -1,4 +1,5 @@
 import { convertLegacyProps } from "antd/lib/button/button";
+import { parse } from "node:path";
 
 class ConfigProvider {
   private retrieveOrCrash(envVar: string): string {
@@ -32,6 +33,15 @@ class ConfigProvider {
 
   public get VES_API_BASE_PATH() {
     return this.retrieveOrCrash("VES_API_BASE_PATH");
+  }
+
+  public get FIREBASE_SERVICE_KEY() {
+    let parsedKey = JSON.parse(this.retrieveOrCrash("FIREBASE_SERVICE_KEY"));
+    parsedKey = {
+      ...parsedKey,
+      private_key: parsedKey["private_key"].replace(/\\n/g, "\n"),
+    };
+    return parsedKey;
   }
 }
 

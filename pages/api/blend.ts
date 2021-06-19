@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
+import firebase from "server/external/firebase";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -16,15 +17,20 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
-  let collabRequestId: String;
+  let blendRequestId: string;
+
+  const uid = await firebase.extractUserIdFromRequest({
+    request: req,
+    optional: true,
+  });
 
   do {
-    collabRequestId = nanoid(8);
+    blendRequestId = nanoid(8);
     try {
       const item = await DynamoDB.getItem({
         TableName: process.env.BLEND_DYNAMODB_TABLE,
         Key: {
-          id: collabRequestId,
+          id: blendRequestId,
         },
       });
       if (!item) {
@@ -38,28 +44,35 @@ const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     }
   } while (true);
 
-  const collab = {
-    id: collabRequestId,
-    status: "INITIALIZED",
-    statusUpdates: [
-      {
-        status: "INITIALIZED",
-        on: Date.now(),
-      },
-    ],
-    expireAt: DateTime.local().plus({ days: 1 }).startOf("second").toSeconds(),
-  };
-
   try {
-    await DynamoDB.putItem({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
-      Item: collab,
-    });
+    const blend = await addBlendToDB(blendRequestId, uid);
+    return res.send(blend);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
     return;
   }
+};
 
-  res.send(collab);
+export const addBlendToDB = async (id: string, userId: string) => {
+  const now = Date.now();
+  const blend = {
+    id: id,
+    status: "INITIALIZED",
+    statusUpdates: [
+      {
+        status: "INITIALIZED",
+        on: now,
+      },
+    ],
+    expireAt: DateTime.local().plus({ days: 1 }).startOf("second").toSeconds(),
+    createdBy: userId,
+    createdAt: now,
+  };
+
+  await DynamoDB.putItem({
+    TableName: process.env.BLEND_DYNAMODB_TABLE,
+    Item: blend,
+  });
+  return blend;
 };

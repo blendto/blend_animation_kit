@@ -1,5 +1,7 @@
 import DynamoDB from "../../../server/external/dynamodb";
 import SQS from "../../../server/external/sqs";
+import { addBlendToDB } from "../blend";
+import firebase from "server/external/firebase";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 2.1;
@@ -55,7 +57,7 @@ const getBlend = async (req, res) => {
   }
 
   const {
-    id: collabId,
+    id: blendId,
     title,
     status,
     filePath,
@@ -105,7 +107,7 @@ const getBlend = async (req, res) => {
   }
 
   const trimmedBlend = {
-    id: collabId,
+    id: blendId,
     title,
     status,
     filePath,
@@ -122,6 +124,24 @@ const submitBlend = async (req, res) => {
     query: { id },
     body: recipe,
   } = req;
+
+  const uid = await firebase.extractUserIdFromRequest({
+    request: req,
+    optional: true,
+  });
+
+  let existingBlend = await _getBlend(id);
+
+  if (!existingBlend) {
+    // Blend might have expired, recreate it
+    existingBlend = await addBlendToDB(id, uid);
+  }
+
+  if (existingBlend.createdBy != uid) {
+    return res
+      .status(403)
+      .send({ message: "Cannot edit someone else's blend" });
+  }
 
   const {
     title,
@@ -174,18 +194,19 @@ const submitBlend = async (req, res) => {
     uri: fileKey,
   }));
 
+  const now = Date.now();
   const params = {
     UpdateExpression:
       "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
       "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
       "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-      "metadata = :metadata REMOVE expireAt",
+      "metadata = :metadata, updatedAt = :updatedAt REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
     },
     ExpressionAttributeValues: {
       ":s": "SUBMITTED",
-      ":update": [{ status: "SUBMITTED", on: Date.now() }],
+      ":update": [{ status: "SUBMITTED", on: now }],
       ":title": title,
       ":inter": interactions,
       ":images": imageObjects,
@@ -198,6 +219,7 @@ const submitBlend = async (req, res) => {
       ":buttons": buttons || [],
       ":links": links || [],
       ":metadata": { source },
+      ":updatedAt": now,
     },
     Key: { id: id },
     TableName: process.env.BLEND_DYNAMODB_TABLE,
