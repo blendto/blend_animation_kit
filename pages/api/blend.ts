@@ -67,6 +67,7 @@ export const addBlendToDB = async (id: string, userId?: string) => {
     ],
     expireAt: DateTime.local().plus({ days: 1 }).startOf("second").toSeconds(),
     createdAt: now,
+    createdOn: DateTime.utc().toISODate(),
     ...(userId !== null && { createdBy: userId }),
   };
 

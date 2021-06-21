@@ -195,12 +195,13 @@ const submitBlend = async (req, res) => {
   }));
 
   const now = Date.now();
+  const updatedOn = DateTime.utc().toISODate();
   const params = {
     UpdateExpression:
       "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
       "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
       "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-      "metadata = :metadata, updatedAt = :updatedAt REMOVE expireAt",
+      "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
     },
@@ -220,6 +221,7 @@ const submitBlend = async (req, res) => {
       ":links": links || [],
       ":metadata": { source },
       ":updatedAt": now,
+      ":updatedOn": updatedOn,
     },
     Key: { id: id },
     TableName: process.env.BLEND_DYNAMODB_TABLE,
