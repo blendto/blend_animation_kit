@@ -220,7 +220,7 @@ const submitBlend = async (req, res) => {
       ":texts": texts,
       ":buttons": buttons || [],
       ":links": links || [],
-      ":metadata": { source },
+      ":metadata": metadata,
       ":updatedAt": now,
       ":updatedOn": updatedOn,
     },
