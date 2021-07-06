@@ -235,6 +235,7 @@ const submitBlend = async (req, res) => {
     updatedRecipe = dbUpdateResponse.Attributes;
 
     await new SQS(process.env.BLEND_GEN_QUEUE_URL).sendMessage({ id });
+    await new SQS(process.env.BLEND_GEN_FFMPEG_QUEUE_URL).sendMessage({ id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
