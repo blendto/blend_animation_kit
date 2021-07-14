@@ -1,7 +1,8 @@
 import VesApi from "server/internal/ves";
-import { handleServerExceptions } from "../../../../server/base/errors/Handlers";
+import { handleServerExceptions } from "server/base/errors/Handlers";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async (req, res) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
@@ -15,7 +16,7 @@ export default async (req, res) => {
 
 const vesapi = new VesApi();
 
-const generatePreview = async (req, res) => {
+const generatePreview = async (req: NextApiRequest, res: NextApiResponse) => {
   const { body } = req;
 
   return await handleServerExceptions(res, async () => {
