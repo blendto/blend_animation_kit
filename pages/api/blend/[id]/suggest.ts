@@ -52,7 +52,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const { fileKeys } = body as SuggestRecipesRequestBody;
 
-  const blend: Blend = await _getBlend(id);
+  const blend: Blend = await _getBlend(id as string);
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });
