@@ -38,7 +38,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     body,
   } = req;
 
-  const blend: Blend = await _getBlend(id);
+  const blend: Blend = await _getBlend(id as string);
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });
