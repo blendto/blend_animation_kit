@@ -2,7 +2,7 @@ import { NextApiResponse } from "next";
 import ServerError from "./ServerError";
 import UserError from "./UserError";
 
-export const handleNetworkExceptions = async (
+export const handleServerExceptions = async (
   res: NextApiResponse,
   errorThrowingFunction: (...args: any) => Promise<any>
 ) => {

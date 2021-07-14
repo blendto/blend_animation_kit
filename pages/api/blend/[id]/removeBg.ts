@@ -4,7 +4,7 @@ import Joi from "joi";
 
 import { _getBlend } from "../[id]";
 import { Blend } from "server/base/models/blend";
-import { handleNetworkExceptions, UserError } from "server/base/errors";
+import { handleServerExceptions, UserError } from "server/base/errors";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
@@ -55,7 +55,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   const { fileKey } = body as RemoveBgRequest;
 
   let originalImage: Buffer;
-  return await handleNetworkExceptions(res, async () => {
+  return await handleServerExceptions(res, async () => {
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       fileKey

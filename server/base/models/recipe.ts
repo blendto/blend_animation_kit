@@ -88,6 +88,18 @@ export interface Interaction {
   assetType: AssetType;
   assetUid: string;
   metadata: InteractionMetadata;
+  userInteraction?: UserInteraction;
+}
+
+export interface UserInteraction {
+  type: "LINK";
+  options: UserInteractionOptions;
+}
+
+export interface UserInteractionOptions {}
+
+export interface LinkOptions extends UserInteractionOptions {
+  target: string;
 }
 
 export interface SourceMetadata {

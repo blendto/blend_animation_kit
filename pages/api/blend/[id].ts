@@ -1,13 +1,16 @@
-import DynamoDB from "../../../server/external/dynamodb";
-import SQS from "../../../server/external/sqs";
+import DynamoDB from "server/external/dynamodb";
+import SQS from "server/external/sqs";
 import { addBlendToDB } from "../blend";
 import firebase from "server/external/firebase";
 import { DateTime } from "luxon";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { Recipe } from "server/base/models/recipe";
+import { handleServerExceptions } from "server/base/errors";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 2.2;
 
-export const _getBlend = async (id) => {
+export const _getBlend = async (id: string) => {
   return await DynamoDB.getItem({
     TableName: process.env.BLEND_DYNAMODB_TABLE,
     Key: {
@@ -16,7 +19,7 @@ export const _getBlend = async (id) => {
   });
 };
 
-export default async (req, res) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
@@ -26,13 +29,16 @@ export default async (req, res) => {
     case "POST":
       await submitBlend(req, res);
       break;
+    case "DELETE":
+      await deleteBlend(req, res);
+      break;
     default:
       res.status(500).json({ code: 500, message: "Something went wrong!" });
   }
 };
 
-const trimInteractions = (collab) => {
-  const { interactions } = collab;
+const trimInteractions = (recipe: Recipe) => {
+  const { interactions } = recipe;
 
   const interactionsToRender = interactions
     .filter((interaction) => !!interaction.userInteraction)
@@ -45,12 +51,49 @@ const trimInteractions = (collab) => {
   return interactionsToRender;
 };
 
-const getBlend = async (req, res) => {
+const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
+  const {
+    query: { id },
+  } = req;
+
+  let uid: string;
+  await handleServerExceptions(res, async () => {
+    uid = await firebase.extractUserIdFromRequest({
+      request: req,
+    });
+  });
+
+  if (!uid) {
+    // Exception would have been managed above
+    return;
+  }
+
+  const blend = await _getBlend(id as string);
+
+  if (!blend) {
+    return res.status(404).send({ message: "Blend not found!" });
+  }
+
+  if (blend.createdBy != uid) {
+    return res.status(403).send({ message: "Forbidden" });
+  }
+
+  await DynamoDB.deleteItem({
+    TableName: process.env.BLEND_DYNAMODB_TABLE,
+    Key: {
+      id: id,
+    },
+  });
+
+  res.send({ status: "Success" });
+};
+
+const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
     query: { id, format, target },
   } = req;
 
-  const blend = await _getBlend(id);
+  const blend = await _getBlend(id as string);
 
   if (!blend) {
     res.status(404).send({ message: "Blend not found!" });
@@ -76,7 +119,7 @@ const getBlend = async (req, res) => {
     metadata,
   } = blend;
 
-  if (format?.toUpperCase() == "RECIPE") {
+  if ((format as string)?.toUpperCase() == "RECIPE") {
     const recipe = {
       id,
       images,
@@ -97,7 +140,10 @@ const getBlend = async (req, res) => {
         message:
           "This recipe cannot be remixed on this app version. Please upgrade the app.",
       });
-    } else if (metadata.source.version < 2.0 && target >= 2.0) {
+    } else if (
+      metadata.source.version < 2.0 &&
+      parseFloat((target as string) ?? "1000") >= 2.0
+    ) {
       return res.status(400).json({
         message: "This recipe is old and can no longer be blended :(",
       });
@@ -120,7 +166,7 @@ const getBlend = async (req, res) => {
   res.send(trimmedBlend);
 };
 
-const submitBlend = async (req, res) => {
+const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
     query: { id },
     body: recipe,
@@ -131,11 +177,11 @@ const submitBlend = async (req, res) => {
     optional: true,
   });
 
-  let existingBlend = await _getBlend(id);
+  let existingBlend = await _getBlend(id as string);
 
   if (!existingBlend) {
     // Blend might have expired, recreate it
-    existingBlend = await addBlendToDB(id, uid);
+    existingBlend = await addBlendToDB(id as string, uid);
   }
 
   if (existingBlend.createdBy != uid) {
@@ -229,7 +275,7 @@ const submitBlend = async (req, res) => {
     ReturnValues: "ALL_NEW",
   };
 
-  let updatedRecipe;
+  let updatedRecipe: { [x: string]: string | string[] };
   try {
     const dbUpdateResponse = await DynamoDB.updateItem(params);
     updatedRecipe = dbUpdateResponse.Attributes;

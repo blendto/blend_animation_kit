@@ -14,6 +14,17 @@ export default class DynamoDB {
     });
   }
 
+  static queryItems(params) {
+    return new Promise((resolve, reject) => {
+      docClient.query(params, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(data);
+      });
+    });
+  }
+
   static getItem(params) {
     return new Promise((resolve, reject) => {
       docClient.get(params, (err, data) => {
@@ -28,6 +39,20 @@ export default class DynamoDB {
   static putItem(params) {
     return new Promise((resolve, reject) => {
       docClient.put(params, (err, data) => {
+        if (err) {
+          console.error(err);
+          // We expect an error coz document wont exist if unique
+          return reject(err);
+        }
+        resolve(data);
+      });
+    });
+  }
+
+  static deleteItem(params) {
+    return new Promise((resolve, reject) => {
+      docClient.delete({});
+      docClient.delete(params, (err, data) => {
         if (err) {
           console.error(err);
           // We expect an error coz document wont exist if unique

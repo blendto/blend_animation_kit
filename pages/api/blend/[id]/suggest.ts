@@ -7,7 +7,7 @@ import DynamoDB from "server/external/dynamodb";
 import ConfigProvider from "server/base/ConfigProvider";
 
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
-import { handleNetworkExceptions, UserError } from "server/base/errors";
+import { handleServerExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import { RecipeList } from "server/base/models/recipeList";
 import axios from "axios";
@@ -65,7 +65,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   let originalImage: Buffer;
-  return await handleNetworkExceptions(res, async () => {
+  return await handleServerExceptions(res, async () => {
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       fileKeys.original

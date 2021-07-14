@@ -1,5 +1,9 @@
 import UserError from "./UserError";
 import ServerError from "./ServerError";
-import { handleNetworkExceptions } from "./Handlers";
+import { handleServerExceptions } from "./Handlers";
 
-export { UserError, ServerError, handleNetworkExceptions };
+export {
+  UserError,
+  ServerError,
+  handleServerExceptions as handleServerExceptions,
+};
