@@ -35,6 +35,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("VES_API_BASE_PATH");
   }
 
+  public get RECO_API_BASE_PATH() {
+    return this.retrieveOrCrash("RECO_ENGINE_BASE_URL");
+  }
+
   public get FIREBASE_SERVICE_KEY() {
     let parsedKey = JSON.parse(this.retrieveOrCrash("FIREBASE_SERVICE_KEY"));
     parsedKey = {

@@ -2,27 +2,17 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { _getBlend } from "../[id]";
 import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
-import DynamoDB from "server/external/dynamodb";
 
 import ConfigProvider from "server/base/ConfigProvider";
 
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import { handleServerExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
-import { RecipeList } from "server/base/models/recipeList";
 import axios from "axios";
+import RecoEngineApi from "server/internal/reco-engine";
 
 const toolkitApi = new ToolkitApi();
-
-export const _getRecipeLists = async ({ isEnabled = true } = {}): Promise<
-  RecipeList[]
-> => {
-  return await DynamoDB.scanItems({
-    TableName: process.env.RECIPE_LISTS_DYNAMODB_TABLE,
-    FilterExpression: "isEnabled = :iE",
-    ExpressionAttributeValues: { ":iE": isEnabled },
-  });
-};
+const recoEngineApi = new RecoEngineApi();
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -126,12 +116,14 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    const recipeList = await _getRecipeLists();
+    const recipeList = (
+      await recoEngineApi.suggestRecipeLists(bgRemovedFileKey)
+    ).suggestedRecipeCategories;
 
     recipeList.sort(
       (a, b) =>
-        (a.sortOrder || Number.MAX_SAFE_INTEGER) -
-        (b.sortOrder || Number.MAX_SAFE_INTEGER)
+        (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
+        (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
     );
 
     const randomTemplates = recipeList

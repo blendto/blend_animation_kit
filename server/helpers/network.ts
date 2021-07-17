@@ -1,10 +1,12 @@
 import { ServerError, UserError } from "server/base/errors";
 import { AxiosError, AxiosResponse } from "axios";
 
-export const handleAxiosCall = function (
-  axiosCall: () => Promise<AxiosResponse<any>>
+export const handleAxiosCall = async function <ResponseDataType>(
+  axiosCall: () => Promise<AxiosResponse<ResponseDataType>>
 ) {
-  return axiosCall().catch((error: AxiosError<any>) => {
+  try {
+    return axiosCall();
+  } catch (error) {
     if (error.response) {
       const { status } = error.response;
       if (status >= 400 && status < 500) {
@@ -15,5 +17,5 @@ export const handleAxiosCall = function (
     }
     console.error(error);
     throw new ServerError("Something went wrong");
-  });
+  }
 };
