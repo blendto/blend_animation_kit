@@ -283,7 +283,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     await new SQS(process.env.BLEND_GEN_QUEUE_URL).sendMessage({ id });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Something went wrong!" });
+    return res.status(500).json({ message: "Something went wrong!" });
   }
 
   // Add id

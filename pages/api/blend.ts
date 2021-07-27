@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
 import { handleServerExceptions } from "server/base/errors";
+import Base64 from "server/helpers/base64";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -62,6 +63,10 @@ const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
   let uid: string;
 
+  const {
+    query: { pageKey },
+  } = req;
+
   await handleServerExceptions(res, async () => {
     uid = await firebase.extractUserIdFromRequest({
       request: req,
@@ -71,6 +76,20 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
   if (!uid) {
     // Exception would have been managed above
     return;
+  }
+
+  let pageKeyObject = null;
+
+  if (pageKey != null) {
+    if (typeof pageKey != "string") {
+      return res.status(400).json({ message: "pageKey should be a string" });
+    }
+
+    try {
+      pageKeyObject = JSON.parse(Base64.decode(pageKey));
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid pageKey format" });
+    }
   }
 
   let items = [];
@@ -92,9 +111,13 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
       ProjectionExpression: "id, filePath, imagePath, #status",
       FilterExpression: "#status = :generated or #status = :submitted",
       ScanIndexForward: false,
+      ExclusiveStartKey: pageKeyObject,
+      Limit: 15,
     });
     items = data.Items;
-    nextPageKey = data.LastEvaluatedKey;
+    nextPageKey = data.LastEvaluatedKey
+      ? Base64.encode(JSON.stringify(data.LastEvaluatedKey))
+      : null;
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
