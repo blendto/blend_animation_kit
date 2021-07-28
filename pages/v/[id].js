@@ -19,13 +19,13 @@ import { LinkOutlined } from "@ant-design/icons";
 import Head from "next/head";
 
 import styles from "../../styles/Viewer.module.css";
-import { _getCollab } from "../api/collab/[id]";
+import { _getBlend } from "../api/blend/[id]";
 import IntearctionLayer from "../../components/viewer/InteractionLayer";
 
 const { Title, Text } = Typography;
 
 const fetchData = async (id) => {
-  return await fetch(`/api/collab/${id}`).then((res) => {
+  return await fetch(`/api/blend/${id}`).then((res) => {
     if (res.status === 404) {
       return null;
     }
@@ -34,14 +34,14 @@ const fetchData = async (id) => {
 };
 
 const pollUntilCreation = async (id) => {
-  const collab = await fetchData(id);
+  const blend = await fetchData(id);
 
-  if (!collab) {
+  if (!blend) {
     return null;
   }
 
-  if (collab.status === "GENERATED") {
-    return collab;
+  if (blend.status === "GENERATED") {
+    return blend;
   }
 
   await new Promise((r) => setTimeout(r, 2000));
@@ -49,18 +49,25 @@ const pollUntilCreation = async (id) => {
   return await pollUntilCreation(id);
 };
 
-const createVideoLink = (collab) => {
-  return ConfigProvider.OUTPUT_BASE_PATH + collab?.filePath;
+const createVideoLink = (blend) => {
+  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output.video.path;
 };
 
-const createThumbnailLink = (collab) => {
-  return ConfigProvider.OUTPUT_BASE_PATH + collab?.thumbnail;
+const createThumbnailLink = (blend) => {
+  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output.thumbnail.path;
 };
 
-const optimalVideoDimensions = ({ width, height }) => {
-  var scale = Math.min(width / 720, height / 1280);
+const optimalVideoDimensions = (
+  { width: windowWidth, height: windowHeight },
+  videoResolution
+) => {
+  if (!videoResolution) {
+    return { width: 0, height: 0 };
+  }
+  const { width, height } = videoResolution;
+  var scale = Math.min(windowWidth / width, windowHeight / height);
 
-  return { width: Math.ceil(720 * scale), height: Math.ceil(1280 * scale) };
+  return { width: Math.ceil(width * scale), height: Math.ceil(height * scale) };
 };
 
 const createLink = (id, remix = false) => {
@@ -106,21 +113,24 @@ function useWindowDimensions() {
 export default function CollabViewerPage(props) {
   const router = useRouter();
   const { id } = router.query;
-  const [isLoading, setIsLoading] = useState(!props.collab);
-  const [collab, setCollab] = useState(props.collab);
+  const [isLoading, setIsLoading] = useState(!props.blend);
+  const [blend, setBlend] = useState(props.blend);
   const [isDrawerVisible, setDrawerVisibility] = useState(false);
   const windowDimensions = useWindowDimensions();
   let videoDimensions;
   if (windowDimensions) {
-    videoDimensions = optimalVideoDimensions(windowDimensions);
+    videoDimensions = optimalVideoDimensions(
+      windowDimensions,
+      blend?.output.video.resolution
+    );
   }
 
   useEffect(() => {
     async function fetchData() {
-      // Check collab from props
-      let fetchedCollab = props.collab;
+      // Check blend from props
+      let fetchedBlend = props.blend;
 
-      if (!fetchedCollab || fetchedCollab.status === "GENERATED") {
+      if (!fetchedBlend || fetchedBlend.status === "GENERATED") {
         // 404 or is generated, stop loading
         setIsLoading(false);
         return;
@@ -128,8 +138,8 @@ export default function CollabViewerPage(props) {
 
       setIsLoading(true);
 
-      fetchedCollab = await pollUntilCreation(id);
-      setCollab(fetchedCollab);
+      fetchedBlend = await pollUntilCreation(id);
+      setBlend(fetchedBlend);
 
       setIsLoading(false);
     }
@@ -152,12 +162,12 @@ export default function CollabViewerPage(props) {
     );
   }
 
-  if (!collab) {
+  if (!blend) {
     return (
       <Result
         status="404"
         title="404"
-        subTitle="Sorry, the collab you are looking for does not exist."
+        subTitle="Sorry, the blend you are looking for does not exist."
       />
     );
   }
@@ -165,36 +175,33 @@ export default function CollabViewerPage(props) {
   return (
     <div className={styles.container}>
       <Head>
-        <title>{collab?.title ?? "Blend"}</title>
+        <title>{blend?.title ?? "Blend"}</title>
         <link rel="icon" href="/favicon.ico" />
-        <meta property="og:title" content={collab?.title} />
+        <meta property="og:title" content={blend?.title} />
         <meta property="og:description" content={"Made with 😻 with Blend"} />
         <meta property="og:type" content="video.other" />
-        <meta property="og:url" content={createLink(collab?.id)} />
-        <meta property="og:video" content={createVideoLink(collab)} />
-        <meta
-          property="og:video:secure_url"
-          content={createVideoLink(collab)}
-        />
+        <meta property="og:url" content={createLink(blend?.id)} />
+        <meta property="og:video" content={createVideoLink(blend)} />
+        <meta property="og:video:secure_url" content={createVideoLink(blend)} />
         <meta property="og:video:type" content="video/mp4" />
         <meta property="og:video:width" content="720" />
         <meta property="og:video:height" content="1280" />
-        <meta property="og:image" content={createThumbnailLink(collab)} />
+        <meta property="og:image" content={createThumbnailLink(blend)} />
         <meta property="og:image:width" content="628" />
         <meta property="og:image:height" content="1200" />
 
         <meta property="fb:app_id" content="2680324515617353" />
 
-        <meta name="twitter:title" content={collab?.title} />
+        <meta name="twitter:title" content={blend?.title} />
         <meta name="twitter:description" content={"Made with 😻 with Blend"} />
-        <meta name="twitter:image" content={createThumbnailLink(collab)} />
+        <meta name="twitter:image" content={createThumbnailLink(blend)} />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
       <div className={styles.innerContainer}>
         {videoDimensions ? (
           <VideoLayer
-            collab={collab}
+            blend={blend}
             width={videoDimensions.width}
             height={videoDimensions.height}
           />
@@ -202,18 +209,17 @@ export default function CollabViewerPage(props) {
       </div>
       <BlendButton onClick={() => setDrawerVisibility(true)} />
       <BlendDrawer
-        collab={collab}
+        blend={blend}
         visible={isDrawerVisible}
         onClose={() => setDrawerVisibility(false)}
       />
-      {/* <ShareCard collab={collab} dimensions={videoDimensions} /> */}
     </div>
   );
 }
 
-function BlendDrawer({ collab, visible, onClose }) {
+function BlendDrawer({ blend, visible, onClose }) {
   const onClick = () => {
-    window.location.replace(createCustomSchemeLink(collab.id));
+    window.location.replace(createCustomSchemeLink(blend.id));
     setTimeout(() => {
       message.error("Couldn't open. Do you have the app?", 2000);
     }, 1000);
@@ -235,13 +241,13 @@ function BlendDrawer({ collab, visible, onClose }) {
         <Text>*requires app</Text>
       </Row>
 
-      <Credits collab={collab} />
+      <Credits blend={blend} />
     </Drawer>
   );
 }
 
-function Credits({ collab }) {
-  const credits = collab.externalImages.reduce((resultArray, extImg) => {
+function Credits({ blend }) {
+  const credits = blend.externalImages.reduce((resultArray, extImg) => {
     if (extImg.source == "UNSPLASH" && extImg.credit != null) {
       const { credit } = extImg;
       resultArray.push({
@@ -298,7 +304,7 @@ function BlendButton({ onClick }) {
   );
 }
 
-const VideoLayer = React.memo(function ({ collab, width, height }) {
+const VideoLayer = React.memo(function ({ blend, width, height }) {
   return [
     <div key={"video-layer"} style={{ width, height }}>
       <video
@@ -310,13 +316,13 @@ const VideoLayer = React.memo(function ({ collab, width, height }) {
         playsInline
         loop
       >
-        <source src={createVideoLink(collab)} type="video/mp4" />
+        <source src={createVideoLink(blend)} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
     </div>,
     <IntearctionLayer
       key={"il"}
-      collab={collab}
+      blend={blend}
       dimensions={{ width, height }}
     />,
   ];
@@ -325,11 +331,11 @@ const VideoLayer = React.memo(function ({ collab, width, height }) {
 export async function getServerSideProps({ params }) {
   const { id } = params;
 
-  const collab = (await _getCollab(id)) || null;
+  const blend = (await _getBlend(id)) || null;
 
   return {
     props: {
-      collab,
+      blend,
     },
   };
 }

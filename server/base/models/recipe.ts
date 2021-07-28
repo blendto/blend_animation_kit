@@ -50,8 +50,8 @@ export interface InteractionMetadata {
 
 export interface GeometricPositionable extends InteractionMetadata {
   position: Offset;
-  size: Offset;
-  relativeSize: Offset;
+  size: Size;
+  relativeSize: Size;
   rotation: number;
   rotationX: number;
   rotationY: number;
@@ -114,8 +114,13 @@ export interface RecipeMetadata {
 
 export interface Recipe {
   id: string;
-  images: StoredImage[];
-  recipeDetails: RecipeDetails;
-  interactions: Interaction[];
-  metadata: RecipeMetadata;
+  images?: StoredImage[];
+  externalImages?: any[];
+  gifsOrStickers?: any[];
+  texts?: any[];
+  buttons?: any[];
+  links?: any[];
+  recipeDetails?: RecipeDetails;
+  interactions?: Interaction[];
+  metadata?: RecipeMetadata;
 }

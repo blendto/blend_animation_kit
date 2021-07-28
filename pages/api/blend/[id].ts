@@ -6,17 +6,46 @@ import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Recipe } from "server/base/models/recipe";
 import { handleServerExceptions } from "server/base/errors";
+import { Blend } from "server/base/models/blend";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 2.2;
 
-export const _getBlend = async (id: string) => {
-  return await DynamoDB.getItem({
+// Resolution to use when output object is not populated
+// When aspect ratio used to be fixed, these were the constant ones.
+const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
+const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
+
+export const _getBlend = async (id: string): Promise<Blend> => {
+  const blend = await DynamoDB.getItem({
     TableName: process.env.BLEND_DYNAMODB_TABLE,
     Key: {
       id,
     },
   });
+  let { filePath, imagePath, thumbnail, output } = blend;
+
+  if (!output) {
+    output = {
+      video: {
+        path: filePath,
+        resolution: FALLBACK_OUTPUT_RESOLUTION,
+      },
+      image: {
+        path: imagePath,
+        resolution: FALLBACK_OUTPUT_RESOLUTION,
+      },
+      thumbnail: {
+        path: thumbnail,
+        resolution: FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION,
+      },
+    };
+  }
+
+  return {
+    ...blend,
+    output,
+  };
 };
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -102,21 +131,16 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const {
     id: blendId,
-    title,
     status,
-    filePath,
-    imagePath,
     images,
     externalImages,
-    audios,
-    slides,
-    cameraClips,
     gifsOrStickers,
     texts,
     buttons,
     links,
     interactions,
     metadata,
+    output,
   } = blend;
 
   if ((format as string)?.toUpperCase() == "RECIPE") {
@@ -124,9 +148,6 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       id,
       images,
       externalImages,
-      audios,
-      slides,
-      cameraClips,
       gifsOrStickers,
       texts,
       buttons,
@@ -155,10 +176,10 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const trimmedBlend = {
     id: blendId,
-    title,
     status,
-    filePath,
-    imagePath,
+    filePath: output.video.path,
+    imagePath: output.image.path,
+    output,
     interactions: trimInteractions(blend),
     isStatic: gifsOrStickers?.length <= 0 ?? true,
   };

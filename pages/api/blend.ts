@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
 import { handleServerExceptions } from "server/base/errors";
 import Base64 from "server/helpers/base64";
+import { Blend } from "server/base/models/blend";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -108,7 +109,8 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
         ":generated": "GENERATED",
         ":submitted": "SUBMITTED",
       },
-      ProjectionExpression: "id, filePath, imagePath, #status",
+      ProjectionExpression:
+        "id, filePath, imagePath, createdAt, updatedAt, #status",
       FilterExpression: "#status = :generated or #status = :submitted",
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject,
@@ -131,7 +133,7 @@ export const addBlendToDB = async (id: string, userId?: string) => {
   const currentTime = Date.now();
   const currentDate = DateTime.utc().toISODate();
 
-  let blend = {
+  let blend: Blend = {
     id: id,
     status: "INITIALIZED",
     statusUpdates: [

@@ -1,7 +1,7 @@
 import styles from "./InteractionLayer.module.css";
 
-export default function IntearctionLayer({ collab, dimensions }) {
-  const { interactions } = collab;
+export default function IntearctionLayer({ blend, dimensions }) {
+  const { interactions } = blend;
   if (!interactions) {
     return null;
   }
@@ -33,12 +33,9 @@ export default function IntearctionLayer({ collab, dimensions }) {
 }
 
 function cleanTarget(target) {
-  const hasProtoPrefixed = [
-    "http:",
-    "https:",
-    "tel:",
-    "mailto:",
-  ].some((prefix) => target.startsWith(prefix));
+  const hasProtoPrefixed = ["http:", "https:", "tel:", "mailto:"].some(
+    (prefix) => target.startsWith(prefix)
+  );
 
   if (hasProtoPrefixed) {
     return target;
