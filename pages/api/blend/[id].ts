@@ -23,9 +23,9 @@ export const _getBlend = async (id: string): Promise<Blend> => {
       id,
     },
   });
-  let { filePath, imagePath, thumbnail, output } = blend;
+  let { filePath, imagePath, thumbnail, output, status } = blend;
 
-  if (!output) {
+  if (!output && status == "GENERATED") {
     output = {
       video: {
         path: filePath,
@@ -44,7 +44,10 @@ export const _getBlend = async (id: string): Promise<Blend> => {
 
   return {
     ...blend,
-    output,
+    filePath: output?.video.path ?? null,
+    imagePath: output?.image.path ?? null,
+    thumbnail: output?.thumbnail.path ?? null,
+    output: output ?? null,
   };
 };
 
@@ -141,6 +144,8 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     interactions,
     metadata,
     output,
+    filePath,
+    imagePath,
   } = blend;
 
   if ((format as string)?.toUpperCase() == "RECIPE") {
@@ -177,8 +182,8 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   const trimmedBlend = {
     id: blendId,
     status,
-    filePath: output.video.path,
-    imagePath: output.image.path,
+    filePath,
+    imagePath,
     output,
     interactions: trimInteractions(blend),
     isStatic: gifsOrStickers?.length <= 0 ?? true,

@@ -50,11 +50,11 @@ const pollUntilCreation = async (id) => {
 };
 
 const createVideoLink = (blend) => {
-  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output.video.path;
+  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output?.video.path;
 };
 
 const createThumbnailLink = (blend) => {
-  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output.thumbnail.path;
+  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output?.thumbnail.path;
 };
 
 const optimalVideoDimensions = (
@@ -121,7 +121,7 @@ export default function CollabViewerPage(props) {
   if (windowDimensions) {
     videoDimensions = optimalVideoDimensions(
       windowDimensions,
-      blend?.output.video.resolution
+      blend?.output?.video.resolution
     );
   }
 
