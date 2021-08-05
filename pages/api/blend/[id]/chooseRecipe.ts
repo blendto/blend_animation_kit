@@ -16,11 +16,15 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-export const _getRecipe = async (id: string): Promise<Recipe> => {
+export const _getRecipe = async (
+  id: string,
+  variant: string = "9-16"
+): Promise<Recipe> => {
   return await DynamoDB.getItem({
     TableName: process.env.RECIPE_DYNAMODB_TABLE,
     Key: {
       id,
+      variant,
     },
   });
 };
@@ -36,11 +40,15 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       .status(400)
       .json({ code: 400, message: "request body is mandatory!" });
   }
-  const { recipeId, fileKeys } = req.body;
+  const { recipeId, variant = "9-16", fileKeys } = req.body;
   if (!recipeId) {
     return res
       .status(400)
       .json({ code: 400, message: "recipeId not present!" });
+  }
+
+  if (!variant) {
+    return res.status(400).json({ code: 400, message: "invalid variant!" });
   }
 
   if (
@@ -55,7 +63,10 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   let recipe: Recipe;
 
   try {
-    recipe = await _getRecipe(recipeId as string);
+    recipe = await _getRecipe(recipeId as string, variant as string);
+    if (!recipe) {
+      return res.status(400).send({ message: "No such recipe" });
+    }
   } catch (ex) {
     if (!(ex instanceof ServerError)) {
       console.error(ex);
