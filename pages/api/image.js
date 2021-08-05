@@ -3,7 +3,7 @@ import { createSignedUploadUrl } from "../../server/external/s3";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg"];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; //10 MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
 
 export default async (req, res) => {
   const { method } = req;
