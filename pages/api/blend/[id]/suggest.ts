@@ -10,6 +10,7 @@ import { handleServerExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import axios from "axios";
 import RecoEngineApi from "server/internal/reco-engine";
+import { IncomingMessage } from "node:http";
 
 const toolkitApi = new ToolkitApi();
 const recoEngineApi = new RecoEngineApi();
@@ -84,17 +85,12 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       // As of now this logic just works by assuming file name is unique
       // This works because we generate a random file name when we store the file name
       // Re-evaluate in the future
+      let bgRemoved: IncomingMessage;
       try {
-        const bgRemoved = await toolkitApi.removeBg(
+        bgRemoved = await toolkitApi.removeBg(
           originalImage,
           fileNameWithExt,
           true
-        );
-
-        await uploadObject(
-          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-          bgRemovedFileKey,
-          bgRemoved
         );
       } catch (ex) {
         if (axios.isAxiosError(ex)) {
@@ -111,6 +107,27 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
           }
 
           throw new UserError(errorMessage, error.code);
+        }
+        throw ex;
+      }
+
+      try {
+        await uploadObject(
+          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+          bgRemovedFileKey,
+          bgRemoved
+        );
+      } catch (ex) {
+        if (axios.isAxiosError(ex)) {
+          console.error(
+            "Upload to S3 Failed. Status Code: " +
+              ex.response.status +
+              ". Message: " +
+              ex.response?.data ?? "No response"
+          );
+          throw new UserError(
+            "Something went wrong while removing background! Try again!"
+          );
         }
         throw ex;
       }
