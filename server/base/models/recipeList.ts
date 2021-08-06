@@ -1,7 +1,13 @@
 export interface RecipeList {
-  id: String;
+  id: string;
   isEnabled: boolean;
-  title: String;
-  recipeIds: String[];
+  title: string;
+  recipeIds: string[];
+  recipes: RecipeVariantId[];
   sortOrder?: number;
+}
+
+export interface RecipeVariantId {
+  id: string;
+  variant: string;
 }

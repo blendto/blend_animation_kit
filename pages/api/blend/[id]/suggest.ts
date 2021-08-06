@@ -116,17 +116,24 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    const recipeList = (
+    const recipeLists = (
       await recoEngineApi.suggestRecipeLists(bgRemovedFileKey)
     ).suggestedRecipeCategories;
 
-    recipeList.sort(
+    recipeLists.sort(
       (a, b) =>
         (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
         (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
     );
 
-    const randomTemplates = recipeList
+    // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
+    recipeLists.forEach((list) => {
+      list.recipeIds = list.recipes
+        .filter(({ variant }) => variant == "9:16")
+        .map(({ id }) => id);
+    });
+
+    const randomTemplates = recipeLists
       .map((list) => list.recipeIds)
       .flat()
       .sort(() => 0.5 - Math.random())
@@ -138,7 +145,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
         withoutBg: bgRemovedFileKey,
       },
       suggestedRecipes: randomTemplates,
-      otherRecipes: recipeList,
+      otherRecipes: recipeLists,
     });
   });
 };
