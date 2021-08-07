@@ -33,6 +33,7 @@ interface HeroImageFileKeys {
 
 interface SuggestRecipesRequestBody {
   fileKeys: HeroImageFileKeys;
+  multipleAspectRatios?: boolean;
 }
 
 const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -41,7 +42,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     body,
   } = req;
 
-  const { fileKeys } = body as SuggestRecipesRequestBody;
+  const { fileKeys, multipleAspectRatios } = body as SuggestRecipesRequestBody;
 
   const blend: Blend = await _getBlend(id as string);
 
@@ -133,9 +134,8 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    const recipeLists = (
-      await recoEngineApi.suggestRecipeLists(bgRemovedFileKey)
-    ).suggestedRecipeCategories;
+    let recipeLists = (await recoEngineApi.suggestRecipeLists(bgRemovedFileKey))
+      .suggestedRecipeCategories;
 
     recipeLists.sort(
       (a, b) =>
@@ -149,6 +149,19 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
         .filter(({ variant }) => variant == "9:16")
         .map(({ id }) => id);
     });
+
+    if (!multipleAspectRatios) {
+      // If Multiple Aspect Ratios are not supported, backfill and filter out empty ones
+
+      // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
+      recipeLists.forEach((list) => {
+        list.recipeIds = list.recipes
+          .filter(({ variant }) => variant == "9:16")
+          .map(({ id }) => id);
+      });
+
+      recipeLists = recipeLists.filter((list) => list.recipeIds.length > 0);
+    }
 
     const randomTemplates = recipeLists
       .map((list) => list.recipeIds)
