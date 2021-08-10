@@ -23,6 +23,11 @@ export const _getBlend = async (id: string): Promise<Blend> => {
       id,
     },
   });
+
+  if (!blend) {
+    return null;
+  }
+
   let { filePath, imagePath, thumbnail, output, status } = blend;
 
   if (!output && status == "GENERATED") {
