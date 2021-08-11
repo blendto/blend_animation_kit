@@ -95,7 +95,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
         );
       } catch (ex) {
         if (axios.isAxiosError(ex)) {
-          console.error("Remove BG Failed. Status Code: " + ex.response.status);
+          console.error("Remove BG Failed. Error message: " + ex.message);
           let data = "";
           for await (const chunk of ex.response.data) {
             data += chunk;
