@@ -28,7 +28,7 @@ export const _getBlend = async (id: string): Promise<Blend> => {
     return null;
   }
 
-  let { filePath, imagePath, thumbnail, output, status } = blend;
+  let { filePath, imagePath, thumbnail, output, status } = <Blend>blend;
 
   if (!output && status == "GENERATED") {
     output = {
@@ -48,7 +48,7 @@ export const _getBlend = async (id: string): Promise<Blend> => {
   }
 
   return {
-    ...blend,
+    ...(<Blend>blend),
     filePath: output?.video.path ?? null,
     imagePath: output?.image.path ?? null,
     thumbnail: output?.thumbnail.path ?? null,

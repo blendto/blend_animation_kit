@@ -110,6 +110,8 @@ export interface SourceMetadata {
 export interface RecipeMetadata {
   sourceBlendId: string;
   source: SourceMetadata;
+  sourceRecipeId?: string;
+  aspectRatio?: Size;
 }
 
 export interface Recipe {
@@ -123,4 +125,10 @@ export interface Recipe {
   recipeDetails?: RecipeDetails;
   interactions?: Interaction[];
   metadata?: RecipeMetadata;
+}
+
+export class RecipeUtils {
+  static aspectRatioToVariant(aspectRatio: Size) {
+    return `${aspectRatio.width}:${aspectRatio.height}`;
+  }
 }

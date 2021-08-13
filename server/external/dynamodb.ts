@@ -3,7 +3,9 @@ import AWS from "./aws";
 var docClient = new AWS.DynamoDB.DocumentClient();
 
 export default class DynamoDB {
-  static scanItems(params) {
+  static scanItems(
+    params: AWS.DynamoDB.DocumentClient.ScanInput
+  ): Promise<AWS.DynamoDB.DocumentClient.ItemList> {
     return new Promise((resolve, reject) => {
       docClient.scan(params, (err, data) => {
         if (err) {
@@ -14,7 +16,9 @@ export default class DynamoDB {
     });
   }
 
-  static queryItems(params) {
+  static queryItems(
+    params: AWS.DynamoDB.DocumentClient.QueryInput
+  ): Promise<AWS.DynamoDB.DocumentClient.QueryOutput> {
     return new Promise((resolve, reject) => {
       docClient.query(params, (err, data) => {
         if (err) {
@@ -25,7 +29,9 @@ export default class DynamoDB {
     });
   }
 
-  static getItem(params) {
+  static getItem(
+    params: AWS.DynamoDB.DocumentClient.GetItemInput
+  ): Promise<AWS.DynamoDB.DocumentClient.AttributeMap> {
     return new Promise((resolve, reject) => {
       docClient.get(params, (err, data) => {
         if (err) {
@@ -36,7 +42,9 @@ export default class DynamoDB {
     });
   }
 
-  static putItem(params) {
+  static putItem(
+    params: AWS.DynamoDB.DocumentClient.PutItemInput
+  ): Promise<AWS.DynamoDB.DocumentClient.PutItemOutput> {
     return new Promise((resolve, reject) => {
       docClient.put(params, (err, data) => {
         if (err) {
@@ -49,9 +57,10 @@ export default class DynamoDB {
     });
   }
 
-  static deleteItem(params) {
+  static deleteItem(
+    params: AWS.DynamoDB.DocumentClient.DeleteItemInput
+  ): Promise<AWS.DynamoDB.DocumentClient.DeleteItemOutput> {
     return new Promise((resolve, reject) => {
-      docClient.delete({});
       docClient.delete(params, (err, data) => {
         if (err) {
           console.error(err);
@@ -63,7 +72,9 @@ export default class DynamoDB {
     });
   }
 
-  static updateItem(params) {
+  static updateItem(
+    params: AWS.DynamoDB.DocumentClient.UpdateItemInput
+  ): Promise<AWS.DynamoDB.DocumentClient.UpdateItemOutput> {
     return new Promise((resolve, reject) => {
       docClient.update(params, (err, data) => {
         if (err) {
@@ -74,13 +85,5 @@ export default class DynamoDB {
         resolve(data);
       });
     });
-  }
-
-  static marshall(obj) {
-    return AWS.DynamoDB.Converter.marshall(obj);
-  }
-
-  static unmarshall(obj) {
-    return AWS.DynamoDB.Converter.unmarshall(obj);
   }
 }

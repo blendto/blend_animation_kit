@@ -1,19 +1,47 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import uniqWith from "lodash/uniqWith";
+import isEqual from "lodash/isEqual";
+import take from "lodash/take";
 
 import { _getBlend } from "../[id]";
+
 import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
 
 import ConfigProvider from "server/base/ConfigProvider";
-
+import DynamoDB from "server/external/dynamodb";
+import firebase from "server/external/firebase";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import { handleServerExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import axios from "axios";
 import RecoEngineApi from "server/internal/reco-engine";
 import { IncomingMessage } from "node:http";
+import { RecipeUtils } from "server/base/models/recipe";
 
 const toolkitApi = new ToolkitApi();
 const recoEngineApi = new RecoEngineApi();
+
+const _getRecentBlends = async (uid: string) => {
+  return <Blend[]>(
+    await DynamoDB.queryItems({
+      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      KeyConditionExpression: "#createdBy = :createdBy",
+      IndexName: "created-by-idx",
+      ExpressionAttributeNames: {
+        "#createdBy": "createdBy",
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":createdBy": uid,
+        ":generated": "GENERATED",
+      },
+      ProjectionExpression: "id, metadata",
+      FilterExpression: "#status = :generated",
+      ScanIndexForward: false,
+      Limit: 20,
+    })
+  ).Items;
+};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -58,6 +86,10 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
 
   let originalImage: Buffer;
   return await handleServerExceptions(res, async () => {
+    let uid = await firebase.extractUserIdFromRequest({
+      request: req,
+    });
+
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       fileKeys.original
@@ -148,6 +180,29 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
         (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
         (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
     );
+
+    if (uid) {
+      const recentBlends = await _getRecentBlends(uid);
+      let recentRecipes = recentBlends
+        .filter(
+          ({ metadata }) => !!metadata.aspectRatio && !!metadata.sourceRecipeId
+        )
+        .map(({ metadata }) => ({
+          id: metadata.sourceRecipeId,
+          variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
+        }));
+      recentRecipes = uniqWith(recentRecipes, isEqual);
+      if (recentRecipes.length > 0) {
+        recipeLists.unshift({
+          id: "recents",
+          isEnabled: true,
+          title: "⏰ Recently Used",
+          recipeIds: [],
+          recipes: take(recentRecipes, 5),
+          sortOrder: 0,
+        });
+      }
+    }
 
     // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
     recipeLists.forEach((list) => {
