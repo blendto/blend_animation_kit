@@ -20,13 +20,14 @@ export const _getRecipe = async (
   id: string,
   variant: string = "9:16"
 ): Promise<Recipe> => {
-  return await DynamoDB.getItem({
+  const recipe = await DynamoDB.getItem({
     TableName: process.env.RECIPE_DYNAMODB_TABLE,
     Key: {
       id,
       variant,
     },
   });
+  return <Recipe>recipe;
 };
 
 const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
