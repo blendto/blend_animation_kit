@@ -113,7 +113,11 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   return res.send({
     ...recipe,
-    metadata: { ...recipe.metadata, sourceRecipeId: recipe.id },
+    metadata: {
+      ...recipe.metadata,
+      sourceRecipeId: recipe.id,
+      sourceRecipe: { id: recipe.id, variant: recipe.variant },
+    },
     id: blendId,
     images: blendImages,
   });

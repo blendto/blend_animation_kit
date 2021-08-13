@@ -184,13 +184,19 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     if (uid) {
       const recentBlends = await _getRecentBlends(uid);
       let recentRecipes = recentBlends
-        .filter(
-          ({ metadata }) => !!metadata.aspectRatio && !!metadata.sourceRecipeId
-        )
-        .map(({ metadata }) => ({
-          id: metadata.sourceRecipeId,
-          variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
-        }));
+        .filter(({ metadata }) => {
+          return (
+            !!metadata.sourceRecipe ||
+            (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
+          );
+        })
+        .map(
+          ({ metadata }) =>
+            metadata.sourceRecipe ?? {
+              id: metadata.sourceRecipeId,
+              variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
+            }
+        );
       recentRecipes = uniqWith(recentRecipes, isEqual);
       if (recentRecipes.length > 0) {
         recipeLists.unshift({

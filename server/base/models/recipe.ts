@@ -1,3 +1,5 @@
+import { RecipeVariantId } from "./recipeList";
+
 export interface StoredImage {
   uid: string;
   uri: string;
@@ -61,7 +63,6 @@ export interface GeometricPositionable extends InteractionMetadata {
 
 export interface ImageMetadata extends GeometricPositionable {
   hasBgRemoved: boolean;
-
   fillColor?: string;
 }
 
@@ -112,10 +113,12 @@ export interface RecipeMetadata {
   source: SourceMetadata;
   sourceRecipeId?: string;
   aspectRatio?: Size;
+  sourceRecipe?: RecipeVariantId;
 }
 
 export interface Recipe {
   id: string;
+  variant?: string;
   images?: StoredImage[];
   externalImages?: any[];
   gifsOrStickers?: any[];
