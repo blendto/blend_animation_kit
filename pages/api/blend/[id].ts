@@ -1,6 +1,6 @@
 import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
-import { addBlendToDB } from "../blend";
+import { addBlendToDB, backfillBlendOutput } from "../blend";
 import firebase from "server/external/firebase";
 import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -10,11 +10,6 @@ import { Blend } from "server/base/models/blend";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 2.2;
-
-// Resolution to use when output object is not populated
-// When aspect ratio used to be fixed, these were the constant ones.
-const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
-const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
 
 export const _getBlend = async (id: string): Promise<Blend> => {
   const blend = await DynamoDB.getItem({
@@ -28,32 +23,7 @@ export const _getBlend = async (id: string): Promise<Blend> => {
     return null;
   }
 
-  let { filePath, imagePath, thumbnail, output, status } = <Blend>blend;
-
-  if (!output && status == "GENERATED") {
-    output = {
-      video: {
-        path: filePath,
-        resolution: FALLBACK_OUTPUT_RESOLUTION,
-      },
-      image: {
-        path: imagePath,
-        resolution: FALLBACK_OUTPUT_RESOLUTION,
-      },
-      thumbnail: {
-        path: thumbnail,
-        resolution: FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION,
-      },
-    };
-  }
-
-  return {
-    ...(<Blend>blend),
-    filePath: output?.video.path ?? null,
-    imagePath: output?.image.path ?? null,
-    thumbnail: output?.thumbnail.path ?? null,
-    output: output ?? null,
-  };
+  return backfillBlendOutput(<Blend>blend);
 };
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {

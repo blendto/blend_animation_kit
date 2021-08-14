@@ -7,6 +7,11 @@ import { handleServerExceptions } from "server/base/errors";
 import Base64 from "server/helpers/base64";
 import { Blend } from "server/base/models/blend";
 
+// Resolution to use when output object is not populated
+// When aspect ratio used to be fixed, these were the constant ones.
+const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
+const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
+
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
@@ -103,6 +108,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
       ExpressionAttributeNames: {
         "#createdBy": "createdBy",
         "#status": "status",
+        "#output": "output",
       },
       ExpressionAttributeValues: {
         ":createdBy": uid,
@@ -110,13 +116,17 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
         ":submitted": "SUBMITTED",
       },
       ProjectionExpression:
-        "id, filePath, imagePath, createdAt, updatedAt, #status",
+        "id, filePath, imagePath, #output, createdAt, updatedAt, #status",
       FilterExpression: "#status = :generated or #status = :submitted",
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject,
       Limit: 15,
     });
-    items = data.Items;
+
+    items = data.Items.map((item) => {
+      return backfillBlendOutput(<Blend>item);
+    });
+
     nextPageKey = data.LastEvaluatedKey
       ? Base64.encode(JSON.stringify(data.LastEvaluatedKey))
       : null;
@@ -155,4 +165,33 @@ export const addBlendToDB = async (id: string, userId?: string) => {
     Item: blend,
   });
   return blend;
+};
+
+export const backfillBlendOutput = (item: Blend) => {
+  let { filePath, imagePath, thumbnail, output, status } = item;
+
+  if (!output && status == "GENERATED") {
+    output = {
+      video: {
+        path: filePath,
+        resolution: FALLBACK_OUTPUT_RESOLUTION,
+      },
+      image: {
+        path: imagePath,
+        resolution: FALLBACK_OUTPUT_RESOLUTION,
+      },
+      thumbnail: {
+        path: thumbnail,
+        resolution: FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION,
+      },
+    };
+  }
+
+  return {
+    ...item,
+    filePath: output?.video.path ?? null,
+    imagePath: output?.image.path ?? null,
+    thumbnail: output?.thumbnail.path ?? null,
+    output: output ?? null,
+  };
 };
