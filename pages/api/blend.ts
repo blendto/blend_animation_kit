@@ -24,7 +24,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       break;
 
     default:
-      res.status(500).json({ code: 500, message: "Something went wrong!" });
+      res.status(404).json({ code: 404, message: "Invalid request" });
   }
 };
 

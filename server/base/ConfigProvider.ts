@@ -47,6 +47,10 @@ class ConfigProvider {
     };
     return parsedKey;
   }
+
+  public get IPAPI_ACCESS_KEY() {
+    return this.retrieveOrCrash("IPAPI_ACCESS_KEY");
+  }
 }
 
 export default new ConfigProvider();

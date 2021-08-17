@@ -1,0 +1,46 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import firebase from "server/external/firebase";
+import axios from "axios";
+import IpApi from "server/external/ipapi";
+import { handleServerExceptions } from "server/base/errors";
+
+export default async (req: NextApiRequest, res: NextApiResponse) => {
+  const { method } = req;
+
+  switch (method) {
+    case "GET":
+      await whoami(req, res);
+      break;
+
+    default:
+      res.status(404).json({ code: 404, message: "Invalid request" });
+  }
+};
+
+const ipApi = new IpApi();
+
+async function whoami(
+  req: NextApiRequest,
+  res: NextApiResponse<any>
+): Promise<any> {
+  const uid = await firebase.extractUserIdFromRequest({
+    request: req,
+    optional: true,
+  });
+
+  const ip = req.headers["x-forwarded-for"] as string;
+
+  if (!ip) {
+    return res.status(400).send({ message: "Invalid request" });
+  }
+
+  return await handleServerExceptions(res, async () => {
+    const ipDetails = await ipApi.getIpInfo(ip);
+    return res.send({
+      uid,
+      details: {
+        countryCode: ipDetails["country_code"],
+      },
+    });
+  });
+}
