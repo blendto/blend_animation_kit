@@ -121,7 +121,6 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject,
       Limit: 15,
-      ConsistentRead: true,
     });
 
     items = data.Items.map((item) => {
