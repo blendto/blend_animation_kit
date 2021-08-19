@@ -86,7 +86,10 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
 
   let pageKeyObject = null;
 
-  if (pageKey != null) {
+  // "null" as a string is ignored for pageKey. Its okay.
+  // It's not fair. The client should not have send "null"
+  // World is not fair!
+  if (pageKey && pageKey != "null") {
     if (typeof pageKey != "string") {
       return res.status(400).json({ message: "pageKey should be a string" });
     }

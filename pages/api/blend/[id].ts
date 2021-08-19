@@ -92,6 +92,10 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
+  // Hack: To avoid consistency issues coz the app reads /blend immediately after this,
+  // We wait 1 second before responding
+  await new Promise((r) => setTimeout(r, 1000));
+
   res.send({ status: "Success" });
 };
 
