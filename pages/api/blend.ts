@@ -116,7 +116,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
         ":submitted": "SUBMITTED",
       },
       ProjectionExpression:
-        "id, filePath, imagePath, #output, createdAt, updatedAt, #status",
+        "id, filePath, imagePath, thumbnail, #output, createdAt, updatedAt, #status",
       FilterExpression: "#status = :generated or #status = :submitted",
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject,
