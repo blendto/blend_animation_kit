@@ -107,7 +107,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
     const data = await DynamoDB.queryItems({
       TableName: process.env.BLEND_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
-      IndexName: "created-by-idx",
+      IndexName: "createdBy-updatedAt-idx",
       ExpressionAttributeNames: {
         "#createdBy": "createdBy",
         "#status": "status",
