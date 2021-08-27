@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import uniqWith from "lodash/uniqWith";
 import isEqual from "lodash/isEqual";
 import take from "lodash/take";
+import sharp from "sharp";
 
 import { _getBlend } from "../[id]";
 
@@ -115,6 +116,24 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     if (!bgRemovedElementExists) {
+      if (originalImage.byteLength > 1024 * 1024 * 12) {
+        // failOnError: false helps blow past errors like
+        // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
+        // https://github.com/lovell/sharp/issues/1578
+        originalImage = await sharp(originalImage, { failOnError: false })
+          .resize({
+            width: 3840,
+            height: 3840,
+            fit: "inside",
+            withoutEnlargement: true,
+          })
+          .toBuffer();
+        const resizedImageMetadata = await sharp(originalImage).metadata();
+        console.info(
+          `resized image to size ${resizedImageMetadata.size} and dims ${resizedImageMetadata.width} x ${resizedImageMetadata.height}`
+        );
+      }
+
       // As of now this logic just works by assuming file name is unique
       // This works because we generate a random file name when we store the file name
       // Re-evaluate in the future
