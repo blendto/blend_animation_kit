@@ -1,9 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import DynamoDB from "server/external/dynamodb";
 import ConfigProvider from "server/base/ConfigProvider";
-import { copyObject } from "server/external/s3";
+import { copyObject, getObject } from "server/external/s3";
 import { ServerError } from "server/base/errors";
-import type { Recipe, ImageMetadata } from "server/base/models/recipe";
+import type {
+  Recipe,
+  ImageMetadata,
+  Interaction,
+} from "server/base/models/recipe";
+import sharp from "sharp";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -28,6 +33,50 @@ export const _getRecipe = async (
     },
   });
   return <Recipe>recipe;
+};
+
+/**
+ *
+ * Modifies the interaction's metadata to ensure that the image has a tight bounds
+ * This adjust the recipe's hero image bounds to the target images bounds so taht
+ * there is no extra area.
+ *
+ * @param interaction Interaction to be updated
+ * @param fileKey The s3 filekey for the image
+ */
+const adjustSizeToFit = async (interaction: Interaction, fileKey: String) => {
+  const imageFile = await getObject(
+    ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+    fileKey
+  );
+
+  const imageFileMetadata = await sharp(imageFile).metadata();
+
+  let { width, height } = imageFileMetadata;
+
+  if ([5, 6, 7, 8].includes(imageFileMetadata.orientation)) {
+    // 5, 6, 7, 8 orientation represents 90 or 270 degree rotated
+    const temp = width;
+    width = height;
+    height = temp;
+  }
+
+  const metadata = interaction.metadata as ImageMetadata;
+  const scale = Math.min(
+    metadata.size.width / width,
+    metadata.size.height / height
+  );
+  const targetSize = {
+    width: Math.ceil(width * scale),
+    height: Math.ceil(height * scale),
+  };
+  const widthDiff = metadata.size.width - targetSize.width;
+  const heightDiff = metadata.size.height - targetSize.height;
+  metadata.position = {
+    dx: metadata.position.dx + widthDiff / 2,
+    dy: metadata.position.dy + heightDiff / 2,
+  };
+  metadata.size = targetSize;
 };
 
 const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -76,6 +125,7 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   let copyFilePromises = [];
+  let interactionUpdatePromise;
 
   const blendImages = recipe.images.map((image) => {
     if (image.uid === recipe.recipeDetails.elements.hero.uid) {
@@ -84,8 +134,16 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
           interaction.assetType == "IMAGE" && interaction.assetUid == image.uid
       );
       if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
+        interactionUpdatePromise = adjustSizeToFit(
+          interaction,
+          fileKeys.withoutBg
+        );
         return { ...image, uri: fileKeys.withoutBg };
       }
+      interactionUpdatePromise = adjustSizeToFit(
+        interaction,
+        fileKeys.original
+      );
       return { ...image, uri: fileKeys.original };
     }
     let uriParts = image.uri.split("/");
@@ -103,7 +161,7 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   });
 
   try {
-    await Promise.all(copyFilePromises);
+    await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
   } catch (ex) {
     if (!(ex instanceof ServerError)) {
       console.error(ex);
