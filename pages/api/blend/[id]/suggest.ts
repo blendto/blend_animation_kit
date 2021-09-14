@@ -116,7 +116,12 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     if (!bgRemovedElementExists) {
-      if (originalImage.byteLength > 1024 * 1024 * 10) {
+      const metadata = await sharp(originalImage).metadata();
+
+      if (
+        !["jpeg", "jpg"].includes(metadata.format) ||
+        metadata.size > 1024 * 1024 * 10
+      ) {
         // failOnError: false helps blow past errors like
         // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
         // https://github.com/lovell/sharp/issues/1578
@@ -127,6 +132,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
             fit: "inside",
             withoutEnlargement: true,
           })
+          .toFormat("jpeg")
           .toBuffer();
         const resizedImageMetadata = await sharp(originalImage).metadata();
         console.info(

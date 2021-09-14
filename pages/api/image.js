@@ -1,7 +1,7 @@
 import { ServerError, UserError } from "../../server/base/errors";
 import { createSignedUploadUrl } from "../../server/external/s3";
 
-const VALID_EXTENSIONS = ["png", "jpg", "jpeg"];
+const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
 
