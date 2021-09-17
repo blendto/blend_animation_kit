@@ -1,6 +1,6 @@
 import { Recipe, Size } from "./recipe";
 
-export type BlendStatus = "INITIALIZED" | "SUBMITTED" | "GENERATED";
+export type BlendStatus = "INITIALIZED" | "SUBMITTED" | "GENERATED" | "DELETED";
 
 export interface Blend extends Recipe {
   filePath?: string;

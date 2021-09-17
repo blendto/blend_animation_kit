@@ -130,7 +130,10 @@ export default function CollabViewerPage(props) {
       // Check blend from props
       let fetchedBlend = props.blend;
 
-      if (!fetchedBlend || fetchedBlend.status === "GENERATED") {
+      if (
+        !fetchedBlend ||
+        ["GENERATED", "DELETED"].includes(fetchedBlend.status)
+      ) {
         // 404 or is generated, stop loading
         setIsLoading(false);
         return;
@@ -162,7 +165,7 @@ export default function CollabViewerPage(props) {
     );
   }
 
-  if (!blend) {
+  if (!blend || blend.status === "DELETED") {
     return (
       <Result
         status="404"

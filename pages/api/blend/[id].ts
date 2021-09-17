@@ -85,12 +85,46 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(403).send({ message: "Forbidden" });
   }
 
-  await DynamoDB.deleteItem({
-    TableName: process.env.BLEND_DYNAMODB_TABLE,
-    Key: {
-      id: id,
-    },
-  });
+  if (blend.status != "GENERATED") {
+    try {
+      await DynamoDB.deleteItem({
+        TableName: process.env.BLEND_DYNAMODB_TABLE,
+        Key: {
+          id: id,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Something went wrong!" });
+    }
+  } else {
+    const now = Date.now();
+    const updatedOn = DateTime.utc().toISODate();
+    const params = {
+      UpdateExpression:
+        "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), " +
+        "updatedAt = :updatedAt, updatedOn = :updatedOn",
+      ExpressionAttributeNames: {
+        "#st": "status",
+      },
+      ExpressionAttributeValues: {
+        ":s": "DELETED",
+        ":update": [{ status: "DELETED", on: now }],
+        ":updatedAt": now,
+        ":updatedOn": updatedOn,
+      },
+      Key: { id: id },
+      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    };
+
+    try {
+      await DynamoDB.updateItem(params);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Something went wrong!" });
+    }
+  }
 
   // Hack: To avoid consistency issues coz the app reads /blend immediately after this,
   // We wait 1 second before responding
@@ -106,7 +140,7 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const blend = await _getBlend(id as string);
 
-  if (!blend) {
+  if (!blend || blend?.status === "DELETED") {
     res.status(404).send({ message: "Blend not found!" });
     return;
   }
