@@ -9,7 +9,7 @@ import { handleServerExceptions } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
-const CURRENT_ENCODER_VERSION = 2.2;
+const CURRENT_ENCODER_VERSION = 2.3;
 
 export const _getBlend = async (id: string): Promise<Blend> => {
   const blend = await DynamoDB.getItem({
