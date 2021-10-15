@@ -1,0 +1,3 @@
+apm_config:
+  filter_tags:
+    reject: ["http.path_group:/api/hello"]
