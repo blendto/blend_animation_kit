@@ -18,6 +18,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("RECIPE_INGREDIENTS_BUCKET");
   }
 
+  public get WEB_USER_ASSETS_BUCKET() {
+    return this.retrieveOrCrash("WEB_USER_ASSETS_BUCKET");
+  }
+
   public get OUTPUT_BASE_PATH() {
     // WIERD ISSUE COVER UP.
     // If we do this.retriveOrCrash("NEXT_PUBLIC_OUTPUT_BASE_PATH"), it throws error coz process.env does not have it

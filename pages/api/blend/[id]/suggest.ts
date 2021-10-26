@@ -57,7 +57,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 interface HeroImageFileKeys {
-  original: String;
+  original: string;
 }
 
 interface SuggestRecipesRequestBody {

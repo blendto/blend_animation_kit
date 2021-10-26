@@ -25,7 +25,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 interface RemoveBgRequest {
-  fileKey: String;
+  fileKey: string;
 }
 
 export const RemoveBgRequestSchema = Joi.object({

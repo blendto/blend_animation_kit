@@ -1,12 +1,13 @@
-import { ServerError, UserError } from "../../server/base/errors";
-import { createSignedUploadUrl } from "../../server/external/s3";
+import { NextApiRequest, NextApiResponse } from "next";
 import ConfigProvider from "server/base/ConfigProvider";
+import { UserError } from "../../server/base/errors";
+import { createSignedUploadUrl } from "../../server/external/s3";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
 
-export default async (req, res) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
 
   switch (method) {
@@ -18,22 +19,19 @@ export default async (req, res) => {
   }
 };
 
-const uploadImage = async (req, res) => {
+interface UploadFileRequest {
+  fileName: string;
+}
+
+const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { body: uploadFileRequest } = req;
-
-    let { collabId, fileName } = uploadFileRequest;
-
-    if (!collabId) {
-      throw new UserError("No collabId found in the request");
-    }
+    let { fileName } = req.body as UploadFileRequest;
 
     const urlDetails = await createSignedUploadUrl(
       fileName,
-      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      ConfigProvider.WEB_USER_ASSETS_BUCKET,
       VALID_EXTENSIONS,
       {
-        keyPrefix: collabId + "/",
         maxSize: MAX_FILE_SIZE,
       }
     );

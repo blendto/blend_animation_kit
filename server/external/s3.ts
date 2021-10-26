@@ -2,25 +2,18 @@ import { UserError, ServerError } from "../base/errors";
 import { nanoid } from "nanoid";
 
 import AWS from "./aws";
-import ConfigProvider from "../base/ConfigProvider";
+import { Stream } from "node:stream";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
-const TEN_MB = 10 * 1024 * 1024;
+const FIFTEEN_MB = 15 * 1024 * 1024;
 
 export const createSignedUploadUrl = async (
-  req,
-  validExtensions,
-  maxSize = TEN_MB
+  fileName: string,
+  bucketName: string,
+  validExtensions: string[],
+  { keyPrefix = "", maxSize = FIFTEEN_MB }
 ) => {
-  const { body: uploadFileRequest } = req;
-
-  let { collabId, fileName } = uploadFileRequest;
-
-  if (!collabId) {
-    throw new UserError("No collabId found in the request");
-  }
-
   if (!fileName) {
     throw new UserError("No filename found");
   }
@@ -43,17 +36,17 @@ export const createSignedUploadUrl = async (
     );
   }
 
-  const fileNameToStore = `${collabId}/${nanoid()}.${extension}`;
+  const fileNameToStore = `${keyPrefix}${nanoid()}.${extension}`;
 
   const params = {
-    Bucket: ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+    Bucket: bucketName,
     Fields: {
       key: fileNameToStore,
     },
     Expires: 60 * 10, // 10 min
     Conditions: [
       {
-        bucket: ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+        bucket: bucketName,
       },
       {
         key: fileNameToStore, // our generated key
@@ -75,7 +68,7 @@ export const createSignedUploadUrl = async (
   return signedPostReq;
 };
 
-export const doesObjectExist = async (bucketName, fileKey) => {
+export const doesObjectExist = async (bucketName: string, fileKey: string) => {
   return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
@@ -100,7 +93,10 @@ export const doesObjectExist = async (bucketName, fileKey) => {
   });
 };
 
-export const getObject = async (bucketName, fileKey) => {
+export const getObject = async (
+  bucketName: string,
+  fileKey: string
+): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
@@ -119,19 +115,23 @@ export const getObject = async (bucketName, fileKey) => {
         console.error(err);
         return reject(new ServerError("Something went wrong!"));
       }
-      return resolve(data.Body);
+      return resolve(data.Body as Buffer);
     });
   });
 };
 
-export const uploadObject = async (bucketName, fileKey, stream) => {
+export const uploadObject = async (
+  bucketName: string,
+  fileKey: string,
+  stream: Stream
+) => {
   return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
       Body: stream,
     };
-    s3.upload(params, (err, data) => {
+    s3.upload(params, (err: Error, data: AWS.S3.ManagedUpload.SendData) => {
       if (err) {
         console.error(err, err.stack);
         return reject(new ServerError("Something went wrong!"));
@@ -142,10 +142,10 @@ export const uploadObject = async (bucketName, fileKey, stream) => {
 };
 
 export const copyObject = async (
-  sourceBucket,
-  sourceKey,
-  destBucket,
-  destKey
+  sourceBucket: string,
+  sourceKey: string,
+  destBucket: string,
+  destKey: string
 ) => {
   return new Promise((resolve, reject) => {
     const params = {

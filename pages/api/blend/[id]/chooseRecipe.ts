@@ -44,7 +44,7 @@ export const _getRecipe = async (
  * @param interaction Interaction to be updated
  * @param fileKey The s3 filekey for the image
  */
-const adjustSizeToFit = async (interaction: Interaction, fileKey: String) => {
+const adjustSizeToFit = async (interaction: Interaction, fileKey: string) => {
   const imageFile = await getObject(
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
     fileKey
