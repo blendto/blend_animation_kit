@@ -2,6 +2,13 @@ import { NextApiRequest, NextApiResponse } from "next";
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "../../server/base/errors";
 import { createSignedUploadUrl } from "../../server/external/s3";
+import { initMiddleware } from "server/helpers/middleware";
+import Cors from "cors";
+
+// Initializing the cors middleware
+const cors = Cors({
+  methods: ["POST"],
+});
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 
@@ -23,7 +30,11 @@ interface UploadFileRequest {
   fileName: string;
 }
 
+const corsmiddleware = initMiddleware(cors);
+
 const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
+  await corsmiddleware(req, res);
+
   try {
     let { fileName } = req.body as UploadFileRequest;
 
