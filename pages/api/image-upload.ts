@@ -13,8 +13,11 @@ const cors = Cors({
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
+const corsmiddleware = initMiddleware(cors);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  await corsmiddleware(req, res);
+
   const { method } = req;
 
   switch (method) {
@@ -30,11 +33,7 @@ interface UploadFileRequest {
   fileName: string;
 }
 
-const corsmiddleware = initMiddleware(cors);
-
 const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
-  await corsmiddleware(req, res);
-
   try {
     let { fileName } = req.body as UploadFileRequest;
 
