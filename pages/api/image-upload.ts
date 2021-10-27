@@ -7,7 +7,7 @@ import Cors from "cors";
 
 // Initializing the cors middleware
 const cors = Cors({
-  methods: ["POST"],
+  methods: ["POST", "OPTIONS"],
 });
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
