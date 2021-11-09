@@ -18,6 +18,8 @@ import axios from "axios";
 import RecoEngineApi from "server/internal/reco-engine";
 import { IncomingMessage } from "node:http";
 import { RecipeUtils } from "server/base/models/recipe";
+import { UserAgentDetails } from "../../../../server/base/models/userAgentDetails";
+import { getUserAgentDetails } from "../../whoami";
 
 const toolkitApi = new ToolkitApi();
 const recoEngineApi = new RecoEngineApi();
@@ -90,6 +92,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     let uid = await firebase.extractUserIdFromRequest({
       request: req,
     });
+    const agentPromise: Promise<UserAgentDetails | null> = getUserAgentDetails(req);
 
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -197,7 +200,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    let recipeLists = (await recoEngineApi.suggestRecipeLists(bgRemovedFileKey))
+    let recipeLists = (await recoEngineApi.suggestRecipeLists(bgRemovedFileKey, await agentPromise))
       .suggestedRecipeCategories;
 
     recipeLists.sort(

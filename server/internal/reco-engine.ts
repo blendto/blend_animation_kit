@@ -2,6 +2,7 @@ import axios from "axios";
 import ConfigProvider from "server/base/ConfigProvider";
 import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
+import { UserAgentDetails } from "../base/models/userAgentDetails";
 
 export interface RecipeListSuggestions {
   suggestedRecipeCategories: RecipeList[];
@@ -13,12 +14,14 @@ export default class RecoEngineApi {
   });
 
   async suggestRecipeLists(
-    heroImageKey: string
+    heroImageKey: string,
+    userAgentDetails: UserAgentDetails | null
   ): Promise<RecipeListSuggestions> {
     return (
       await handleAxiosCall<RecipeListSuggestions>(async () => {
         return await this.httpClient.post("/suggestRecipeCategories", {
-          fileKeys: { hero: heroImageKey },
+          fileKeys: {hero: heroImageKey},
+          userAgentDetails: userAgentDetails
         });
       })
     ).data;

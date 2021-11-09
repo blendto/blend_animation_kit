@@ -3,6 +3,7 @@ import firebase from "server/external/firebase";
 import axios from "axios";
 import IpApi from "server/external/ipapi";
 import { handleServerExceptions } from "server/base/errors";
+import { UserAgentDetails } from "../../server/base/models/userAgentDetails";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -43,4 +44,19 @@ async function whoami(
       },
     });
   });
+}
+
+export async function getUserAgentDetails(req: NextApiRequest): Promise<UserAgentDetails | null> {
+  const ip = req.headers["x-forwarded-for"] as string;
+  if (!ip) {
+    return null;
+  }
+
+  try {
+    const ipDetails = await ipApi.getIpInfo(ip);
+    return new UserAgentDetails(ipDetails["country_code"]);
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
