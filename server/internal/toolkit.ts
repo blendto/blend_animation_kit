@@ -18,7 +18,8 @@ export default class ToolkitApi {
   removeBg = async (
     fileBuffer: Buffer,
     fileName: string,
-    crop: boolean = false
+    crop: boolean = false,
+    onlyMask: boolean = false
   ): Promise<IncomingMessage> => {
     const form = new FormData();
     form.append("file", fileBuffer, fileName);
@@ -28,6 +29,7 @@ export default class ToolkitApi {
         responseType: "stream",
         params: {
           crop: crop.toString(),
+          onlyMask: onlyMask.toString()
         },
       })
     ).data;
