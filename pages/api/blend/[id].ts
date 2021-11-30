@@ -7,9 +7,11 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { Recipe } from "server/base/models/recipe";
 import { handleServerExceptions } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
-
-const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
-const CURRENT_ENCODER_VERSION = 2.3;
+import {
+  CURRENT_ENCODER_VERSION,
+  MIN_SUPPORTED_ENCODER_VERSION,
+} from "server/constants";
+import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 
 export const _getBlend = async (id: string): Promise<Blend> => {
   const blend = await DynamoDB.getItem({
@@ -160,6 +162,18 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     filePath,
     imagePath,
   } = blend;
+
+  if (
+    !checkCompatibilityWithElements(
+      blend as Recipe,
+      parseFloat(target as string)
+    )
+  ) {
+    return res.status(400).json({
+      message:
+        "This recipe cannot be remixed on this app version. Please upgrade the app.",
+    });
+  }
 
   if ((format as string)?.toUpperCase() == "RECIPE") {
     const recipe = {

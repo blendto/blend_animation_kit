@@ -92,7 +92,8 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     let uid = await firebase.extractUserIdFromRequest({
       request: req,
     });
-    const agentPromise: Promise<UserAgentDetails | null> = getUserAgentDetails(req);
+    const agentPromise: Promise<UserAgentDetails | null> =
+      getUserAgentDetails(req);
 
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -200,8 +201,12 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
       }
     }
 
-    let recipeLists = (await recoEngineApi.suggestRecipeLists(bgRemovedFileKey, await agentPromise))
-      .suggestedRecipeCategories;
+    let recipeLists = (
+      await recoEngineApi.suggestRecipeLists(
+        bgRemovedFileKey,
+        await agentPromise
+      )
+    ).suggestedRecipeCategories;
 
     recipeLists.sort(
       (a, b) =>

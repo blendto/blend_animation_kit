@@ -77,9 +77,13 @@ export const doesObjectExist = async (bucketName: string, fileKey: string) => {
     s3.headObject(params, (err, data) => {
       if (err) {
         // If object does not exist it gives:
-        // 404 NoSuchKey if user has ListBucket permission
+        // 404 NoSuchKey or NotFound if user has ListBucket permission
         // 403 AccessDenied if user does not have ListBucket permission
-        if (err.code == "NoSuchKey" || err.code == "Forbidden") {
+        if (
+          err.code == "NoSuchKey" ||
+          err.code == "Forbidden" ||
+          err.code == "NotFound"
+        ) {
           return resolve(false);
         }
         console.error(err);
