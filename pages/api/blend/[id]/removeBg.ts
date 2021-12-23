@@ -9,6 +9,9 @@ import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
 import axios from "axios";
+import { applyMask, rescaleImage } from "server/helpers/imageUtils";
+import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
+import sharp from "sharp";
 
 const toolkitApi = new ToolkitApi();
 
@@ -26,10 +29,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
 interface RemoveBgRequest {
   fileKey: string;
+  useMask: boolean;
 }
 
 export const RemoveBgRequestSchema = Joi.object({
   fileKey: Joi.string().required(),
+  useMask: Joi.bool().default(false),
 });
 
 const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -52,7 +57,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  const { fileKey } = body as RemoveBgRequest;
+  const { fileKey, useMask = false } = body as RemoveBgRequest;
 
   let originalImage: Buffer;
   return await handleServerExceptions(res, async () => {
@@ -69,10 +74,18 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const bgRemovedFileName = `${fileNameWithoutExt}-bg-removed.png`;
 
+    const bgMaskFileName = `${fileNameWithoutExt}-bg-mask.png`;
+
     const bgRemovedFileKey = [
       ...fileKeyParts.slice(0, -1),
       "/",
       bgRemovedFileName,
+    ].join("");
+
+    const bgMaskFileKey = [
+      ...fileKeyParts.slice(0, -1),
+      "/",
+      bgMaskFileName,
     ].join("");
 
     const bgRemovedElementExists = await doesObjectExist(
@@ -88,14 +101,40 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
         const bgRemoved = await toolkitApi.removeBg(
           originalImage,
           fileNameWithExt,
-          true
+          true,
+          useMask
         );
 
-        await uploadObject(
-          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-          bgRemovedFileKey,
-          bgRemoved
-        );
+        if (useMask) {
+          const { width, height } = await sharp(originalImage).metadata();
+          const rescaledMask = await rescaleImage(
+            await streamToBuffer(bgRemoved),
+            width,
+            height
+          );
+          const bgRemovedImageUsingMask = await applyMask(
+            originalImage,
+            rescaledMask
+          );
+
+          await uploadObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            bgMaskFileKey,
+            bufferToStream(rescaledMask)
+          );
+
+          await uploadObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            bgRemovedFileKey,
+            bufferToStream(bgRemovedImageUsingMask)
+          );
+        } else {
+          await uploadObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            bgRemovedFileKey,
+            bgRemoved
+          );
+        }
       } catch (ex) {
         if (axios.isAxiosError(ex)) {
           let data = "";
@@ -119,6 +158,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     res.send({
       original: fileKey,
       withoutBg: bgRemovedFileKey,
+      mask: useMask ? bgMaskFileKey : null,
     });
   });
 };

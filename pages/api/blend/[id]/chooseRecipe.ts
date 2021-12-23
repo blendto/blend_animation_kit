@@ -9,6 +9,8 @@ import type {
   Interaction,
 } from "server/base/models/recipe";
 import sharp from "sharp";
+import { CURRENT_ENCODER_VERSION } from "server/constants";
+import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -90,7 +92,7 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       .status(400)
       .json({ code: 400, message: "request body is mandatory!" });
   }
-  const { recipeId, variant = "9:16", fileKeys } = req.body;
+  const { recipeId, variant = "9:16", fileKeys, encoderVersion } = req.body;
   if (!recipeId) {
     return res
       .status(400)
@@ -122,6 +124,13 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       console.error(ex);
     }
     return res.status(500).send({ message: "Something went wrong!" });
+  }
+
+  if (!checkCompatibilityWithElements(recipe, encoderVersion)) {
+    return res.status(400).json({
+      message:
+        "This recipe cannot be used on this app version. Please upgrade the app.",
+    });
   }
 
   let copyFilePromises = [];
