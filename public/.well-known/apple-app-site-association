@@ -1,11 +1,13 @@
 {
-    "applinks": {
-        "apps": [],
-        "details": [
-            {
-                "appID": "3SS5C8R5M3.to.blend.mobile-app",
-                "paths": [ "/v/*" ]
-            }
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "3SS5C8R5M3.to.blend.mobile-app",
+        "paths": [
+          "/*"
         ]
-    }
+      }
+    ]
+  }
 }
