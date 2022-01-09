@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "node --require dd-trace/init node_modules/.bin/next start",
     "flow": "flow",
-    "test": "jest --watch"
+    "test": "jest"
   },
   "dependencies": {
     "@ant-design/icons": "^4.2.2",
