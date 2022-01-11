@@ -94,6 +94,29 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     if (!bgRemovedElementExists) {
+      const metadata = await sharp(originalImage).metadata();
+
+      if (
+        !["jpeg", "jpg"].includes(metadata.format) ||
+        metadata.size > 1024 * 1024 * 10
+      ) {
+        // failOnError: false helps blow past errors like
+        // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
+        // https://github.com/lovell/sharp/issues/1578
+        originalImage = await sharp(originalImage, { failOnError: false })
+          .toFormat("webp", { quality: 90 })
+          .toBuffer();
+        const compressedImageMetadata = await sharp(originalImage).metadata();
+        console.info({
+          op: "RESIZE_IMAGE",
+          originalImageSize: metadata.size,
+          compressedImageSize: compressedImageMetadata.size,
+        });
+
+        if (compressedImageMetadata.size > 1024 * 1024 * 10) {
+          throw new UserError("Image too big in size", 400);
+        }
+      }
       // As of now this logic just works by assuming file name is unique
       // This works because we generate a random file name when we store the file name
       // Re-evaluate in the future
