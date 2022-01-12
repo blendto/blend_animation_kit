@@ -76,6 +76,8 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const bgMaskFileName = `${fileNameWithoutExt}-bg-mask.png`;
 
+    var trimLTWH: Array<Number> | null = null;
+
     const bgRemovedFileKey = [
       ...fileKeyParts.slice(0, -1),
       "/",
@@ -135,9 +137,11 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
             width,
             height
           );
+          const trim = true;
           const bgRemovedImageUsingMask = await applyMask(
             originalImage,
-            rescaledMask
+            rescaledMask,
+            trim
           );
 
           await uploadObject(
@@ -149,8 +153,18 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
           await uploadObject(
             ConfigProvider.BLEND_INGREDIENTS_BUCKET,
             bgRemovedFileKey,
-            bufferToStream(bgRemovedImageUsingMask)
+            bufferToStream(bgRemovedImageUsingMask.data)
           );
+
+          if (trim) {
+            const {
+              trimOffsetLeft,
+              trimOffsetTop,
+              width: trimWidth,
+              height: trimHeight,
+            } = bgRemovedImageUsingMask.info;
+            trimLTWH = [trimOffsetLeft, trimOffsetTop, trimWidth, trimHeight];
+          }
         } else {
           await uploadObject(
             ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -182,6 +196,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       original: fileKey,
       withoutBg: bgRemovedFileKey,
       mask: useMask ? bgMaskFileKey : null,
+      trimLTWH,
     });
   });
 };
