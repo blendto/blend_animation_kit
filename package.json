@@ -28,6 +28,7 @@
     "nanoid": "^3.1.12",
     "next": "12",
     "nextjs-redirect": "^5.0.2",
+    "prettier": "^2.5.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "sharp": "^0.29.0",

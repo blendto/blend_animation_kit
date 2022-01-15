@@ -4,8 +4,8 @@ import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
 import { handleServerExceptions } from "server/base/errors";
-import Base64 from "server/helpers/base64";
 import { Blend } from "server/base/models/blend";
+import { EncodedPageKey } from "server/helpers/paginationUtils";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -48,7 +48,6 @@ const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       if (!item) {
         break;
       }
-      continue;
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Something went wrong!" });
@@ -86,19 +85,14 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
 
   let pageKeyObject = null;
 
-  // "null" as a string is ignored for pageKey. Its okay.
-  // It's not fair. The client should not have send "null"
-  // World is not fair!
-  if (pageKey && pageKey != "null") {
-    if (typeof pageKey != "string") {
-      return res.status(400).json({ message: "pageKey should be a string" });
-    }
-
-    try {
-      pageKeyObject = JSON.parse(Base64.decode(pageKey));
-    } catch (e) {
-      return res.status(400).json({ message: "Invalid pageKey format" });
-    }
+  const encodedPageKey = new EncodedPageKey(pageKey);
+  if (encodedPageKey.exists() && !encodedPageKey.isValid()) {
+    return res.status(400).json({ message: "pageKey should be a string" });
+  }
+  try {
+    pageKeyObject = encodedPageKey.decode();
+  } catch (e) {
+    return res.status(400).json({ message: "Invalid pageKey format" });
   }
 
   let items = [];
@@ -130,9 +124,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
       return backfillBlendOutput(<Blend>item);
     });
 
-    nextPageKey = data.LastEvaluatedKey
-      ? Base64.encode(JSON.stringify(data.LastEvaluatedKey))
-      : null;
+    nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
