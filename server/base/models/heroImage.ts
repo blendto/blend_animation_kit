@@ -3,7 +3,7 @@ export interface HeroImage {
   original: string;
   withoutBg: string;
   thumbnail: string;
-  lastUsedOn: number;
+  lastUsedAt: number;
   createdAt: number;
   userId: string;
   sourceBlendId: string;

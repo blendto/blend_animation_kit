@@ -45,7 +45,7 @@ const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
   const data = await DynamoDB.queryItems({
     TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
     KeyConditionExpression: "#userId = :userId",
-    IndexName: "userId-lastUsedOn-index",
+    IndexName: "userId-lastUsedAt-index",
     ExpressionAttributeNames: {
       "#userId": "userId",
     },
