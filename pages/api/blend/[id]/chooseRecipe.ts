@@ -9,7 +9,6 @@ import type {
   Interaction,
 } from "server/base/models/recipe";
 import sharp from "sharp";
-import { CURRENT_ENCODER_VERSION } from "server/constants";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -142,6 +141,9 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
         (interaction) =>
           interaction.assetType == "IMAGE" && interaction.assetUid == image.uid
       );
+      // Starting from 2.5, we only show the cropped area in the mobile_app instead of actually cropping the image and uploading it.
+      // The hero image should not have cropRect property in a recipe as it will get replaced.
+      (interaction.metadata as ImageMetadata).cropRect = null;
       if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
         interactionUpdatePromise = adjustSizeToFit(
           interaction,
