@@ -27,6 +27,6 @@ export const applyMask = async (
     .toBuffer({ resolveWithObject: true });
 };
 
-export const rescaleImage = (image: Buffer, width: number, height: number) => {
+export const rescaleImage = (image: Buffer, width: number, height?: number) => {
   return sharp(image).resize({ width, height }).toBuffer();
 };
