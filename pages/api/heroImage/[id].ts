@@ -52,7 +52,7 @@ export const _getHero = async (
     Key: { id },
   })) as HeroImage | null;
 
-  if (heroImage == null || heroImage.userId !== uid) {
+  if (heroImage == null || ![uid, "DEFAULT_USER"].includes(heroImage.userId)) {
     return null;
   }
   return heroImage;
