@@ -20,10 +20,45 @@ export default class RecoEngineApi {
     return (
       await handleAxiosCall<RecipeListSuggestions>(async () => {
         return await this.httpClient.post("/suggestRecipeCategories", {
-          fileKeys: {hero: heroImageKey},
-          userAgentDetails: userAgentDetails
+          fileKeys: { hero: heroImageKey },
+          userAgentDetails: userAgentDetails,
         });
       })
     ).data;
   }
+
+  identifyProduct = async (query: any, body: any): Promise<any> => {
+    return (
+      await handleAxiosCall<any>(async () => {
+        return await this.httpClient.post("/identify-product", body);
+      })
+    ).data;
+  };
+
+  createDescriptions = async (query: any, body: any): Promise<any> => {
+    return (
+      await handleAxiosCall<any>(async () => {
+        return await this.httpClient.post("/descriptions", body);
+      })
+    ).data;
+  };
+
+  getDescriptions = async (query: any, body: any): Promise<any> => {
+    return (
+      await handleAxiosCall<any>(async () => {
+        return await this.httpClient.get("/descriptions/" + query.id);
+      })
+    ).data;
+  };
+
+  generateMoreDescriptions = async (query: any, body: any): Promise<any> => {
+    return (
+      await handleAxiosCall<any>(async () => {
+        return await this.httpClient.post(
+          `/descriptions/${query.id}/generate`,
+          body
+        );
+      })
+    ).data;
+  };
 }
