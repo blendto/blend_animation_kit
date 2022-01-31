@@ -38,7 +38,7 @@ const recoEngineApi = new RecoEngineApi();
 
 const _getRecentBlends = async (uid: string) => {
   return <Blend[]>(
-    await DynamoDB.queryItems({
+    await DynamoDB._().queryItems({
       TableName: process.env.BLEND_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
       IndexName: "created-by-idx",

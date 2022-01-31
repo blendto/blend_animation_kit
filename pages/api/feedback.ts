@@ -25,7 +25,7 @@ const getFeedbackOptions = async (
   req: NextApiRequest,
   res: NextApiResponse
 ) => {
-  const feedbackConfig = (await DynamoDB.getItem({
+  const feedbackConfig = (await DynamoDB._().getItem({
     TableName: process.env.CONFIG_DYNAMODB_TABLE,
     Key: {
       key: "feedback",

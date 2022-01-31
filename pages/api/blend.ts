@@ -39,7 +39,7 @@ const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   do {
     blendRequestId = nanoid(8);
     try {
-      const item = await DynamoDB.getItem({
+      const item = await DynamoDB._().getItem({
         TableName: process.env.BLEND_DYNAMODB_TABLE,
         Key: {
           id: blendRequestId,
@@ -98,7 +98,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
   let items = [];
   let nextPageKey = null;
   try {
-    const data = await DynamoDB.queryItems({
+    const data = await DynamoDB._().queryItems({
       TableName: process.env.BLEND_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
       IndexName: "createdBy-updatedAt-idx",
@@ -155,7 +155,7 @@ export const addBlendToDB = async (id: string, userId?: string) => {
     ...(userId !== null && { createdBy: userId }),
   };
 
-  await DynamoDB.putItem({
+  await DynamoDB._().putItem({
     TableName: process.env.BLEND_DYNAMODB_TABLE,
     Item: blend,
   });

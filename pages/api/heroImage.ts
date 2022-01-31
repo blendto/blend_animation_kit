@@ -93,7 +93,7 @@ export const createNewHeroImage = async (
     sourceBlendId: blendId,
   } as HeroImage;
 
-  await DynamoDB.putItem({
+  await DynamoDB._().putItem({
     TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
     Item: heroImage,
   });
@@ -122,7 +122,7 @@ const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(400).json({ message: "Invalid pageToken format" });
   }
 
-  const data = await DynamoDB.queryItems({
+  const data = await DynamoDB._().queryItems({
     TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
     KeyConditionExpression: "#userId = :userId",
     IndexName: "userId-lastUsedAt-index",

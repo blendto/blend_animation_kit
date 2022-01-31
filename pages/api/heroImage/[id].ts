@@ -47,7 +47,7 @@ export const _getHero = async (
   id: String,
   uid: String
 ): Promise<HeroImage | null> => {
-  const heroImage = (await DynamoDB.getItem({
+  const heroImage = (await DynamoDB._().getItem({
     TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
     Key: { id },
   })) as HeroImage | null;
@@ -68,5 +68,5 @@ export const markHeroImageUsage = async (id: String) => {
     TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
     ReturnValues: "NONE",
   };
-  await DynamoDB.updateItem(params);
+  await DynamoDB._().updateItem(params);
 };

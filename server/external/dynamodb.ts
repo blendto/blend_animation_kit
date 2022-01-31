@@ -3,7 +3,17 @@ import AWS from "./aws";
 var docClient = new AWS.DynamoDB.DocumentClient();
 
 export default class DynamoDB {
-  static scanItems(
+  private static _instance: DynamoDB = new DynamoDB();
+
+  private constructor() {
+    DynamoDB._instance = this;
+  }
+
+  static _(): DynamoDB {
+    return DynamoDB._instance;
+  }
+
+  scanItems(
     params: AWS.DynamoDB.DocumentClient.ScanInput
   ): Promise<AWS.DynamoDB.DocumentClient.ItemList> {
     return new Promise((resolve, reject) => {
@@ -16,7 +26,7 @@ export default class DynamoDB {
     });
   }
 
-  static queryItems(
+  queryItems(
     params: AWS.DynamoDB.DocumentClient.QueryInput
   ): Promise<AWS.DynamoDB.DocumentClient.QueryOutput> {
     return new Promise((resolve, reject) => {
@@ -29,7 +39,7 @@ export default class DynamoDB {
     });
   }
 
-  static getItem(
+  getItem(
     params: AWS.DynamoDB.DocumentClient.GetItemInput
   ): Promise<AWS.DynamoDB.DocumentClient.AttributeMap> {
     return new Promise((resolve, reject) => {
@@ -42,7 +52,7 @@ export default class DynamoDB {
     });
   }
 
-  static putItem(
+  putItem(
     params: AWS.DynamoDB.DocumentClient.PutItemInput
   ): Promise<AWS.DynamoDB.DocumentClient.PutItemOutput> {
     return new Promise((resolve, reject) => {
@@ -57,7 +67,7 @@ export default class DynamoDB {
     });
   }
 
-  static deleteItem(
+  deleteItem(
     params: AWS.DynamoDB.DocumentClient.DeleteItemInput
   ): Promise<AWS.DynamoDB.DocumentClient.DeleteItemOutput> {
     return new Promise((resolve, reject) => {
@@ -72,7 +82,7 @@ export default class DynamoDB {
     });
   }
 
-  static updateItem(
+  updateItem(
     params: AWS.DynamoDB.DocumentClient.UpdateItemInput
   ): Promise<AWS.DynamoDB.DocumentClient.UpdateItemOutput> {
     return new Promise((resolve, reject) => {

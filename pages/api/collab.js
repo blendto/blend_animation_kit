@@ -21,7 +21,7 @@ const initCollab = async (req, res) => {
   do {
     collabRequestId = nanoid(8);
     try {
-      const item = await DynamoDB.getItem({
+      const item = await DynamoDB._().getItem({
         TableName: process.env.BLEND_DYNAMODB_TABLE,
         Key: {
           id: collabRequestId,

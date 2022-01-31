@@ -14,7 +14,7 @@ import {
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 
 export const _getBlend = async (id: string): Promise<Blend> => {
-  const blend = await DynamoDB.getItem({
+  const blend = await DynamoDB._().getItem({
     TableName: process.env.BLEND_DYNAMODB_TABLE,
     Key: {
       id,
@@ -89,7 +89,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (blend.status != "GENERATED") {
     try {
-      await DynamoDB.deleteItem({
+      await DynamoDB._().deleteItem({
         TableName: process.env.BLEND_DYNAMODB_TABLE,
         Key: {
           id: id,
@@ -121,7 +121,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     };
 
     try {
-      await DynamoDB.updateItem(params);
+      await DynamoDB._().updateItem(params);
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Something went wrong!" });
@@ -330,7 +330,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   let updatedRecipe: { [x: string]: string | string[] };
   try {
-    const dbUpdateResponse = await DynamoDB.updateItem(params);
+    const dbUpdateResponse = await DynamoDB._().updateItem(params);
     updatedRecipe = dbUpdateResponse.Attributes;
 
     await new SQS(process.env.BLEND_GEN_QUEUE_URL).sendMessage({ id });

@@ -5,7 +5,7 @@ const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 1.6;
 
 export const _getCollab = async (id) => {
-  return await DynamoDB.getItem({
+  return await DynamoDB._().getItem({
     TableName: process.env.BLEND_DYNAMODB_TABLE,
     Key: {
       id,

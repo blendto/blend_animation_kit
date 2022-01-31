@@ -26,7 +26,7 @@ export const _getRecipe = async (
   id: string,
   variant: string = "9:16"
 ): Promise<Recipe> => {
-  const recipe = await DynamoDB.getItem({
+  const recipe = await DynamoDB._().getItem({
     TableName: process.env.RECIPE_DYNAMODB_TABLE,
     Key: {
       id,
