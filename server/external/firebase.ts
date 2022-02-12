@@ -2,6 +2,11 @@ import admin from "firebase-admin";
 import { NextApiRequest } from "next";
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
+import { nanoid } from "nanoid";
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
+
+firebase.initializeApp(ConfigProvider.FIREBASE_APP_CLIENT_CONFIG);
 
 const FIREBASE_PROJECT_ID = "blend-app-b3f6d";
 
@@ -31,6 +36,15 @@ class Firebase {
     } catch (e) {
       throw new UserError("Invalid Token");
     }
+  }
+
+  async createTemporaryUser(): Promise<any> {
+    const userRecord = await admin.auth().createUser({
+      uid: nanoid(16),
+    });
+    const token: string = await admin.auth().createCustomToken(userRecord.uid);
+    const userCredential = await firebase.auth().signInWithCustomToken(token);
+    return userCredential.user.toJSON();
   }
 
   async extractUserIdFromRequest({

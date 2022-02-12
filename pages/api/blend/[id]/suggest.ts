@@ -24,14 +24,15 @@ import axios from "axios";
 import RecoEngineApi from "server/internal/reco-engine";
 import { IncomingMessage } from "node:http";
 import { RecipeUtils } from "server/base/models/recipe";
-import { UserAgentDetails } from "../../../../server/base/models/userAgentDetails";
-import { getUserAgentDetails } from "../../whoami";
+import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import {
   HeroImage,
   HeroImageFileKeys,
   createBlendBucketFileKeys,
 } from "server/base/models/heroImage";
 import { createNewHeroImage } from "pages/api/heroImage";
+import { BlendService } from "server/service/blend";
+import { getUserAgentDetails } from "pages/api/whoami";
 
 const toolkitApi = new ToolkitApi();
 const recoEngineApi = new RecoEngineApi();
@@ -60,10 +61,10 @@ const _getRecentBlends = async (uid: string) => {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-
+  const blendService = new BlendService();
   switch (method) {
     case "POST":
-      await suggestRecipes(req, res);
+      await suggestRecipes(req, res, blendService);
       break;
     default:
       return res.status(404).json({ code: 404, message: "Wrong page/" });
@@ -182,7 +183,11 @@ async function createBgRemovedImage(
   }
 }
 
-const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
+const suggestRecipes = async (
+  req: NextApiRequest,
+  res: NextApiResponse,
+  blendService: BlendService
+) => {
   const {
     query: { id },
     body,
@@ -222,6 +227,8 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const finalisedFileKeys: HeroImageFileKeys =
       await fileKeysProcessor.process();
+
+    await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
 
     let recipeLists = (
       await recoEngineApi.suggestRecipeLists(

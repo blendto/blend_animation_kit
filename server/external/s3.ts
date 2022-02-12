@@ -1,25 +1,18 @@
-import { UserError, ServerError } from "../base/errors";
 import { nanoid } from "nanoid";
 
 import AWS from "./aws";
 import { Stream } from "node:stream";
+import { ServerError, UserError } from "server/base/errors";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
 const FIFTEEN_MB = 15 * 1024 * 1024;
 
-export const createSignedUploadUrl = async (
+export function createDestinationFileKey(
   fileName: string,
-  bucketName: string,
   validExtensions: string[],
-  { keyPrefix = "", maxSize = FIFTEEN_MB }
-) => {
-  if (!fileName) {
-    throw new UserError("No filename found");
-  }
-
-  fileName = fileName.trim();
-
+  keyPrefix = ""
+) {
   const fileNameParts = fileName.split(".");
 
   if (fileNameParts.length <= 1) {
@@ -36,7 +29,23 @@ export const createSignedUploadUrl = async (
     );
   }
 
-  const fileNameToStore = `${keyPrefix}${nanoid()}.${extension}`;
+  return `${keyPrefix}${nanoid()}.${extension}`;
+}
+
+export const createSignedUploadUrl = async (
+  fileName: string,
+  bucketName: string,
+  validExtensions: string[],
+  { keyPrefix = "", outFileKey = null, maxSize = FIFTEEN_MB }
+) => {
+  if (!fileName) {
+    throw new UserError("No filename found");
+  }
+
+  fileName = fileName.trim();
+  const fileNameToStore =
+    outFileKey ??
+    createDestinationFileKey(fileName, validExtensions, keyPrefix);
 
   const params = {
     Bucket: bucketName,
@@ -55,7 +64,7 @@ export const createSignedUploadUrl = async (
     ],
   };
 
-  const signedPostReq = await new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     s3.createPresignedPost(params, function (err, data) {
       if (err) {
         reject(err);
@@ -64,8 +73,6 @@ export const createSignedUploadUrl = async (
       resolve(data);
     });
   });
-
-  return signedPostReq;
 };
 
 export const doesObjectExist = async (bucketName: string, fileKey: string) => {

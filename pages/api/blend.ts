@@ -6,6 +6,7 @@ import firebase from "server/external/firebase";
 import { handleServerExceptions } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
+import { HeroImageFileKeys } from "server/base/models/heroImage";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -29,40 +30,49 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
-  let blendRequestId: string;
-
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
     optional: true,
   });
-
-  do {
-    blendRequestId = nanoid(8);
-    try {
-      const item = await DynamoDB._().getItem({
-        TableName: process.env.BLEND_DYNAMODB_TABLE,
-        Key: {
-          id: blendRequestId,
-        },
-      });
-      if (!item) {
-        break;
-      }
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Something went wrong!" });
-      return;
-    }
-  } while (true);
-
   try {
-    const blend = await addBlendToDB(blendRequestId, uid);
+    const blend = await initBlendInternal(uid);
     return res.send(blend);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
     return;
   }
+};
+
+export const initBlendInternal = async (
+  uid: string,
+  options?: { batchId: string; heroFileName: string }
+) => {
+  let blendRequestId: string;
+  do {
+    blendRequestId = nanoid(8);
+    const item = await DynamoDB._().getItem({
+      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      Key: {
+        id: blendRequestId,
+      },
+    });
+    if (!item) {
+      break;
+    }
+  } while (true);
+
+  let fileKey = null;
+  if (options?.heroFileName) {
+    fileKey = `${blendRequestId}/${options.heroFileName}`;
+  }
+
+  return await addBlendToDB(blendRequestId, uid, {
+    batchId: options?.batchId,
+    heroImages: {
+      original: fileKey,
+    },
+  });
 };
 
 const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -134,12 +144,17 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
   res.send({ data: items, nextPageKey });
 };
 
-export const addBlendToDB = async (id: string, userId?: string) => {
+export const addBlendToDB = async (
+  id: string,
+  userId?: string,
+  options?: { batchId: string; heroImages: HeroImageFileKeys }
+) => {
   const currentTime = Date.now();
   const currentDate = DateTime.utc().toISODate();
 
   let blend: Blend = {
     id: id,
+    batchId: options?.batchId,
     status: "INITIALIZED",
     statusUpdates: [
       {
@@ -152,6 +167,7 @@ export const addBlendToDB = async (id: string, userId?: string) => {
     createdOn: currentDate,
     updatedAt: currentTime,
     updatedOn: currentDate,
+    heroImages: options?.heroImages,
     ...(userId !== null && { createdBy: userId }),
   };
 
