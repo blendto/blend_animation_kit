@@ -388,11 +388,6 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
       return this.fileKeys;
     }
 
-    let originalImage: Buffer = await getObject(
-      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-      this.fileKeys.original
-    );
-
     const { bgRemovedFileKey, fileNameWithExt } = constructBgRemovedFileKey(
       this.fileKeys
     );
@@ -403,6 +398,10 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     );
 
     if (!bgRemovedElementExists) {
+      let originalImage: Buffer = await getObject(
+        ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+        this.fileKeys.original
+      );
       await createBgRemovedImage(
         originalImage,
         fileNameWithExt,
