@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
-import DynamoDB from "server/external/dynamodb";
-import { HeroImage } from "server/base/models/heroImage";
+import HeroImageService from "server/service/heroImage";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -34,39 +33,11 @@ const getHero = async (req: NextApiRequest, res: NextApiResponse) => {
     query: { id },
   } = req;
 
-  const heroImage = await _getHero(id as string, uid);
+  const heroImage = await new HeroImageService().getImage(id as string, uid);
   if (!heroImage) {
     return res
       .status(404)
       .json({ code: 404, message: "No such hero image for user" });
   }
   res.send(heroImage);
-};
-
-export const _getHero = async (
-  id: String,
-  uid: String
-): Promise<HeroImage | null> => {
-  const heroImage = (await DynamoDB._().getItem({
-    TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
-    Key: { id },
-  })) as HeroImage | null;
-
-  if (heroImage == null || ![uid, "DEFAULT_USER"].includes(heroImage.userId)) {
-    return null;
-  }
-  return heroImage;
-};
-
-export const markHeroImageUsage = async (id: String) => {
-  const params = {
-    UpdateExpression: "SET lastUsedAt = :lastUsedAt",
-    ExpressionAttributeValues: {
-      ":lastUsedAt": Date.now(),
-    },
-    Key: { id: id },
-    TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
-    ReturnValues: "NONE",
-  };
-  await DynamoDB._().updateItem(params);
 };

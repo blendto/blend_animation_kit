@@ -1,19 +1,7 @@
-import DynamoDB from "server/external/dynamodb";
 import firebase from "server/external/firebase";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
-import {
-  createHeroBucketFileKeys,
-  HeroImage,
-  HeroImageFileKeys,
-} from "server/base/models/heroImage";
-import { copyObject, getObject, uploadObject } from "../../server/external/s3";
-import ConfigProvider from "../../server/base/ConfigProvider";
-import { nanoid } from "nanoid";
-import { rescaleImage } from "../../server/helpers/imageUtils";
-import {
-  bufferToStream,
-} from "../../server/helpers/bufferUtils";
+import HeroImageService from "server/service/heroImage";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -30,75 +18,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
-};
-
-async function _createAndSaveThumbnail(
-  inputFileKey: string,
-  thumbnailFileKey: string
-) {
-  const bgRemoved: Buffer = await getObject(
-    ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-    inputFileKey
-  );
-  const thumbnail = await rescaleImage(bgRemoved, 240);
-  await uploadObject(
-    ConfigProvider.HERO_IMAGES_BUCKET,
-    thumbnailFileKey,
-    bufferToStream(thumbnail)
-  );
-}
-
-export const createNewHeroImage = async (
-  blendId: String,
-  userId: String,
-  blendBucketFileKeys: HeroImageFileKeys
-): Promise<HeroImage> => {
-  const heroImageId = nanoid(16);
-  const heroBucketFilekeys = createHeroBucketFileKeys(
-    heroImageId,
-    blendBucketFileKeys
-  );
-
-  const copyOriginalFile: Promise<any> = copyObject(
-    ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-    blendBucketFileKeys.original,
-    ConfigProvider.HERO_IMAGES_BUCKET,
-    heroBucketFilekeys.original
-  );
-
-  const copyBgRemovedFile: Promise<any> = copyObject(
-    ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-    blendBucketFileKeys.withoutBg,
-    ConfigProvider.HERO_IMAGES_BUCKET,
-    heroBucketFilekeys.withoutBg
-  );
-
-  const saveThumbnail: Promise<void> = _createAndSaveThumbnail(
-    blendBucketFileKeys.withoutBg,
-    heroBucketFilekeys.thumbnail
-  );
-
-  await Promise.all([copyOriginalFile, copyBgRemovedFile, saveThumbnail]);
-
-  const now = Date.now();
-
-  const heroImage = {
-    id: heroImageId,
-    original: heroBucketFilekeys.original,
-    withoutBg: heroBucketFilekeys.withoutBg,
-    thumbnail: heroBucketFilekeys.thumbnail,
-    lastUsedAt: now,
-    createdAt: now,
-    userId: userId,
-    sourceBlendId: blendId,
-  } as HeroImage;
-
-  await DynamoDB._().putItem({
-    TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
-    Item: heroImage,
-  });
-
-  return heroImage;
 };
 
 const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -122,23 +41,8 @@ const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(400).json({ message: "Invalid pageToken format" });
   }
 
-  const data = await DynamoDB._().queryItems({
-    TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
-    KeyConditionExpression: "#userId = :userId",
-    IndexName: "userId-lastUsedAt-index",
-    ExpressionAttributeNames: {
-      "#userId": "userId",
-    },
-    ExpressionAttributeValues: {
-      ":userId": uid,
-    },
-    ScanIndexForward: false,
-    ExclusiveStartKey: pageKeyObject,
-    Limit: 20,
-  });
-
-  const nextPageToken = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
-
-  const heroImages: HeroImage[] = data.Items.map((entry) => entry as HeroImage);
-  res.send({ data: heroImages, nextPageToken });
+  const { images, pageKeyObject: nextPageKeyObject } =
+    await new HeroImageService().getImagesForUser(pageKeyObject, uid);
+  const nextPageToken = EncodedPageKey.fromObject(nextPageKeyObject)?.key;
+  res.send({ data: images, nextPageToken });
 };

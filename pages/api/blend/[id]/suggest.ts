@@ -5,7 +5,6 @@ import take from "lodash/take";
 import sharp from "sharp";
 
 import { _getBlend } from "../[id]";
-import { _getHero, markHeroImageUsage } from "pages/api/heroImage/[id]";
 
 import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
 
@@ -30,8 +29,8 @@ import {
   HeroImageFileKeys,
   createBlendBucketFileKeys,
 } from "server/base/models/heroImage";
-import { createNewHeroImage } from "pages/api/heroImage";
 import { BlendService } from "server/service/blend";
+import HeroImageService from "server/service/heroImage";
 import { getUserAgentDetails } from "pages/api/whoami";
 
 const toolkitApi = new ToolkitApi();
@@ -334,9 +333,11 @@ class HeroImageIdBased extends FileKeysProcessingStrategy {
   }
 
   async process(): Promise<HeroImageFileKeys> {
-    const heroImage: HeroImage | null = await _getHero(
-      this.heroImageId,
-      this.userId
+    const heroImageService = new HeroImageService();
+
+    const heroImage: HeroImage | null = await heroImageService.getImage(
+      this.heroImageId as string,
+      this.userId as string
     );
     if (!heroImage) {
       throw new UserError("No such hero image for user");
@@ -362,7 +363,7 @@ class HeroImageIdBased extends FileKeysProcessingStrategy {
 
     await Promise.all([copyOriginalFile, copyBgRemovedFile]);
 
-    await markHeroImageUsage(this.heroImageId);
+    await heroImageService.markImageUsage(this.heroImageId);
     return blendBucketFilekeys;
   }
 }
@@ -379,9 +380,11 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
   }
 
   async process(): Promise<HeroImageFileKeys> {
+    const heroImageService = new HeroImageService();
+
     if (this.fileKeys.withoutBg) {
       // noinspection ES6MissingAwait
-      createNewHeroImage(this.blendId, this.userId, this.fileKeys);
+      heroImageService.createNewImage(this.blendId, this.userId, this.fileKeys);
       return this.fileKeys;
     }
 
@@ -414,7 +417,7 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     } as HeroImageFileKeys;
 
     // noinspection ES6MissingAwait
-    createNewHeroImage(this.blendId, this.userId, updatedFilekeys);
+    heroImageService.createNewImage(this.blendId, this.userId, updatedFilekeys);
     return updatedFilekeys;
   }
 }
