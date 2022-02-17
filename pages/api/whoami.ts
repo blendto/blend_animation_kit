@@ -4,8 +4,19 @@ import axios from "axios";
 import IpApi from "server/external/ipapi";
 import { handleServerExceptions } from "server/base/errors";
 import { UserAgentDetails } from "../../server/base/models/userAgentDetails";
+import { initMiddleware } from "server/helpers/middleware";
+import Cors from "cors";
+
+// Initializing the cors middleware
+const cors = Cors({
+  methods: ["GET", "OPTIONS"],
+});
+
+const corsmiddleware = initMiddleware(cors);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  await corsmiddleware(req, res);
+  
   const { method } = req;
 
   switch (method) {
