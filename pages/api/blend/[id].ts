@@ -1,6 +1,6 @@
 import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
-import { addBlendToDB, backfillBlendOutput } from "../blend";
+import { addBlendToDB, backfillBlendOutput, BlendVersion } from "../blend";
 import firebase from "server/external/firebase";
 import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -13,11 +13,15 @@ import {
 } from "server/constants";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 
-export const _getBlend = async (id: string): Promise<Blend> => {
+export const _getBlend = async (
+  id: string,
+  version: BlendVersion = BlendVersion.current
+): Promise<Blend> => {
   const blend = await DynamoDB._().getItem({
-    TableName: process.env.BLEND_DYNAMODB_TABLE,
+    TableName: process.env.BLEND_VERSIONED_DYNAMODB_TABLE,
     Key: {
       id,
+      version: version,
     },
   });
 
@@ -135,12 +139,19 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   res.send({ status: "Success" });
 };
 
+/**
+ * Returns the blend with id passed in request query.
+ * Retrieves the generated version by default, unless specified otherwise in the version
+ * or not generated yet.
+ */
 const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
-    query: { id, format, target },
+    query: { id, format, target, version = BlendVersion.generated },
   } = req;
 
-  const blend = await _getBlend(id as string);
+  let blend = await _getBlend(id as string, version as BlendVersion);
+
+  blend = blend ?? (await _getBlend(id as string, BlendVersion.current));
 
   if (!blend || blend?.status === "DELETED") {
     res.status(404).send({ message: "Blend not found!" });

@@ -1,9 +1,16 @@
 import { Recipe, Size } from "./recipe";
 import { HeroImageFileKeys } from "./heroImage";
 
-export type BlendStatus = "INITIALIZED" | "SUBMITTED" | "GENERATED" | "DELETED";
+export enum BlendStatus {
+  Initialized = "INITIALIZED",
+  Submitted = "SUBMITTED",
+  Generated = "GENERATED",
+  Deleted = "DELETED",
+}
 
 export interface Blend extends Recipe {
+  id: string;
+  version: string;
   batchId?: string;
   filePath?: string;
   imagePath?: string;

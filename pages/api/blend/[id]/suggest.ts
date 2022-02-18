@@ -40,19 +40,22 @@ const recoEngineApi = new RecoEngineApi();
 const _getRecentBlends = async (uid: string) => {
   return <Blend[]>(
     await DynamoDB._().queryItems({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: process.env.BLEND_VERSIONED_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
       IndexName: "created-by-idx",
       ExpressionAttributeNames: {
         "#createdBy": "createdBy",
         "#status": "status",
+        "#version": "version",
       },
       ExpressionAttributeValues: {
         ":createdBy": uid,
-        ":generated": "GENERATED",
+        ":generatedStatus": "GENERATED",
+        ":generatedVersion": "GENERATED",
       },
       ProjectionExpression: "id, metadata",
-      FilterExpression: "#status = :generated",
+      FilterExpression:
+        "#version = :generatedVersion AND #status = :generatedStatus",
       ScanIndexForward: false,
       Limit: 20,
     })

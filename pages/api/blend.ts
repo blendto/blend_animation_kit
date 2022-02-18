@@ -4,7 +4,7 @@ import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
 import { handleServerExceptions } from "server/base/errors";
-import { Blend } from "server/base/models/blend";
+import { Blend, BlendStatus } from "server/base/models/blend";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 
@@ -12,6 +12,11 @@ import { HeroImageFileKeys } from "server/base/models/heroImage";
 // When aspect ratio used to be fixed, these were the constant ones.
 const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
 const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
+
+export enum BlendVersion {
+  current = "CURRENT",
+  generated = "GENERATED",
+}
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -109,22 +114,25 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
   let nextPageKey = null;
   try {
     const data = await DynamoDB._().queryItems({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: process.env.BLEND_VERSIONED_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
       IndexName: "createdBy-updatedAt-idx",
       ExpressionAttributeNames: {
         "#createdBy": "createdBy",
         "#status": "status",
         "#output": "output",
+        "#version": "version",
       },
       ExpressionAttributeValues: {
         ":createdBy": uid,
         ":generated": "GENERATED",
         ":submitted": "SUBMITTED",
+        ":currentVersion": "CURRENT",
       },
       ProjectionExpression:
         "id, filePath, imagePath, thumbnail, #output, createdAt, updatedAt, #status",
-      FilterExpression: "#status = :generated or #status = :submitted",
+      FilterExpression:
+        "(#version = :currentVersion) AND (#status = :generated OR #status = :submitted)",
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject,
       Limit: 15,
@@ -154,11 +162,12 @@ export const addBlendToDB = async (
 
   let blend: Blend = {
     id: id,
+    version: BlendVersion.current,
     batchId: options?.batchId,
-    status: "INITIALIZED",
+    status: BlendStatus.Initialized,
     statusUpdates: [
       {
-        status: "INITIALIZED",
+        status: BlendStatus.Initialized,
         on: currentTime,
       },
     ],
