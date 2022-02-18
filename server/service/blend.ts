@@ -1,11 +1,13 @@
+import { IService } from "./index";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import DynamoDB from "server/external/dynamodb";
+import { Blend } from "server/base/models/blend";
 
-export class BlendService {
+export class BlendService implements IService {
   dataStore: DynamoDB;
 
-  constructor(dataStore?: DynamoDB) {
-    this.dataStore = dataStore ?? DynamoDB._();
+  constructor(dataStore: DynamoDB) {
+    this.dataStore = dataStore;
   }
 
   async getBlendIdsForBatch(batchId: string): Promise<string[]> {
@@ -30,8 +32,7 @@ export class BlendService {
     heroImageFileKeys: HeroImageFileKeys
   ) {
     await this.dataStore.updateItem({
-      UpdateExpression:
-        "SET updatedAt = :updatedAt, heroImages = :heroImages",
+      UpdateExpression: "SET updatedAt = :updatedAt, heroImages = :heroImages",
       ExpressionAttributeValues: {
         ":updatedAt": Date.now(),
         ":heroImages": heroImageFileKeys,
@@ -57,5 +58,12 @@ export class BlendService {
       ScanIndexForward: true,
     });
     return data.Items.map((entry) => entry.id as string);
+  }
+
+  async getBlend(blendId: string): Promise<Blend> {
+    return (await DynamoDB._().getItem({
+      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      Key: { id: blendId },
+    })) as Blend | null;
   }
 }

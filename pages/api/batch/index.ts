@@ -32,7 +32,7 @@ const createBatch = async (
     createdBy: uid,
     createdAt: now,
     updatedAt: now,
-    pendingUploads: [],
+    pendingUploads: {},
   } as Batch;
   await dataStore.putItem({
     TableName: process.env.BATCH_DYNAMODB_TABLE,

@@ -35,3 +35,10 @@ export interface OutputDescriptor {
   path: string;
   resolution: Size;
 }
+
+export class BlendModelUtils {
+  static getBlendIdFromFileKey(fileKey: string) {
+    const names = fileKey.split("/");
+    return names.length === 2 ? names[0] : null;
+  }
+}

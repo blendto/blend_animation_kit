@@ -1,8 +1,9 @@
 import AWS from "./aws";
+import { IDataStore } from "./datastore";
 
 var docClient = new AWS.DynamoDB.DocumentClient();
 
-export default class DynamoDB {
+export default class DynamoDB implements IDataStore {
   private static _instance: DynamoDB = new DynamoDB();
 
   private constructor() {

@@ -3,13 +3,14 @@ import firebase from "server/external/firebase";
 import { UploadRequestCreationConfig } from "server/base/models/batch";
 import { BatchService } from "server/service/batch";
 import { handleServerExceptions } from "server/base/errors";
+import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-  const service = new BatchService();
+  const serviceLocator = DynamoBasedServiceLocator.instance;
   switch (method) {
     case "POST":
-      await initUpload(req, res, service);
+      await initUpload(req, res, serviceLocator);
       break;
     default:
       res.status(405).json({ code: 405, message: `${method} not supported` });
@@ -19,7 +20,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 const initUpload = async (
   req: NextApiRequest,
   res: NextApiResponse,
-  service: BatchService
+  serviceLocator: IServiceLocator
 ) => {
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
@@ -31,6 +32,7 @@ const initUpload = async (
   } = req;
 
   return await handleServerExceptions(res, async () => {
+    const service = serviceLocator.find(BatchService);
     const uploadRequests = await service.initUpload(
       id as string,
       uid as string,

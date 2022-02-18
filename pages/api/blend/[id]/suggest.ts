@@ -32,6 +32,7 @@ import {
 import { BlendService } from "server/service/blend";
 import HeroImageService from "server/service/heroImage";
 import { getUserAgentDetails } from "pages/api/whoami";
+import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
 
 const toolkitApi = new ToolkitApi();
 const recoEngineApi = new RecoEngineApi();
@@ -60,10 +61,10 @@ const _getRecentBlends = async (uid: string) => {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-  const blendService = new BlendService();
+  const serviceLocator = DynamoBasedServiceLocator.instance;
   switch (method) {
     case "POST":
-      await suggestRecipes(req, res, blendService);
+      await suggestRecipes(req, res, serviceLocator);
       break;
     default:
       return res.status(404).json({ code: 404, message: "Wrong page/" });
@@ -185,7 +186,7 @@ async function createBgRemovedImage(
 const suggestRecipes = async (
   req: NextApiRequest,
   res: NextApiResponse,
-  blendService: BlendService
+  serviceLocator: IServiceLocator
 ) => {
   const {
     query: { id },
@@ -227,6 +228,7 @@ const suggestRecipes = async (
     const finalisedFileKeys: HeroImageFileKeys =
       await fileKeysProcessor.process();
 
+    const blendService = serviceLocator.find(BlendService);
     await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
 
     let recipeLists = (

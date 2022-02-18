@@ -1,13 +1,14 @@
 import DynamoDB from "../external/dynamodb";
 import { BlendService } from "./blend";
+import { DynamoBasedServiceLocator, IService } from "./index";
 
-export class UserService {
+export class UserService implements IService {
   dataStore: DynamoDB;
-  blendService: BlendService;
+  serviceLocator: DynamoBasedServiceLocator;
 
-  constructor(blendService: BlendService, dataStore?: DynamoDB) {
-    this.blendService = blendService;
-    this.dataStore = dataStore ?? DynamoDB._();
+  constructor(dataStore: DynamoDB, serviceLocator: DynamoBasedServiceLocator) {
+    this.dataStore = dataStore;
+    this.serviceLocator = serviceLocator;
   }
 
   private async updateBlendOwner(blendId: string, newUid: string) {
@@ -31,7 +32,8 @@ export class UserService {
     sourceUid: string,
     targetUid: string
   ): Promise<string[]> {
-    const blendIds = await this.blendService.getBlendIdsForUser(sourceUid);
+    const blendService = this.serviceLocator.find(BlendService);
+    const blendIds = await blendService.getBlendIdsForUser(sourceUid);
     const updates = blendIds.map(async (blendId) => {
       await this.updateBlendOwner(blendId, targetUid);
       return blendId;

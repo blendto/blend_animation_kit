@@ -1,17 +1,16 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { BlendService } from "../../../server/service/blend";
-import { UserService } from "../../../server/service/user";
-import firebase from "../../../server/external/firebase";
-import { handleServerExceptions } from "../../../server/base/errors";
+import { UserService } from "server/service/user";
+import firebase from "server/external/firebase";
+import { handleServerExceptions } from "server/base/errors";
+import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-  const blendService = new BlendService();
-  const userService = new UserService(blendService);
+  const serviceLocator = DynamoBasedServiceLocator.instance;
   try {
     switch (method) {
       case "POST":
-        await migrateOwnership(req, res, userService);
+        await migrateOwnership(req, res, serviceLocator);
         break;
 
       default:
@@ -30,8 +29,9 @@ interface BlendOwnerMigrationRequest {
 const migrateOwnership = async (
   req: NextApiRequest,
   res: NextApiResponse,
-  userService: UserService
+  serviceLocator: IServiceLocator
 ) => {
+  const userService = serviceLocator.find(UserService);
   const targetUid = await firebase.extractUserIdFromRequest({
     request: req,
   });

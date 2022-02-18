@@ -27,7 +27,7 @@ export interface Batch {
   id: string;
   status: BatchState;
   blends: string[];
-  pendingUploads: string[];
+  pendingUploads: Record<string, UploadRequest>;
   createdBy: string;
   createdAt: number;
   updatedAt: number;

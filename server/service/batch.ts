@@ -16,15 +16,17 @@ import {
   createDestinationFileKey,
   createSignedUploadUrl,
 } from "server/external/s3";
+import { IService } from "./index";
+import { customAlphabet } from "nanoid";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
-export class BatchService {
+export class BatchService implements IService {
   dataStore: DynamoDB;
 
-  constructor(dataStore?: DynamoDB) {
-    this.dataStore = dataStore ?? DynamoDB._();
+  constructor(dataStore: DynamoDB) {
+    this.dataStore = dataStore;
   }
 
   async getBatch(batchId: string, uid: string): Promise<Batch> {
@@ -105,13 +107,11 @@ export class BatchService {
     batchId: string,
     uploadRequests: UploadRequest[]
   ) {
+    const updates = this.constructBulkUpdate(uploadRequests);
     await this.dataStore.updateItem({
-      UpdateExpression:
-        "SET updatedAt = :updatedAt, pendingUploads = list_append(pendingUploads, :uploads)",
-      ExpressionAttributeValues: {
-        ":updatedAt": Date.now(),
-        ":uploads": this.withoutPresignedUrls(uploadRequests),
-      },
+      UpdateExpression: updates.expression,
+      ExpressionAttributeNames: updates.expressionAttributeNames,
+      ExpressionAttributeValues: updates.expressionAttributeValues,
       Key: { id: batchId },
       TableName: process.env.BATCH_DYNAMODB_TABLE,
       ReturnValues: "NONE",
@@ -125,5 +125,51 @@ export class BatchService {
       const { presignedUploadRequest, ...required } = request;
       return required as UploadRequest;
     });
+  }
+
+  async markUploadCompleted(batchId: string, blendId: string): Promise<void> {
+    await this.dataStore.updateItem({
+      UpdateExpression: `SET updatedAt = :updatedAt REMOVE pendingUploads.#toDelete`,
+      ExpressionAttributeNames: {
+        "#toDelete": blendId,
+      },
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+      },
+      Key: { id: batchId },
+      TableName: process.env.BATCH_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
+  private constructBulkUpdate(uploadRequests: UploadRequest[]): {
+    expressionAttributeNames;
+    expressionAttributeValues;
+    expression;
+  } {
+    const updates = {
+      expressionAttributeNames: {
+        "#updatedAt": "updatedAt",
+        "#pendingUploads": "pendingUploads",
+      },
+      expressionAttributeValues: {
+        ":updatedAt": Date.now(),
+      },
+      expression: null,
+    };
+    const expressionItems: string[] = [];
+    this.withoutPresignedUrls(uploadRequests).forEach((uploadRequest) => {
+      const key = customAlphabet(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+        10
+      )();
+      updates.expressionAttributeNames[`#${key}`] = uploadRequest.blendId;
+      updates.expressionAttributeValues[`:${key}`] = uploadRequest;
+      expressionItems.push(`#pendingUploads.#${key} = :${key}`);
+    });
+
+    updates.expression =
+      "SET #updatedAt = :updatedAt, " + expressionItems.join(", ");
+    return updates;
   }
 }
