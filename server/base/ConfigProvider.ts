@@ -54,7 +54,7 @@ class ConfigProvider {
   }
 
   public get FIREBASE_APP_CLIENT_CONFIG() {
-    return JSON.parse(this.retrieveOrCrash("FIREBASE_APP_CLIENT_CONFIG"));
+    return JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG);
   }
 
   public get IPAPI_ACCESS_KEY() {

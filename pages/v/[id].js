@@ -21,6 +21,7 @@ import Head from "next/head";
 import styles from "../../styles/Viewer.module.css";
 import { _getBlend } from "../api/blend/[id]";
 import IntearctionLayer from "../../components/viewer/InteractionLayer";
+import { AnalyticsService } from "server/service/analytics";
 
 const { Title, Text } = Typography;
 
@@ -226,6 +227,7 @@ function BlendDrawer({ blend, visible, onClose }) {
     setTimeout(() => {
       message.error("Couldn't open. Do you have the app?", 2000);
     }, 1000);
+    AnalyticsService.logEvent("web_remix_click", { blendId: blend.id });
   };
 
   return (

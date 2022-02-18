@@ -6,9 +6,7 @@ import { nanoid } from "nanoid";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 
-firebase.initializeApp(ConfigProvider.FIREBASE_APP_CLIENT_CONFIG);
-
-const FIREBASE_PROJECT_ID = "blend-app-b3f6d";
+const FIREBASE_PROJECT_ID = ConfigProvider.FIREBASE_APP_CLIENT_CONFIG.projectId;
 
 interface ExtractUserIdFromRequestParams {
   request: NextApiRequest;
@@ -21,6 +19,7 @@ class Firebase {
       // Already initialized, else causes problems during hot-reloading
       return;
     }
+    firebase.initializeApp(ConfigProvider.FIREBASE_APP_CLIENT_CONFIG);
     admin.initializeApp({
       credential: admin.credential.cert(ConfigProvider.FIREBASE_SERVICE_KEY),
     });

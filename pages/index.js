@@ -1,2 +1,2 @@
 import redirect from "nextjs-redirect";
-export default redirect("https://www.blend.to");
+export default redirect("https://www.blendnow.com");
