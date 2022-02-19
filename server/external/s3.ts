@@ -83,13 +83,14 @@ export const doesObjectExist = async (bucketName: string, fileKey: string) => {
     };
     s3.headObject(params, (err, data) => {
       if (err) {
-        // If object does not exist it gives:
-        // 404 NoSuchKey or NotFound if user has ListBucket permission
-        // 403 AccessDenied/Forbidden if user does not have ListBucket permission
         if ([404, 403].includes(err.statusCode)) {
+          // At times s3 incorrectly returns 403 instead of 404. Assume as 404.
           return resolve(false);
         }
-        console.error(err);
+        console.error({
+          op: err.code,
+          message: err.message,
+        });
         return reject(new ServerError("Something went wrong!"));
       }
       if (data) {
@@ -111,15 +112,17 @@ export const getObject = async (
     };
     s3.getObject(params, (err, data) => {
       if (err) {
-        // If object does not exist it gives:
-        // 404 NoSuchKey if user has ListBucket permission
-        // 403 Forbidden if user does not have ListBucket permission
-        if (err.code == "NoSuchKey" || err.code == "Forbidden") {
+        if (["NoSuchKey", "Forbidden"].includes(err.code)) {
+          // At times s3 incorrectly returns "Forbidden" instead of "NoSuchKey".
+          // Assume as "NoSuchKey".
           return reject(
             new UserError("Can't find an image with specified key!")
           );
         }
-        console.error(err);
+        console.error({
+          op: err.code,
+          message: err.message,
+        });
         return reject(new ServerError("Something went wrong!"));
       }
       return resolve(data.Body as Buffer);
@@ -140,7 +143,10 @@ export const uploadObject = async (
     };
     s3.upload(params, (err: Error, data: AWS.S3.ManagedUpload.SendData) => {
       if (err) {
-        console.error(err, err.stack);
+        console.error({
+          op: err.toString(),
+          message: err.message,
+        });
         return reject(new ServerError("Something went wrong!"));
       }
       return resolve(data);
@@ -162,10 +168,42 @@ export const copyObject = async (
     };
     s3.copyObject(params, (err, data) => {
       if (err) {
-        console.error(err, err.stack);
+        console.error({
+          op: err.code,
+          message: err.message,
+        });
         return reject(new ServerError("Something went wrong!"));
       }
       return resolve(data);
+    });
+  });
+};
+
+export const deleteObject = async (
+  bucketName: string,
+  fileKey: string
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const params = {
+      Bucket: bucketName,
+      Key: fileKey,
+    };
+    s3.deleteObject(params, (err, data) => {
+      if (err) {
+        if (["NoSuchKey", "Forbidden"].includes(err.code)) {
+          // Assume this to be part of a retry of a bulk delete operation where this object
+          // was already deleted.
+          // Also, at times s3 incorrectly returns "Forbidden" instead of "NoSuchKey".
+          // Assume as "NoSuchKey".
+          return resolve();
+        }
+        console.error({
+          op: err.code,
+          message: err.message,
+        });
+        return reject(new ServerError("Something went wrong!"));
+      }
+      return resolve();
     });
   });
 };

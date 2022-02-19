@@ -1,14 +1,16 @@
 import firebase from "server/external/firebase";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import HeroImageService from "server/service/heroImage";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
+  const serviceLocator = DynamoBasedServiceLocator.instance;
   try {
     switch (method) {
       case "GET":
-        await getHeroes(req, res);
+        await getHeroes(req, res, serviceLocator);
         break;
 
       default:
@@ -20,7 +22,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
+const getHeroes = async (
+  req: NextApiRequest,
+  res: NextApiResponse,
+  serviceLocator: IServiceLocator
+) => {
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
     optional: true,
@@ -41,8 +47,9 @@ const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(400).json({ message: "Invalid pageToken format" });
   }
 
-  const { images, pageKeyObject: nextPageKeyObject } =
-    await new HeroImageService().getImagesForUser(pageKeyObject, uid);
+  const { images, pageKeyObject: nextPageKeyObject } = await serviceLocator
+    .find(HeroImageService)
+    .getImagesForUser(pageKeyObject, uid);
   const nextPageToken = EncodedPageKey.fromObject(nextPageKeyObject)?.key;
   res.send({ data: images, nextPageToken });
 };

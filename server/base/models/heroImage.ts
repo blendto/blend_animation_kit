@@ -1,5 +1,15 @@
 import { nanoid } from "nanoid";
 
+export enum HeroImageStatus {
+  CREATED = "CREATED",
+  DELETED = "DELETED",
+}
+
+export type HeroImageStatusUpdate = {
+  status: HeroImageStatus;
+  updatedAt: number;
+};
+
 export interface HeroImage {
   id: string;
   original: string;
@@ -7,8 +17,11 @@ export interface HeroImage {
   thumbnail: string;
   lastUsedAt: number;
   createdAt: number;
+  updatedAt: number;
   userId: string;
   sourceBlendId: string;
+  status: HeroImageStatus;
+  statusHistory: HeroImageStatusUpdate[];
 }
 
 export interface HeroImageFileKeys {

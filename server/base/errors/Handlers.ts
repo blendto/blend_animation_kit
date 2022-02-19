@@ -1,6 +1,5 @@
 import { NextApiResponse } from "next";
-import ServerError from "./ServerError";
-import UserError from "./UserError";
+import { ObjectNotFoundError, UserError, ServerError } from "./index";
 
 export const handleServerExceptions = async (
   res: NextApiResponse,
@@ -11,6 +10,8 @@ export const handleServerExceptions = async (
   } catch (err) {
     if (err instanceof UserError) {
       return res.status(400).send({ message: err.message, code: err.code });
+    } else if (err instanceof ObjectNotFoundError) {
+      return res.status(404).send({ message: err.message });
     } else if (err instanceof ServerError) {
       return res.status(500).send({ message: "Something went wrong!" });
     }

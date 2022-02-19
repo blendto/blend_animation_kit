@@ -224,6 +224,7 @@ const suggestRecipes = async (
     const fileKeysProcessor = FileKeysProcessingStrategy.choose(
       id as string,
       uid,
+      serviceLocator,
       fileKeys,
       heroImageId
     );
@@ -314,13 +315,19 @@ abstract class FileKeysProcessingStrategy {
   static choose(
     blendId: String,
     userId: String,
+    serviceLocator: IServiceLocator,
     fileKeys?: HeroImageFileKeys,
     heroImageId?: String
   ): FileKeysProcessingStrategy {
     if (heroImageId) {
-      return new HeroImageIdBased(heroImageId, blendId, userId);
+      return new HeroImageIdBased(heroImageId, blendId, userId, serviceLocator);
     }
-    return new HeroImageFileKeysBased(fileKeys, blendId, userId);
+    return new HeroImageFileKeysBased(
+      fileKeys,
+      blendId,
+      userId,
+      serviceLocator
+    );
   }
 
   abstract process(): Promise<HeroImageFileKeys>;
@@ -330,15 +337,22 @@ class HeroImageIdBased extends FileKeysProcessingStrategy {
   heroImageId: String;
   blendId: String;
   userId: String;
-  constructor(heroImageId: String, blendId: String, userId: String) {
+  serviceLocator: IServiceLocator;
+  constructor(
+    heroImageId: String,
+    blendId: String,
+    userId: String,
+    serviceLocator: IServiceLocator
+  ) {
     super();
     this.heroImageId = heroImageId;
     this.blendId = blendId;
     this.userId = userId;
+    this.serviceLocator = serviceLocator;
   }
 
   async process(): Promise<HeroImageFileKeys> {
-    const heroImageService = new HeroImageService();
+    const heroImageService = this.serviceLocator.find(HeroImageService);
 
     const heroImage: HeroImage | null = await heroImageService.getImage(
       this.heroImageId as string,
@@ -377,15 +391,22 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
   fileKeys: HeroImageFileKeys;
   blendId: String;
   userId: String;
-  constructor(fileKeys: HeroImageFileKeys, blendId: String, userId: String) {
+  serviceLocator: IServiceLocator;
+  constructor(
+    fileKeys: HeroImageFileKeys,
+    blendId: String,
+    userId: String,
+    serviceLocator: IServiceLocator
+  ) {
     super();
     this.fileKeys = fileKeys;
     this.blendId = blendId;
     this.userId = userId;
+    this.serviceLocator = serviceLocator;
   }
 
   async process(): Promise<HeroImageFileKeys> {
-    const heroImageService = new HeroImageService();
+    const heroImageService = this.serviceLocator.find(HeroImageService);
 
     if (this.fileKeys.withoutBg) {
       // noinspection ES6MissingAwait

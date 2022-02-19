@@ -6,7 +6,6 @@ import {
   UploadRequestCreationConfig,
   UploadRequests,
 } from "server/base/models/batch";
-import { initBlendInternal } from "pages/api/blend";
 
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
 import ConfigProvider from "server/base/ConfigProvider";
@@ -79,6 +78,18 @@ export class BatchService implements IService {
     batchId: string
   ): Promise<UploadRequest> {
     const heroFileName = createDestinationFileKey(fileName, VALID_EXTENSIONS);
+    // The tests for HeroImageService are failing as service/index.ts
+    // imports this service along with other services. Due to which this
+    // and subsequently api/blend.ts is loaded. Which loads a lot of
+    // code that require configuration, especially firebase.
+    //
+    // A fn. from an api controller module shouldn't have been used here in
+    // the first place. The common code should instead be moved to BlendService
+    // and used by the api and this service.
+    //
+    // Just make the import internal for now.
+    // Will make the actual required change in a dedicated PR.
+    const { initBlendInternal } = await import("pages/api/blend");
     const blend: Blend = await initBlendInternal(uid, {
       batchId: batchId,
       heroFileName: heroFileName,
