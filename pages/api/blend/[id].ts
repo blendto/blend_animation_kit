@@ -156,12 +156,10 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
  */
 const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
-    query: { id, format, target, version = BlendVersion.generated },
+    query: { id, format, target },
   } = req;
 
-  let blend = await _getBlend(id as string, version as BlendVersion);
-
-  blend = blend ?? (await _getBlend(id as string, BlendVersion.current));
+  let blend = await _getBlend(id as string, BlendVersion.current);
 
   if (!blend || blend?.status === "DELETED") {
     res.status(404).send({ message: "Blend not found!" });
