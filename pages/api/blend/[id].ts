@@ -17,13 +17,23 @@ export const _getBlend = async (
   id: string,
   version: BlendVersion = BlendVersion.current
 ): Promise<Blend> => {
-  const blend = await DynamoDB._().getItem({
+  let blend = await DynamoDB._().getItem({
     TableName: process.env.BLEND_VERSIONED_DYNAMODB_TABLE,
     Key: {
       id,
       version: version,
     },
   });
+
+  if (!blend) {
+    // TODO: Remove this post migration. This is a HACK to fix consistancy issues.
+    blend = await DynamoDB._().getItem({
+      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      Key: {
+        id,
+      },
+    });
+  }
 
   if (!blend) {
     return null;
