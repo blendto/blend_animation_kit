@@ -12,13 +12,14 @@ import {
   MIN_SUPPORTED_ENCODER_VERSION,
 } from "server/constants";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
+import ConfigProvider from "server/base/ConfigProvider";
 
 export const _getBlend = async (
   id: string,
   version: BlendVersion = BlendVersion.current
 ): Promise<Blend> => {
   let blend = await DynamoDB._().getItem({
-    TableName: process.env.BLEND_VERSIONED_DYNAMODB_TABLE,
+    TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
     Key: {
       id,
       version: version,
@@ -28,7 +29,7 @@ export const _getBlend = async (
   if (!blend) {
     // TODO: Remove this post migration. This is a HACK to fix consistancy issues.
     blend = await DynamoDB._().getItem({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       Key: {
         id,
       },
@@ -104,7 +105,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   if (blend.status != "GENERATED") {
     try {
       await DynamoDB._().deleteItem({
-        TableName: process.env.BLEND_DYNAMODB_TABLE,
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
         Key: {
           id: id,
         },
@@ -130,7 +131,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
         ":updatedOn": updatedOn,
       },
       Key: { id: id },
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     };
 
@@ -343,7 +344,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       ":updatedOn": updatedOn,
     },
     Key: { id: id },
-    TableName: process.env.BLEND_DYNAMODB_TABLE,
+    TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     ReturnValues: "ALL_NEW",
   };
 
@@ -352,7 +353,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     const dbUpdateResponse = await DynamoDB._().updateItem(params);
     updatedRecipe = dbUpdateResponse.Attributes;
 
-    await new SQS(process.env.BLEND_GEN_QUEUE_URL).sendMessage({ id });
+    await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage({ id });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Something went wrong!" });

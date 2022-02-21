@@ -1,3 +1,4 @@
+import ConfigProvider from "server/base/ConfigProvider";
 import DynamoDB from "../external/dynamodb";
 import { BlendService } from "./blend";
 import { DynamoBasedServiceLocator, IService } from "./index";
@@ -23,7 +24,7 @@ export class UserService implements IService {
         ":createdBy": newUid,
       },
       Key: { id: blendId },
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
   }

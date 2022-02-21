@@ -1,3 +1,4 @@
+import { ConfigProvider } from "antd";
 import DynamoDB from "../../../server/external/dynamodb";
 import SQS from "../../../server/external/sqs";
 
@@ -6,7 +7,7 @@ const CURRENT_ENCODER_VERSION = 1.6;
 
 export const _getCollab = async (id) => {
   return await DynamoDB._().getItem({
-    TableName: process.env.BLEND_DYNAMODB_TABLE,
+    TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     Key: {
       id,
     },
@@ -151,7 +152,7 @@ const submitCollab = async (req, res) => {
       ":metadata": { source },
     },
     Key: { id: id },
-    TableName: process.env.BLEND_DYNAMODB_TABLE,
+    TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     ReturnValues: "ALL_NEW",
   };
 
@@ -160,7 +161,7 @@ const submitCollab = async (req, res) => {
     const dbUpdateResponse = await DynamoDB.updateItem(params);
     updatedCollab = dbUpdateResponse.Attributes;
 
-    await new SQS(process.env.BLEND_GEN_QUEUE_URL).sendMessage({ id });
+    await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage({ id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });

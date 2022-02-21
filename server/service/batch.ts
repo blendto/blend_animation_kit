@@ -30,7 +30,7 @@ export class BatchService implements IService {
 
   async getBatch(batchId: string, uid: string): Promise<Batch> {
     const batch = (await this.dataStore.getItem({
-      TableName: process.env.BATCH_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
       Key: { id: batchId },
     })) as Batch | null;
 
@@ -124,7 +124,7 @@ export class BatchService implements IService {
       ExpressionAttributeNames: updates.expressionAttributeNames,
       ExpressionAttributeValues: updates.expressionAttributeValues,
       Key: { id: batchId },
-      TableName: process.env.BATCH_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
   }
@@ -148,7 +148,7 @@ export class BatchService implements IService {
         ":updatedAt": Date.now(),
       },
       Key: { id: batchId },
-      TableName: process.env.BATCH_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
   }

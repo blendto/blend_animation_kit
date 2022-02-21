@@ -7,6 +7,7 @@ import { handleServerExceptions } from "server/base/errors";
 import { Blend, BlendStatus } from "server/base/models/blend";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
+import ConfigProvider from "server/base/ConfigProvider";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -57,7 +58,7 @@ export const initBlendInternal = async (
   do {
     blendRequestId = nanoid(8);
     const item = await DynamoDB._().getItem({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       Key: {
         id: blendRequestId,
       },
@@ -114,7 +115,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
   let nextPageKey = null;
   try {
     const data = await DynamoDB._().queryItems({
-      TableName: process.env.BLEND_VERSIONED_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
       IndexName: "createdBy-updatedAt-idx",
       ExpressionAttributeNames: {
@@ -181,7 +182,7 @@ export const addBlendToDB = async (
   };
 
   await DynamoDB._().putItem({
-    TableName: process.env.BLEND_DYNAMODB_TABLE,
+    TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     Item: blend,
   });
   return blend;

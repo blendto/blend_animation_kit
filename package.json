@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "doppler run -- next dev",
+    "build": "node scripts/create-env.js && next build",
     "start": "node --require dd-trace/init node_modules/.bin/next start",
     "build-functions": "rm -rf build/ && webpack --config webpack.lambda.config.js",
     "flow": "flow",

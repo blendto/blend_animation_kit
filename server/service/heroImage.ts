@@ -48,7 +48,7 @@ export default class HeroImageService implements IService {
     pageKeyObject: AWS.DynamoDB.DocumentClient.Key | null;
   }> {
     const data = await this.dataStore.queryItems({
-      TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+      TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       KeyConditionExpression: "#userId = :userId",
       IndexName: "userId-lastUsedAt-index",
       FilterExpression: "#status <> :status",
@@ -76,7 +76,7 @@ export default class HeroImageService implements IService {
     returnOnlyOwn: boolean = false
   ): Promise<HeroImage | null> {
     const heroImage = (await this.dataStore.getItem({
-      TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+      TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       Key: { id },
     })) as HeroImage | null;
 
@@ -105,7 +105,7 @@ export default class HeroImageService implements IService {
         ":lastUsedAt": Date.now(),
       },
       Key: { id: id },
-      TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+      TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     };
     await this.dataStore.updateItem(params);
@@ -161,7 +161,7 @@ export default class HeroImageService implements IService {
     } as HeroImage;
 
     await DynamoDB._().putItem({
-      TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+      TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       Item: heroImage,
     });
 
@@ -210,7 +210,7 @@ export default class HeroImageService implements IService {
         ":statusUpdate": [{ status, updatedAt } as HeroImageStatusUpdate],
       },
       Key: { id: id },
-      TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+      TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
     return;

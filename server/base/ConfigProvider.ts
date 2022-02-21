@@ -1,4 +1,15 @@
+import { EnvironmentVarsSchema } from "./EnvironmentVarsSchema";
 class ConfigProvider {
+  constructor() {
+    if (typeof window === "undefined") {
+      // Run only in server
+      const result = EnvironmentVarsSchema.validate(process.env);
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+    }
+  }
+
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
     if (!variable || variable.trim().length == 0) {
@@ -7,12 +18,36 @@ class ConfigProvider {
     return variable;
   }
 
+  public get BATCH_DYNAMODB_TABLE() {
+    return this.retrieveOrCrash("BATCH_DYNAMODB_TABLE");
+  }
+
+  public get CONFIG_DYNAMODB_TABLE() {
+    return this.retrieveOrCrash("CONFIG_DYNAMODB_TABLE");
+  }
+
+  public get BLEND_VERSIONED_DYNAMODB_TABLE() {
+    return this.retrieveOrCrash("BLEND_VERSIONED_DYNAMODB_TABLE");
+  }
+
+  public get BLEND_DYNAMODB_TABLE() {
+    return this.retrieveOrCrash("BLEND_DYNAMODB_TABLE");
+  }
+
+  public get BLEND_GEN_QUEUE_URL() {
+    return this.retrieveOrCrash("BLEND_GEN_QUEUE_URL");
+  }
+
   public get BLEND_INGREDIENTS_BUCKET() {
     return this.retrieveOrCrash("BLEND_INGREDIENTS_BUCKET");
   }
 
   public get HERO_IMAGES_BUCKET() {
     return this.retrieveOrCrash("HERO_IMAGES_BUCKET");
+  }
+
+  public get RECIPE_DYNAMODB_TABLE() {
+    return this.retrieveOrCrash("RECIPE_DYNAMODB_TABLE");
   }
 
   public get RECIPE_INGREDIENTS_BUCKET() {
@@ -59,6 +94,25 @@ class ConfigProvider {
 
   public get IPAPI_ACCESS_KEY() {
     return this.retrieveOrCrash("IPAPI_ACCESS_KEY");
+  }
+
+  public get HERO_IMAGES_DYNAMODB_TABLE() {
+    return this.retrieveOrCrash("HERO_IMAGES_DYNAMODB_TABLE");
+  }
+
+  public get AWS_CLOUD_ACCESS_KEY_ID() {
+    // Optional, only needed in vercel, others will take the machine settings
+    return process.env.AWS_CLOUD_ACCESS_KEY_ID;
+  }
+
+  public get AWS_CLOUD_SECRET_ACCESS_KEY() {
+    // Optional, only needed in vercel, others will take the machine settings
+    return process.env.AWS_CLOUD_SECRET_ACCESS_KEY;
+  }
+
+  public get AWS_CLOUD_REGION() {
+    // Optional, only needed in vercel, others will take the machine settings
+    return process.env.AWS_CLOUD_REGION;
   }
 }
 

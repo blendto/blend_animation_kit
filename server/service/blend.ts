@@ -2,6 +2,7 @@ import { IService } from "./index";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import DynamoDB from "server/external/dynamodb";
 import { Blend } from "server/base/models/blend";
+import ConfigProvider from "server/base/ConfigProvider";
 
 export class BlendService implements IService {
   dataStore: DynamoDB;
@@ -12,7 +13,7 @@ export class BlendService implements IService {
 
   async getBlendIdsForBatch(batchId: string): Promise<string[]> {
     const data = await this.dataStore.queryItems({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       KeyConditionExpression: "#batchId = :batchId",
       IndexName: "batchId-blendId-index",
       ExpressionAttributeNames: {
@@ -38,14 +39,14 @@ export class BlendService implements IService {
         ":heroImages": heroImageFileKeys,
       },
       Key: { id: blendId },
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
   }
 
   async getBlendIdsForUser(uid: string): Promise<string[]> {
     const data = await this.dataStore.queryItems({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
       IndexName: "createdBy-updatedAt-idx",
       ExpressionAttributeNames: {
@@ -62,7 +63,7 @@ export class BlendService implements IService {
 
   async getBlend(blendId: string): Promise<Blend> {
     return (await DynamoDB._().getItem({
-      TableName: process.env.BLEND_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       Key: { id: blendId },
     })) as Blend | null;
   }

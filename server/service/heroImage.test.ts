@@ -49,7 +49,7 @@ describe("HeroImageService", () => {
       expect(getItemSpy.mock.calls.length).toBe(1);
       expect(getItemSpy.mock.calls[0]).toMatchObject([
         {
-          TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+          TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
           Key: { id: imageId },
         },
       ]);
@@ -129,7 +129,7 @@ describe("HeroImageService", () => {
       expect(queryItemsSpy.mock.calls.length).toBe(1);
       expect(queryItemsSpy.mock.calls[0]).toMatchObject([
         {
-          TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+          TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
           KeyConditionExpression: "#userId = :userId",
           IndexName: "userId-lastUsedAt-index",
           FilterExpression: "#status <> :status",
@@ -169,7 +169,7 @@ describe("HeroImageService", () => {
             ":lastUsedAt": now,
           },
           Key: { id: imageId },
-          TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+          TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
           ReturnValues: "NONE",
         },
       ]);
@@ -278,7 +278,7 @@ describe("HeroImageService", () => {
       expect(putItemSpy.mock.calls.length).toBe(1);
       expect(putItemSpy.mock.calls[0]).toMatchObject([
         {
-          TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+          TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
           Item: image,
         },
       ]);
@@ -298,7 +298,6 @@ describe("HeroImageService", () => {
         .spyOn(DynamoDB._(), "updateItem")
         .mockResolvedValueOnce({});
       jest.spyOn(Date, "now").mockReturnValueOnce(now);
-      process.env.HERO_IMAGES_BUCKET = "whatever";
 
       await expect(
         heroImageService.deleteImage(imageId, userId)
@@ -332,7 +331,7 @@ describe("HeroImageService", () => {
             ],
           },
           Key: { id: imageId },
-          TableName: process.env.HERO_IMAGES_DYNAMODB_TABLE,
+          TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
           ReturnValues: "NONE",
         },
       ]);

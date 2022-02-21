@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { Batch, BatchState } from "server/base/models/batch";
 import DynamoDB from "server/external/dynamodb";
 import firebase from "server/external/firebase";
+import ConfigProvider from "server/base/ConfigProvider";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -35,7 +36,7 @@ const createBatch = async (
     pendingUploads: {},
   } as Batch;
   await dataStore.putItem({
-    TableName: process.env.BATCH_DYNAMODB_TABLE,
+    TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
     Item: newBatch,
   });
 

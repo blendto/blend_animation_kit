@@ -1,5 +1,6 @@
 import DynamoDB from "server/external/dynamodb";
 import type { NextApiRequest, NextApiResponse } from "next";
+import ConfigProvider from "server/base/ConfigProvider";
 
 const DEFAULT_LOCALE = "en_US";
 interface FeedbackConfigDBEntry {
@@ -26,7 +27,7 @@ const getFeedbackOptions = async (
   res: NextApiResponse
 ) => {
   const feedbackConfig = (await DynamoDB._().getItem({
-    TableName: process.env.CONFIG_DYNAMODB_TABLE,
+    TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
     Key: {
       key: "feedback",
       version: "1",
