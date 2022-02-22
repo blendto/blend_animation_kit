@@ -1,15 +1,15 @@
+import "reflect-metadata";
 import { IService } from "./index";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import DynamoDB from "server/external/dynamodb";
 import { Blend } from "server/base/models/blend";
+import { inject, injectable } from "inversify";
+import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 
+@injectable()
 export class BlendService implements IService {
-  dataStore: DynamoDB;
-
-  constructor(dataStore: DynamoDB) {
-    this.dataStore = dataStore;
-  }
+  @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   async getBlendIdsForBatch(batchId: string): Promise<string[]> {
     const data = await this.dataStore.queryItems({

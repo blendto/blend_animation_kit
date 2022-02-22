@@ -2,15 +2,15 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { UserService } from "server/service/user";
 import firebase from "server/external/firebase";
 import { handleServerExceptions } from "server/base/errors";
-import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-  const serviceLocator = DynamoBasedServiceLocator.instance;
   try {
     switch (method) {
       case "POST":
-        await migrateOwnership(req, res, serviceLocator);
+        await migrateOwnership(req, res);
         break;
 
       default:
@@ -26,12 +26,8 @@ interface BlendOwnerMigrationRequest {
   sourceUserAccessToken: string;
 }
 
-const migrateOwnership = async (
-  req: NextApiRequest,
-  res: NextApiResponse,
-  serviceLocator: IServiceLocator
-) => {
-  const userService = serviceLocator.find(UserService);
+const migrateOwnership = async (req: NextApiRequest, res: NextApiResponse) => {
+  const userService = diContainer.get<UserService>(TYPES.UserService);
   const targetUid = await firebase.extractUserIdFromRequest({
     request: req,
   });

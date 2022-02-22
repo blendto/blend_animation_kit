@@ -2,25 +2,21 @@ import { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
 import { BatchService } from "server/service/batch";
 import { BlendService } from "server/service/blend";
-import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-  const serviceLocator = DynamoBasedServiceLocator.instance;
   switch (method) {
     case "GET":
-      await getBatch(req, res, serviceLocator);
+      await getBatch(req, res);
       break;
     default:
       res.status(500).json({ code: 500, message: "Something went wrong!" });
   }
 };
 
-const getBatch = async (
-  req: NextApiRequest,
-  res: NextApiResponse,
-  serviceLocator: IServiceLocator
-) => {
+const getBatch = async (req: NextApiRequest, res: NextApiResponse) => {
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
     optional: true,
@@ -29,8 +25,8 @@ const getBatch = async (
     query: { id },
   } = req;
 
-  const service = serviceLocator.find(BatchService);
-  const blendService = serviceLocator.find(BlendService);
+  const service = diContainer.get<BatchService>(TYPES.BatchService);
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   const batch = await service.getBatch(id as string, uid);
   if (!batch) {
     return res.status(404).send("No such batch for user");

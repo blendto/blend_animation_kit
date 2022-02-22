@@ -1,14 +1,13 @@
+import "reflect-metadata";
 import AWS from "./aws";
 import { IDataStore } from "./datastore";
+import { injectable } from "inversify";
 
 var docClient = new AWS.DynamoDB.DocumentClient();
 
+@injectable()
 export default class DynamoDB implements IDataStore {
   private static _instance: DynamoDB = new DynamoDB();
-
-  private constructor() {
-    DynamoDB._instance = this;
-  }
 
   static _(): DynamoDB {
     return DynamoDB._instance;

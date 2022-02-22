@@ -1,18 +1,14 @@
-import { DynamoBasedServiceLocator, IService } from "./index";
-import DynamoDB from "server/external/dynamodb";
+import "reflect-metadata";
+import { IService } from "./index";
 import { BlendService } from "server/service/blend";
 import { BlendModelUtils } from "server/base/models/blend";
 import { BatchService } from "server/service/batch";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
+import { injectable } from "inversify";
 
+@injectable()
 export class UploadService implements IService {
-  dataStore: DynamoDB;
-  serviceLocator: DynamoBasedServiceLocator;
-
-  constructor(dataStore: DynamoDB, serviceLocator: DynamoBasedServiceLocator) {
-    this.dataStore = dataStore;
-    this.serviceLocator = serviceLocator;
-  }
-
   async processHeroImageTrigger(
     bucket: string,
     fileKey: string
@@ -25,8 +21,8 @@ export class UploadService implements IService {
       return;
     }
 
-    const blendService = this.serviceLocator.find(BlendService);
-    const batchService = this.serviceLocator.find(BatchService);
+    const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+    const batchService = diContainer.get<BatchService>(TYPES.BatchService);
 
     const blend = await blendService.getBlend(blendId);
     if (!blend || blend.heroImages?.original !== fileKey) {

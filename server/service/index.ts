@@ -1,9 +1,5 @@
-import { BlendService } from "server/service/blend";
-import { UserService } from "server/service/user";
 import DynamoDB from "server/external/dynamodb";
 import HeroImageService from "server/service/heroImage";
-import { BatchService } from "server/service/batch";
-import { UploadService } from "server/service/upload";
 import { ServerError } from "server/base/errors";
 
 export interface IService {}
@@ -18,10 +14,6 @@ export class DynamoBasedServiceLocator implements IServiceLocator {
   static instance = new DynamoBasedServiceLocator(DynamoDB._());
 
   constructor(dynamoDb: DynamoDB) {
-    this._services[BlendService.name] = new BlendService(dynamoDb);
-    this._services[BatchService.name] = new BatchService(dynamoDb);
-    this._services[UserService.name] = new UserService(dynamoDb, this);
-    this._services[UploadService.name] = new UploadService(dynamoDb, this);
     this._services[HeroImageService.name] = new HeroImageService(
       dynamoDb,
       this

@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import DynamoDB from "server/external/dynamodb";
 import {
   Batch,
@@ -17,16 +18,15 @@ import {
 } from "server/external/s3";
 import { IService } from "./index";
 import { customAlphabet } from "nanoid";
+import { inject, injectable } from "inversify";
+import { TYPES } from "server/types";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
+@injectable()
 export class BatchService implements IService {
-  dataStore: DynamoDB;
-
-  constructor(dataStore: DynamoDB) {
-    this.dataStore = dataStore;
-  }
+  @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   async getBatch(batchId: string, uid: string): Promise<Batch> {
     const batch = (await this.dataStore.getItem({

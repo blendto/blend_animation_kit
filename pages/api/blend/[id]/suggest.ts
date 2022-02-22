@@ -33,6 +33,8 @@ import { BlendService } from "server/service/blend";
 import HeroImageService from "server/service/heroImage";
 import { getUserAgentDetails } from "pages/api/whoami";
 import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
+import {diContainer} from "inversify.config";
+import {TYPES} from "server/types";
 
 const toolkitApi = new ToolkitApi();
 const recoEngineApi = new RecoEngineApi();
@@ -232,7 +234,7 @@ const suggestRecipes = async (
     const finalisedFileKeys: HeroImageFileKeys =
       await fileKeysProcessor.process();
 
-    const blendService = serviceLocator.find(BlendService);
+    const blendService = diContainer.get<BlendService>(TYPES.BlendService);
     await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
 
     let recipeLists = (
