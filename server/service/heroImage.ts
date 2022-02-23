@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { nanoid } from "nanoid";
 
 import AWS from "server/external/aws";
@@ -19,8 +20,11 @@ import {
 import { rescaleImage } from "server/helpers/imageUtils";
 import { bufferToStream } from "server/helpers/bufferUtils";
 import { ObjectNotFoundError } from "server/base/errors";
-import { IService, DynamoBasedServiceLocator } from "server/service";
+import { IService } from "server/service";
+import { inject, injectable } from "inversify";
+import { TYPES } from "server/types";
 
+@injectable()
 export default class HeroImageService implements IService {
   // This is required to be able to mock these functions in tests
   nanoid = nanoid;
@@ -32,13 +36,7 @@ export default class HeroImageService implements IService {
   bufferToStream = bufferToStream;
   // //
 
-  dataStore: DynamoDB;
-  serviceLocator: DynamoBasedServiceLocator;
-
-  constructor(dataStore: DynamoDB, serviceLocator: DynamoBasedServiceLocator) {
-    this.dataStore = dataStore;
-    this.serviceLocator = serviceLocator;
-  }
+  @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   async getImagesForUser(
     pageKeyObject: AWS.DynamoDB.DocumentClient.Key,
@@ -159,8 +157,7 @@ export default class HeroImageService implements IService {
       status,
       statusHistory: [{ status, updatedAt } as HeroImageStatusUpdate],
     } as HeroImage;
-
-    await DynamoDB._().putItem({
+    await this.dataStore.putItem({
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       Item: heroImage,
     });

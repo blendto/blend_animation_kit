@@ -29,12 +29,11 @@ import {
   HeroImageFileKeys,
   createBlendBucketFileKeys,
 } from "server/base/models/heroImage";
+import { getUserAgentDetails } from "pages/api/whoami";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import HeroImageService from "server/service/heroImage";
-import { getUserAgentDetails } from "pages/api/whoami";
-import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
-import {diContainer} from "inversify.config";
-import {TYPES} from "server/types";
 
 const toolkitApi = new ToolkitApi();
 const recoEngineApi = new RecoEngineApi();
@@ -66,10 +65,9 @@ const _getRecentBlends = async (uid: string) => {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
-  const serviceLocator = DynamoBasedServiceLocator.instance;
   switch (method) {
     case "POST":
-      await suggestRecipes(req, res, serviceLocator);
+      await suggestRecipes(req, res);
       break;
     default:
       return res.status(404).json({ code: 404, message: "Wrong page/" });
@@ -188,11 +186,7 @@ async function createBgRemovedImage(
   }
 }
 
-const suggestRecipes = async (
-  req: NextApiRequest,
-  res: NextApiResponse,
-  serviceLocator: IServiceLocator
-) => {
+const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
     query: { id },
     body,
@@ -226,7 +220,6 @@ const suggestRecipes = async (
     const fileKeysProcessor = FileKeysProcessingStrategy.choose(
       id as string,
       uid,
-      serviceLocator,
       fileKeys,
       heroImageId
     );
@@ -317,19 +310,13 @@ abstract class FileKeysProcessingStrategy {
   static choose(
     blendId: String,
     userId: String,
-    serviceLocator: IServiceLocator,
     fileKeys?: HeroImageFileKeys,
     heroImageId?: String
   ): FileKeysProcessingStrategy {
     if (heroImageId) {
-      return new HeroImageIdBased(heroImageId, blendId, userId, serviceLocator);
+      return new HeroImageIdBased(heroImageId, blendId, userId);
     }
-    return new HeroImageFileKeysBased(
-      fileKeys,
-      blendId,
-      userId,
-      serviceLocator
-    );
+    return new HeroImageFileKeysBased(fileKeys, blendId, userId);
   }
 
   abstract process(): Promise<HeroImageFileKeys>;
@@ -339,22 +326,17 @@ class HeroImageIdBased extends FileKeysProcessingStrategy {
   heroImageId: String;
   blendId: String;
   userId: String;
-  serviceLocator: IServiceLocator;
-  constructor(
-    heroImageId: String,
-    blendId: String,
-    userId: String,
-    serviceLocator: IServiceLocator
-  ) {
+  constructor(heroImageId: String, blendId: String, userId: String) {
     super();
     this.heroImageId = heroImageId;
     this.blendId = blendId;
     this.userId = userId;
-    this.serviceLocator = serviceLocator;
   }
 
   async process(): Promise<HeroImageFileKeys> {
-    const heroImageService = this.serviceLocator.find(HeroImageService);
+    const heroImageService = diContainer.get<HeroImageService>(
+      TYPES.HeroImageService
+    );
 
     const heroImage: HeroImage | null = await heroImageService.getImage(
       this.heroImageId as string,
@@ -393,22 +375,17 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
   fileKeys: HeroImageFileKeys;
   blendId: String;
   userId: String;
-  serviceLocator: IServiceLocator;
-  constructor(
-    fileKeys: HeroImageFileKeys,
-    blendId: String,
-    userId: String,
-    serviceLocator: IServiceLocator
-  ) {
+  constructor(fileKeys: HeroImageFileKeys, blendId: String, userId: String) {
     super();
     this.fileKeys = fileKeys;
     this.blendId = blendId;
     this.userId = userId;
-    this.serviceLocator = serviceLocator;
   }
 
   async process(): Promise<HeroImageFileKeys> {
-    const heroImageService = this.serviceLocator.find(HeroImageService);
+    const heroImageService = diContainer.get<HeroImageService>(
+      TYPES.HeroImageService
+    );
 
     if (this.fileKeys.withoutBg) {
       // noinspection ES6MissingAwait

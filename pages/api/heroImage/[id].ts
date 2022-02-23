@@ -1,20 +1,20 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
-import { DynamoBasedServiceLocator, IServiceLocator } from "server/service";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
 import HeroImageService from "server/service/heroImage";
 import { handleServerExceptions } from "server/base/errors";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   return handleServerExceptions(res, async () => {
     const { method } = req;
-    const serviceLocator = DynamoBasedServiceLocator.instance;
     try {
       switch (method) {
         case "GET":
-          return getHero(req, res, serviceLocator);
+          return getHero(req, res);
 
         case "DELETE":
-          return deleteHero(req, res, serviceLocator);
+          return deleteHero(req, res);
 
         default:
           res.status(405).end();
@@ -29,11 +29,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   });
 };
 
-const getHero = async (
-  req: NextApiRequest,
-  res: NextApiResponse,
-  serviceLocator: IServiceLocator
-) => {
+const getHero = async (req: NextApiRequest, res: NextApiResponse) => {
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
   });
@@ -43,15 +39,13 @@ const getHero = async (
   } = req;
 
   res.send(
-    await serviceLocator.find(HeroImageService).getImage(id as string, uid)
+    await diContainer
+      .get<HeroImageService>(TYPES.HeroImageService)
+      .getImage(id as string, uid)
   );
 };
 
-const deleteHero = async (
-  req: NextApiRequest,
-  res: NextApiResponse,
-  serviceLocator: IServiceLocator
-) => {
+const deleteHero = async (req: NextApiRequest, res: NextApiResponse) => {
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
   });
@@ -60,6 +54,8 @@ const deleteHero = async (
     query: { id },
   } = req;
 
-  await serviceLocator.find(HeroImageService).deleteImage(id as string, uid);
+  await diContainer
+    .get<HeroImageService>(TYPES.HeroImageService)
+    .deleteImage(id as string, uid);
   res.status(204).end();
 };

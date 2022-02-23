@@ -4,4 +4,5 @@ export const TYPES = {
   BlendService: Symbol.for("BlendService"),
   UploadService: Symbol.for("UploadService"),
   UserService: Symbol.for("UserService"),
+  HeroImageService: Symbol.for("HeroImageService"),
 };

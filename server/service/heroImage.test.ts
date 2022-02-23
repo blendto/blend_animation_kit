@@ -2,6 +2,8 @@ import { Stream } from "node:stream";
 import { randomBytes } from "crypto";
 
 import ConfigProvider from "server/base/ConfigProvider";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
 import HeroImageService from "server/service/heroImage";
 import DynamoDB from "server/external/dynamodb";
 import {
@@ -10,11 +12,11 @@ import {
   HeroImageStatusUpdate,
 } from "server/base/models/heroImage";
 import { ObjectNotFoundError } from "server/base/errors";
-import { DynamoBasedServiceLocator } from "server/service";
 
 describe("HeroImageService", () => {
-  const heroImageService =
-      DynamoBasedServiceLocator.instance.find(HeroImageService),
+  const heroImageService = diContainer.get<HeroImageService>(
+      TYPES.HeroImageService
+    ),
     imageId = "b-_-sDqEW7LK150e",
     userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2",
     anotherUserId = "L8aASeH26gRzSvr6K9Yb3InuKb02",
@@ -41,7 +43,7 @@ describe("HeroImageService", () => {
   describe("Particular image retreival", () => {
     it("Raises NotFound error if there's no image matching the id", async () => {
       const getItemSpy = jest
-        .spyOn(DynamoDB._(), "getItem")
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
         .mockResolvedValueOnce(null);
       await expect(heroImageService.getImage(imageId, userId)).rejects.toThrow(
         ObjectNotFoundError
@@ -57,10 +59,12 @@ describe("HeroImageService", () => {
 
     it("Raises NotFound error if the image doesn't belong to the user", async () => {
       const consoleErrorMock = jest.spyOn(console, "error");
-      jest.spyOn(DynamoDB._(), "getItem").mockResolvedValueOnce({
-        ...image,
-        userId: anotherUserId,
-      });
+      jest
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
+        .mockResolvedValueOnce({
+          ...image,
+          userId: anotherUserId,
+        });
       await expect(heroImageService.getImage(imageId, userId)).rejects.toThrow(
         ObjectNotFoundError
       );
@@ -75,10 +79,12 @@ describe("HeroImageService", () => {
     });
 
     it("Raises NotFound error if the image was deleted", async () => {
-      jest.spyOn(DynamoDB._(), "getItem").mockResolvedValueOnce({
-        ...image,
-        status: HeroImageStatus.DELETED,
-      });
+      jest
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
+        .mockResolvedValueOnce({
+          ...image,
+          status: HeroImageStatus.DELETED,
+        });
       await expect(heroImageService.getImage(imageId, userId)).rejects.toThrow(
         ObjectNotFoundError
       );
@@ -86,7 +92,7 @@ describe("HeroImageService", () => {
 
     it('Returns the image if it belongs to "DEFAULT_USER"', async () => {
       jest
-        .spyOn(DynamoDB._(), "getItem")
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
         .mockResolvedValueOnce(defaultUserimage);
       const res = await heroImageService.getImage(imageId, userId);
       expect(res).toMatchObject(defaultUserimage);
@@ -95,7 +101,7 @@ describe("HeroImageService", () => {
     it('Raises NotFound error if the image belongs to "DEFAULT_USER" but "returnOnlyOwn" flag is true', async () => {
       const consoleErrorMock = jest.spyOn(console, "error");
       jest
-        .spyOn(DynamoDB._(), "getItem")
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
         .mockResolvedValueOnce(defaultUserimage);
       await expect(
         heroImageService.getImage(imageId, userId, true)
@@ -111,7 +117,9 @@ describe("HeroImageService", () => {
     });
 
     it("Returns the image if it belongs to the user", async () => {
-      jest.spyOn(DynamoDB._(), "getItem").mockResolvedValueOnce(image);
+      jest
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
+        .mockResolvedValueOnce(image);
       const res = await heroImageService.getImage(imageId, userId);
       expect(res).toMatchObject(image);
     });
@@ -120,7 +128,7 @@ describe("HeroImageService", () => {
   describe("User images retreival", () => {
     it("Returns all images belonging to the user", async () => {
       const queryItemsSpy = jest
-        .spyOn(DynamoDB._(), "queryItems")
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "queryItems")
         .mockResolvedValueOnce({
           Items: [image],
           LastEvaluatedKey: null,
@@ -156,7 +164,7 @@ describe("HeroImageService", () => {
   describe("Image usage update", () => {
     it("Updates the last used timestamp of an image", async () => {
       const updateItemSpy = jest
-        .spyOn(DynamoDB._(), "updateItem")
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "updateItem")
         .mockResolvedValueOnce({});
       jest.spyOn(Date, "now").mockReturnValueOnce(now);
 
@@ -235,7 +243,7 @@ describe("HeroImageService", () => {
       ));
       jest.spyOn(Date, "now").mockReturnValueOnce(now);
       const putItemSpy = jest
-        .spyOn(DynamoDB._(), "putItem")
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "putItem")
         .mockResolvedValueOnce({});
 
       const res = await heroImageService.createNewImage(blendId, userId, {
@@ -295,7 +303,7 @@ describe("HeroImageService", () => {
         .spyOn(heroImageService, "deleteObject")
         .mockResolvedValueOnce();
       const updateItemSpy = jest
-        .spyOn(DynamoDB._(), "updateItem")
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "updateItem")
         .mockResolvedValueOnce({});
       jest.spyOn(Date, "now").mockReturnValueOnce(now);
 
