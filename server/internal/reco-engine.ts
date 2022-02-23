@@ -15,13 +15,13 @@ export default class RecoEngineApi {
 
   async suggestRecipeLists(
     heroImageKey: string,
-    userAgentDetails: UserAgentDetails | null
+    userAgentPromise: Promise<UserAgentDetails | null>
   ): Promise<RecipeListSuggestions> {
     return (
       await handleAxiosCall<RecipeListSuggestions>(async () => {
         return await this.httpClient.post("/suggestRecipeCategories", {
           fileKeys: { hero: heroImageKey },
-          userAgentDetails: userAgentDetails,
+          userAgentDetails: await userAgentPromise,
         });
       })
     ).data;

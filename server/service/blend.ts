@@ -62,9 +62,34 @@ export class BlendService implements IService {
   }
 
   async getBlend(blendId: string): Promise<Blend> {
-    return (await DynamoDB._().getItem({
+    return (await this.dataStore.getItem({
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       Key: { id: blendId },
     })) as Blend | null;
+  }
+
+  async getRecentBlends(uid: string) {
+    return <Blend[]>(
+      await this.dataStore.queryItems({
+        TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
+        KeyConditionExpression: "#createdBy = :createdBy",
+        IndexName: "created-by-idx",
+        ExpressionAttributeNames: {
+          "#createdBy": "createdBy",
+          "#status": "status",
+          "#version": "version",
+        },
+        ExpressionAttributeValues: {
+          ":createdBy": uid,
+          ":generatedStatus": "GENERATED",
+          ":generatedVersion": "GENERATED",
+        },
+        ProjectionExpression: "id, metadata",
+        FilterExpression:
+          "#version = :generatedVersion AND #status = :generatedStatus",
+        ScanIndexForward: false,
+        Limit: 20,
+      })
+    ).Items;
   }
 }

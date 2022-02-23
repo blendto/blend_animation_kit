@@ -1,7 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import uniqWith from "lodash/uniqWith";
-import isEqual from "lodash/isEqual";
-import take from "lodash/take";
 import sharp from "sharp";
 
 import { _getBlend } from "../[id]";
@@ -9,7 +6,6 @@ import { _getBlend } from "../[id]";
 import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
 
 import ConfigProvider from "server/base/ConfigProvider";
-import DynamoDB from "server/external/dynamodb";
 import firebase from "server/external/firebase";
 import {
   copyObject,
@@ -20,48 +16,19 @@ import {
 import { handleServerExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import axios from "axios";
-import RecoEngineApi from "server/internal/reco-engine";
 import { IncomingMessage } from "node:http";
-import { RecipeUtils } from "server/base/models/recipe";
-import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import {
+  createBlendBucketFileKeys,
   HeroImage,
   HeroImageFileKeys,
-  createBlendBucketFileKeys,
 } from "server/base/models/heroImage";
-import { getUserAgentDetails } from "pages/api/whoami";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import HeroImageService from "server/service/heroImage";
+import { SuggestionService } from "server/service/suggestion";
 
 const toolkitApi = new ToolkitApi();
-const recoEngineApi = new RecoEngineApi();
-
-const _getRecentBlends = async (uid: string) => {
-  return <Blend[]>(
-    await DynamoDB._().queryItems({
-      TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
-      KeyConditionExpression: "#createdBy = :createdBy",
-      IndexName: "created-by-idx",
-      ExpressionAttributeNames: {
-        "#createdBy": "createdBy",
-        "#status": "status",
-        "#version": "version",
-      },
-      ExpressionAttributeValues: {
-        ":createdBy": uid,
-        ":generatedStatus": "GENERATED",
-        ":generatedVersion": "GENERATED",
-      },
-      ProjectionExpression: "id, metadata",
-      FilterExpression:
-        "#version = :generatedVersion AND #status = :generatedStatus",
-      ScanIndexForward: false,
-      Limit: 20,
-    })
-  ).Items;
-};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -214,8 +181,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     let uid = await firebase.extractUserIdFromRequest({
       request: req,
     });
-    const agentPromise: Promise<UserAgentDetails | null> =
-      getUserAgentDetails(req);
+    const ip = req.headers["x-forwarded-for"] as string;
 
     const fileKeysProcessor = FileKeysProcessingStrategy.choose(
       id as string,
@@ -229,79 +195,19 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const blendService = diContainer.get<BlendService>(TYPES.BlendService);
     await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
-
-    let recipeLists = (
-      await recoEngineApi.suggestRecipeLists(
+    const suggestions = await diContainer
+      .get<SuggestionService>(TYPES.SuggestionService)
+      .suggestRecipes(
+        uid,
         finalisedFileKeys.withoutBg,
-        await agentPromise
-      )
-    ).suggestedRecipeCategories;
-
-    recipeLists.sort(
-      (a, b) =>
-        (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
-        (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
-    );
-
-    if (uid) {
-      const recentBlends = await _getRecentBlends(uid);
-      let recentRecipes = recentBlends
-        .filter(({ metadata }) => {
-          return (
-            !!metadata.sourceRecipe ||
-            (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
-          );
-        })
-        .map(
-          ({ metadata }) =>
-            metadata.sourceRecipe ?? {
-              id: metadata.sourceRecipeId,
-              variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
-            }
-        );
-      recentRecipes = uniqWith(recentRecipes, isEqual);
-      if (recentRecipes.length > 0) {
-        recipeLists.unshift({
-          id: "recents",
-          isEnabled: true,
-          title: "⏰ Recently Used",
-          recipeIds: [],
-          recipes: take(recentRecipes, 5),
-          sortOrder: 0,
-        });
-      }
-    }
-
-    // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
-    recipeLists.forEach((list) => {
-      list.recipeIds = list.recipes
-        .filter(({ variant }) => variant == "9:16")
-        .map(({ id }) => id);
-    });
-
-    if (!multipleAspectRatios) {
-      // If Multiple Aspect Ratios are not supported, backfill and filter out empty ones
-
-      // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
-      recipeLists.forEach((list) => {
-        list.recipeIds = list.recipes
-          .filter(({ variant }) => variant == "9:16")
-          .map(({ id }) => id);
-      });
-
-      recipeLists = recipeLists.filter((list) => list.recipeIds.length > 0);
-    }
-
-    const randomTemplates = recipeLists
-      .map((list) => list.recipeIds)
-      .flat()
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 20);
+        ip,
+        multipleAspectRatios
+      );
 
     return res.send({
       fileKeys: finalisedFileKeys,
-      suggestedRecipes: randomTemplates,
-      otherRecipes: recipeLists,
+      suggestedRecipes: suggestions.randomTemplates,
+      otherRecipes: suggestions.recipeLists,
     });
   });
 };

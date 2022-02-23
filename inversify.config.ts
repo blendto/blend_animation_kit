@@ -5,6 +5,7 @@ import { BatchService } from "server/service/batch";
 import { BlendService } from "server/service/blend";
 import { UploadService } from "server/service/upload";
 import { UserService } from "server/service/user";
+import { SuggestionService } from "server/service/suggestion";
 import HeroImageService from "server/service/heroImage";
 
 const diContainer = new Container();
@@ -24,6 +25,10 @@ diContainer
 diContainer
   .bind<UserService>(TYPES.UserService)
   .to(UserService)
+  .inSingletonScope();
+diContainer
+  .bind<SuggestionService>(TYPES.SuggestionService)
+  .to(SuggestionService)
   .inSingletonScope();
 diContainer
   .bind<HeroImageService>(TYPES.HeroImageService)

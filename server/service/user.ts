@@ -6,10 +6,13 @@ import { IService } from "./index";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { inject, injectable } from "inversify";
+import IpApi from "server/external/ipapi";
+import { UserAgentDetails } from "server/base/models/userAgentDetails";
 
 @injectable()
 export class UserService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
+  ipApi = new IpApi();
 
   private async updateBlendOwner(blendId: string, newUid: string) {
     await this.dataStore.updateItem({
@@ -39,5 +42,19 @@ export class UserService implements IService {
       return blendId;
     });
     return await Promise.all(updates);
+  }
+
+  async getUserAgent(ip: string): Promise<UserAgentDetails | null> {
+    if (!ip) {
+      return null;
+    }
+
+    try {
+      const ipDetails = await this.ipApi.getIpInfo(ip);
+      return new UserAgentDetails(ipDetails["country_code"]);
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
   }
 }
