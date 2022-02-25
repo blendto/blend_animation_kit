@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
 
-// eslint-disable-next-line no-shadow
 export enum HeroImageStatus {
   CREATED = "CREATED",
   DELETED = "DELETED",
@@ -34,11 +33,12 @@ export interface ExtendedHeroImageFileKeys extends HeroImageFileKeys {
   thumbnail?: string;
 }
 
-const extractExtensionFromFileKey = (fileKey: string): string =>
-  fileKey.split(".").pop();
+const extractExtensionFromFileKey = (fileKey: String): String => {
+  return fileKey.split(".").pop();
+};
 
 export const createBlendBucketFileKeys = (
-  blendId: string,
+  blendId: String,
   heroImage: HeroImage
 ): HeroImageFileKeys => {
   const randomId = nanoid(16);
@@ -51,7 +51,7 @@ export const createBlendBucketFileKeys = (
 };
 
 export const createHeroBucketFileKeys = (
-  heroImageId: string,
+  heroImageId: String,
   blendBucketFileKeys: HeroImageFileKeys
 ): ExtendedHeroImageFileKeys => {
   const originalFileExt = extractExtensionFromFileKey(

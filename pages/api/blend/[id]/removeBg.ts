@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import Joi from "joi";
 
+import { _getBlend } from "../[id]";
 import { Blend } from "server/base/models/blend";
 import { handleServerExceptions, UserError } from "server/base/errors";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
@@ -12,7 +12,6 @@ import axios from "axios";
 import { applyMask, rescaleImage } from "server/helpers/imageUtils";
 import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import sharp from "sharp";
-import { _getBlend } from "../[id]";
 
 const toolkitApi = new ToolkitApi();
 
@@ -61,7 +60,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   const { fileKey, useMask = false } = body as RemoveBgRequest;
 
   let originalImage: Buffer;
-  return handleServerExceptions(res, async () => {
+  return await handleServerExceptions(res, async () => {
     originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       fileKey
@@ -77,7 +76,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const bgMaskFileName = `${fileNameWithoutExt}-bg-mask.png`;
 
-    let trimLTWH: Array<number> | null = null;
+    var trimLTWH: Array<Number> | null = null;
 
     const bgRemovedFileKey = [
       ...fileKeyParts.slice(0, -1),
@@ -176,16 +175,14 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       } catch (ex) {
         if (axios.isAxiosError(ex)) {
           let data = "";
-          // eslint-disable-next-line no-restricted-syntax
           for await (const chunk of ex.response.data) {
             data += chunk;
           }
-          // eslint-disable-next-line no-shadow
-          const error: ToolkitErrorResponse = JSON.parse(data);
+          let error: ToolkitErrorResponse = JSON.parse(data);
 
           let errorMessage = error.message;
 
-          if (error.code === "unknown_foreground") {
+          if (error.code == "unknown_foreground") {
             errorMessage = "Unable to remove background";
           }
 

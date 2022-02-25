@@ -34,7 +34,6 @@ const getFeedbackOptions = async (
     },
   })) as FeedbackConfigDBEntry;
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const configInSpecificLanguage = pickAppropriateFeedbackOptions(
     feedbackConfig.data,
     req.headers["accept-language"]
@@ -54,15 +53,12 @@ export const pickAppropriateFeedbackOptions = (
   locale = [language, country].join("_");
 
   if (locale in feedbackData) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return feedbackData[locale];
   }
 
   if (language in feedbackData) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return feedbackData[language];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return feedbackData[DEFAULT_LOCALE];
 };

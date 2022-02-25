@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { RecipeVariantId } from "./recipeList";
 
 export interface StoredImage {
@@ -98,7 +97,6 @@ export interface UserInteraction {
   options: UserInteractionOptions;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface UserInteractionOptions {}
 
 export interface LinkOptions extends UserInteractionOptions {

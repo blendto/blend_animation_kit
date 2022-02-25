@@ -11,7 +11,6 @@ export default class IpApi {
 
   async getIpInfo(ipAddress: string) {
     const response = await this.httpClient.get(`/api/${ipAddress}`);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return response.data;
   }
 }

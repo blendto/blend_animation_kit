@@ -5,8 +5,8 @@ import { TYPES } from "server/types";
 import HeroImageService from "server/service/heroImage";
 import { handleServerExceptions } from "server/base/errors";
 
-export default async (req: NextApiRequest, res: NextApiResponse) =>
-  handleServerExceptions(res, async () => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
+  return handleServerExceptions(res, async () => {
     const { method } = req;
     try {
       switch (method) {
@@ -21,12 +21,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) =>
       }
     } catch (err) {
       console.error({
-        op: (err as Error).toString(),
-        message: (err as Error).toString(),
+        op: err.toString(),
+        message: err.toString(),
       });
       res.status(500).json({ message: "Something went wrong!" });
     }
   });
+};
 
 const getHero = async (req: NextApiRequest, res: NextApiResponse) => {
   const uid = await firebase.extractUserIdFromRequest({

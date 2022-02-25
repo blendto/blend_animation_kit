@@ -1,9 +1,6 @@
-/* eslint-disable no-shadow */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
+import { addBlendToDB, backfillBlendOutput, BlendVersion } from "../blend";
 import firebase from "server/external/firebase";
 import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -16,9 +13,7 @@ import {
 } from "server/constants";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import ConfigProvider from "server/base/ConfigProvider";
-import { addBlendToDB, backfillBlendOutput, BlendVersion } from "../blend";
 
-// eslint-disable-next-line no-underscore-dangle
 export const _getBlend = async (
   id: string,
   version: BlendVersion = BlendVersion.current
@@ -27,7 +22,7 @@ export const _getBlend = async (
     TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
     Key: {
       id,
-      version,
+      version: version,
     },
   });
 
@@ -103,16 +98,16 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(404).send({ message: "Blend not found!" });
   }
 
-  if (blend.createdBy !== uid) {
+  if (blend.createdBy != uid) {
     return res.status(403).send({ message: "Forbidden" });
   }
 
-  if (blend.status !== "GENERATED") {
+  if (blend.status != "GENERATED") {
     try {
       await DynamoDB._().deleteItem({
         TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
         Key: {
-          id,
+          id: id,
         },
       });
     } catch (err) {
@@ -135,7 +130,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
         ":updatedAt": now,
         ":updatedOn": updatedOn,
       },
-      Key: { id },
+      Key: { id: id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     };
@@ -165,7 +160,7 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     query: { id, format, target },
   } = req;
 
-  const blend = await _getBlend(id as string, BlendVersion.current);
+  let blend = await _getBlend(id as string, BlendVersion.current);
 
   if (!blend || blend?.status === "DELETED") {
     res.status(404).send({ message: "Blend not found!" });
@@ -200,7 +195,7 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     });
   }
 
-  if ((format as string)?.toUpperCase() === "RECIPE") {
+  if ((format as string)?.toUpperCase() == "RECIPE") {
     const recipe = {
       id,
       images,
@@ -262,7 +257,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     existingBlend = await addBlendToDB(id as string, uid);
   }
 
-  if (existingBlend.createdBy !== uid) {
+  if (existingBlend.createdBy != uid) {
     return res
       .status(403)
       .send({ message: "Cannot edit someone else's blend" });
@@ -294,7 +289,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const { type, version } = source;
 
-  if (!["WEB", "MOBILE"].includes(type as string)) {
+  if (!["WEB", "MOBILE"].includes(type)) {
     return res.status(400).json({ message: "invalid source type" });
   }
 
@@ -348,7 +343,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       ":updatedAt": now,
       ":updatedOn": updatedOn,
     },
-    Key: { id },
+    Key: { id: id },
     TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     ReturnValues: "ALL_NEW",
   };
@@ -365,7 +360,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   // Add id
-  updatedRecipe.id = id;
+  updatedRecipe["id"] = id;
 
   res.send(updatedRecipe);
 };

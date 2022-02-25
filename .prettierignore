@@ -1,6 +1,1 @@
-# Artifacts:
-build
-
-# Files:
-*.html
-*.md
+build/

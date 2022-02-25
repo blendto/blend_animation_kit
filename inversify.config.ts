@@ -1,11 +1,11 @@
 import { Container } from "inversify";
 import { TYPES } from "server/types";
 import DynamoDB from "server/external/dynamodb";
-import BatchService from "server/service/batch";
-import BlendService from "server/service/blend";
-import UploadService from "server/service/upload";
-import UserService from "server/service/user";
-import SuggestionService from "server/service/suggestion";
+import { BatchService } from "server/service/batch";
+import { BlendService } from "server/service/blend";
+import { UploadService } from "server/service/upload";
+import { UserService } from "server/service/user";
+import { SuggestionService } from "server/service/suggestion";
 import HeroImageService from "server/service/heroImage";
 
 const diContainer = new Container();
@@ -34,5 +34,4 @@ diContainer
   .bind<HeroImageService>(TYPES.HeroImageService)
   .to(HeroImageService)
   .inSingletonScope();
-// eslint-disable-next-line import/prefer-default-export
 export { diContainer };

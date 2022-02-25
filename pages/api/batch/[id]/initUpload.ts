@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
 import { UploadRequestCreationConfig } from "server/base/models/batch";
-import BatchService from "server/service/batch";
+import { BatchService } from "server/service/batch";
 import { handleServerExceptions } from "server/base/errors";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
@@ -24,15 +24,14 @@ const initUpload = async (req: NextApiRequest, res: NextApiResponse) => {
   });
   const {
     query: { id },
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     body,
   } = req;
 
-  return handleServerExceptions(res, async () => {
+  return await handleServerExceptions(res, async () => {
     const service = diContainer.get<BatchService>(TYPES.BatchService);
     const uploadRequests = await service.initUpload(
       id as string,
-      uid,
+      uid as string,
       body as UploadRequestCreationConfig
     );
     return res.status(200).json(uploadRequests);

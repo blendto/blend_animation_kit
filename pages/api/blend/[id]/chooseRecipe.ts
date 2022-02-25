@@ -1,8 +1,3 @@
-/* eslint-disable
-  @typescript-eslint/no-unsafe-argument,
-  @typescript-eslint/no-unsafe-member-access,
-  @typescript-eslint/no-unsafe-assignment
-*/
 import type { NextApiRequest, NextApiResponse } from "next";
 import DynamoDB from "server/external/dynamodb";
 import ConfigProvider from "server/base/ConfigProvider";
@@ -27,10 +22,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-// eslint-disable-next-line no-underscore-dangle
 export const _getRecipe = async (
   id: string,
-  variant = "9:16"
+  variant: string = "9:16"
 ): Promise<Recipe> => {
   const recipe = await DynamoDB._().getItem({
     TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
@@ -110,7 +104,7 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (
     !fileKeys ||
-    typeof fileKeys !== "object" ||
+    typeof fileKeys != "object" ||
     !fileKeys.original ||
     !fileKeys.withoutBg
   ) {
@@ -138,19 +132,16 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     });
   }
 
-  const copyFilePromises = [];
+  let copyFilePromises = [];
   let interactionUpdatePromise;
 
   const blendImages = recipe.images.map((image) => {
     if (image.uid === recipe.recipeDetails.elements.hero.uid) {
       const interaction = recipe.interactions.find(
-        // eslint-disable-next-line no-shadow
         (interaction) =>
-          interaction.assetType === "IMAGE" &&
-          interaction.assetUid === image.uid
+          interaction.assetType == "IMAGE" && interaction.assetUid == image.uid
       );
-      // Starting from 2.5, we only show the cropped area in the mobile_app instead of actually
-      // cropping the image and uploading it.
+      // Starting from 2.5, we only show the cropped area in the mobile_app instead of actually cropping the image and uploading it.
       // The hero image should not have cropRect property in a recipe as it will get replaced.
       (interaction.metadata as ImageMetadata).cropRect = null;
       if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
@@ -166,9 +157,9 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
       );
       return { ...image, uri: fileKeys.original };
     }
-    const uriParts = image.uri.split("/");
+    let uriParts = image.uri.split("/");
     uriParts[0] = blendId as string;
-    const targetUri = uriParts.join("/");
+    let targetUri = uriParts.join("/");
     copyFilePromises.push(
       copyObject(
         ConfigProvider.RECIPE_INGREDIENTS_BUCKET,

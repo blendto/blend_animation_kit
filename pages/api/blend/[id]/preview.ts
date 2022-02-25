@@ -1,5 +1,5 @@
 import VesApi from "server/internal/ves";
-import { handleServerExceptions } from "server/base/errors";
+import { handleServerExceptions } from "server/base/errors/Handlers";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -17,11 +17,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 const vesapi = new VesApi();
 
 const generatePreview = async (req: NextApiRequest, res: NextApiResponse) => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const { body } = req;
 
-  return handleServerExceptions(res, async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  return await handleServerExceptions(res, async () => {
     const previewStream = await vesapi.preview(body);
     res.setHeader("Content-Type", "image/jpeg");
     res.send(previewStream);

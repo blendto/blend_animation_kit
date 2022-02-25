@@ -1,6 +1,5 @@
 const path = require("path");
 // const nodeExternals = require("webpack-node-externals");
-// eslint-disable-next-line import/no-extraneous-dependencies
 const glob = require("glob");
 
 const { NODE_ENV = "production" } = process.env;

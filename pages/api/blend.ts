@@ -14,7 +14,6 @@ import ConfigProvider from "server/base/ConfigProvider";
 const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
 const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
 
-// eslint-disable-next-line no-shadow
 export enum BlendVersion {
   current = "CURRENT",
   generated = "GENERATED",
@@ -47,6 +46,7 @@ const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong!" });
+    return;
   }
 };
 
@@ -57,7 +57,6 @@ export const initBlendInternal = async (
   let blendRequestId: string;
   do {
     blendRequestId = nanoid(8);
-    // eslint-disable-next-line no-await-in-loop
     const item = await DynamoDB._().getItem({
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       Key: {
@@ -67,7 +66,6 @@ export const initBlendInternal = async (
     if (!item) {
       break;
     }
-    // eslint-disable-next-line no-constant-condition
   } while (true);
 
   let fileKey = null;
@@ -75,10 +73,9 @@ export const initBlendInternal = async (
     fileKey = `${blendRequestId}/${options.heroFileName}`;
   }
 
-  return addBlendToDB(blendRequestId, uid, {
+  return await addBlendToDB(blendRequestId, uid, {
     batchId: options?.batchId,
     heroImages: {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       original: fileKey,
     },
   });
@@ -138,12 +135,13 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
       FilterExpression:
         "(#version = :currentVersion) AND (#status = :generated OR #status = :submitted)",
       ScanIndexForward: false,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       ExclusiveStartKey: pageKeyObject,
       Limit: 15,
     });
 
-    items = data.Items.map((item) => backfillBlendOutput(<Blend>item));
+    items = data.Items.map((item) => {
+      return backfillBlendOutput(<Blend>item);
+    });
 
     nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
   } catch (err) {
@@ -152,7 +150,6 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   res.send({ data: items, nextPageKey });
 };
 
@@ -164,8 +161,8 @@ export const addBlendToDB = async (
   const currentTime = Date.now();
   const currentDate = DateTime.utc().toISODate();
 
-  const blend: Blend = {
-    id,
+  let blend: Blend = {
+    id: id,
     version: BlendVersion.current,
     batchId: options?.batchId,
     status: BlendStatus.Initialized,
@@ -192,10 +189,9 @@ export const addBlendToDB = async (
 };
 
 export const backfillBlendOutput = (item: Blend) => {
-  // eslint-disable-next-line prefer-const
   let { filePath, imagePath, thumbnail, output, status } = item;
 
-  if (!output && status === "GENERATED") {
+  if (!output && status == "GENERATED") {
     output = {
       video: {
         path: filePath,

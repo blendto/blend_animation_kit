@@ -1,9 +1,8 @@
 import { nanoid } from "nanoid";
 
-// eslint-disable-next-line import/no-unresolved
+import AWS from "./aws";
 import { Stream } from "node:stream";
 import { ServerError, UserError } from "server/base/errors";
-import AWS from "./aws";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
@@ -43,15 +42,14 @@ export const createSignedUploadUrl = async (
     throw new UserError("No filename found");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  fileName = fileName.trim();
   const fileNameToStore =
     outFileKey ??
-    createDestinationFileKey(fileName.trim(), validExtensions, keyPrefix);
+    createDestinationFileKey(fileName, validExtensions, keyPrefix);
 
   const params = {
     Bucket: bucketName,
     Fields: {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       key: fileNameToStore,
     },
     Expires: 60 * 10, // 10 min
@@ -60,15 +58,14 @@ export const createSignedUploadUrl = async (
         bucket: bucketName,
       },
       {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         key: fileNameToStore, // our generated key
       },
       ["content-length-range", 10, maxSize], // from 10 bytes to 1 MB
     ],
   };
 
-  return new Promise((resolve, reject) => {
-    s3.createPresignedPost(params, (err, data) => {
+  return await new Promise((resolve, reject) => {
+    s3.createPresignedPost(params, function (err, data) {
       if (err) {
         reject(err);
         return;
@@ -78,8 +75,8 @@ export const createSignedUploadUrl = async (
   });
 };
 
-export const doesObjectExist = async (bucketName: string, fileKey: string) =>
-  new Promise((resolve, reject) => {
+export const doesObjectExist = async (bucketName: string, fileKey: string) => {
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -102,12 +99,13 @@ export const doesObjectExist = async (bucketName: string, fileKey: string) =>
       return resolve(false);
     });
   });
+};
 
 export const getObject = async (
   bucketName: string,
   fileKey: string
-): Promise<Buffer> =>
-  new Promise((resolve, reject) => {
+): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -130,13 +128,14 @@ export const getObject = async (
       return resolve(data.Body as Buffer);
     });
   });
+};
 
 export const uploadObject = async (
   bucketName: string,
   fileKey: string,
   stream: Stream
-) =>
-  new Promise((resolve, reject) => {
+) => {
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -153,14 +152,15 @@ export const uploadObject = async (
       return resolve(data);
     });
   });
+};
 
 export const copyObject = async (
   sourceBucket: string,
   sourceKey: string,
   destBucket: string,
   destKey: string
-): Promise<AWS.S3.CopyObjectOutput> =>
-  new Promise((resolve, reject) => {
+) => {
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: destBucket,
       CopySource: `/${sourceBucket}/${sourceKey}`,
@@ -177,17 +177,17 @@ export const copyObject = async (
       return resolve(data);
     });
   });
+};
 
 export const deleteObject = async (
   bucketName: string,
   fileKey: string
-): Promise<void> =>
-  new Promise((resolve, reject) => {
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     s3.deleteObject(params, (err, data) => {
       if (err) {
         if (["NoSuchKey", "Forbidden"].includes(err.code)) {
@@ -206,3 +206,4 @@ export const deleteObject = async (
       return resolve();
     });
   });
+};

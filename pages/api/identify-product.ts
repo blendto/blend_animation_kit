@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import RecoEngineApi from "server/internal/reco-engine";
+import RecoEngineApi from "../../server/internal/reco-engine";
 import { initMiddleware } from "server/helpers/middleware";
 import Cors from "cors";
 import { passthrough } from "server/helpers/network";

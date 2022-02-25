@@ -10,15 +10,12 @@ export const bufferToStream = (binary: Buffer) => {
   return readableInstanceStream;
 };
 
-export const streamToBuffer = async (stream: Stream) =>
-  new Promise<Buffer>((resolve, reject) => {
-    // eslint-disable-next-line no-underscore-dangle
-    const _buf = Array<unknown>();
+export const streamToBuffer = async (stream: Stream) => {
+  return new Promise<Buffer>((resolve, reject) => {
+    const _buf = Array<any>();
 
     stream.on("data", (chunk) => _buf.push(chunk));
-    stream.on("end", () => resolve(Buffer.concat(_buf as Uint8Array[])));
-    stream.on("error", (err) =>
-      // eslint-disable-next-line prefer-promise-reject-errors
-      reject(`error converting stream - ${JSON.stringify(err)}`)
-    );
+    stream.on("end", () => resolve(Buffer.concat(_buf)));
+    stream.on("error", (err) => reject(`error converting stream - ${err}`));
   });
+};

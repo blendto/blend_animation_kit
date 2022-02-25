@@ -1,11 +1,10 @@
-/* eslint-disable import/no-unresolved */
-import { UserError } from "server/base/errors";
-import { createSignedUploadUrl } from "server/external/s3";
+import { ServerError, UserError } from "../../server/base/errors";
+import { createSignedUploadUrl } from "../../server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
 
 export default async (req, res) => {
   const { method } = req;
@@ -23,7 +22,7 @@ const uploadImage = async (req, res) => {
   try {
     const { body: uploadFileRequest } = req;
 
-    const { collabId, fileName } = uploadFileRequest;
+    let { collabId, fileName } = uploadFileRequest;
 
     if (!collabId) {
       throw new UserError("No collabId found in the request");
@@ -34,7 +33,7 @@ const uploadImage = async (req, res) => {
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       VALID_EXTENSIONS,
       {
-        keyPrefix: `${collabId}/`,
+        keyPrefix: collabId + "/",
         maxSize: MAX_FILE_SIZE,
       }
     );

@@ -1,12 +1,6 @@
-/* eslint-disable
-  @typescript-eslint/no-unsafe-return,
-  @typescript-eslint/no-unsafe-call,
-  @typescript-eslint/no-unsafe-member-access,
-  @typescript-eslint/no-unsafe-assignment
-*/
 import "reflect-metadata";
 import { RecipeList } from "server/base/models/recipeList";
-import BlendService from "server/service/blend";
+import { BlendService } from "server/service/blend";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
@@ -16,14 +10,12 @@ import uniqWith from "lodash/uniqWith";
 import isEqual from "lodash/isEqual";
 import take from "lodash/take";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
-import UserService from "server/service/user";
+import { UserService } from "server/service/user";
 
 @injectable()
-export default class SuggestionService {
+export class SuggestionService {
   @inject(TYPES.BlendService) blendService: BlendService;
-
   @inject(TYPES.UserService) userService: UserService;
-
   recoEngineApi = new RecoEngineApi();
 
   async selectFileKeysFromBatchPreview(
@@ -77,11 +69,12 @@ export default class SuggestionService {
     if (uid) {
       const recentBlends = await this.blendService.getRecentBlends(uid);
       let recentRecipes = recentBlends
-        .filter(
-          ({ metadata }) =>
+        .filter(({ metadata }) => {
+          return (
             !!metadata.sourceRecipe ||
             (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
-        )
+          );
+        })
         .map(
           ({ metadata }) =>
             metadata.sourceRecipe ?? {
@@ -104,9 +97,8 @@ export default class SuggestionService {
 
     // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
     recipeLists.forEach((list) => {
-      // eslint-disable-next-line no-param-reassign
       list.recipeIds = list.recipes
-        .filter(({ variant }) => variant === "9:16")
+        .filter(({ variant }) => variant == "9:16")
         .map(({ id }) => id);
     });
 
@@ -115,9 +107,8 @@ export default class SuggestionService {
 
       // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
       recipeLists.forEach((list) => {
-        // eslint-disable-next-line no-param-reassign
         list.recipeIds = list.recipes
-          .filter(({ variant }) => variant === "9:16")
+          .filter(({ variant }) => variant == "9:16")
           .map(({ id }) => id);
       });
 
@@ -130,6 +121,6 @@ export default class SuggestionService {
       .sort(() => 0.5 - Math.random())
       .slice(0, 20);
 
-    return { recipeLists, randomTemplates };
+    return { recipeLists: recipeLists, randomTemplates: randomTemplates };
   }
 }

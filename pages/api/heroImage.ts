@@ -45,7 +45,7 @@ const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const { images, pageKeyObject: nextPageKeyObject } = await diContainer
     .get<HeroImageService>(TYPES.HeroImageService)
-    .getImagesForUser(pageKeyObject as AWS.DynamoDB.DocumentClient.Key, uid);
+    .getImagesForUser(pageKeyObject, uid);
   const nextPageToken = EncodedPageKey.fromObject(nextPageKeyObject)?.key;
   res.send({ data: images, nextPageToken });
 };

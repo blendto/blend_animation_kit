@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { IService } from "server/service";
+import { IService } from "./index";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import DynamoDB from "server/external/dynamodb";
 import { Blend } from "server/base/models/blend";
@@ -8,7 +8,7 @@ import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 
 @injectable()
-export default class BlendService implements IService {
+export class BlendService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   async getBlendIdsForBatch(batchId: string): Promise<string[]> {

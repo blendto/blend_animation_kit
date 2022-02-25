@@ -1,8 +1,8 @@
 import VesApi from "server/internal/ves";
-import { handleServerExceptions } from "server/base/errors";
+import { handleServerExceptions } from "server/base/errors/Handlers";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { diContainer } from "inversify.config";
-import SuggestionService from "server/service/suggestion";
+import { SuggestionService } from "server/service/suggestion";
 import { TYPES } from "server/types";
 import firebase from "server/external/firebase";
 
@@ -23,11 +23,10 @@ const vesapi = new VesApi();
 const generatePreview = async (req: NextApiRequest, res: NextApiResponse) => {
   const {
     query: { id },
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     body: { recipeId },
   } = req;
 
-  return handleServerExceptions(res, async () => {
+  return await handleServerExceptions(res, async () => {
     const uid = await firebase.extractUserIdFromRequest({
       request: req,
       optional: true,
@@ -35,10 +34,9 @@ const generatePreview = async (req: NextApiRequest, res: NextApiResponse) => {
     const service = diContainer.get<SuggestionService>(TYPES.SuggestionService);
     const batchId = id as string;
 
-    const fileKeys = await service.selectFileKeysFromBatchPreview(uid, batchId);
+    let fileKeys = await service.selectFileKeysFromBatchPreview(uid, batchId);
     const previewStream = await vesapi.preview({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      recipeId,
+      recipeId: recipeId,
       fileKeys: {
         original: fileKeys.original,
         withoutBg: fileKeys.withoutBg,
