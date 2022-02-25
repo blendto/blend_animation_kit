@@ -1,3 +1,5 @@
+import { isNil } from "lodash";
+
 import Base64 from "./base64";
 
 // eslint-disable-next-line import/prefer-default-export
@@ -21,7 +23,7 @@ export class EncodedPageKey {
   // It's not fair. The client should not have send "null"
   // World is not fair!
   exists(): boolean {
-    return this.key !== null && this.key !== "null";
+    return !isNil(this.key) && this.key !== "null";
   }
 
   isValid(): boolean {
