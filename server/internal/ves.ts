@@ -17,13 +17,14 @@ export default class VesApi {
     baseURL: VES_SERVICE_BASE_URL,
   });
 
-  preview = async (params: PreviewRequestParams) => {
-    return await handleAxiosCall(async () => {
-      return (
-        await this.httpClient.post("/preview", params, {
-          responseType: "stream",
-        })
-      ).data;
-    });
-  };
+  preview = async (params: PreviewRequestParams) =>
+    handleAxiosCall(
+      async () =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        (
+          await this.httpClient.post("/preview", params, {
+            responseType: "stream",
+          })
+        ).data
+    );
 }

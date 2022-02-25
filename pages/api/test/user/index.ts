@@ -16,6 +16,7 @@ const createTemporaryTestUser = async (
   req: NextApiRequest,
   res: NextApiResponse
 ) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const userCredential = await firebase.createTemporaryUser();
   res.status(200).send(userCredential);
 };

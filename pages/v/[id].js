@@ -1,7 +1,8 @@
+/* eslint-disable import/no-unresolved */
 import * as React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import ConfigProvider from "../../server/base/ConfigProvider";
+import ConfigProvider from "server/base/ConfigProvider";
 import {
   List,
   Spin,
@@ -15,24 +16,22 @@ import {
   message,
 } from "antd";
 import { LinkOutlined } from "@ant-design/icons";
-
 import Head from "next/head";
 
-import styles from "../../styles/Viewer.module.css";
-import { _getBlend } from "../api/blend/[id]";
-import IntearctionLayer from "../../components/viewer/InteractionLayer";
+import styles from "styles/Viewer.module.css";
+import { _getBlend } from "pages/api/blend/[id]";
+import IntearctionLayer from "components/viewer/InteractionLayer";
 import { AnalyticsService } from "server/service/analytics";
 
 const { Title, Text } = Typography;
 
-const fetchData = async (id) => {
-  return await fetch(`/api/blend/${id}`).then((res) => {
+const fetchData = async (id) =>
+  fetch(`/api/blend/${id}`).then((res) => {
     if (res.status === 404) {
       return null;
     }
     return res.json();
   });
-};
 
 const pollUntilCreation = async (id) => {
   const blend = await fetchData(id);
@@ -47,16 +46,16 @@ const pollUntilCreation = async (id) => {
 
   await new Promise((r) => setTimeout(r, 2000));
 
-  return await pollUntilCreation(id);
+  return pollUntilCreation(id);
 };
 
-const createVideoLink = (blend) => {
-  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output?.video.path;
-};
+const createVideoLink = (blend) =>
+  // eslint-disable-next-line no-unsafe-optional-chaining
+  ConfigProvider.OUTPUT_BASE_PATH + blend?.output?.video.path;
 
-const createThumbnailLink = (blend) => {
-  return ConfigProvider.OUTPUT_BASE_PATH + blend?.output?.thumbnail.path;
-};
+const createThumbnailLink = (blend) =>
+  // eslint-disable-next-line no-unsafe-optional-chaining
+  ConfigProvider.OUTPUT_BASE_PATH + blend?.output?.thumbnail.path;
 
 const optimalVideoDimensions = (
   { width: windowWidth, height: windowHeight },
@@ -66,13 +65,13 @@ const optimalVideoDimensions = (
     return { width: 0, height: 0 };
   }
   const { width, height } = videoResolution;
-  var scale = Math.min(windowWidth / width, windowHeight / height);
+  const scale = Math.min(windowWidth / width, windowHeight / height);
 
   return { width: Math.ceil(width * scale), height: Math.ceil(height * scale) };
 };
 
 const createLink = (id, remix = false) => {
-  var link = `${process.env.NEXT_PUBLIC_SELF_BASE_PATH}v/${id}`;
+  const link = `${process.env.NEXT_PUBLIC_SELF_BASE_PATH}v/${id}`;
   if (remix) {
     return `${link}?a=rx`;
   }
@@ -80,7 +79,7 @@ const createLink = (id, remix = false) => {
 };
 
 const createCustomSchemeLink = (id) => {
-  var link = `blend://blend.to/remix/${id}`;
+  const link = `blend://blend.to/remix/${id}`;
 
   return link;
 };
@@ -127,6 +126,7 @@ export default function CollabViewerPage(props) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line no-shadow
     async function fetchData() {
       // Check blend from props
       let fetchedBlend = props.blend;
@@ -253,7 +253,7 @@ function BlendDrawer({ blend, visible, onClose }) {
 
 function Credits({ blend }) {
   const credits = blend.externalImages.reduce((resultArray, extImg) => {
-    if (extImg.source == "UNSPLASH" && extImg.credit != null) {
+    if (extImg.source === "UNSPLASH" && extImg.credit !== null) {
       const { credit } = extImg;
       resultArray.push({
         thumbnail: `${extImg.url}&fm=jpg&w=100&fit=max`,
@@ -309,29 +309,23 @@ function BlendButton({ onClick }) {
   );
 }
 
-const VideoLayer = React.memo(function ({ blend, width, height }) {
-  return [
-    <div key={"video-layer"} style={{ width, height }}>
-      <video
-        height={height}
-        width={width}
-        controls={false}
-        autoPlay
-        muted
-        playsInline
-        loop
-      >
-        <source src={createVideoLink(blend)} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-    </div>,
-    <IntearctionLayer
-      key={"il"}
-      blend={blend}
-      dimensions={{ width, height }}
-    />,
-  ];
-});
+const VideoLayer = React.memo(({ blend, width, height }) => [
+  <div key={"video-layer"} style={{ width, height }}>
+    <video
+      height={height}
+      width={width}
+      controls={false}
+      autoPlay
+      muted
+      playsInline
+      loop
+    >
+      <source src={createVideoLink(blend)} type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+  </div>,
+  <IntearctionLayer key={"il"} blend={blend} dimensions={{ width, height }} />,
+]);
 
 export async function getServerSideProps({ params }) {
   const { id } = params;

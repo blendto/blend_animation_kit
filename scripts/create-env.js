@@ -1,4 +1,5 @@
-const { assert } = require("console");
+/* eslint-disable guard-for-in */
+/* eslint-disable no-restricted-syntax */
 const fs = require("fs");
 const { getSecrets } = require("./doppler-secrets");
 const {
@@ -6,14 +7,14 @@ const {
 } = require("../server/base/EnvironmentVarsSchema");
 
 (async () => {
-  const configValString = process.env["ENV_VARS"];
+  const configValString = process.env.ENV_VARS;
 
   let envVars = configValString ? JSON.parse(configValString) : null;
 
   if (!envVars) {
     envVars = await getSecrets();
     if (!envVars.DOPPLER_PROJECT) {
-      throw new Error("Fetching failed from doppler: " + envVars.messages);
+      throw new Error(`Fetching failed from doppler: ${envVars.messages}`);
     }
   }
 

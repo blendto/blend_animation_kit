@@ -1,6 +1,7 @@
 import { Recipe, Size } from "./recipe";
 import { HeroImageFileKeys } from "./heroImage";
 
+// eslint-disable-next-line no-shadow
 export enum BlendStatus {
   Initialized = "INITIALIZED",
   Submitted = "SUBMITTED",

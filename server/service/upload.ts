@@ -1,14 +1,14 @@
 import "reflect-metadata";
-import { IService } from "./index";
-import { BlendService } from "server/service/blend";
+import { IService } from "server/service";
+import BlendService from "server/service/blend";
 import { BlendModelUtils } from "server/base/models/blend";
-import { BatchService } from "server/service/batch";
+import BatchService from "server/service/batch";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { injectable } from "inversify";
 
 @injectable()
-export class UploadService implements IService {
+export default class UploadService implements IService {
   async processHeroImageTrigger(
     bucket: string,
     fileKey: string

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import "reflect-metadata";
 import DynamoDB from "server/external/dynamodb";
 import {
@@ -16,7 +17,7 @@ import {
   createDestinationFileKey,
   createSignedUploadUrl,
 } from "server/external/s3";
-import { IService } from "./index";
+import { IService } from "server/service";
 import { customAlphabet } from "nanoid";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
@@ -25,7 +26,7 @@ const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 @injectable()
-export class BatchService implements IService {
+export default class BatchService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   async getBatch(batchId: string, uid: string): Promise<Batch> {
@@ -69,7 +70,7 @@ export class BatchService implements IService {
     );
     const uploadRequests = await Promise.all(promises);
     await this.updateUploadRequests(batchId, uploadRequests);
-    return { uploadRequests: uploadRequests } as UploadRequests;
+    return { uploadRequests } as UploadRequests;
   }
 
   private static async buildUploadRequest(
@@ -91,8 +92,8 @@ export class BatchService implements IService {
     // Will make the actual required change in a dedicated PR.
     const { initBlendInternal } = await import("pages/api/blend");
     const blend: Blend = await initBlendInternal(uid, {
-      batchId: batchId,
-      heroFileName: heroFileName,
+      batchId,
+      heroFileName,
     });
 
     const fileKey = `${blend.id}/${heroFileName}`;
@@ -107,9 +108,9 @@ export class BatchService implements IService {
     )) as PresignedPost;
 
     return {
-      fileName: fileName,
+      fileName,
       blendId: blend.id,
-      fileKey: fileKey,
+      fileKey,
       presignedUploadRequest: urlDetails,
     };
   }
@@ -129,10 +130,12 @@ export class BatchService implements IService {
     });
   }
 
+  // eslint-disable-next-line class-methods-use-this
   private withoutPresignedUrls(
     uploadRequests: UploadRequest[]
   ): UploadRequest[] {
     return uploadRequests.map((request) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { presignedUploadRequest, ...required } = request;
       return required as UploadRequest;
     });
@@ -140,7 +143,8 @@ export class BatchService implements IService {
 
   async markUploadCompleted(batchId: string, blendId: string): Promise<void> {
     await this.dataStore.updateItem({
-      UpdateExpression: `SET updatedAt = :updatedAt REMOVE pendingUploads.#toDelete`,
+      UpdateExpression:
+        "SET updatedAt = :updatedAt REMOVE pendingUploads.#toDelete",
       ExpressionAttributeNames: {
         "#toDelete": blendId,
       },
@@ -179,8 +183,9 @@ export class BatchService implements IService {
       expressionItems.push(`#pendingUploads.#${key} = :${key}`);
     });
 
-    updates.expression =
-      "SET #updatedAt = :updatedAt, " + expressionItems.join(", ");
+    updates.expression = `SET #updatedAt = :updatedAt, ${expressionItems.join(
+      ", "
+    )}`;
     return updates;
   }
 }

@@ -28,11 +28,17 @@ import { TYPES } from "server/types";
 export default class HeroImageService implements IService {
   // This is required to be able to mock these functions in tests
   nanoid = nanoid;
+
   copyObject = copyObject;
+
   getObject = getObject;
+
   uploadObject = uploadObject;
+
   deleteObject = deleteObject;
+
   rescaleImage = rescaleImage;
+
   bufferToStream = bufferToStream;
   // //
 
@@ -71,7 +77,7 @@ export default class HeroImageService implements IService {
   async getImage(
     id: string,
     uid: string,
-    returnOnlyOwn: boolean = false
+    returnOnlyOwn = false
   ): Promise<HeroImage | null> {
     const heroImage = (await this.dataStore.getItem({
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
@@ -96,13 +102,13 @@ export default class HeroImageService implements IService {
     return heroImage;
   }
 
-  async markImageUsage(id: String): Promise<void> {
+  async markImageUsage(id: string): Promise<void> {
     const params = {
       UpdateExpression: "SET lastUsedAt = :lastUsedAt",
       ExpressionAttributeValues: {
         ":lastUsedAt": Date.now(),
       },
-      Key: { id: id },
+      Key: { id },
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     };
@@ -110,8 +116,8 @@ export default class HeroImageService implements IService {
   }
 
   async createNewImage(
-    blendId: String,
-    userId: String,
+    blendId: string,
+    userId: string,
     blendBucketFileKeys: HeroImageFileKeys
   ): Promise<HeroImage> {
     const heroImageId = this.nanoid(16);
@@ -120,14 +126,14 @@ export default class HeroImageService implements IService {
       blendBucketFileKeys
     );
 
-    const copyOriginalFile: Promise<any> = this.copyObject(
+    const copyOriginalFile = this.copyObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       blendBucketFileKeys.original,
       ConfigProvider.HERO_IMAGES_BUCKET,
       heroBucketFilekeys.original
     );
 
-    const copyBgRemovedFile: Promise<any> = this.copyObject(
+    const copyBgRemovedFile = this.copyObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       blendBucketFileKeys.withoutBg,
       ConfigProvider.HERO_IMAGES_BUCKET,
@@ -152,7 +158,7 @@ export default class HeroImageService implements IService {
       lastUsedAt: now,
       createdAt: now,
       updatedAt,
-      userId: userId,
+      userId,
       sourceBlendId: blendId,
       status,
       statusHistory: [{ status, updatedAt } as HeroImageStatusUpdate],
@@ -182,7 +188,7 @@ export default class HeroImageService implements IService {
   }
 
   async deleteImage(id: string, uid: string): Promise<void> {
-    const heroImage = (await this.getImage(id, uid, true)) as HeroImage | null;
+    const heroImage = await this.getImage(id, uid, true);
     await this.deleteObject(
       ConfigProvider.HERO_IMAGES_BUCKET,
       heroImage.original
@@ -206,10 +212,9 @@ export default class HeroImageService implements IService {
         ":empty_list": [],
         ":statusUpdate": [{ status, updatedAt } as HeroImageStatusUpdate],
       },
-      Key: { id: id },
+      Key: { id },
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
-    return;
   }
 }

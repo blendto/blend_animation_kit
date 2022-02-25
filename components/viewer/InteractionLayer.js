@@ -15,7 +15,7 @@ export default function IntearctionLayer({ blend, dimensions }) {
 
     const { options } = userInteraction;
 
-    if (userInteraction.type == "LINK") {
+    if (userInteraction.type === "LINK") {
       return (
         <ILLink
           key={index}
@@ -34,6 +34,7 @@ export default function IntearctionLayer({ blend, dimensions }) {
 
 function cleanTarget(target) {
   const hasProtoPrefixed = ["http:", "https:", "tel:", "mailto:"].some(
+    // eslint-disable-next-line comma-dangle
     (prefix) => target.startsWith(prefix)
   );
 
@@ -41,6 +42,7 @@ function cleanTarget(target) {
     return target;
   }
   // http fallback
+  // eslint-disable-next-line prefer-template
   return "http://" + target;
 }
 

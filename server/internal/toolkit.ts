@@ -18,18 +18,19 @@ export default class ToolkitApi {
   removeBg = async (
     fileBuffer: Buffer,
     fileName: string,
-    crop: boolean = false,
-    onlyMask: boolean = false
+    crop = false,
+    onlyMask = false
   ): Promise<IncomingMessage> => {
     const form = new FormData();
     form.append("file", fileBuffer, fileName);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return (
       await this.httpClient.post("/images/removeBg", form, {
         headers: form.getHeaders(),
         responseType: "stream",
         params: {
           crop: crop.toString(),
-          onlyMask: onlyMask.toString()
+          onlyMask: onlyMask.toString(),
         },
       })
     ).data;

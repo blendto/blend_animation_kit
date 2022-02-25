@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { UserService } from "server/service/user";
+import UserService from "server/service/user";
 import firebase from "server/external/firebase";
 import { handleServerExceptions } from "server/base/errors";
 import { diContainer } from "inversify.config";
@@ -31,10 +31,11 @@ const migrateOwnership = async (req: NextApiRequest, res: NextApiResponse) => {
   const targetUid = await firebase.extractUserIdFromRequest({
     request: req,
   });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const { body } = req;
   const ownerMigrationRequest = body as BlendOwnerMigrationRequest;
 
-  return await handleServerExceptions(res, async () => {
+  return handleServerExceptions(res, async () => {
     const decodedIdToken = await firebase.verifyAndDecodeToken(
       ownerMigrationRequest.sourceUserAccessToken
     );
@@ -43,6 +44,6 @@ const migrateOwnership = async (req: NextApiRequest, res: NextApiResponse) => {
       sourceUid,
       targetUid
     );
-    return res.status(200).json({ migratedBlends: migratedBlends });
+    return res.status(200).json({ migratedBlends });
   });
 };

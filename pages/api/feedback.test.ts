@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { pickAppropriateFeedbackOptions } from "./feedback";
 
 const data = {

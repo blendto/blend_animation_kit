@@ -1,18 +1,19 @@
 import { ConfigProvider } from "antd";
+// eslint-disable-next-line import/no-unresolved
 import DynamoDB from "../../../server/external/dynamodb";
 import SQS from "../../../server/external/sqs";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 1.6;
 
-export const _getCollab = async (id) => {
-  return await DynamoDB._().getItem({
+// eslint-disable-next-line no-underscore-dangle
+export const _getCollab = async (id) =>
+  DynamoDB._().getItem({
     TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     Key: {
       id,
     },
   });
-};
 
 export default async (req, res) => {
   const { method } = req;
@@ -151,7 +152,7 @@ const submitCollab = async (req, res) => {
       ":links": links || [],
       ":metadata": { source },
     },
-    Key: { id: id },
+    Key: { id },
     TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     ReturnValues: "ALL_NEW",
   };
@@ -168,7 +169,7 @@ const submitCollab = async (req, res) => {
   }
 
   // Add id
-  updatedCollab["id"] = id;
+  updatedCollab.id = id;
 
   res.send(updatedCollab);
 };

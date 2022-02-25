@@ -6,6 +6,10 @@ import { nanoid } from "nanoid";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 
+/* eslint-disable-next-line
+  @typescript-eslint/no-unsafe-assignment,
+  @typescript-eslint/no-unsafe-member-access
+*/
 const FIREBASE_PROJECT_ID = ConfigProvider.FIREBASE_APP_CLIENT_CONFIG.projectId;
 
 interface ExtractUserIdFromRequestParams {
@@ -15,20 +19,22 @@ interface ExtractUserIdFromRequestParams {
 
 class Firebase {
   constructor() {
-    if (admin.apps.length != 0) {
+    if (admin.apps.length !== 0) {
       // Already initialized, else causes problems during hot-reloading
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     firebase.initializeApp(ConfigProvider.FIREBASE_APP_CLIENT_CONFIG);
     admin.initializeApp({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       credential: admin.credential.cert(ConfigProvider.FIREBASE_SERVICE_KEY),
     });
   }
 
   async verifyAndDecodeToken(idToken: string) {
     try {
-      let claims = await admin.auth().verifyIdToken(idToken);
-      if (claims.aud != FIREBASE_PROJECT_ID) {
+      const claims = await admin.auth().verifyIdToken(idToken);
+      if (claims.aud !== FIREBASE_PROJECT_ID) {
         throw new UserError("Invalid Token");
       }
       return claims;
@@ -37,6 +43,7 @@ class Firebase {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createTemporaryUser(): Promise<any> {
     const userRecord = await admin.auth().createUser({
       uid: nanoid(16),

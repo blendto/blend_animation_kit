@@ -1,7 +1,8 @@
 import { nanoid } from "nanoid";
-import DynamoDB from "../../server/external/dynamodb";
 import { DateTime } from "luxon";
 import { ConfigProvider } from "antd";
+// eslint-disable-next-line import/no-unresolved
+import DynamoDB from "../../server/external/dynamodb";
 
 export default async (req, res) => {
   const { method } = req;
@@ -21,6 +22,7 @@ const initCollab = async (req, res) => {
   do {
     collabRequestId = nanoid(8);
     try {
+      // eslint-disable-next-line no-await-in-loop
       const item = await DynamoDB._().getItem({
         TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
         Key: {
@@ -30,12 +32,12 @@ const initCollab = async (req, res) => {
       if (!item) {
         break;
       }
-      continue;
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Something went wrong!" });
       return;
     }
+    // eslint-disable-next-line no-constant-condition
   } while (true);
 
   const collab = {

@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
-import { BatchService } from "server/service/batch";
-import { BlendService } from "server/service/blend";
+import BatchService from "server/service/batch";
+import BlendService from "server/service/blend";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 

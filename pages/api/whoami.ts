@@ -1,9 +1,12 @@
+/* eslint-disable
+  @typescript-eslint/no-unsafe-assignment,
+  @typescript-eslint/no-unsafe-member-access
+*/
 import type { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
-import axios from "axios";
 import IpApi from "server/external/ipapi";
 import { handleServerExceptions } from "server/base/errors";
-import { UserAgentDetails } from "../../server/base/models/userAgentDetails";
+import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import { initMiddleware } from "server/helpers/middleware";
 import Cors from "cors";
 
@@ -16,7 +19,7 @@ const corsmiddleware = initMiddleware(cors);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   await corsmiddleware(req, res);
-  
+
   const { method } = req;
 
   switch (method) {
@@ -31,10 +34,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
 const ipApi = new IpApi();
 
-async function whoami(
-  req: NextApiRequest,
-  res: NextApiResponse<any>
-): Promise<any> {
+async function whoami(req: NextApiRequest, res: NextApiResponse) {
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
     optional: true,
@@ -46,18 +46,20 @@ async function whoami(
     return res.status(400).send({ message: "Invalid request" });
   }
 
-  return await handleServerExceptions(res, async () => {
+  return handleServerExceptions(res, async () => {
     const ipDetails = await ipApi.getIpInfo(ip);
     return res.send({
       uid,
       details: {
-        countryCode: ipDetails["country_code"],
+        countryCode: ipDetails.country_code,
       },
     });
   });
 }
 
-export async function getUserAgentDetails(req: NextApiRequest): Promise<UserAgentDetails | null> {
+export async function getUserAgentDetails(
+  req: NextApiRequest
+): Promise<UserAgentDetails | null> {
   const ip = req.headers["x-forwarded-for"] as string;
   if (!ip) {
     return null;
@@ -65,7 +67,8 @@ export async function getUserAgentDetails(req: NextApiRequest): Promise<UserAgen
 
   try {
     const ipDetails = await ipApi.getIpInfo(ip);
-    return new UserAgentDetails(ipDetails["country_code"]);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return new UserAgentDetails(ipDetails.country_code);
   } catch (err) {
     console.error(err);
     return null;

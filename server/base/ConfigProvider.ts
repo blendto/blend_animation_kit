@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { EnvironmentVarsSchema } from "./EnvironmentVarsSchema";
+
 class ConfigProvider {
   constructor() {
     if (typeof window === "undefined") {
@@ -12,7 +14,7 @@ class ConfigProvider {
 
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
-    if (!variable || variable.trim().length == 0) {
+    if (!variable || variable.trim().length === 0) {
       throw new Error(`envVar ${envVar} not set!`);
     }
     return variable;
@@ -60,9 +62,11 @@ class ConfigProvider {
 
   public get OUTPUT_BASE_PATH() {
     // WIERD ISSUE COVER UP.
-    // If we do this.retriveOrCrash("NEXT_PUBLIC_OUTPUT_BASE_PATH"), it throws error coz process.env does not have it
+    // If we do this.retriveOrCrash("NEXT_PUBLIC_OUTPUT_BASE_PATH"),
+    // it throws error coz process.env does not have it
     // If we log process.env here it prints {}, which validates the above.
-    // But if we do process.env.NEXT_PUBLIC_OUTPUT_BASE_PATH or even process.env["NEXT_PUBLIC_OUTPUT_BASE_PATH"] it works
+    // But if we do process.env.NEXT_PUBLIC_OUTPUT_BASE_PATH
+    // or even process.env["NEXT_PUBLIC_OUTPUT_BASE_PATH"] it works
     // WTF! Leaving it as is for now.
     return process.env.NEXT_PUBLIC_OUTPUT_BASE_PATH;
   }
@@ -83,12 +87,18 @@ class ConfigProvider {
     let parsedKey = JSON.parse(this.retrieveOrCrash("FIREBASE_SERVICE_KEY"));
     parsedKey = {
       ...parsedKey,
-      private_key: parsedKey["private_key"].replace(/\\n/g, "\n"),
+      /* eslint-disable-next-line
+        @typescript-eslint/no-unsafe-member-access,
+        @typescript-eslint/no-unsafe-call
+      */
+      private_key: parsedKey.private_key.replace(/\\n/g, "\n"),
     };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return parsedKey;
   }
 
   public get FIREBASE_APP_CLIENT_CONFIG() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG);
   }
 

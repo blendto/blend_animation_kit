@@ -1,3 +1,11 @@
+/* eslint-disable
+  quotes,
+  @typescript-eslint/require-await,
+  no-multi-assign,
+  no-shadow,
+  @typescript-eslint/no-unused-vars,
+  import/no-unresolved
+*/
 import { Stream } from "node:stream";
 import { randomBytes } from "crypto";
 
@@ -15,26 +23,26 @@ import { ObjectNotFoundError } from "server/base/errors";
 
 describe("HeroImageService", () => {
   const heroImageService = diContainer.get<HeroImageService>(
-      TYPES.HeroImageService
-    ),
-    imageId = "b-_-sDqEW7LK150e",
-    userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2",
-    anotherUserId = "L8aASeH26gRzSvr6K9Yb3InuKb02",
-    now = 1645009809102,
-    image = {
-      id: imageId,
-      original: "b-_-sDqEW7LK150e.jpg",
-      withoutBg: "b-_-sDqEW7LK150e-bg-removed.png",
-      thumbnail: "b-_-sDqEW7LK150e-thumbnail.png",
-      lastUsedAt: now,
-      createdAt: now,
-      userId,
-      sourceBlendId: "NxY2SIx2",
-    },
-    defaultUserimage = {
-      ...image,
-      userId: "DEFAULT_USER",
-    };
+    TYPES.HeroImageService
+  );
+  const imageId = "b-_-sDqEW7LK150e";
+  const userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
+  const anotherUserId = "L8aASeH26gRzSvr6K9Yb3InuKb02";
+  const now = 1645009809102;
+  const image = {
+    id: imageId,
+    original: "b-_-sDqEW7LK150e.jpg",
+    withoutBg: "b-_-sDqEW7LK150e-bg-removed.png",
+    thumbnail: "b-_-sDqEW7LK150e-thumbnail.png",
+    lastUsedAt: now,
+    createdAt: now,
+    userId,
+    sourceBlendId: "NxY2SIx2",
+  };
+  const defaultUserimage = {
+    ...image,
+    userId: "DEFAULT_USER",
+  };
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -168,7 +176,7 @@ describe("HeroImageService", () => {
         .mockResolvedValueOnce({});
       jest.spyOn(Date, "now").mockReturnValueOnce(now);
 
-      const res = await heroImageService.markImageUsage(imageId);
+      await heroImageService.markImageUsage(imageId);
       expect(updateItemSpy.mock.calls.length).toBe(1);
       expect(updateItemSpy.mock.calls[0]).toMatchObject([
         {
@@ -193,7 +201,6 @@ describe("HeroImageService", () => {
       const heroImageFileKeyThumbnail = `${newImageId}-thumbnail.png`;
       const fileKey = "NxY2SIx2/Ofvyno391qDDBDLk7JqPA.jpg";
       const fileKeyWithoutBg = "NxY2SIx2/Ofvyno391qDDBDLk7JqPA-bg-removed.png";
-      const now = 1645009809102;
       const updatedAt = now;
       const status = HeroImageStatus.CREATED;
       const image = {
@@ -203,7 +210,7 @@ describe("HeroImageService", () => {
         thumbnail: heroImageFileKeyThumbnail,
         lastUsedAt: now,
         createdAt: now,
-        userId: userId,
+        userId,
         sourceBlendId: blendId,
         updatedAt,
         status,
