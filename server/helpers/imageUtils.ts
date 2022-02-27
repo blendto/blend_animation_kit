@@ -10,7 +10,7 @@ interface SharpResolveObject {
 export const applyMask = async (
   image: Buffer,
   mask: Buffer,
-  trim: Boolean
+  trim: Boolean = true
 ): Promise<SharpResolveObject> => {
   const output = await sharp(image)
     .rotate()

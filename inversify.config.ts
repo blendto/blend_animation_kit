@@ -7,6 +7,7 @@ import { UploadService } from "server/service/upload";
 import { UserService } from "server/service/user";
 import { SuggestionService } from "server/service/suggestion";
 import HeroImageService from "server/service/heroImage";
+import { RemoveBgService } from "server/internal/remove-bg-service";
 
 const diContainer = new Container();
 diContainer.bind<DynamoDB>(TYPES.DynamoDB).to(DynamoDB).inSingletonScope();
@@ -33,5 +34,9 @@ diContainer
 diContainer
   .bind<HeroImageService>(TYPES.HeroImageService)
   .to(HeroImageService)
+  .inSingletonScope();
+diContainer
+  .bind<RemoveBgService>(TYPES.RemoveBgService)
+  .to(RemoveBgService)
   .inSingletonScope();
 export { diContainer };
