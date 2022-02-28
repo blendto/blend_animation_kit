@@ -7,17 +7,13 @@ import { Blend } from "server/base/models/blend";
 import { handleServerExceptions, UserError } from "server/base/errors";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
-import {
-  RemoveBgService,
-  RemoveBGSource,
-} from "server/internal/remove-bg-service";
+import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
+import axios from "axios";
 import { applyMask, rescaleImage } from "server/helpers/imageUtils";
 import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import sharp from "sharp";
-import { diContainer } from "inversify.config";
-import { TYPES } from "server/types";
 
-const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
+const toolkitApi = new ToolkitApi();
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -70,10 +66,29 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       fileKey
     );
 
-    const { bgRemovedFileKey, bgMaskFileKey, fileNameWithExt } =
-      RemoveBgService.constructBgRemovedFileKey(fileKey);
+    const fileKeyParts = fileKey.split("/");
+
+    const [fileNameWithExt] = fileKeyParts.slice(-1);
+
+    const fileNameWithoutExt = fileNameWithExt.split(".").slice(0, -1).join("");
+
+    const bgRemovedFileName = `${fileNameWithoutExt}-bg-removed.png`;
+
+    const bgMaskFileName = `${fileNameWithoutExt}-bg-mask.png`;
 
     var trimLTWH: Array<Number> | null = null;
+
+    const bgRemovedFileKey = [
+      ...fileKeyParts.slice(0, -1),
+      "/",
+      bgRemovedFileName,
+    ].join("");
+
+    const bgMaskFileKey = [
+      ...fileKeyParts.slice(0, -1),
+      "/",
+      bgMaskFileName,
+    ].join("");
 
     const bgRemovedElementExists = await doesObjectExist(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -107,57 +122,73 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       // As of now this logic just works by assuming file name is unique
       // This works because we generate a random file name when we store the file name
       // Re-evaluate in the future
-      const bgRemoved = await removeBgService.removeBg(
-        originalImage,
-        fileNameWithExt,
-        true,
-        useMask,
-        {
-          source: RemoveBGSource.BLEND,
-          fileKeys: {
-            original: fileKey,
-            withoutBg: bgRemovedFileKey,
-          },
-        }
-      );
-
-      if (useMask) {
-        const { width, height } = await sharp(originalImage).metadata();
-        const rescaledMask = await rescaleImage(
-          await streamToBuffer(bgRemoved),
-          width,
-          height
-        );
-        const bgRemovedImageUsingMask = await applyMask(
+      try {
+        const bgRemoved = await toolkitApi.removeBg(
           originalImage,
-          rescaledMask
+          fileNameWithExt,
+          true,
+          useMask
         );
 
-        await uploadObject(
-          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-          bgMaskFileKey,
-          bufferToStream(rescaledMask)
-        );
+        if (useMask) {
+          const { width, height } = await sharp(originalImage).metadata();
+          const rescaledMask = await rescaleImage(
+            await streamToBuffer(bgRemoved),
+            width,
+            height
+          );
+          const trim = true;
+          const bgRemovedImageUsingMask = await applyMask(
+            originalImage,
+            rescaledMask,
+            trim
+          );
 
-        await uploadObject(
-          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-          bgRemovedFileKey,
-          bufferToStream(bgRemovedImageUsingMask.data)
-        );
+          await uploadObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            bgMaskFileKey,
+            bufferToStream(rescaledMask)
+          );
 
-        const {
-          trimOffsetLeft,
-          trimOffsetTop,
-          width: trimWidth,
-          height: trimHeight,
-        } = bgRemovedImageUsingMask.info;
-        trimLTWH = [trimOffsetLeft, trimOffsetTop, trimWidth, trimHeight];
-      } else {
-        await uploadObject(
-          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-          bgRemovedFileKey,
-          bgRemoved
-        );
+          await uploadObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            bgRemovedFileKey,
+            bufferToStream(bgRemovedImageUsingMask.data)
+          );
+
+          if (trim) {
+            const {
+              trimOffsetLeft,
+              trimOffsetTop,
+              width: trimWidth,
+              height: trimHeight,
+            } = bgRemovedImageUsingMask.info;
+            trimLTWH = [trimOffsetLeft, trimOffsetTop, trimWidth, trimHeight];
+          }
+        } else {
+          await uploadObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            bgRemovedFileKey,
+            bgRemoved
+          );
+        }
+      } catch (ex) {
+        if (axios.isAxiosError(ex)) {
+          let data = "";
+          for await (const chunk of ex.response.data) {
+            data += chunk;
+          }
+          let error: ToolkitErrorResponse = JSON.parse(data);
+
+          let errorMessage = error.message;
+
+          if (error.code == "unknown_foreground") {
+            errorMessage = "Unable to remove background";
+          }
+
+          throw new UserError(errorMessage, error.code);
+        }
+        throw ex;
       }
     }
 

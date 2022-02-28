@@ -23,9 +23,6 @@ module.exports = {
       HERO_IMAGES_DYNAMODB_TABLE: Joi.string().required(),
       BATCH_DYNAMODB_TABLE: Joi.string().required(),
       NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG: Joi.string().required(),
-      BG_REMOVER_BASE_PATH: Joi.string().required(),
-      BG_REMOVER_API_KEY: Joi.string().required(),
-      BG_REMOVAL_LOG_TABLE_NAME: Joi.string().required(),
     })
     .unknown(true),
 };
