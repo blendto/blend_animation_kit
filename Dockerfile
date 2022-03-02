@@ -45,4 +45,4 @@ EXPOSE 3000
 # Uncomment the following line in case you want to disable telemetry.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-CMD "pm2-runime start npm --name 'web-client' -- start"
+CMD "pm2-runtime start npm --name 'web-client' -- start"
