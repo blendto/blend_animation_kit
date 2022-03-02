@@ -36,6 +36,8 @@ ENV DD_VERSION ${BRANCH_NAME}
 
 USER nextjs
 
+RUN yarn global add pm2
+
 EXPOSE 3000
 
 # Next.js collects completely anonymous telemetry data about general usage.
@@ -43,4 +45,4 @@ EXPOSE 3000
 # Uncomment the following line in case you want to disable telemetry.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-CMD ["yarn", "start"]
+CMD "pm2-runime start npm --name 'web-client' -- start"

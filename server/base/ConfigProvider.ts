@@ -114,6 +114,18 @@ class ConfigProvider {
     // Optional, only needed in vercel, others will take the machine settings
     return process.env.AWS_CLOUD_REGION;
   }
+
+  public get BG_REMOVER_BASE_PATH(): string {
+    return process.env.BG_REMOVER_BASE_PATH;
+  }
+
+  public get BG_REMOVER_API_KEY(): string {
+    return process.env.BG_REMOVER_API_KEY;
+  }
+
+  public get BG_REMOVAL_LOG_TABLE_NAME(): string {
+    return process.env.BG_REMOVAL_LOG_TABLE_NAME;
+  }
 }
 
 export default new ConfigProvider();

@@ -1,9 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import sharp from "sharp";
 
-import { _getBlend } from "../[id]";
-
-import ToolkitApi, { ToolkitErrorResponse } from "server/internal/toolkit";
+import { _getBlend } from "pages/api/blend/[id]";
+import {
+  RemoveBgService,
+  RemoveBGSource,
+} from "server/internal/remove-bg-service";
 
 import ConfigProvider from "server/base/ConfigProvider";
 import firebase from "server/external/firebase";
@@ -16,7 +18,6 @@ import {
 import { handleServerExceptions, UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import axios from "axios";
-import { IncomingMessage } from "node:http";
 import {
   createBlendBucketFileKeys,
   HeroImage,
@@ -28,7 +29,7 @@ import { BlendService } from "server/service/blend";
 import HeroImageService from "server/service/heroImage";
 import { SuggestionService } from "server/service/suggestion";
 
-const toolkitApi = new ToolkitApi();
+const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
@@ -45,23 +46,6 @@ interface SuggestRecipesRequestBody {
   fileKeys: HeroImageFileKeys;
   multipleAspectRatios?: boolean;
   heroImageId?: string;
-}
-
-function constructBgRemovedFileKey(fileKeys: HeroImageFileKeys) {
-  const fileKeyParts = fileKeys.original.split("/");
-
-  const [fileNameWithExt] = fileKeyParts.slice(-1);
-
-  const fileNameWithoutExt = fileNameWithExt.split(".").slice(0, -1).join("");
-
-  const bgRemovedFileName = `${fileNameWithoutExt}-bg-removed.png`;
-
-  const bgRemovedFileKey = [
-    ...fileKeyParts.slice(0, -1),
-    "/",
-    bgRemovedFileName,
-  ].join("");
-  return { bgRemovedFileKey, fileNameWithExt };
 }
 
 async function createBgRemovedImage(
@@ -90,45 +74,31 @@ async function createBgRemovedImage(
         .toFormat("jpeg")
         .toBuffer();
       const resizedImageMetadata = await sharp(originalImage).metadata();
-      console.info(
-        `resized image to size ${resizedImageMetadata.size} and dims ${resizedImageMetadata.width} x ${resizedImageMetadata.height}`
-      );
+      console.info({
+        op: "BlendSuggest.ResizeImage",
+        sourceSize: metadata.size,
+        finalSize: resizedImageMetadata.size,
+        sourceDimensions: { width: metadata.width, height: metadata.height },
+        finalDimensions: {
+          width: resizedImageMetadata.width,
+          height: resizedImageMetadata.height,
+        },
+      });
     }
 
-    // As of now this logic just works by assuming file name is unique
-    // This works because we generate a random file name when we store the file name
-    // Re-evaluate in the future
-    let bgRemoved: IncomingMessage;
-    try {
-      bgRemoved = await toolkitApi.removeBg(
-        originalImage,
-        fileNameWithExt,
-        true
-      );
-    } catch (ex) {
-      if (axios.isAxiosError(ex)) {
-        console.error(
-          "Remove BG Failed. Key: " +
-            fileKeys.original +
-            " Error message: " +
-            ex.message
-        );
-        let data = "";
-        for await (const chunk of ex.response.data) {
-          data += chunk;
-        }
-        let error: ToolkitErrorResponse = JSON.parse(data);
-
-        let errorMessage = error.message;
-
-        if (error.code == "unknown_foreground") {
-          errorMessage = "Unable to remove background";
-        }
-
-        throw new UserError(errorMessage, error.code);
+    const bgRemoved = await removeBgService.removeBg(
+      originalImage,
+      fileNameWithExt,
+      true,
+      false,
+      {
+        source: RemoveBGSource.BLEND,
+        fileKeys: {
+          original: fileKeys.original,
+          withoutBg: bgRemovedFileKey,
+        },
       }
-      throw ex;
-    }
+    );
 
     try {
       await uploadObject(
@@ -138,12 +108,12 @@ async function createBgRemovedImage(
       );
     } catch (ex) {
       if (axios.isAxiosError(ex)) {
-        console.error(
-          "Upload to S3 Failed. Status Code: " +
-            ex.response.status +
-            ". Message: " +
-            ex.response?.data ?? "No response"
-        );
+        console.error({
+          code: "BlendSuggest.S3UploadFailed",
+          statusCode: ex.response.status,
+          message: ex.response?.data ?? "No response",
+        });
+
         throw new UserError(
           "Something went wrong while removing background! Try again!"
         );
@@ -180,6 +150,7 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
   return await handleServerExceptions(res, async () => {
     let uid = await firebase.extractUserIdFromRequest({
       request: req,
+      optional: true,
     });
     const ip = req.headers["x-forwarded-for"] as string;
 
@@ -299,10 +270,12 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
       return this.fileKeys;
     }
 
-    const { bgRemovedFileKey, fileNameWithExt } = constructBgRemovedFileKey(
-      this.fileKeys
-    );
+    const { bgRemovedFileKey, fileNameWithExt } =
+      RemoveBgService.constructBgRemovedFileKey(this.fileKeys.original);
 
+    // As of now this logic just works by assuming file name is unique
+    // This works because we generate a random file name when we store the file name
+    // Re-evaluate in the future
     const bgRemovedElementExists = await doesObjectExist(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       bgRemovedFileKey
