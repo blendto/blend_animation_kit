@@ -12,7 +12,7 @@ export default function withErrorHandler(
 ): RoutingFunction {
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     try {
-      return routingFunction(req, res);
+      return await routingFunction(req, res);
     } catch (err) {
       if (err instanceof UserError) {
         return res.status(400).send({ message: err.message, code: err.code });
