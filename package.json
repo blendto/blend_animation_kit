@@ -8,7 +8,8 @@
     "start": "node --require dd-trace/init node_modules/.bin/next start",
     "build-functions": "rm -rf build/ && webpack --config webpack.lambda.config.js",
     "flow": "flow",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@ant-design/icons": "^4.2.2",
@@ -31,7 +32,6 @@
     "nanoid": "^3.1.31",
     "next": "12",
     "nextjs-redirect": "^5.0.2",
-    "prettier": "^2.5.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "reflect-metadata": "^0.1.13",
@@ -53,12 +53,18 @@
     "dotenv": "^16.0.0",
     "flow-bin": "^0.135.0",
     "glob": "^7.2.0",
+    "husky": "^7.0.4",
     "jest": "^27.4.5",
+    "lint-staged": "^12.3.4",
+    "prettier": "^2.5.1",
     "ts-loader": "^9.2.6",
     "typescript": "^4.4.3",
     "webpack": "^5.68.0",
     "webpack-cli": "^4.9.2",
     "webpack-glob": "^2.0.2",
     "webpack-node-externals": "^3.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,json}": "prettier --write"
   }
 }

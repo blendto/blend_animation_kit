@@ -16,7 +16,7 @@ const corsmiddleware = initMiddleware(cors);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   await corsmiddleware(req, res);
-  
+
   const { method } = req;
 
   switch (method) {
@@ -57,7 +57,9 @@ async function whoami(
   });
 }
 
-export async function getUserAgentDetails(req: NextApiRequest): Promise<UserAgentDetails | null> {
+export async function getUserAgentDetails(
+  req: NextApiRequest
+): Promise<UserAgentDetails | null> {
   const ip = req.headers["x-forwarded-for"] as string;
   if (!ip) {
     return null;

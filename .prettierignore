@@ -1,1 +1,7 @@
-build/
+# Artifacts:
+build
+
+# Files:
+*.html
+*.css
+*.md
