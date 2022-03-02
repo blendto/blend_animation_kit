@@ -36,7 +36,7 @@ ENV DD_VERSION ${BRANCH_NAME}
 
 USER nextjs
 
-RUN yarn global add pm2
+RUN npm install pm2 -g
 
 EXPOSE 3000
 
@@ -45,4 +45,4 @@ EXPOSE 3000
 # Uncomment the following line in case you want to disable telemetry.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-CMD "pm2-runtime start npm --name 'web-client' -- start"
+CMD pm2-runtime start npm --name 'web-client' -- start
