@@ -3,26 +3,25 @@ import firebase from "server/external/firebase";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { SuggestionService } from "server/service/suggestion";
-import { handleServerExceptions } from "server/base/errors";
+import withErrorHandler from "request-handler";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-  handleServerExceptions(res, async () => {
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
     switch (method) {
       case "POST":
-        await suggestBatchRecipes(req, res);
-        break;
+        return suggestBatchRecipes(req, res);
       default:
-        res.status(500).json({ code: 500, message: "Something went wrong!" });
+        res.status(405).end();
     }
-  });
-};
+  }
+);
 
 const suggestBatchRecipes = async (
   req: NextApiRequest,
   res: NextApiResponse
 ) => {
-  let uid = await firebase.extractUserIdFromRequest({
+  const uid = await firebase.extractUserIdFromRequest({
     request: req,
     optional: true,
   });

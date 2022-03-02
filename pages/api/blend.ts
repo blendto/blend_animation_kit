@@ -3,11 +3,12 @@ import DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
 import firebase from "server/external/firebase";
-import { handleServerExceptions } from "server/base/errors";
 import { Blend, BlendStatus } from "server/base/models/blend";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import ConfigProvider from "server/base/ConfigProvider";
+import logger from "server/base/Logger";
+import withErrorHandler from "request-handler";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -19,32 +20,29 @@ export enum BlendVersion {
   generated = "GENERATED",
 }
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-
-  switch (method) {
-    case "GET":
-      await getAllBlends(req, res);
-      break;
-    case "POST":
-      await initBlend(req, res);
-      break;
-
-    default:
-      res.status(404).json({ code: 404, message: "Invalid request" });
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "GET":
+        return getAllBlends(req, res);
+      case "POST":
+        return initBlend(req, res);
+      default:
+        res.status(405).end();
+    }
   }
-};
+);
 
 const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
-    optional: true,
   });
   try {
     const blend = await initBlendInternal(uid);
     return res.send(blend);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
     return;
   }
@@ -82,16 +80,12 @@ export const initBlendInternal = async (
 };
 
 const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
-  let uid: string;
-
   const {
     query: { pageKey },
   } = req;
 
-  await handleServerExceptions(res, async () => {
-    uid = await firebase.extractUserIdFromRequest({
-      request: req,
-    });
+  const uid = await firebase.extractUserIdFromRequest({
+    request: req,
   });
 
   if (!uid) {
@@ -145,7 +139,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
 
     nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
     return;
   }

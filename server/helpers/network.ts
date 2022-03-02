@@ -1,6 +1,7 @@
-import { ServerError, UserError } from "server/base/errors";
+import { UserError } from "server/base/errors";
 import { AxiosError, AxiosResponse } from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
+import logger from "server/base/Logger";
 
 export const handleAxiosCall = async function <ResponseDataType>(
   axiosCall: () => Promise<AxiosResponse<ResponseDataType>>
@@ -14,11 +15,11 @@ export const handleAxiosCall = async function <ResponseDataType>(
       if (status >= 400 && status < 500) {
         throw new UserError((error as AxiosError).response.data);
       }
-      console.info("Axios called failed with message: " + error.message);
-      throw new ServerError("Something went wrong");
+      logger.info("Axios called failed with message: " + error.message);
+      throw error;
     }
-    console.error(error);
-    throw new ServerError("Something went wrong");
+    logger.error(error);
+    throw error;
   }
 };
 
@@ -38,7 +39,7 @@ export const passthrough = async function (
       res.status(400).json({ message: err.message });
       return;
     }
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
 };

@@ -12,6 +12,7 @@ import {
   HeroImageStatusUpdate,
 } from "server/base/models/heroImage";
 import { ObjectNotFoundError } from "server/base/errors";
+import logger from "server/base/Logger";
 
 describe("HeroImageService", () => {
   const heroImageService = diContainer.get<HeroImageService>(
@@ -58,7 +59,7 @@ describe("HeroImageService", () => {
     });
 
     it("Raises NotFound error if the image doesn't belong to the user", async () => {
-      const consoleErrorMock = jest.spyOn(console, "error");
+      const loggerErrorMock = jest.spyOn(logger, "error");
       jest
         .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
         .mockResolvedValueOnce({
@@ -68,8 +69,8 @@ describe("HeroImageService", () => {
       await expect(heroImageService.getImage(imageId, userId)).rejects.toThrow(
         ObjectNotFoundError
       );
-      expect(consoleErrorMock.mock.calls.length).toBe(1);
-      expect(consoleErrorMock.mock.calls[0]).toMatchObject([
+      expect(loggerErrorMock.mock.calls.length).toBe(1);
+      expect(loggerErrorMock.mock.calls[0]).toMatchObject([
         {
           op: "UNAUTH_HERO_IMAGE_ACCESS",
           message:
@@ -99,15 +100,15 @@ describe("HeroImageService", () => {
     });
 
     it('Raises NotFound error if the image belongs to "DEFAULT_USER" but "returnOnlyOwn" flag is true', async () => {
-      const consoleErrorMock = jest.spyOn(console, "error");
+      const loggerErrorMock = jest.spyOn(logger, "error");
       jest
         .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
         .mockResolvedValueOnce(defaultUserimage);
       await expect(
         heroImageService.getImage(imageId, userId, true)
       ).rejects.toThrow(ObjectNotFoundError);
-      expect(consoleErrorMock.mock.calls.length).toBe(1);
-      expect(consoleErrorMock.mock.calls[0]).toMatchObject([
+      expect(loggerErrorMock.mock.calls.length).toBe(1);
+      expect(loggerErrorMock.mock.calls[0]).toMatchObject([
         {
           op: "UNAUTH_HERO_IMAGE_ACCESS",
           message:

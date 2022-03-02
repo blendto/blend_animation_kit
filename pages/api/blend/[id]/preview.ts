@@ -1,27 +1,24 @@
 import VesApi from "server/internal/ves";
-import { handleServerExceptions } from "server/base/errors/Handlers";
 import type { NextApiRequest, NextApiResponse } from "next";
+import withErrorHandler from "request-handler";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-
-  switch (method) {
-    case "POST":
-      await generatePreview(req, res);
-      break;
-    default:
-      res.status(500).json({ code: 500, message: "Something went wrong!" });
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "POST":
+        return generatePreview(req, res);
+      default:
+        res.status(405).end();
+    }
   }
-};
+);
 
 const vesapi = new VesApi();
 
 const generatePreview = async (req: NextApiRequest, res: NextApiResponse) => {
   const { body } = req;
-
-  return await handleServerExceptions(res, async () => {
-    const previewStream = await vesapi.preview(body);
-    res.setHeader("Content-Type", "image/jpeg");
-    res.send(previewStream);
-  });
+  const previewStream = await vesapi.preview(body);
+  res.setHeader("Content-Type", "image/jpeg");
+  res.send(previewStream);
 };

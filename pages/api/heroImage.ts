@@ -4,23 +4,19 @@ import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import HeroImageService from "server/service/heroImage";
+import withErrorHandler from "request-handler";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-  try {
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
     switch (method) {
       case "GET":
-        await getHeroes(req, res);
-        break;
-
+        return getHeroes(req, res);
       default:
-        res.status(404).json({ code: 404, message: "Invalid request" });
+        res.status(405).end();
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Something went wrong!" });
   }
-};
+);
 
 const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
   const uid = await firebase.extractUserIdFromRequest({

@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import DynamoDB from "server/external/dynamodb";
 import ConfigProvider from "server/base/ConfigProvider";
 import { copyObject, getObject } from "server/external/s3";
-import { ServerError } from "server/base/errors";
 import type {
   Recipe,
   ImageMetadata,
@@ -10,17 +9,19 @@ import type {
 } from "server/base/models/recipe";
 import sharp from "sharp";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
+import withErrorHandler from "request-handler";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-  switch (method) {
-    case "POST":
-      await useRecipeForBlend(req, res);
-      break;
-    default:
-      res.status(404).json({ code: 404, message: "No such route found!" });
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "POST":
+        return useRecipeForBlend(req, res);
+      default:
+        res.status(405).end();
+    }
   }
-};
+);
 
 export const _getRecipe = async (
   id: string,
@@ -113,16 +114,9 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   let recipe: Recipe;
 
-  try {
-    recipe = await _getRecipe(recipeId as string, variant as string);
-    if (!recipe) {
-      return res.status(400).send({ message: "No such recipe" });
-    }
-  } catch (ex) {
-    if (!(ex instanceof ServerError)) {
-      console.error(ex);
-    }
-    return res.status(500).send({ message: "Something went wrong!" });
+  recipe = await _getRecipe(recipeId as string, variant as string);
+  if (!recipe) {
+    return res.status(400).send({ message: "No such recipe" });
   }
 
   if (!checkCompatibilityWithElements(recipe, encoderVersion)) {
@@ -171,14 +165,7 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     return { ...image, uri: targetUri };
   });
 
-  try {
-    await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
-  } catch (ex) {
-    if (!(ex instanceof ServerError)) {
-      console.error(ex);
-    }
-    return res.status(500).send({ message: "Something went wrong!" });
-  }
+  await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
 
   return res.send({
     ...recipe,

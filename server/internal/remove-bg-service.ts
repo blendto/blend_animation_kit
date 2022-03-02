@@ -9,6 +9,7 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import type DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
+import logger from "server/base/Logger";
 
 export interface ToolkitErrorResponse {
   code?: string;
@@ -94,7 +95,7 @@ export class RemoveBgService implements IService {
       await fn.call(this);
     } catch (ex) {
       if (axios.isAxiosError(ex)) {
-        console.error({
+        logger.error({
           code: "RemoveBgService.RemoveBGFailed",
           key: metadata.fileKeys.original,
           message: ex.message,

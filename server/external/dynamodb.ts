@@ -2,6 +2,7 @@ import "reflect-metadata";
 import AWS from "./aws";
 import { IDataStore } from "./datastore";
 import { injectable } from "inversify";
+import logger from "server/base/Logger";
 
 var docClient = new AWS.DynamoDB.DocumentClient();
 
@@ -58,7 +59,7 @@ export default class DynamoDB implements IDataStore {
     return new Promise((resolve, reject) => {
       docClient.put(params, (err, data) => {
         if (err) {
-          console.error(err);
+          logger.error(err);
           // We expect an error coz document wont exist if unique
           return reject(err);
         }
@@ -73,7 +74,7 @@ export default class DynamoDB implements IDataStore {
     return new Promise((resolve, reject) => {
       docClient.delete(params, (err, data) => {
         if (err) {
-          console.error(err);
+          logger.error(err);
           // We expect an error coz document wont exist if unique
           return reject(err);
         }
@@ -88,7 +89,7 @@ export default class DynamoDB implements IDataStore {
     return new Promise((resolve, reject) => {
       docClient.update(params, (err, data) => {
         if (err) {
-          console.error(err);
+          logger.error(err);
           // We expect an error coz document wont exist if unique
           return reject(err);
         }

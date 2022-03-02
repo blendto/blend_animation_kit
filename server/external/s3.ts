@@ -2,7 +2,8 @@ import { nanoid } from "nanoid";
 
 import AWS from "./aws";
 import { Stream } from "node:stream";
-import { ServerError, UserError } from "server/base/errors";
+import { UserError } from "server/base/errors";
+import logger from "server/base/Logger";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
@@ -87,11 +88,11 @@ export const doesObjectExist = async (bucketName: string, fileKey: string) => {
           // At times s3 incorrectly returns 403 instead of 404. Assume as 404.
           return resolve(false);
         }
-        console.error({
+        logger.error({
           op: err.code,
           message: err.message,
         });
-        return reject(new ServerError("Something went wrong!"));
+        return reject(err);
       }
       if (data) {
         return resolve(true);
@@ -119,11 +120,11 @@ export const getObject = async (
             new UserError("Can't find an image with specified key!")
           );
         }
-        console.error({
+        logger.error({
           op: err.code,
           message: err.message,
         });
-        return reject(new ServerError("Something went wrong!"));
+        return reject(err);
       }
       return resolve(data.Body as Buffer);
     });
@@ -143,11 +144,11 @@ export const uploadObject = async (
     };
     s3.upload(params, (err: Error, data: AWS.S3.ManagedUpload.SendData) => {
       if (err) {
-        console.error({
+        logger.error({
           op: err.toString(),
           message: err.message,
         });
-        return reject(new ServerError("Something went wrong!"));
+        return reject(err);
       }
       return resolve(data);
     });
@@ -168,11 +169,11 @@ export const copyObject = async (
     };
     s3.copyObject(params, (err, data) => {
       if (err) {
-        console.error({
+        logger.error({
           op: err.code,
           message: err.message,
         });
-        return reject(new ServerError("Something went wrong!"));
+        return reject(err);
       }
       return resolve(data);
     });
@@ -197,11 +198,11 @@ export const deleteObject = async (
           // Assume as "NoSuchKey".
           return resolve();
         }
-        console.error({
+        logger.error({
           op: err.code,
           message: err.message,
         });
-        return reject(new ServerError("Something went wrong!"));
+        return reject(err);
       }
       return resolve();
     });

@@ -4,17 +4,19 @@ import { Batch, BatchState } from "server/base/models/batch";
 import DynamoDB from "server/external/dynamodb";
 import firebase from "server/external/firebase";
 import ConfigProvider from "server/base/ConfigProvider";
+import withErrorHandler from "request-handler";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-  switch (method) {
-    case "POST":
-      await createBatch(req, res, DynamoDB._());
-      break;
-    default:
-      res.status(405).json({ code: 405, message: `${method} not supported` });
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "POST":
+        return createBatch(req, res, DynamoDB._());
+      default:
+        res.status(405).end();
+    }
   }
-};
+);
 
 const createBatch = async (
   req: NextApiRequest,

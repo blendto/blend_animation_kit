@@ -4,6 +4,7 @@ import { UserError } from "../../server/base/errors";
 import { createSignedUploadUrl } from "../../server/external/s3";
 import { initMiddleware } from "server/helpers/middleware";
 import Cors from "cors";
+import logger from "server/base/Logger";
 
 // Initializing the cors middleware
 const cors = Cors({
@@ -17,15 +18,13 @@ const corsmiddleware = initMiddleware(cors);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   await corsmiddleware(req, res);
-
   const { method } = req;
-
   switch (method) {
     case "POST":
       await uploadImage(req, res);
       break;
     default:
-      res.status(500).json({ code: 500, message: "Something went wrong!" });
+      res.status(405).end();
   }
 };
 
@@ -51,7 +50,7 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(400).json({ message: err.message });
       return;
     }
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
 };

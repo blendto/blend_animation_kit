@@ -5,7 +5,6 @@ import firebase from "server/external/firebase";
 import { DateTime } from "luxon";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Recipe } from "server/base/models/recipe";
-import { handleServerExceptions } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import {
   CURRENT_ENCODER_VERSION,
@@ -13,6 +12,24 @@ import {
 } from "server/constants";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import ConfigProvider from "server/base/ConfigProvider";
+import logger from "server/base/Logger";
+import withErrorHandler from "request-handler";
+
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "GET":
+        return getBlend(req, res);
+      case "POST":
+        return submitBlend(req, res);
+      case "DELETE":
+        return deleteBlend(req, res);
+      default:
+        res.status(405).end();
+    }
+  }
+);
 
 export const _getBlend = async (
   id: string,
@@ -43,24 +60,6 @@ export const _getBlend = async (
   return backfillBlendOutput(<Blend>blend);
 };
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-
-  switch (method) {
-    case "GET":
-      await getBlend(req, res);
-      break;
-    case "POST":
-      await submitBlend(req, res);
-      break;
-    case "DELETE":
-      await deleteBlend(req, res);
-      break;
-    default:
-      res.status(500).json({ code: 500, message: "Something went wrong!" });
-  }
-};
-
 const trimInteractions = (recipe: Recipe) => {
   const { interactions } = recipe;
 
@@ -80,11 +79,8 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     query: { id },
   } = req;
 
-  let uid: string;
-  await handleServerExceptions(res, async () => {
-    uid = await firebase.extractUserIdFromRequest({
-      request: req,
-    });
+  const uid = await firebase.extractUserIdFromRequest({
+    request: req,
   });
 
   if (!uid) {
@@ -111,7 +107,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
         },
       });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       return res.status(500).json({ message: "Something went wrong!" });
     }
   } else {
@@ -138,7 +134,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
       await DynamoDB._().updateItem(params);
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       return res.status(500).json({ message: "Something went wrong!" });
     }
   }
@@ -244,7 +240,6 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     query: { id },
     body: recipe,
   } = req;
-
   const uid = await firebase.extractUserIdFromRequest({
     request: req,
     optional: true,
@@ -355,7 +350,7 @@ const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
     await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage({ id });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     return res.status(500).json({ message: "Something went wrong!" });
   }
 

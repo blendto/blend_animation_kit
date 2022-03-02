@@ -4,17 +4,19 @@ import { BatchService } from "server/service/batch";
 import { BlendService } from "server/service/blend";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
+import withErrorHandler from "request-handler";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-  switch (method) {
-    case "GET":
-      await getBatch(req, res);
-      break;
-    default:
-      res.status(500).json({ code: 500, message: "Something went wrong!" });
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "GET":
+        return getBatch(req, res);
+      default:
+        res.status(405).end();
+    }
   }
-};
+);
 
 const getBatch = async (req: NextApiRequest, res: NextApiResponse) => {
   const uid = await firebase.extractUserIdFromRequest({

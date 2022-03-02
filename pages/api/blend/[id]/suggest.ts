@@ -15,7 +15,7 @@ import {
   getObject,
   uploadObject,
 } from "server/external/s3";
-import { handleServerExceptions, UserError } from "server/base/errors";
+import { UserError } from "server/base/errors";
 import { Blend } from "server/base/models/blend";
 import axios from "axios";
 import {
@@ -28,19 +28,22 @@ import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import HeroImageService from "server/service/heroImage";
 import { SuggestionService } from "server/service/suggestion";
+import logger from "server/base/Logger";
+import withErrorHandler from "request-handler";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const { method } = req;
-  switch (method) {
-    case "POST":
-      await suggestRecipes(req, res);
-      break;
-    default:
-      return res.status(404).json({ code: 404, message: "Wrong page/" });
+export default withErrorHandler(
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "POST":
+        return suggestRecipes(req, res);
+      default:
+        res.status(405).end();
+    }
   }
-};
+);
 
 interface SuggestRecipesRequestBody {
   fileKeys: HeroImageFileKeys;
@@ -74,7 +77,7 @@ async function createBgRemovedImage(
         .toFormat("jpeg")
         .toBuffer();
       const resizedImageMetadata = await sharp(originalImage).metadata();
-      console.info({
+      logger.info({
         op: "BlendSuggest.ResizeImage",
         sourceSize: metadata.size,
         finalSize: resizedImageMetadata.size,
@@ -108,7 +111,7 @@ async function createBgRemovedImage(
       );
     } catch (ex) {
       if (axios.isAxiosError(ex)) {
-        console.error({
+        logger.error({
           code: "BlendSuggest.S3UploadFailed",
           statusCode: ex.response.status,
           message: ex.response?.data ?? "No response",
@@ -147,39 +150,32 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  return await handleServerExceptions(res, async () => {
-    let uid = await firebase.extractUserIdFromRequest({
-      request: req,
-      optional: true,
-    });
-    const ip = req.headers["x-forwarded-for"] as string;
+  let uid = await firebase.extractUserIdFromRequest({
+    request: req,
+    optional: true,
+  });
+  const ip = req.headers["x-forwarded-for"] as string;
 
-    const fileKeysProcessor = FileKeysProcessingStrategy.choose(
-      id as string,
-      uid,
-      fileKeys,
-      heroImageId
-    );
+  const fileKeysProcessor = FileKeysProcessingStrategy.choose(
+    id as string,
+    uid,
+    fileKeys,
+    heroImageId
+  );
 
-    const finalisedFileKeys: HeroImageFileKeys =
-      await fileKeysProcessor.process();
+  const finalisedFileKeys: HeroImageFileKeys =
+    await fileKeysProcessor.process();
 
-    const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-    await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
-    const suggestions = await diContainer
-      .get<SuggestionService>(TYPES.SuggestionService)
-      .suggestRecipes(
-        uid,
-        finalisedFileKeys.withoutBg,
-        ip,
-        multipleAspectRatios
-      );
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+  await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
+  const suggestions = await diContainer
+    .get<SuggestionService>(TYPES.SuggestionService)
+    .suggestRecipes(uid, finalisedFileKeys.withoutBg, ip, multipleAspectRatios);
 
-    return res.send({
-      fileKeys: finalisedFileKeys,
-      suggestedRecipes: suggestions.randomTemplates,
-      otherRecipes: suggestions.recipeLists,
-    });
+  return res.send({
+    fileKeys: finalisedFileKeys,
+    suggestedRecipes: suggestions.randomTemplates,
+    otherRecipes: suggestions.recipeLists,
   });
 };
 

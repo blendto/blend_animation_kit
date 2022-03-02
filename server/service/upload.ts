@@ -6,6 +6,7 @@ import { BatchService } from "server/service/batch";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { injectable } from "inversify";
+import logger from "server/base/Logger";
 
 @injectable()
 export class UploadService implements IService {
@@ -15,7 +16,7 @@ export class UploadService implements IService {
   ): Promise<void> {
     const blendId = BlendModelUtils.getBlendIdFromFileKey(fileKey);
     if (!blendId) {
-      console.error(
+      logger.error(
         `${fileKey} does not match "{blendId}/{filename}.{extension}" format`
       );
       return;
@@ -26,7 +27,7 @@ export class UploadService implements IService {
 
     const blend = await blendService.getBlend(blendId);
     if (!blend || blend.heroImages?.original !== fileKey) {
-      console.info({
+      logger.info({
         op: "NOT_HERO_IMAGE_FILEKEY",
         message: `Either, fileKey(${fileKey}) does not belong to a valid blend, or, is not of a hero image`,
       });
@@ -34,7 +35,7 @@ export class UploadService implements IService {
     }
 
     if (!blend.batchId) {
-      console.info({
+      logger.info({
         op: "BLEND_NOT_FOUND",
         message: "Blend not a part of any batch",
       });

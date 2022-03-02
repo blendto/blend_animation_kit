@@ -1,13 +1,14 @@
 import "reflect-metadata";
 import ConfigProvider from "server/base/ConfigProvider";
-import DynamoDB from "../external/dynamodb";
-import { BlendService } from "./blend";
-import { IService } from "./index";
+import DynamoDB from "server/external/dynamodb";
+import { BlendService } from "server/service/blend";
+import { IService } from "server/service";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { inject, injectable } from "inversify";
 import IpApi from "server/external/ipapi";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
+import logger from "server/base/Logger";
 
 @injectable()
 export class UserService implements IService {
@@ -53,7 +54,7 @@ export class UserService implements IService {
       const ipDetails = await this.ipApi.getIpInfo(ip);
       return new UserAgentDetails(ipDetails["country_code"]);
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       return null;
     }
   }

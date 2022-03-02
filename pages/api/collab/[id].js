@@ -1,6 +1,7 @@
 import { ConfigProvider } from "antd";
-import DynamoDB from "../../../server/external/dynamodb";
-import SQS from "../../../server/external/sqs";
+import DynamoDB from "server/external/dynamodb";
+import SQS from "server/external/sqs";
+import logger from "server/base/Logger";
 
 const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
 const CURRENT_ENCODER_VERSION = 1.6;
@@ -163,7 +164,7 @@ const submitCollab = async (req, res) => {
 
     await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage({ id });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
 

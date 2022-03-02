@@ -23,6 +23,7 @@ import { ObjectNotFoundError } from "server/base/errors";
 import { IService } from "server/service";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
+import logger from "server/base/Logger";
 
 @injectable()
 export default class HeroImageService implements IService {
@@ -85,7 +86,7 @@ export default class HeroImageService implements IService {
       heroImage.status === HeroImageStatus.DELETED
     ) {
       if (heroImage && !validOwners.includes(heroImage.userId)) {
-        console.error({
+        logger.error({
           op: "UNAUTH_HERO_IMAGE_ACCESS",
           message: `Some user is trying to access another user's hero image!. User id: ${uid}. Image id: ${id}`,
         });

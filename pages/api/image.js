@@ -1,6 +1,7 @@
-import { ServerError, UserError } from "../../server/base/errors";
-import { createSignedUploadUrl } from "../../server/external/s3";
+import { UserError } from "server/base/errors";
+import { createSignedUploadUrl } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
+import logger from "server/base/Logger";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 
@@ -8,13 +9,12 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
 
 export default async (req, res) => {
   const { method } = req;
-
   switch (method) {
     case "POST":
       await uploadImage(req, res);
       break;
     default:
-      res.status(500).json({ code: 500, message: "Something went wrong!" });
+      res.status(405).end();
   }
 };
 
@@ -43,7 +43,7 @@ const uploadImage = async (req, res) => {
       res.status(400).json({ message: err.message });
       return;
     }
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
 };

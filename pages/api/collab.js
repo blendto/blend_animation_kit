@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import DynamoDB from "../../server/external/dynamodb";
 import { DateTime } from "luxon";
 import { ConfigProvider } from "antd";
+import logger from "server/base/Logger";
 
 export default async (req, res) => {
   const { method } = req;
@@ -32,7 +33,7 @@ const initCollab = async (req, res) => {
       }
       continue;
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       res.status(500).json({ message: "Something went wrong!" });
       return;
     }
@@ -56,7 +57,7 @@ const initCollab = async (req, res) => {
       Item: collab,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
 
