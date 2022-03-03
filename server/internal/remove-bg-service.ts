@@ -138,11 +138,14 @@ export class RemoveBgService implements IService {
     }
     const form = new FormData();
     form.append("file", fileBuffer, fileName);
+    Object.keys(config).forEach((key) => {
+      form.append(key, config[key]);
+    });
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     let response: AxiosResponse<IncomingMessage>;
     await this._handleBgRemovalException(async () => {
       response = await this.httpClient.post("/removeBg", form, {
-        headers: { ...form.getHeaders(), ...config },
+        headers: form.getHeaders(),
         responseType: "stream",
       });
     }, metadata);
