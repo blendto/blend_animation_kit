@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import logger from "server/base/Logger";
 import { ObjectNotFoundError, UserError } from "server/base/errors";
+import { pick } from "lodash";
 
 type RoutingFunction = (
   req: NextApiRequest,
@@ -22,7 +23,7 @@ export default function withErrorHandler(
       logger.error({
         op: "SERVER_ERROR",
         details: {
-          req,
+          req: pick(req, ["url", "query", "body"]),
           trace: err,
         },
       });
