@@ -1,13 +1,12 @@
 import VesApi from "server/internal/ves";
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiResponse } from "next";
 import { diContainer } from "inversify.config";
 import { SuggestionService } from "server/service/suggestion";
 import { TYPES } from "server/types";
-import firebase from "server/external/firebase";
-import withErrorHandler from "request-handler";
+import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
@@ -20,20 +19,18 @@ export default withErrorHandler(
 
 const vesapi = new VesApi();
 
-const generatePreview = async (req: NextApiRequest, res: NextApiResponse) => {
+const generatePreview = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const {
     query: { id },
     body: { recipeId },
   } = req;
-
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-    optional: true,
-  });
   const service = diContainer.get<SuggestionService>(TYPES.SuggestionService);
   const batchId = id as string;
 
-  let fileKeys = await service.selectFileKeysFromBatchPreview(uid, batchId);
+  let fileKeys = await service.selectFileKeysFromBatchPreview(req.uid, batchId);
   const previewStream = await vesapi.preview({
     recipeId: recipeId,
     fileKeys: {

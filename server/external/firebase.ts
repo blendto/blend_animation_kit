@@ -1,5 +1,4 @@
 import admin from "firebase-admin";
-import { NextApiRequest } from "next";
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
 import { nanoid } from "nanoid";
@@ -7,11 +6,6 @@ import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 
 const FIREBASE_PROJECT_ID = ConfigProvider.FIREBASE_APP_CLIENT_CONFIG.projectId;
-
-interface ExtractUserIdFromRequestParams {
-  request: NextApiRequest;
-  optional?: boolean;
-}
 
 class Firebase {
   constructor() {
@@ -46,21 +40,12 @@ class Firebase {
     return userCredential.user.toJSON();
   }
 
-  async extractUserIdFromRequest({
-    request,
-    optional,
-  }: ExtractUserIdFromRequestParams): Promise<string> {
+  async extractUserIdFromRequest(request): Promise<string> {
     const authHeader = request.headers.authorization;
-
     if (!authHeader?.startsWith("Bearer")) {
-      if (!optional) {
-        throw new UserError("No/Invalid auth");
-      }
       return null;
     }
-
     const claims = await this.verifyAndDecodeToken(authHeader.substring(7));
-
     return claims.uid;
   }
 }

@@ -1,19 +1,22 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import firebase from "server/external/firebase";
+import { NextApiResponse } from "next";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import HeroImageService from "server/service/heroImage";
-import withErrorHandler from "request-handler";
+import {
+  NextApiRequestExtended,
+  ensureAuth,
+  withReqHandler,
+} from "server/helpers/request";
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "GET":
-        return getHero(req, res);
+        return ensureAuth(getHero, req, res);
 
       case "DELETE":
-        return deleteHero(req, res);
+        return ensureAuth(deleteHero, req, res);
 
       default:
         res.status(405).end();
@@ -21,11 +24,7 @@ export default withErrorHandler(
   }
 );
 
-const getHero = async (req: NextApiRequest, res: NextApiResponse) => {
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-  });
-
+const getHero = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const {
     query: { id },
   } = req;
@@ -33,21 +32,20 @@ const getHero = async (req: NextApiRequest, res: NextApiResponse) => {
   res.send(
     await diContainer
       .get<HeroImageService>(TYPES.HeroImageService)
-      .getImage(id as string, uid)
+      .getImage(id as string, req.uid)
   );
 };
 
-const deleteHero = async (req: NextApiRequest, res: NextApiResponse) => {
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-  });
-
+const deleteHero = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const {
     query: { id },
   } = req;
 
   await diContainer
     .get<HeroImageService>(TYPES.HeroImageService)
-    .deleteImage(id as string, uid);
+    .deleteImage(id as string, req.uid);
   res.status(204).end();
 };

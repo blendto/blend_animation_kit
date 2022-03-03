@@ -1,9 +1,8 @@
 import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
 import { addBlendToDB, backfillBlendOutput, BlendVersion } from "../blend";
-import firebase from "server/external/firebase";
 import { DateTime } from "luxon";
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiResponse } from "next";
 import { Recipe } from "server/base/models/recipe";
 import { Blend } from "server/base/models/blend";
 import {
@@ -13,18 +12,22 @@ import {
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
-import withErrorHandler from "request-handler";
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "GET":
         return getBlend(req, res);
       case "POST":
-        return submitBlend(req, res);
+        return ensureAuth(submitBlend, req, res);
       case "DELETE":
-        return deleteBlend(req, res);
+        return ensureAuth(deleteBlend, req, res);
       default:
         res.status(405).end();
     }
@@ -74,19 +77,13 @@ const trimInteractions = (recipe: Recipe) => {
   return interactionsToRender;
 };
 
-const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
+const deleteBlend = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const {
     query: { id },
   } = req;
-
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-  });
-
-  if (!uid) {
-    // Exception would have been managed above
-    return;
-  }
 
   const blend = await _getBlend(id as string);
 
@@ -94,7 +91,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(404).send({ message: "Blend not found!" });
   }
 
-  if (blend.createdBy != uid) {
+  if (blend.createdBy != req.uid) {
     return res.status(403).send({ message: "Forbidden" });
   }
 
@@ -151,7 +148,7 @@ const deleteBlend = async (req: NextApiRequest, res: NextApiResponse) => {
  * Retrieves the generated version by default, unless specified otherwise in the version
  * or not generated yet.
  */
-const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
+const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const {
     query: { id, format, target },
   } = req;
@@ -235,24 +232,23 @@ const getBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   res.send(trimmedBlend);
 };
 
-const submitBlend = async (req: NextApiRequest, res: NextApiResponse) => {
+const submitBlend = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const {
     query: { id },
     body: recipe,
   } = req;
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-    optional: true,
-  });
 
   let existingBlend = await _getBlend(id as string);
 
   if (!existingBlend) {
     // Blend might have expired, recreate it
-    existingBlend = await addBlendToDB(id as string, uid);
+    existingBlend = await addBlendToDB(id as string, req.uid);
   }
 
-  if (existingBlend.createdBy != uid) {
+  if (existingBlend.createdBy != req.uid) {
     return res
       .status(403)
       .send({ message: "Cannot edit someone else's blend" });

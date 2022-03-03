@@ -1,29 +1,27 @@
-import firebase from "server/external/firebase";
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiResponse } from "next";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import HeroImageService from "server/service/heroImage";
-import withErrorHandler from "request-handler";
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "GET":
-        return getHeroes(req, res);
+        return ensureAuth(getHeroes, req, res);
       default:
         res.status(405).end();
     }
   }
 );
 
-const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-    optional: true,
-  });
-
+async function getHeroes(req: NextApiRequestExtended, res: NextApiResponse) {
   const {
     query: { pageToken },
   } = req;
@@ -41,7 +39,7 @@ const getHeroes = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const { images, pageKeyObject: nextPageKeyObject } = await diContainer
     .get<HeroImageService>(TYPES.HeroImageService)
-    .getImagesForUser(pageKeyObject, uid);
+    .getImagesForUser(pageKeyObject, req.uid);
   const nextPageToken = EncodedPageKey.fromObject(nextPageKeyObject)?.key;
   res.send({ data: images, nextPageToken });
-};
+}

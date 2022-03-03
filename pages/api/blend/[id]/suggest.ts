@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiResponse } from "next";
 import sharp from "sharp";
 
 import { _getBlend } from "pages/api/blend/[id]";
@@ -8,7 +8,6 @@ import {
 } from "server/internal/remove-bg-service";
 
 import ConfigProvider from "server/base/ConfigProvider";
-import firebase from "server/external/firebase";
 import {
   copyObject,
   doesObjectExist,
@@ -29,12 +28,12 @@ import { BlendService } from "server/service/blend";
 import HeroImageService from "server/service/heroImage";
 import { SuggestionService } from "server/service/suggestion";
 import logger from "server/base/Logger";
-import withErrorHandler from "request-handler";
+import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
@@ -126,7 +125,10 @@ async function createBgRemovedImage(
   }
 }
 
-const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
+const suggestRecipes = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const {
     query: { id },
     body,
@@ -150,15 +152,11 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  let uid = await firebase.extractUserIdFromRequest({
-    request: req,
-    optional: true,
-  });
   const ip = req.headers["x-forwarded-for"] as string;
 
   const fileKeysProcessor = FileKeysProcessingStrategy.choose(
     id as string,
-    uid,
+    req.uid,
     fileKeys,
     heroImageId
   );
@@ -170,7 +168,12 @@ const suggestRecipes = async (req: NextApiRequest, res: NextApiResponse) => {
   await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
   const suggestions = await diContainer
     .get<SuggestionService>(TYPES.SuggestionService)
-    .suggestRecipes(uid, finalisedFileKeys.withoutBg, ip, multipleAspectRatios);
+    .suggestRecipes(
+      req.uid,
+      finalisedFileKeys.withoutBg,
+      ip,
+      multipleAspectRatios
+    );
 
   return res.send({
     fileKeys: finalisedFileKeys,

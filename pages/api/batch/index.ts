@@ -1,13 +1,12 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextApiResponse } from "next";
 import { nanoid } from "nanoid";
 import { Batch, BatchState } from "server/base/models/batch";
 import DynamoDB from "server/external/dynamodb";
-import firebase from "server/external/firebase";
 import ConfigProvider from "server/base/ConfigProvider";
-import withErrorHandler from "request-handler";
+import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
@@ -19,20 +18,15 @@ export default withErrorHandler(
 );
 
 const createBatch = async (
-  req: NextApiRequest,
+  req: NextApiRequestExtended,
   res: NextApiResponse,
   dataStore: DynamoDB
 ) => {
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-    optional: true,
-  });
-
   const now = Date.now();
   const newBatch = {
     id: nanoid(10),
     status: BatchState.IDLE,
-    createdBy: uid,
+    createdBy: req.uid,
     createdAt: now,
     updatedAt: now,
     pendingUploads: {},

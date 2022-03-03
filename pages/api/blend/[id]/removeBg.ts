@@ -17,11 +17,11 @@ import sharp from "sharp";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import logger from "server/base/Logger";
-import withErrorHandler from "request-handler";
+import { withReqHandler } from "server/helpers/request";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
-export default withErrorHandler(
+export default withReqHandler(
   async (req: NextApiRequest, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {

@@ -1,14 +1,17 @@
 import { nanoid } from "nanoid";
 import DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
-import type { NextApiRequest, NextApiResponse } from "next";
-import firebase from "server/external/firebase";
+import type { NextApiResponse } from "next";
 import { Blend, BlendStatus } from "server/base/models/blend";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
-import withErrorHandler from "request-handler";
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -20,26 +23,23 @@ export enum BlendVersion {
   generated = "GENERATED",
 }
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "GET":
-        return getAllBlends(req, res);
+        return ensureAuth(getAllBlends, req, res);
       case "POST":
-        return initBlend(req, res);
+        return ensureAuth(initBlend, req, res);
       default:
         res.status(405).end();
     }
   }
 );
 
-const initBlend = async (req: NextApiRequest, res: NextApiResponse) => {
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-  });
+const initBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   try {
-    const blend = await initBlendInternal(uid);
+    const blend = await initBlendInternal(req.uid);
     return res.send(blend);
   } catch (err) {
     logger.error(err);
@@ -79,19 +79,13 @@ export const initBlendInternal = async (
   });
 };
 
-const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
+const getAllBlends = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const {
     query: { pageKey },
   } = req;
-
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-  });
-
-  if (!uid) {
-    // Exception would have been managed above
-    return;
-  }
 
   let pageKeyObject = null;
 
@@ -119,7 +113,7 @@ const getAllBlends = async (req: NextApiRequest, res: NextApiResponse) => {
         "#version": "version",
       },
       ExpressionAttributeValues: {
-        ":createdBy": uid,
+        ":createdBy": req.uid,
         ":generated": "GENERATED",
         ":submitted": "SUBMITTED",
         ":currentVersion": "CURRENT",

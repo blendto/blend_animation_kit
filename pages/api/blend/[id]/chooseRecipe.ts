@@ -9,9 +9,9 @@ import type {
 } from "server/base/models/recipe";
 import sharp from "sharp";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
-import withErrorHandler from "request-handler";
+import { withReqHandler } from "server/helpers/request";
 
-export default withErrorHandler(
+export default withReqHandler(
   async (req: NextApiRequest, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {

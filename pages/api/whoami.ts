@@ -1,11 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import firebase from "server/external/firebase";
+import type { NextApiResponse } from "next";
 import IpApi from "server/external/ipapi";
 import { UserAgentDetails } from "../../server/base/models/userAgentDetails";
 import { initMiddleware } from "server/helpers/middleware";
 import Cors from "cors";
 import logger from "server/base/Logger";
-import withErrorHandler from "request-handler";
+import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
 
 // Initializing the cors middleware
 const cors = Cors({
@@ -14,8 +13,8 @@ const cors = Cors({
 
 const corsmiddleware = initMiddleware(cors);
 
-export default withErrorHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     await corsmiddleware(req, res);
     const { method } = req;
     switch (method) {
@@ -30,14 +29,9 @@ export default withErrorHandler(
 const ipApi = new IpApi();
 
 async function whoami(
-  req: NextApiRequest,
+  req: NextApiRequestExtended,
   res: NextApiResponse<any>
 ): Promise<any> {
-  const uid = await firebase.extractUserIdFromRequest({
-    request: req,
-    optional: true,
-  });
-
   const ip = req.headers["x-forwarded-for"] as string;
 
   if (!ip) {
@@ -46,7 +40,7 @@ async function whoami(
 
   const ipDetails = await ipApi.getIpInfo(ip);
   return res.send({
-    uid,
+    uid: req.uid,
     details: {
       countryCode: ipDetails["country_code"],
     },
@@ -54,7 +48,7 @@ async function whoami(
 }
 
 export async function getUserAgentDetails(
-  req: NextApiRequest
+  req: NextApiRequestExtended
 ): Promise<UserAgentDetails | null> {
   const ip = req.headers["x-forwarded-for"] as string;
   if (!ip) {
