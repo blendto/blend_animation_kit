@@ -59,7 +59,9 @@ describe("HeroImageService", () => {
     });
 
     it("Raises NotFound error if the image doesn't belong to the user", async () => {
-      const loggerErrorMock = jest.spyOn(logger, "error");
+      const loggerErrorMock = jest
+        .spyOn(logger, "error")
+        .mockImplementation(() => null);
       jest
         .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
         .mockResolvedValueOnce({
@@ -100,7 +102,9 @@ describe("HeroImageService", () => {
     });
 
     it('Raises NotFound error if the image belongs to "DEFAULT_USER" but "returnOnlyOwn" flag is true', async () => {
-      const loggerErrorMock = jest.spyOn(logger, "error");
+      const loggerErrorMock = jest
+        .spyOn(logger, "error")
+        .mockImplementation(() => null);
       jest
         .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "getItem")
         .mockResolvedValueOnce(defaultUserimage);
