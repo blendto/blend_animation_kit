@@ -66,6 +66,6 @@
     "webpack-node-externals": "^3.0.0"
   },
   "lint-staged": {
-    "*.{js,ts,json}": "prettier --write"
+    "*.{js,ts,json}": "prettier --check"
   }
 }
