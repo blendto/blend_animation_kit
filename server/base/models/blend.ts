@@ -8,9 +8,14 @@ export enum BlendStatus {
   Deleted = "DELETED",
 }
 
+export enum BlendVersion {
+  current = "CURRENT",
+  generated = "GENERATED",
+}
+
 export interface Blend extends Recipe {
   id: string;
-  version: string;
+  version: BlendVersion;
   batchId?: string;
   filePath?: string;
   imagePath?: string;

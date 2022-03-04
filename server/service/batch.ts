@@ -20,6 +20,8 @@ import { IService } from "./index";
 import { customAlphabet } from "nanoid";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
+import { diContainer } from "inversify.config";
+import { BlendService } from "./blend";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
@@ -78,22 +80,12 @@ export class BatchService implements IService {
     batchId: string
   ): Promise<UploadRequest> {
     const heroFileName = createDestinationFileKey(fileName, VALID_EXTENSIONS);
-    // The tests for HeroImageService are failing as service/index.ts
-    // imports this service along with other services. Due to which this
-    // and subsequently api/blend.ts is loaded. Which loads a lot of
-    // code that require configuration, especially firebase.
-    //
-    // A fn. from an api controller module shouldn't have been used here in
-    // the first place. The common code should instead be moved to BlendService
-    // and used by the api and this service.
-    //
-    // Just make the import internal for now.
-    // Will make the actual required change in a dedicated PR.
-    const { initBlendInternal } = await import("pages/api/blend");
-    const blend: Blend = await initBlendInternal(uid, {
-      batchId: batchId,
-      heroFileName: heroFileName,
-    });
+    const blend: Blend = await diContainer
+      .get<BlendService>(TYPES.BlendService)
+      .initBlend(uid, {
+        batchId: batchId,
+        heroFileName: heroFileName,
+      });
 
     const fileKey = `${blend.id}/${heroFileName}`;
     const urlDetails = (await createSignedUploadUrl(

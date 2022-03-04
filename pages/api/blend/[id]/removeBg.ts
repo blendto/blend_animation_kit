@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import Joi from "joi";
 
-import { _getBlend } from "../[id]";
 import { Blend } from "server/base/models/blend";
 import { UserError } from "server/base/errors";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
@@ -16,6 +15,7 @@ import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import sharp from "sharp";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
+import { BlendService } from "server/service/blend";
 import logger from "server/base/Logger";
 import { withReqHandler } from "server/helpers/request";
 
@@ -49,7 +49,9 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     body,
   } = req;
 
-  const blend: Blend = await _getBlend(id as string);
+  const blend: Blend = await diContainer
+    .get<BlendService>(TYPES.BlendService)
+    .getBlend(id as string);
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });

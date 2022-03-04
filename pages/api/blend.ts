@@ -1,27 +1,17 @@
-import { nanoid } from "nanoid";
 import DynamoDB from "server/external/dynamodb";
-import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
-import { Blend, BlendStatus } from "server/base/models/blend";
+import { Blend } from "server/base/models/blend";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
+import { diContainer } from "inversify.config";
+import { BlendService } from "server/service/blend";
+import { TYPES } from "server/types";
 import {
   ensureAuth,
   NextApiRequestExtended,
   withReqHandler,
 } from "server/helpers/request";
-
-// Resolution to use when output object is not populated
-// When aspect ratio used to be fixed, these were the constant ones.
-const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
-const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
-
-export enum BlendVersion {
-  current = "CURRENT",
-  generated = "GENERATED",
-}
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -38,8 +28,9 @@ export default withReqHandler(
 );
 
 const initBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   try {
-    const blend = await initBlendInternal(req.uid);
+    const blend = await blendService.initBlend(req.uid);
     return res.send(blend);
   } catch (err) {
     logger.error(err);
@@ -48,41 +39,11 @@ const initBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   }
 };
 
-export const initBlendInternal = async (
-  uid: string,
-  options?: { batchId: string; heroFileName: string }
-) => {
-  let blendRequestId: string;
-  do {
-    blendRequestId = nanoid(8);
-    const item = await DynamoDB._().getItem({
-      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      Key: {
-        id: blendRequestId,
-      },
-    });
-    if (!item) {
-      break;
-    }
-  } while (true);
-
-  let fileKey = null;
-  if (options?.heroFileName) {
-    fileKey = `${blendRequestId}/${options.heroFileName}`;
-  }
-
-  return await addBlendToDB(blendRequestId, uid, {
-    batchId: options?.batchId,
-    heroImages: {
-      original: fileKey,
-    },
-  });
-};
-
 const getAllBlends = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   const {
     query: { pageKey },
   } = req;
@@ -128,7 +89,7 @@ const getAllBlends = async (
     });
 
     items = data.Items.map((item) => {
-      return backfillBlendOutput(<Blend>item);
+      return blendService.backfillBlendOutput(<Blend>item);
     });
 
     nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
@@ -139,68 +100,4 @@ const getAllBlends = async (
   }
 
   res.send({ data: items, nextPageKey });
-};
-
-export const addBlendToDB = async (
-  id: string,
-  userId?: string,
-  options?: { batchId: string; heroImages: HeroImageFileKeys }
-) => {
-  const currentTime = Date.now();
-  const currentDate = DateTime.utc().toISODate();
-
-  let blend: Blend = {
-    id: id,
-    version: BlendVersion.current,
-    batchId: options?.batchId,
-    status: BlendStatus.Initialized,
-    statusUpdates: [
-      {
-        status: BlendStatus.Initialized,
-        on: currentTime,
-      },
-    ],
-    expireAt: DateTime.local().plus({ days: 1 }).startOf("second").toSeconds(),
-    createdAt: currentTime,
-    createdOn: currentDate,
-    updatedAt: currentTime,
-    updatedOn: currentDate,
-    heroImages: options?.heroImages,
-    ...(userId !== null && { createdBy: userId }),
-  };
-
-  await DynamoDB._().putItem({
-    TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-    Item: blend,
-  });
-  return blend;
-};
-
-export const backfillBlendOutput = (item: Blend) => {
-  let { filePath, imagePath, thumbnail, output, status } = item;
-
-  if (!output && status == "GENERATED") {
-    output = {
-      video: {
-        path: filePath,
-        resolution: FALLBACK_OUTPUT_RESOLUTION,
-      },
-      image: {
-        path: imagePath,
-        resolution: FALLBACK_OUTPUT_RESOLUTION,
-      },
-      thumbnail: {
-        path: thumbnail,
-        resolution: FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION,
-      },
-    };
-  }
-
-  return {
-    ...item,
-    filePath: output?.video.path ?? null,
-    imagePath: output?.image.path ?? null,
-    thumbnail: output?.thumbnail.path ?? null,
-    output: output ?? null,
-  };
 };

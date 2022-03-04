@@ -1,10 +1,9 @@
 import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
-import { addBlendToDB, backfillBlendOutput, BlendVersion } from "../blend";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
 import { Recipe } from "server/base/models/recipe";
-import { Blend } from "server/base/models/blend";
+import { BlendStatus, BlendVersion } from "server/base/models/blend";
 import {
   CURRENT_ENCODER_VERSION,
   MIN_SUPPORTED_ENCODER_VERSION,
@@ -12,6 +11,9 @@ import {
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
+import { diContainer } from "inversify.config";
+import { BlendService } from "server/service/blend";
+import { TYPES } from "server/types";
 import {
   ensureAuth,
   NextApiRequestExtended,
@@ -33,35 +35,6 @@ export default withReqHandler(
     }
   }
 );
-
-export const _getBlend = async (
-  id: string,
-  version: BlendVersion = BlendVersion.current
-): Promise<Blend> => {
-  let blend = await DynamoDB._().getItem({
-    TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
-    Key: {
-      id,
-      version: version,
-    },
-  });
-
-  if (!blend) {
-    // TODO: Remove this post migration. This is a HACK to fix consistancy issues.
-    blend = await DynamoDB._().getItem({
-      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      Key: {
-        id,
-      },
-    });
-  }
-
-  if (!blend) {
-    return null;
-  }
-
-  return backfillBlendOutput(<Blend>blend);
-};
 
 const trimInteractions = (recipe: Recipe) => {
   const { interactions } = recipe;
@@ -85,7 +58,9 @@ const deleteBlend = async (
     query: { id },
   } = req;
 
-  const blend = await _getBlend(id as string);
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+
+  const blend = await blendService.getBlend(id as string);
 
   if (!blend) {
     return res.status(404).send({ message: "Blend not found!" });
@@ -118,8 +93,8 @@ const deleteBlend = async (
         "#st": "status",
       },
       ExpressionAttributeValues: {
-        ":s": "DELETED",
-        ":update": [{ status: "DELETED", on: now }],
+        ":s": BlendStatus.Deleted,
+        ":update": [{ status: BlendStatus.Deleted, on: now }],
         ":updatedAt": now,
         ":updatedOn": updatedOn,
       },
@@ -152,10 +127,10 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const {
     query: { id, format, target },
   } = req;
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+  let blend = await blendService.getBlend(id as string, BlendVersion.current);
 
-  let blend = await _getBlend(id as string, BlendVersion.current);
-
-  if (!blend || blend?.status === "DELETED") {
+  if (!blend || blend?.status === BlendStatus.Deleted) {
     res.status(404).send({ message: "Blend not found!" });
     return;
   }
@@ -240,12 +215,12 @@ const submitBlend = async (
     query: { id },
     body: recipe,
   } = req;
-
-  let existingBlend = await _getBlend(id as string);
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+  let existingBlend = await blendService.getBlend(id as string);
 
   if (!existingBlend) {
     // Blend might have expired, recreate it
-    existingBlend = await addBlendToDB(id as string, req.uid);
+    existingBlend = await blendService.addBlendToDB(id as string, req.uid);
   }
 
   if (existingBlend.createdBy != req.uid) {

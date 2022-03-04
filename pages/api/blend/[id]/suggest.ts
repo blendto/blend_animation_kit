@@ -1,7 +1,6 @@
 import type { NextApiResponse } from "next";
 import sharp from "sharp";
 
-import { _getBlend } from "pages/api/blend/[id]";
 import {
   RemoveBgService,
   RemoveBGSource,
@@ -143,7 +142,9 @@ const suggestRecipes = async (
   const { fileKeys, multipleAspectRatios, heroImageId } =
     body as SuggestRecipesRequestBody;
 
-  const blend: Blend = await _getBlend(id as string);
+  const blend: Blend = await diContainer
+    .get<BlendService>(TYPES.BlendService)
+    .getBlend(id as string);
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });
