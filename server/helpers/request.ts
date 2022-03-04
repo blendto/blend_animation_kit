@@ -43,7 +43,7 @@ export function withReqHandler(
       logger.error({
         op: "SERVER_ERROR",
         details: {
-          req: pick(extendedReq, ["url", "method", "query", "body"]),
+          req: pick(extendedReq, ["url", "method", "uid", "query", "body"]),
           desc: err.toString(),
           trace: err.stack,
         },
