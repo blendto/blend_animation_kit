@@ -57,6 +57,10 @@ async function createBgRemovedImage(
   bgRemovedFileKey: string
 ) {
   {
+    logger.info({
+      fileNameWithExt,
+      fileKeys
+    });
     const metadata = await sharp(originalImage).metadata();
 
     if (
