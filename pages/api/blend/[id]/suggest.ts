@@ -270,8 +270,7 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     );
 
     if (this.fileKeys.withoutBg) {
-      // noinspection ES6MissingAwait
-      heroImageService.createNewImage(this.blendId, this.userId, this.fileKeys);
+      await heroImageService.createNewImage(this.blendId, this.userId, this.fileKeys);
       return this.fileKeys;
     }
 
