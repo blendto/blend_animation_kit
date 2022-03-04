@@ -28,13 +28,10 @@ export function withReqHandler(
   routingFunction: RoutingFunctionExtended
 ): RoutingFunction {
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-    let uid;
+    let extendedReq = req as NextApiRequestExtended;
     try {
-      uid = await firebase.extractUserIdFromRequest(req);
-      return await routingFunction(
-        { ...req, uid } as NextApiRequestExtended,
-        res
-      );
+      extendedReq.uid = await firebase.extractUserIdFromRequest(req);
+      return await routingFunction(extendedReq, res);
     } catch (err) {
       if (err instanceof UserError) {
         return res.status(400).send({ message: err.message, code: err.code });
@@ -46,10 +43,7 @@ export function withReqHandler(
       logger.error({
         op: "SERVER_ERROR",
         details: {
-          req: {
-            ...pick(req, ["url", "method", "query", "body"]),
-            uid,
-          },
+          req: pick(extendedReq, ["url", "method", "query", "body"]),
           desc: err.toString(),
           trace: err.stack,
         },
