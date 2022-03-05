@@ -39,6 +39,10 @@ export default withReqHandler(
 const trimInteractions = (recipe: Recipe) => {
   const { interactions } = recipe;
 
+  if (!interactions) {
+    return [];
+  }
+
   const interactionsToRender = interactions
     .filter((interaction) => !!interaction.userInteraction)
     .map(({ assetType, metadata, userInteraction }) => ({
