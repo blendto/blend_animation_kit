@@ -19,7 +19,8 @@ import { LinkOutlined } from "@ant-design/icons";
 import Head from "next/head";
 
 import styles from "../../styles/Viewer.module.css";
-import { _getBlend } from "../api/blend/[id]";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
 import IntearctionLayer from "../../components/viewer/InteractionLayer";
 import { AnalyticsService } from "server/service/analytics";
 
@@ -336,7 +337,8 @@ const VideoLayer = React.memo(function ({ blend, width, height }) {
 export async function getServerSideProps({ params }) {
   const { id } = params;
 
-  const blend = (await _getBlend(id)) || null;
+  const blendService = diContainer.get(TYPES.BlendService);
+  const blend = await blendService.getBlend(id);
 
   return {
     props: {
