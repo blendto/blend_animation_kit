@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 
 import AWS from "./aws";
-import { Stream } from "node:stream";
+import { Readable, Stream } from "node:stream";
 import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
 
@@ -134,13 +134,13 @@ export const getObject = async (
 export const uploadObject = async (
   bucketName: string,
   fileKey: string,
-  stream: Stream
+  readableObject: Stream | Buffer
 ) => {
   return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
-      Body: stream,
+      Body: readableObject,
     };
     s3.upload(params, (err: Error, data: AWS.S3.ManagedUpload.SendData) => {
       if (err) {

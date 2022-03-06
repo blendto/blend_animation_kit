@@ -28,6 +28,7 @@ import HeroImageService from "server/service/heroImage";
 import { SuggestionService } from "server/service/suggestion";
 import logger from "server/base/Logger";
 import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
+import { fireAndForget } from "server/helpers/async-runner";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
@@ -56,18 +57,12 @@ async function createBgRemovedImage(
   bgRemovedFileKey: string
 ) {
   {
-    logger.info({
-      fileNameWithExt,
-      fileKeys
-    });
     const metadata = await sharp(originalImage).metadata();
 
     if (
       !["jpeg", "jpg"].includes(metadata.format) ||
       metadata.size > 1024 * 1024 * 10
     ) {
-      logger.info({ format: metadata.format })
-      
       // failOnError: false helps blow past errors like
       // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
       // https://github.com/lovell/sharp/issues/1578
@@ -271,7 +266,14 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     );
 
     if (this.fileKeys.withoutBg) {
-      await heroImageService.createNewImage(this.blendId, this.userId, this.fileKeys);
+      // noinspection ES6MissingAwait
+      fireAndForget(() =>
+        heroImageService.createNewImage(
+          this.blendId,
+          this.userId,
+          this.fileKeys
+        )
+      );
       return this.fileKeys;
     }
 
@@ -305,7 +307,9 @@ class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     } as HeroImageFileKeys;
 
     // noinspection ES6MissingAwait
-    heroImageService.createNewImage(this.blendId, this.userId, updatedFilekeys);
+    fireAndForget(() =>
+      heroImageService.createNewImage(this.blendId, this.userId, this.fileKeys)
+    );
     return updatedFilekeys;
   }
 }

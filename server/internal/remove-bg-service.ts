@@ -10,6 +10,8 @@ import { TYPES } from "server/types";
 import type DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
 import logger from "server/base/Logger";
+import sharp from "sharp";
+import { streamToBuffer } from "server/helpers/bufferUtils";
 
 export interface ToolkitErrorResponse {
   code?: string;
@@ -126,7 +128,7 @@ export class RemoveBgService implements IService {
     crop = false,
     onlyMask = false,
     metadata: RemoveBGCommandMetadata
-  ): Promise<IncomingMessage> => {
+  ): Promise<Buffer> => {
     const config = {
       crop: "False",
       channel: "rgba",
@@ -157,6 +159,14 @@ export class RemoveBgService implements IService {
       metadata
     );
 
-    return data;
+    const buffer = await streamToBuffer(data);
+
+    await RemoveBgService.validateImage(buffer);
+
+    return buffer;
+  };
+
+  static validateImage = async (buffer: Buffer) => {
+    await sharp(buffer, {}).metadata();
   };
 }

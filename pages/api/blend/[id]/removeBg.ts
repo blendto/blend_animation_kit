@@ -126,11 +126,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (useMask) {
       const { width, height } = await sharp(originalImage).metadata();
-      const rescaledMask = await rescaleImage(
-        await streamToBuffer(bgRemoved),
-        width,
-        height
-      );
+      const rescaledMask = await rescaleImage(bgRemoved, width, height);
       const bgRemovedImageUsingMask = await applyMask(
         originalImage,
         rescaledMask
