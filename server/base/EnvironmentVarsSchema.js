@@ -26,6 +26,7 @@ module.exports = {
       BG_REMOVER_BASE_PATH: Joi.string().required(),
       BG_REMOVER_API_KEY: Joi.string().required(),
       BG_REMOVAL_LOG_TABLE_NAME: Joi.string().required(),
+      SERVICE_API_KEYS_SECRET_ARN: Joi.string().required(),
     })
     .unknown(true),
 };

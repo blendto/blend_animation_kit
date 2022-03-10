@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.2.2",
+    "@aws-sdk/client-dynamodb-streams": "^3.53.0",
+    "@aws-sdk/client-secrets-manager": "^3.53.0",
     "@types/luxon": "^1.26.5",
     "antd": "^4.6.6",
     "async": "^3.2.0",
@@ -32,6 +34,7 @@
     "nanoid": "^3.1.31",
     "next": "12",
     "nextjs-redirect": "^5.0.2",
+    "node-cache": "^5.1.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "reflect-metadata": "^0.1.13",

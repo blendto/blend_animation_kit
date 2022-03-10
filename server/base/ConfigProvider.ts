@@ -126,6 +126,10 @@ class ConfigProvider {
   public get BG_REMOVAL_LOG_TABLE_NAME(): string {
     return process.env.BG_REMOVAL_LOG_TABLE_NAME;
   }
+
+  public get SERVICE_API_KEYS_SECRET_ARN(): string {
+    return process.env.SERVICE_API_KEYS_SECRET_ARN;
+  }
 }
 
 export default new ConfigProvider();

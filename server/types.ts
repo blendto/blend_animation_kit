@@ -7,4 +7,5 @@ export const TYPES = {
   SuggestionService: Symbol.for("SuggestionService"),
   HeroImageService: Symbol.for("HeroImageService"),
   RemoveBgService: Symbol.for("RemoveBgService"),
+  InterServiceAuth: Symbol.for("InterServiceAuth"),
 };

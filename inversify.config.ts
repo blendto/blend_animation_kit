@@ -8,6 +8,7 @@ import { UserService } from "server/service/user";
 import { SuggestionService } from "server/service/suggestion";
 import HeroImageService from "server/service/heroImage";
 import { RemoveBgService } from "server/internal/remove-bg-service";
+import InterServiceAuth from "server/internal/inter-service-auth";
 
 const diContainer = new Container();
 diContainer.bind<DynamoDB>(TYPES.DynamoDB).to(DynamoDB).inSingletonScope();
@@ -38,5 +39,9 @@ diContainer
 diContainer
   .bind<RemoveBgService>(TYPES.RemoveBgService)
   .to(RemoveBgService)
+  .inSingletonScope();
+diContainer
+  .bind<InterServiceAuth>(TYPES.InterServiceAuth)
+  .to(InterServiceAuth)
   .inSingletonScope();
 export { diContainer };
