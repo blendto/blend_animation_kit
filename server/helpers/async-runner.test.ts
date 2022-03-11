@@ -7,7 +7,7 @@ describe("ensure that fireAndForget handles async methods correctly", () => {
       .spyOn(logger, "error")
       .mockImplementation(() => null);
     const successfulFunction = () => {
-      return new Promise<void>((resolve, reject) => {
+      return new Promise<void>((resolve) => {
         setTimeout(() => resolve(), 50);
       });
     };
@@ -30,7 +30,7 @@ describe("ensure that fireAndForget handles async methods correctly", () => {
 
     await expect(wrappingMethod).resolves.toBeUndefined();
     expect(loggerErrorMock.mock.calls.length).toBe(1);
-    expect(loggerErrorMock.mock.calls[0][0].op).toBe(
+    expect((loggerErrorMock.mock.calls[0][0] as { op; exception }).op).toBe(
       "UNNAMED_FIRE_AND_FORGET_OP"
     );
   });
