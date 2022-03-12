@@ -42,6 +42,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("BLEND_INGREDIENTS_BUCKET");
   }
 
+  public get BLEND_OUTPUT_BUCKET() {
+    return this.retrieveOrCrash("BLEND_OUTPUT_BUCKET");
+  }
+
   public get HERO_IMAGES_BUCKET() {
     return this.retrieveOrCrash("HERO_IMAGES_BUCKET");
   }
@@ -113,6 +117,14 @@ class ConfigProvider {
   public get AWS_CLOUD_REGION() {
     // Optional, only needed in vercel, others will take the machine settings
     return process.env.AWS_CLOUD_REGION;
+  }
+
+  public get BATCH_TASK_QUEUE_URL() {
+    return process.env.BATCH_TASK_QUEUE_URL;
+  }
+
+  public get BLEND_UPLOADS_EVENT_QUEUE_URL() {
+    return process.env.BLEND_UPLOADS_EVENT_QUEUE_URL;
   }
 
   public get BG_REMOVER_BASE_PATH(): string {

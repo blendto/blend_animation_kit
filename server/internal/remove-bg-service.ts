@@ -9,9 +9,11 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import type DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
+import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { getObject, uploadObject } from "server/external/s3";
+import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import logger from "server/base/Logger";
 import sharp from "sharp";
-import { streamToBuffer } from "server/helpers/bufferUtils";
 
 export interface ToolkitErrorResponse {
   code?: string;
@@ -169,4 +171,68 @@ export class RemoveBgService implements IService {
   static validateImage = async (buffer: Buffer) => {
     await sharp(buffer, {}).metadata();
   };
+
+  async removeBgAndStore(
+    fileKeys: HeroImageFileKeys
+  ): Promise<{ fileKeys: HeroImageFileKeys; updated: boolean }> {
+    if (fileKeys.withoutBg) {
+      return {
+        fileKeys: fileKeys,
+        updated: false,
+      };
+    }
+
+    const fileKey = fileKeys.original;
+    const { bgRemovedFileKey, fileNameWithExt } =
+      RemoveBgService.constructBgRemovedFileKey(fileKey);
+
+    const originalImage = await getObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      fileKey
+    );
+
+    const webp = await sharp(originalImage, {
+      failOnError: false,
+    })
+      .toFormat("webp", { quality: 90 })
+      .toBuffer();
+
+    let imageToUse = webp;
+
+    const compressedImageMetadata = await sharp(webp).metadata();
+    if (compressedImageMetadata.size > 1024 * 1024 * 10) {
+      console.info({
+        op: "COMPRESSED_IMAGE_TOO_LARGE",
+        message: "Compressed webp is larger than input image.",
+      });
+      imageToUse = originalImage;
+    }
+    const bgRemoved = await this.removeBg(
+      imageToUse,
+      fileNameWithExt,
+      true,
+      false,
+      {
+        source: RemoveBGSource.BLEND,
+        fileKeys: {
+          original: fileKey,
+          withoutBg: bgRemovedFileKey,
+        },
+      }
+    );
+
+    await uploadObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      bgRemovedFileKey,
+      bufferToStream(bgRemoved)
+    );
+
+    return {
+      fileKeys: {
+        original: fileKey,
+        withoutBg: bgRemovedFileKey,
+      },
+      updated: true,
+    };
+  }
 }

@@ -1,9 +1,10 @@
 import { nanoid } from "nanoid";
 
 import AWS from "./aws";
-import { Readable, Stream } from "node:stream";
+import { Stream } from "node:stream";
 import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
+import { ObjectList } from "aws-sdk/clients/s3";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
@@ -207,4 +208,21 @@ export const deleteObject = async (
       return resolve();
     });
   });
+};
+
+export const listObjectsInFolder = async (
+  bucketName: string,
+  folderPrefix: string
+): Promise<ObjectList> => {
+  return (
+    (
+      await s3
+        .listObjectsV2({
+          Bucket: bucketName,
+          Prefix: folderPrefix,
+          // Delimiter: "/",
+        })
+        .promise()
+    )?.Contents || []
+  );
 };

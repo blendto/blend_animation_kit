@@ -1,6 +1,6 @@
 import type { NextApiResponse } from "next";
 import IpApi from "server/external/ipapi";
-import { UserAgentDetails } from "../../server/base/models/userAgentDetails";
+import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import { initMiddleware } from "server/helpers/middleware";
 import Cors from "cors";
 import logger from "server/base/Logger";
@@ -11,11 +11,11 @@ const cors = Cors({
   methods: ["GET", "OPTIONS"],
 });
 
-const corsmiddleware = initMiddleware(cors);
+const corsMiddleware = initMiddleware(cors);
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
-    await corsmiddleware(req, res);
+    await corsMiddleware(req, res);
     const { method } = req;
     switch (method) {
       case "GET":

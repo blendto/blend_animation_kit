@@ -1,8 +1,14 @@
 import { RecipeVariantId } from "./recipeList";
 
+export enum ElementSource {
+  blend = "BLEND",
+  recipe = "RECIPE",
+}
+
 export interface StoredImage {
   uid: string;
   uri: string;
+  source?: ElementSource;
 }
 
 export interface ElementRef {

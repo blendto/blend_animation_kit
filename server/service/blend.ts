@@ -23,12 +23,15 @@ export class BlendService implements IService {
     const data = await this.dataStore.queryItems({
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       KeyConditionExpression: "#batchId = :batchId",
+      FilterExpression: "#status <> :status",
       IndexName: "batchId-blendId-index",
       ExpressionAttributeNames: {
         "#batchId": "batchId",
+        "#status": "status",
       },
       ExpressionAttributeValues: {
         ":batchId": batchId,
+        ":status": BlendStatus.Deleted,
       },
       ProjectionExpression: "id",
       ScanIndexForward: false,
@@ -196,6 +199,15 @@ export class BlendService implements IService {
     };
   }
 
+  async clearExpiry(blendId: string) {
+    await this.dataStore.updateItem({
+      UpdateExpression: "REMOVE expireAt",
+      Key: { id: blendId },
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
   async getRecentBlends(uid: string) {
     return <Blend[]>(
       await this.dataStore.queryItems({
@@ -219,5 +231,77 @@ export class BlendService implements IService {
         Limit: 20,
       })
     ).Items;
+  }
+
+  // TODO: Explore possibilities to reuse this inside submitBlend() in blend/[id].ts
+  async updateBlend(blend: Blend) {
+    const {
+      images,
+      externalImages,
+      gifsOrStickers,
+      texts,
+      buttons,
+      links,
+      interactions,
+      metadata,
+    } = blend;
+
+    const now = Date.now();
+    const updatedOn = DateTime.utc().toISODate();
+    const params = {
+      UpdateExpression:
+        "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
+        "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
+        "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
+        "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn REMOVE expireAt",
+      ExpressionAttributeNames: {
+        "#st": "status",
+      },
+      ExpressionAttributeValues: {
+        ":s": "SUBMITTED",
+        ":update": [{ status: "SUBMITTED", on: now }],
+        ":title": null,
+        ":inter": interactions,
+        ":images": images,
+        ":externalImages": externalImages,
+        ":audios": null,
+        ":slides": null,
+        ":clips": null,
+        ":gifsOrStickers": gifsOrStickers,
+        ":texts": texts,
+        ":buttons": buttons || [],
+        ":links": links || [],
+        ":metadata": metadata,
+        ":updatedAt": now,
+        ":updatedOn": updatedOn,
+      },
+      Key: { id: blend.id },
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    };
+
+    await this.dataStore.updateItem(params);
+  }
+
+  async reInitialise(blendId: string): Promise<void> {
+    const now = Date.now();
+    const updatedOn = DateTime.utc().toISODate();
+    await this.dataStore.updateItem({
+      UpdateExpression:
+        "SET #st = :s, statusUpdates = list_append(statusUpdates, :update)," +
+        "updatedAt = :updatedAt, updatedOn = :updatedOn",
+      ExpressionAttributeNames: {
+        "#st": "status",
+      },
+      ExpressionAttributeValues: {
+        ":s": BlendStatus.Initialized,
+        ":update": [{ status: BlendStatus.Initialized, on: now }],
+        ":updatedAt": now,
+        ":updatedOn": updatedOn,
+      },
+      Key: { id: blendId },
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
   }
 }

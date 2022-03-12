@@ -27,6 +27,7 @@ export interface HeroImage {
 export interface HeroImageFileKeys {
   original: string;
   withoutBg?: string;
+  mask?: string;
 }
 
 export interface ExtendedHeroImageFileKeys extends HeroImageFileKeys {

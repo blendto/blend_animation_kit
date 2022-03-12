@@ -1,4 +1,9 @@
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
+import {
+  BatchOperation,
+  BatchOperationType,
+  IndividualBlendEditOperation,
+} from "server/base/models/batchOperations";
 
 export enum BatchState {
   IDLE = "IDLE",
@@ -28,10 +33,36 @@ export interface Batch {
   status: BatchState;
   blends: string[];
   pendingUploads: Record<string, UploadRequest>;
+  operations: BatchOperation[];
   createdBy: string;
   createdAt: number;
   updatedAt: number;
-  outputs: any[];
+  outputs: any;
+}
+
+export class BatchWrapper {
+  batch: Batch;
+
+  constructor(batch: Batch) {
+    this.batch = batch;
+  }
+
+  isBlendModified(blendId: string) {
+    return this.batch.operations.some((operation) => {
+      return (
+        operation.op === BatchOperationType.individual_blend_edit &&
+        (operation as IndividualBlendEditOperation).blendId === blendId
+      );
+    });
+  }
+
+  getIndividuallyEditedBlends(): string[] {
+    return this.batch.operations
+      .filter(
+        (operation) => operation.op === BatchOperationType.individual_blend_edit
+      )
+      .map((operation) => (operation as IndividualBlendEditOperation).blendId);
+  }
 }
 
 export class BatchModelValidators {

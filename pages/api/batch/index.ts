@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { Batch, BatchState } from "server/base/models/batch";
 import DynamoDB from "server/external/dynamodb";
 import ConfigProvider from "server/base/ConfigProvider";
+import { DEFAULT_BATCH_OPERATION } from "server/base/models/batchOperations";
 import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
 
 export default withReqHandler(
@@ -29,7 +30,9 @@ const createBatch = async (
     createdBy: req.uid,
     createdAt: now,
     updatedAt: now,
+    operations: [DEFAULT_BATCH_OPERATION],
     pendingUploads: {},
+    outputs: {},
   } as Batch;
   await dataStore.putItem({
     TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,

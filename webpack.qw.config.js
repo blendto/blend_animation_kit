@@ -38,5 +38,10 @@ module.exports = {
       },
     ],
   },
-  // externals: [nodeExternals()],
+  externals: [
+    {
+      sharp: "commonjs sharp",
+    },
+    // nodeExternals(),
+  ],
 };

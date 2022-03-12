@@ -3,11 +3,23 @@ import { TYPES } from "server/types";
 import DynamoDB from "server/external/dynamodb";
 import { BatchService } from "server/service/batch";
 import { BlendService } from "server/service/blend";
-import { UploadService } from "server/service/upload";
+import { UploadService } from "server/service/queue/upload";
 import { UserService } from "server/service/user";
+import { BatchActionService } from "server/service/queue/batch/batchAction";
+import {
+  BatchTaskQueue,
+  BatchTaskSqsConfig,
+} from "server/external/queue/batchTaskQueue";
+import { QueueConfig } from "server/external/queue";
 import { SuggestionService } from "server/service/suggestion";
 import HeroImageService from "server/service/heroImage";
+import { SqsProvider } from "server/external/queue/sqs";
+import {
+  BlendImageUploadEventQueue,
+  BlendImageUploadSqsConfig,
+} from "server/external/queue/blendImageUploadQueue";
 import { RemoveBgService } from "server/internal/remove-bg-service";
+import { RecipeService } from "server/service/recipe";
 import InterServiceAuth from "server/internal/inter-service-auth";
 
 const diContainer = new Container();
@@ -29,6 +41,18 @@ diContainer
   .to(UserService)
   .inSingletonScope();
 diContainer
+  .bind<BatchActionService>(TYPES.BatchActionService)
+  .to(BatchActionService)
+  .inSingletonScope();
+diContainer
+  .bind<BatchTaskQueue<QueueConfig>>(TYPES.BatchTaskQueue)
+  .toDynamicValue(() => {
+    return new BatchTaskQueue<BatchTaskSqsConfig>(
+      new SqsProvider(),
+      new BatchTaskSqsConfig()
+    );
+  });
+diContainer
   .bind<SuggestionService>(TYPES.SuggestionService)
   .to(SuggestionService)
   .inSingletonScope();
@@ -37,8 +61,22 @@ diContainer
   .to(HeroImageService)
   .inSingletonScope();
 diContainer
+  .bind<BlendImageUploadEventQueue<QueueConfig>>(
+    TYPES.BlendImageUploadEventQueue
+  )
+  .toDynamicValue(() => {
+    return new BlendImageUploadEventQueue<BlendImageUploadSqsConfig>(
+      new SqsProvider(),
+      new BlendImageUploadSqsConfig()
+    );
+  });
+diContainer
   .bind<RemoveBgService>(TYPES.RemoveBgService)
   .to(RemoveBgService)
+  .inSingletonScope();
+diContainer
+  .bind<RecipeService>(TYPES.RecipeService)
+  .to(RecipeService)
   .inSingletonScope();
 diContainer
   .bind<InterServiceAuth>(TYPES.InterServiceAuth)

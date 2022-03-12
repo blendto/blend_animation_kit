@@ -25,7 +25,7 @@ const generatePreview = async (
 ) => {
   const {
     query: { id },
-    body: { recipeId },
+    body: { recipeId, variant },
   } = req;
   const service = diContainer.get<SuggestionService>(TYPES.SuggestionService);
   const batchId = id as string;
@@ -33,6 +33,7 @@ const generatePreview = async (
   let fileKeys = await service.selectFileKeysFromBatchPreview(req.uid, batchId);
   const previewStream = await vesapi.preview({
     recipeId: recipeId,
+    variant: variant,
     fileKeys: {
       original: fileKeys.original,
       withoutBg: fileKeys.withoutBg,

@@ -4,8 +4,12 @@ export const TYPES = {
   BlendService: Symbol.for("BlendService"),
   UploadService: Symbol.for("UploadService"),
   UserService: Symbol.for("UserService"),
+  BatchActionService: Symbol.for("BatchActionService"),
+  BatchTaskQueue: Symbol.for("BatchTaskQueue"),
   SuggestionService: Symbol.for("SuggestionService"),
   HeroImageService: Symbol.for("HeroImageService"),
+  BlendImageUploadEventQueue: Symbol.for("BlendImageUploadEventQueue"),
   RemoveBgService: Symbol.for("RemoveBgService"),
+  RecipeService: Symbol.for("RecipeService"),
   InterServiceAuth: Symbol.for("InterServiceAuth"),
 };

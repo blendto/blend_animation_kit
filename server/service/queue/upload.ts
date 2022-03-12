@@ -1,11 +1,13 @@
 import "reflect-metadata";
-import { IService } from "./index";
+import { IService } from "server/service/index";
 import { BlendService } from "server/service/blend";
 import { BlendModelUtils } from "server/base/models/blend";
 import { BatchService } from "server/service/batch";
+import { BatchActionService } from "server/service/queue/batch/batchAction";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { injectable } from "inversify";
+import { BatchTaskType } from "server/base/models/queue-messages";
 import logger from "server/base/Logger";
 
 @injectable()
@@ -22,6 +24,9 @@ export class UploadService implements IService {
       return;
     }
 
+    const batchActionService = diContainer.get<BatchActionService>(
+      TYPES.BatchActionService
+    );
     const blendService = diContainer.get<BlendService>(TYPES.BlendService);
     const batchService = diContainer.get<BatchService>(TYPES.BatchService);
 
@@ -34,13 +39,22 @@ export class UploadService implements IService {
       return;
     }
 
-    if (!blend.batchId) {
-      logger.info({
+    const batchId = blend.batchId;
+
+    if (!batchId) {
+      console.info({
         op: "BLEND_NOT_FOUND",
         message: "Blend not a part of any batch",
       });
       return;
     }
+
+    await batchActionService.queueBatchProcessingTask({
+      batchId,
+      blendId,
+      type: BatchTaskType.process_upload,
+    });
+    await blendService.clearExpiry(blendId);
     await batchService.markUploadCompleted(blend.batchId, blendId);
   }
 }

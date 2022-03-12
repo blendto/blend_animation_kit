@@ -57,12 +57,18 @@ async function createBgRemovedImage(
   bgRemovedFileKey: string
 ) {
   {
+    logger.info({
+      fileNameWithExt,
+      fileKeys,
+    });
     const metadata = await sharp(originalImage).metadata();
 
     if (
       !["jpeg", "jpg"].includes(metadata.format) ||
       metadata.size > 1024 * 1024 * 10
     ) {
+      logger.info({ format: metadata.format });
+
       // failOnError: false helps blow past errors like
       // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
       // https://github.com/lovell/sharp/issues/1578
