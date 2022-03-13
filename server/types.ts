@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/prefer-default-export
 export const TYPES = {
   DynamoDB: Symbol.for("DynamoDB"),
   BatchService: Symbol.for("BatchService"),
@@ -10,6 +11,7 @@ export const TYPES = {
   HeroImageService: Symbol.for("HeroImageService"),
   BlendImageUploadEventQueue: Symbol.for("BlendImageUploadEventQueue"),
   RemoveBgService: Symbol.for("RemoveBgService"),
+  BrandingService: Symbol.for("BrandingService"),
   RecipeService: Symbol.for("RecipeService"),
   InterServiceAuth: Symbol.for("InterServiceAuth"),
 };

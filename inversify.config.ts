@@ -19,10 +19,12 @@ import {
   BlendImageUploadSqsConfig,
 } from "server/external/queue/blendImageUploadQueue";
 import { RemoveBgService } from "server/internal/remove-bg-service";
+import BrandingService from "server/service/branding";
 import { RecipeService } from "server/service/recipe";
 import InterServiceAuth from "server/internal/inter-service-auth";
 
 const diContainer = new Container();
+
 diContainer.bind<DynamoDB>(TYPES.DynamoDB).to(DynamoDB).inSingletonScope();
 diContainer
   .bind<BatchService>(TYPES.BatchService)
@@ -46,12 +48,13 @@ diContainer
   .inSingletonScope();
 diContainer
   .bind<BatchTaskQueue<QueueConfig>>(TYPES.BatchTaskQueue)
-  .toDynamicValue(() => {
-    return new BatchTaskQueue<BatchTaskSqsConfig>(
-      new SqsProvider(),
-      new BatchTaskSqsConfig()
-    );
-  });
+  .toDynamicValue(
+    () =>
+      new BatchTaskQueue<BatchTaskSqsConfig>(
+        new SqsProvider(),
+        new BatchTaskSqsConfig()
+      )
+  );
 diContainer
   .bind<SuggestionService>(TYPES.SuggestionService)
   .to(SuggestionService)
@@ -64,15 +67,20 @@ diContainer
   .bind<BlendImageUploadEventQueue<QueueConfig>>(
     TYPES.BlendImageUploadEventQueue
   )
-  .toDynamicValue(() => {
-    return new BlendImageUploadEventQueue<BlendImageUploadSqsConfig>(
-      new SqsProvider(),
-      new BlendImageUploadSqsConfig()
-    );
-  });
+  .toDynamicValue(
+    () =>
+      new BlendImageUploadEventQueue<BlendImageUploadSqsConfig>(
+        new SqsProvider(),
+        new BlendImageUploadSqsConfig()
+      )
+  );
 diContainer
   .bind<RemoveBgService>(TYPES.RemoveBgService)
   .to(RemoveBgService)
+  .inSingletonScope();
+diContainer
+  .bind<BrandingService>(TYPES.BrandingService)
+  .to(BrandingService)
   .inSingletonScope();
 diContainer
   .bind<RecipeService>(TYPES.RecipeService)
@@ -82,4 +90,5 @@ diContainer
   .bind<InterServiceAuth>(TYPES.InterServiceAuth)
   .to(InterServiceAuth)
   .inSingletonScope();
+// eslint-disable-next-line import/prefer-default-export
 export { diContainer };

@@ -27,6 +27,12 @@ module.exports = {
       },
       plugins: ["import"],
     },
+    {
+      files: ["*.test.ts", "*.test.tsx"],
+      rules: {
+        "@typescript-eslint/no-misused-promises": "off",
+      },
+    },
   ],
   rules: {
     "no-use-before-define": "off",
@@ -34,5 +40,12 @@ module.exports = {
     "consistent-return": "off",
     quotes: "off",
     "comma-dangle": "off",
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": "error",
+    "lines-between-class-members": "off",
+    "max-classes-per-file": "off",
+    "no-return-await": "off",
+    "object-curly-newline": "off",
+    "implicit-arrow-linebreak": "off",
   },
 };

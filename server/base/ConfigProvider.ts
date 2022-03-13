@@ -1,4 +1,13 @@
+/* eslint-disable
+  dot-notation,
+  @typescript-eslint/no-unsafe-call,
+  @typescript-eslint/no-unsafe-return,
+  @typescript-eslint/no-unsafe-member-access,
+  @typescript-eslint/no-unsafe-assignment,
+  class-methods-use-this
+*/
 import { EnvironmentVarsSchema } from "./EnvironmentVarsSchema";
+
 class ConfigProvider {
   constructor() {
     if (typeof window === "undefined") {
@@ -12,7 +21,7 @@ class ConfigProvider {
 
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
-    if (!variable || variable.trim().length == 0) {
+    if (!variable || variable.trim().length === 0) {
       throw new Error(`envVar ${envVar} not set!`);
     }
     return variable;
@@ -63,11 +72,8 @@ class ConfigProvider {
   }
 
   public get OUTPUT_BASE_PATH() {
-    // WIERD ISSUE COVER UP.
-    // If we do this.retriveOrCrash("NEXT_PUBLIC_OUTPUT_BASE_PATH"), it throws error coz process.env does not have it
-    // If we log process.env here it prints {}, which validates the above.
-    // But if we do process.env.NEXT_PUBLIC_OUTPUT_BASE_PATH or even process.env["NEXT_PUBLIC_OUTPUT_BASE_PATH"] it works
-    // WTF! Leaving it as is for now.
+    // Can't use retrieveOrCrash fn. because variables starting with "NEXT_PUBLIC_" are removed
+    // from process.env by nextjs during build, replacing their usages with the values instead.
     return process.env.NEXT_PUBLIC_OUTPUT_BASE_PATH;
   }
 
@@ -93,6 +99,7 @@ class ConfigProvider {
   }
 
   public get FIREBASE_APP_CLIENT_CONFIG() {
+    // Refer OUTPUT_BASE_PATH fn. to see why retrieveOrCrash fn. can't be used here
     return JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG);
   }
 
@@ -137,6 +144,14 @@ class ConfigProvider {
 
   public get BG_REMOVAL_LOG_TABLE_NAME(): string {
     return process.env.BG_REMOVAL_LOG_TABLE_NAME;
+  }
+
+  public get BRANDING_DYNAMODB_TABLE() {
+    return this.retrieveOrCrash("BRANDING_DYNAMODB_TABLE");
+  }
+
+  public get BRANDING_DYNAMODB_USER_ID_INDEX() {
+    return this.retrieveOrCrash("BRANDING_DYNAMODB_USER_ID_INDEX");
   }
 
   public get SERVICE_API_KEYS_SECRET_ARN(): string {

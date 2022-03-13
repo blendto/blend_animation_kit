@@ -26,6 +26,8 @@
   "USER_DYNAMODB_TABLE",
   "VES_API_BASE_PATH",
   "WEB_USER_ASSETS_BUCKET",
+  "BRANDING_DYNAMODB_TABLE",
+  "BRANDING_DYNAMODB_USER_ID_INDEX",
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });
