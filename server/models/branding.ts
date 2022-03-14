@@ -1,4 +1,9 @@
-import { Document, Schema, model } from "server/models/object-data-mapper";
+import {
+  Document,
+  Schema,
+  model,
+  Model,
+} from "server/models/object-data-mapper";
 import ConfigProvider from "server/base/ConfigProvider";
 
 export enum brandingLogoStatus {
@@ -77,7 +82,7 @@ const brandingSchema = new Schema(
   }
 );
 
-export const BrandingModel = model<BrandingDocument>(
+export const BrandingModel: Model<BrandingDocument> = model<BrandingDocument>(
   ConfigProvider.BRANDING_DYNAMODB_TABLE,
   brandingSchema,
   {

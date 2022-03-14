@@ -47,5 +47,6 @@ module.exports = {
     "no-return-await": "off",
     "object-curly-newline": "off",
     "implicit-arrow-linebreak": "off",
+    "operator-linebreak": "off",
   },
 };
