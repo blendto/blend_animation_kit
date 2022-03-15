@@ -154,6 +154,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("BRANDING_DYNAMODB_USER_ID_INDEX");
   }
 
+  public get BRANDING_BUCKET() {
+    return this.retrieveOrCrash("BRANDING_BUCKET");
+  }
+
   public get SERVICE_API_KEYS_SECRET_ARN(): string {
     return process.env.SERVICE_API_KEYS_SECRET_ARN;
   }

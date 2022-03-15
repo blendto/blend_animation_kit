@@ -1,5 +1,5 @@
 import {
-  brandingStatus,
+  BrandingStatus,
   BrandingModel,
   BrandingDocument,
 } from "server/models/branding";
@@ -25,7 +25,7 @@ describe("ModelHelper", () => {
       entries: [],
     };
     const updatedAt = "2022-03-08T12:33:41.362Z";
-    const status = brandingStatus.CREATED;
+    const status = BrandingStatus.CREATED;
 
     it("Creates a document with the passed attributes added with a random id", async () => {
       const generateIdSpy = jest

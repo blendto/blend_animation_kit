@@ -1,17 +1,19 @@
+import ConfigProvider from "server/base/ConfigProvider";
 import {
   Document,
   Schema,
   model,
   Model,
 } from "server/models/object-data-mapper";
-import ConfigProvider from "server/base/ConfigProvider";
 
-export enum brandingLogoStatus {
+export const MAX_LOGOS = 3;
+
+export enum BrandingLogoStatus {
   INITIALIZED = "INITIALIZED",
   UPLOADED = "UPLOADED",
 }
 
-export enum brandingStatus {
+export enum BrandingStatus {
   CREATED = "CREATED",
 }
 
@@ -26,10 +28,10 @@ export class BrandingDocument extends Document {
   address?: string;
   logos: {
     primaryEntry?: string;
-    entries: { fileKey: string; status: brandingLogoStatus }[];
+    entries: { fileKey: string; status: BrandingLogoStatus }[];
   };
   updatedAt?: number;
-  status?: brandingStatus;
+  status?: BrandingStatus;
 }
 
 const brandingSchema = new Schema(
@@ -57,21 +59,26 @@ const brandingSchema = new Schema(
         primaryEntry: String,
         entries: {
           type: Array,
-          schema: {
-            fileKey: String,
-            status: {
-              type: String,
-              enum: Object.values(brandingLogoStatus),
+          schema: [
+            {
+              type: Object,
+              schema: {
+                fileKey: String,
+                status: {
+                  type: String,
+                  enum: Object.values(BrandingLogoStatus),
+                },
+              },
             },
-          },
+          ],
         },
       },
       default: { entries: [] },
     },
     status: {
       type: String,
-      enum: Object.values(brandingStatus),
-      default: brandingStatus.CREATED,
+      enum: Object.values(BrandingStatus),
+      default: BrandingStatus.CREATED,
     },
   },
   {

@@ -1,3 +1,4 @@
+import ConfigProvider from "server/base/ConfigProvider";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import BrandingService, {
@@ -6,10 +7,10 @@ import BrandingService, {
 } from "server/service/branding";
 import ModelHelper from "server/models/helper";
 import {
-  brandingStatus,
+  BrandingStatus,
   BrandingDocument,
   BrandingModel,
-  brandingLogoStatus,
+  BrandingLogoStatus,
 } from "server/models/branding";
 import { UserError } from "server/base/errors";
 
@@ -20,7 +21,7 @@ describe("BrandingService", () => {
   const id = "wNALVbEj";
   const userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
   const updatedAt = 1646906641;
-  const status = brandingStatus.CREATED;
+  const status = BrandingStatus.CREATED;
   const brandingDoc: BrandingDocument = {
     id,
     userId,
@@ -108,11 +109,11 @@ describe("BrandingService", () => {
           entries: [
             {
               fileKey: currentPrimaryKey,
-              status: brandingLogoStatus.UPLOADED,
+              status: BrandingLogoStatus.UPLOADED,
             },
             {
               fileKey: unUploadedKey,
-              status: brandingLogoStatus.INITIALIZED,
+              status: BrandingLogoStatus.INITIALIZED,
             },
           ],
         },
@@ -146,7 +147,7 @@ describe("BrandingService", () => {
           entries: [
             {
               fileKey: currentPrimaryKey,
-              status: brandingLogoStatus.UPLOADED,
+              status: BrandingLogoStatus.UPLOADED,
             },
           ],
         },
@@ -180,11 +181,11 @@ describe("BrandingService", () => {
           entries: [
             {
               fileKey: currentPrimaryKey,
-              status: brandingLogoStatus.UPLOADED,
+              status: BrandingLogoStatus.UPLOADED,
             },
             {
               fileKey: anotherValidKey,
-              status: brandingLogoStatus.UPLOADED,
+              status: BrandingLogoStatus.UPLOADED,
             },
           ],
         },
@@ -196,11 +197,11 @@ describe("BrandingService", () => {
           entries: [
             {
               fileKey: currentPrimaryKey,
-              status: brandingLogoStatus.UPLOADED,
+              status: BrandingLogoStatus.UPLOADED,
             },
             {
               fileKey: anotherValidKey,
-              status: brandingLogoStatus.UPLOADED,
+              status: BrandingLogoStatus.UPLOADED,
             },
           ],
         },
@@ -245,7 +246,7 @@ describe("BrandingService", () => {
           entries: [
             {
               fileKey: primaryKey,
-              status: brandingLogoStatus.UPLOADED,
+              status: BrandingLogoStatus.UPLOADED,
             },
           ],
         },
@@ -303,6 +304,352 @@ describe("BrandingService", () => {
         {
           $SET: {},
           $REMOVE: [validUpdatePaths.email, validUpdatePaths.whatsappNo],
+        },
+      ]);
+    });
+  });
+
+  describe("Logo initiation", () => {
+    it("Rejects request if the profile already already has 3 logos", async () => {
+      const primaryKey = "PRIMARY-KEY";
+      const brandingDocWithLogos: BrandingDocument = {
+        ...brandingDoc,
+        logos: {
+          primaryEntry: primaryKey,
+          entries: [
+            {
+              fileKey: primaryKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: "ANOTHER-VALID-KEY",
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: "THIRD-VALID-KEY",
+              status: BrandingLogoStatus.UPLOADED,
+            },
+          ],
+        },
+      };
+
+      const getOrCreateMock = jest
+        .spyOn(brandingService, "getOrCreate")
+        .mockResolvedValueOnce(brandingDocWithLogos);
+      await expect(
+        brandingService.initLogoUpload(userId, "foo.jpeg")
+      ).rejects.toThrow(new UserError("You can't have more than 3 logos"));
+
+      expect(getOrCreateMock.mock.calls.length).toBe(1);
+      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+    });
+
+    it("Updates db and returns URL details to upload the logo to", async () => {
+      const primaryKey = "PRIMARY-KEY";
+      const anotherValidKey = "ANOTHER-VALID-KEY";
+      const brandingDocWithLogos: BrandingDocument = {
+        ...brandingDoc,
+        logos: {
+          primaryEntry: primaryKey,
+          entries: [
+            {
+              fileKey: primaryKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: anotherValidKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+          ],
+        },
+      };
+      const fileName = "foo.jpeg";
+      const s3ResMock = "https://dont.care";
+      const updateResMock = { dont: "care" };
+
+      const getOrCreateMock = jest
+        .spyOn(brandingService, "getOrCreate")
+        .mockResolvedValueOnce(brandingDocWithLogos);
+      const createSignedUploadUrlMock = jest
+        .spyOn(brandingService, "createSignedUploadUrl")
+        .mockResolvedValueOnce(s3ResMock);
+      const updateMock = jest
+        .spyOn(brandingService.model, "update")
+        .mockResolvedValueOnce(updateResMock);
+
+      const createDestinationFileKeySpy = jest.spyOn(
+        brandingService,
+        "createDestinationFileKey"
+      );
+
+      const res = await brandingService.initLogoUpload(userId, fileName);
+      expect(res).toMatchObject({ url: s3ResMock });
+
+      expect(getOrCreateMock.mock.calls.length).toBe(1);
+      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+
+      expect(createSignedUploadUrlMock.mock.calls.length).toBe(1);
+      expect(createSignedUploadUrlMock.mock.calls[0]).toMatchObject([
+        fileName,
+        ConfigProvider.BRANDING_BUCKET,
+        brandingService.validExtensions,
+        {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          outFileKey: createDestinationFileKeySpy.mock.results[0].value,
+        },
+        "putObject",
+      ]);
+
+      expect(updateMock.mock.calls.length).toBe(1);
+      expect(updateMock.mock.calls[0]).toMatchObject([
+        { id },
+        {
+          $SET: {
+            logos: {
+              entries: [
+                {
+                  fileKey: primaryKey,
+                  status: BrandingLogoStatus.UPLOADED,
+                },
+                {
+                  fileKey: anotherValidKey,
+                  status: BrandingLogoStatus.UPLOADED,
+                },
+                {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                  fileKey: createDestinationFileKeySpy.mock.results[0].value,
+                  status: BrandingLogoStatus.INITIALIZED,
+                },
+              ],
+              primaryEntry: primaryKey,
+            },
+          },
+        },
+      ]);
+
+      expect(
+        /* eslint-disable-next-line
+        @typescript-eslint/no-unsafe-member-access,
+        @typescript-eslint/no-unsafe-call
+      */
+        createDestinationFileKeySpy.mock.results[0].value.slice(0, 9)
+      ).toBe(`${id}/`);
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        createDestinationFileKeySpy.mock.results[0].value.length
+      ).toBe(35);
+    });
+
+    it("If the logo to be uploaded will be the only logo, sets it as primary", async () => {
+      const brandingDocWithLogos: BrandingDocument = {
+        ...brandingDoc,
+        logos: {
+          entries: [],
+        },
+      };
+      const fileName = "foo.jpeg";
+      const s3ResMock = "https://dont.care";
+      const updateResMock = { dont: "care" };
+
+      const getOrCreateMock = jest
+        .spyOn(brandingService, "getOrCreate")
+        .mockResolvedValueOnce(brandingDocWithLogos);
+      const createSignedUploadUrlMock = jest
+        .spyOn(brandingService, "createSignedUploadUrl")
+        .mockResolvedValueOnce(s3ResMock);
+      const updateMock = jest
+        .spyOn(brandingService.model, "update")
+        .mockResolvedValueOnce(updateResMock);
+
+      const createDestinationFileKeySpy = jest.spyOn(
+        brandingService,
+        "createDestinationFileKey"
+      );
+
+      const res = await brandingService.initLogoUpload(userId, fileName);
+      expect(res).toMatchObject({ url: s3ResMock });
+
+      expect(getOrCreateMock.mock.calls.length).toBe(1);
+      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+
+      expect(createSignedUploadUrlMock.mock.calls.length).toBe(1);
+      expect(createSignedUploadUrlMock.mock.calls[0]).toMatchObject([
+        fileName,
+        ConfigProvider.BRANDING_BUCKET,
+        brandingService.validExtensions,
+        {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          outFileKey: createDestinationFileKeySpy.mock.results[0].value,
+        },
+        "putObject",
+      ]);
+
+      expect(updateMock.mock.calls.length).toBe(1);
+      expect(updateMock.mock.calls[0]).toMatchObject([
+        { id },
+        {
+          $SET: {
+            logos: {
+              entries: [
+                {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                  fileKey: createDestinationFileKeySpy.mock.results[0].value,
+                  status: BrandingLogoStatus.INITIALIZED,
+                },
+              ],
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              primaryEntry: createDestinationFileKeySpy.mock.results[0].value,
+            },
+          },
+        },
+      ]);
+
+      expect(
+        /* eslint-disable-next-line
+        @typescript-eslint/no-unsafe-member-access,
+        @typescript-eslint/no-unsafe-call
+      */
+        createDestinationFileKeySpy.mock.results[0].value.slice(0, 9)
+      ).toBe(`${id}/`);
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        createDestinationFileKeySpy.mock.results[0].value.length
+      ).toBe(35);
+    });
+  });
+
+  describe("Logo deletion", () => {
+    it("Rejects request if the fileKey is invalid", async () => {
+      const getOrCreateMock = jest
+        .spyOn(brandingService, "getOrCreate")
+        .mockResolvedValueOnce(brandingDoc);
+
+      await expect(
+        brandingService.delLogo(userId, "SOME-VALUE")
+      ).rejects.toThrow(new UserError("Invalid fileKey"));
+
+      expect(getOrCreateMock.mock.calls.length).toBe(1);
+      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+    });
+
+    it("Updates db and deletes file from s3", async () => {
+      const primaryKey = "PRIMARY-KEY";
+      const fileKeyToDelete = "ANOTHER-VALID-KEY";
+      const brandingDocWithLogos: BrandingDocument = {
+        ...brandingDoc,
+        logos: {
+          primaryEntry: primaryKey,
+          entries: [
+            {
+              fileKey: primaryKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: fileKeyToDelete,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+          ],
+        },
+      };
+      const updateResMock = { dont: "care" };
+
+      const getOrCreateMock = jest
+        .spyOn(brandingService, "getOrCreate")
+        .mockResolvedValueOnce(brandingDocWithLogos);
+      const s3DeleteMock = jest
+        .spyOn(brandingService, "deleteObject")
+        .mockImplementationOnce(async () => Promise.resolve());
+      const updateMock = jest
+        .spyOn(brandingService.model, "update")
+        .mockResolvedValue(updateResMock);
+
+      await brandingService.delLogo(userId, fileKeyToDelete);
+
+      expect(getOrCreateMock.mock.calls.length).toBe(1);
+      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+
+      expect(s3DeleteMock.mock.calls.length).toBe(1);
+      expect(s3DeleteMock.mock.calls[0]).toMatchObject([
+        ConfigProvider.BRANDING_BUCKET,
+        fileKeyToDelete,
+      ]);
+
+      expect(updateMock.mock.calls.length).toBe(1);
+      expect(updateMock.mock.calls[0]).toMatchObject([
+        { id },
+        {
+          $SET: {
+            logos: {
+              primaryEntry: primaryKey,
+              entries: [
+                {
+                  fileKey: primaryKey,
+                  status: BrandingLogoStatus.UPLOADED,
+                },
+              ],
+            },
+          },
+        },
+      ]);
+    });
+
+    it("Resets the primary logo if the existing one is deleted", async () => {
+      const fileKeyToDelete = "PRIMARY-KEY";
+      const anotherKey = "ANOTHER-VALID-KEY";
+      const brandingDocWithLogos: BrandingDocument = {
+        ...brandingDoc,
+        logos: {
+          primaryEntry: fileKeyToDelete,
+          entries: [
+            {
+              fileKey: fileKeyToDelete,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: anotherKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+          ],
+        },
+      };
+      const updateResMock = { dont: "care" };
+
+      const getOrCreateMock = jest
+        .spyOn(brandingService, "getOrCreate")
+        .mockResolvedValueOnce(brandingDocWithLogos);
+      const s3DeleteMock = jest
+        .spyOn(brandingService, "deleteObject")
+        .mockImplementationOnce(async () => Promise.resolve());
+      const updateMock = jest
+        .spyOn(brandingService.model, "update")
+        .mockResolvedValue(updateResMock);
+
+      await brandingService.delLogo(userId, fileKeyToDelete);
+
+      expect(getOrCreateMock.mock.calls.length).toBe(1);
+      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+
+      expect(s3DeleteMock.mock.calls.length).toBe(1);
+      expect(s3DeleteMock.mock.calls[0]).toMatchObject([
+        ConfigProvider.BRANDING_BUCKET,
+        fileKeyToDelete,
+      ]);
+
+      expect(updateMock.mock.calls.length).toBe(1);
+      expect(updateMock.mock.calls[0]).toMatchObject([
+        { id },
+        {
+          $SET: {
+            logos: {
+              primaryEntry: anotherKey,
+              entries: [
+                {
+                  fileKey: anotherKey,
+                  status: BrandingLogoStatus.UPLOADED,
+                },
+              ],
+            },
+          },
         },
       ]);
     });

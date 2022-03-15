@@ -28,6 +28,7 @@
   "WEB_USER_ASSETS_BUCKET",
   "BRANDING_DYNAMODB_TABLE",
   "BRANDING_DYNAMODB_USER_ID_INDEX",
+  "BRANDING_BUCKET",
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });

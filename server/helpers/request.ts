@@ -101,6 +101,7 @@ export async function ensureServiceAuth(
 
 export enum requestComponentToValidate {
   body = "Body",
+  query = "Query",
 }
 
 export function validate(

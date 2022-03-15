@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 
-import AWS from "./aws";
+import AWS from "server/external/aws";
+// eslint-disable-next-line import/no-unresolved
 import { Stream } from "node:stream";
 import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
@@ -34,51 +35,76 @@ export function createDestinationFileKey(
   return `${keyPrefix}${nanoid()}.${extension}`;
 }
 
+export enum GetSignedUrlOperation {
+  postObject = "postObject",
+  putObject = "putObject",
+}
+
 export const createSignedUploadUrl = async (
   fileName: string,
   bucketName: string,
   validExtensions: string[],
-  { keyPrefix = "", outFileKey = null, maxSize = FIFTEEN_MB }
+  {
+    keyPrefix = "",
+    outFileKey = null,
+    maxSize = FIFTEEN_MB,
+  }: { keyPrefix?: string; outFileKey?: string; maxSize?: number },
+  operation: GetSignedUrlOperation = GetSignedUrlOperation.postObject
 ) => {
   if (!fileName) {
     throw new UserError("No filename found");
   }
 
-  fileName = fileName.trim();
   const fileNameToStore =
     outFileKey ??
-    createDestinationFileKey(fileName, validExtensions, keyPrefix);
+    createDestinationFileKey(fileName.trim(), validExtensions, keyPrefix);
 
-  const params = {
-    Bucket: bucketName,
-    Fields: {
-      key: fileNameToStore,
-    },
-    Expires: 60 * 10, // 10 min
-    Conditions: [
-      {
-        bucket: bucketName,
-      },
-      {
-        key: fileNameToStore, // our generated key
-      },
-      ["content-length-range", 10, maxSize], // from 10 bytes to 1 MB
-    ],
-  };
+  const expireIn = 60 * 10; // 10 min
 
   return await new Promise((resolve, reject) => {
-    s3.createPresignedPost(params, function (err, data) {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(data);
-    });
+    if (operation === GetSignedUrlOperation.postObject) {
+      const params = {
+        Bucket: bucketName,
+        Fields: {
+          key: fileNameToStore,
+        },
+        Expires: expireIn,
+        Conditions: [
+          {
+            bucket: bucketName,
+          },
+          {
+            key: fileNameToStore,
+          },
+          ["content-length-range", 10, maxSize], // from 10 bytes to 1 MB
+        ],
+      };
+      s3.createPresignedPost(params, (err, data) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(data);
+      });
+    } else {
+      const params = {
+        Bucket: bucketName,
+        Key: fileNameToStore,
+        Expires: expireIn,
+      };
+      s3.getSignedUrl(operation, params, (err, data) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(data);
+      });
+    }
   });
 };
 
-export const doesObjectExist = async (bucketName: string, fileKey: string) => {
-  return new Promise((resolve, reject) => {
+export const doesObjectExist = async (bucketName: string, fileKey: string) =>
+  new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -101,13 +127,12 @@ export const doesObjectExist = async (bucketName: string, fileKey: string) => {
       return resolve(false);
     });
   });
-};
 
 export const getObject = async (
   bucketName: string,
   fileKey: string
-): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
+): Promise<Buffer> =>
+  new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -130,14 +155,13 @@ export const getObject = async (
       return resolve(data.Body as Buffer);
     });
   });
-};
 
 export const uploadObject = async (
   bucketName: string,
   fileKey: string,
   readableObject: Stream | Buffer
-) => {
-  return new Promise((resolve, reject) => {
+) =>
+  new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -154,15 +178,14 @@ export const uploadObject = async (
       return resolve(data);
     });
   });
-};
 
 export const copyObject = async (
   sourceBucket: string,
   sourceKey: string,
   destBucket: string,
   destKey: string
-) => {
-  return new Promise((resolve, reject) => {
+) =>
+  new Promise((resolve, reject) => {
     const params = {
       Bucket: destBucket,
       CopySource: `/${sourceBucket}/${sourceKey}`,
@@ -179,13 +202,12 @@ export const copyObject = async (
       return resolve(data);
     });
   });
-};
 
 export const deleteObject = async (
   bucketName: string,
   fileKey: string
-): Promise<void> => {
-  return new Promise((resolve, reject) => {
+): Promise<void> =>
+  new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -208,21 +230,17 @@ export const deleteObject = async (
       return resolve();
     });
   });
-};
 
 export const listObjectsInFolder = async (
   bucketName: string,
   folderPrefix: string
-): Promise<ObjectList> => {
-  return (
-    (
-      await s3
-        .listObjectsV2({
-          Bucket: bucketName,
-          Prefix: folderPrefix,
-          // Delimiter: "/",
-        })
-        .promise()
-    )?.Contents || []
-  );
-};
+): Promise<ObjectList> =>
+  (
+    await s3
+      .listObjectsV2({
+        Bucket: bucketName,
+        Prefix: folderPrefix,
+        // Delimiter: "/",
+      })
+      .promise()
+  )?.Contents || [];
