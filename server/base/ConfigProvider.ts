@@ -130,7 +130,7 @@ class ConfigProvider {
     return process.env.BATCH_TASK_QUEUE_URL;
   }
 
-  public get BLEND_UPLOADS_EVENT_QUEUE_URL() {
+  public get UPLOADS_EVENT_QUEUE_URL() {
     return process.env.BLEND_UPLOADS_EVENT_QUEUE_URL;
   }
 

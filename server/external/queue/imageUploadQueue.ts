@@ -8,7 +8,7 @@ import { ImageUploadMessage } from "server/base/models/queue-messages";
 import { SqsQueueConfig } from "server/external/queue/sqs";
 import ConfigProvider from "server/base/ConfigProvider";
 
-export class BlendImageUploadEventQueue<C extends QueueConfig>
+export class ImageUploadEventQueue<C extends QueueConfig>
   implements Queue<ImageUploadMessage>
 {
   queueProvider: QueueProvider<C>;
@@ -29,8 +29,8 @@ export class BlendImageUploadEventQueue<C extends QueueConfig>
   }
 }
 
-export class BlendImageUploadSqsConfig extends SqsQueueConfig {
+export class ImageUploadSqsConfig extends SqsQueueConfig {
   getQueueUrl() {
-    return ConfigProvider.BLEND_UPLOADS_EVENT_QUEUE_URL;
+    return ConfigProvider.UPLOADS_EVENT_QUEUE_URL;
   }
 }

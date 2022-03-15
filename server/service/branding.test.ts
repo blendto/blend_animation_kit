@@ -518,6 +518,91 @@ describe("BrandingService", () => {
     });
   });
 
+  describe("Logo update as uploaded on s3 trigger", () => {
+    const fileKey = `${id}/avsDCf2bQ_MVjSKaR9IvN.jpeg`;
+    it("Rejects request if the file key is missing blend id", async () => {
+      await expect(brandingService.markLogoUploadAsDone("")).rejects.toThrow(
+        new UserError("Invalid fileKey")
+      );
+    });
+
+    it("Rejects request if the file key has invalid blend id", async () => {
+      const getSpy = jest
+        .spyOn(brandingService.model, "get")
+        .mockImplementation(async (brandingId) => Promise.resolve());
+      await expect(
+        brandingService.markLogoUploadAsDone(fileKey)
+      ).rejects.toThrow(new UserError("Invalid fileKey"));
+      expect(getSpy.mock.calls.length).toBe(1);
+      expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
+    });
+
+    it("Rejects request if the corresponding blend has no such fileKey", async () => {
+      const getSpy = jest
+        .spyOn(brandingService.model, "get")
+        .mockResolvedValueOnce(brandingDoc);
+      await expect(
+        brandingService.markLogoUploadAsDone(fileKey)
+      ).rejects.toThrow(new UserError("Invalid fileKey"));
+      expect(getSpy.mock.calls.length).toBe(1);
+      expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
+    });
+
+    it("Rejects request if the corresponding logo is seen as already uploaded", async () => {
+      const getSpy = jest
+        .spyOn(brandingService.model, "get")
+        .mockResolvedValueOnce({
+          ...brandingDoc,
+          logos: {
+            primaryEntry: fileKey,
+            entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
+          },
+        });
+      await expect(
+        brandingService.markLogoUploadAsDone(fileKey)
+      ).rejects.toThrow(
+        new UserError(
+          "Logo has already been marked as uploaded. Duplicate trigger?"
+        )
+      );
+      expect(getSpy.mock.calls.length).toBe(1);
+      expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
+    });
+
+    it("Successfully does the update in the absence of above problems", async () => {
+      const getSpy = jest
+        .spyOn(brandingService.model, "get")
+        .mockResolvedValueOnce({
+          ...brandingDoc,
+          logos: {
+            primaryEntry: fileKey,
+            entries: [{ fileKey, status: BrandingLogoStatus.INITIALIZED }],
+          },
+        });
+      const updateSpy = jest
+        .spyOn(brandingService.model, "update")
+        .mockResolvedValue({ what: "ever" });
+
+      await brandingService.markLogoUploadAsDone(fileKey);
+
+      expect(getSpy.mock.calls.length).toBe(1);
+      expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
+
+      expect(updateSpy.mock.calls.length).toBe(1);
+      expect(updateSpy.mock.calls[0]).toMatchObject([
+        { id },
+        {
+          $SET: {
+            logos: {
+              primaryEntry: fileKey,
+              entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
+            },
+          },
+        } as object,
+      ]);
+    });
+  });
+
   describe("Logo deletion", () => {
     it("Rejects request if the fileKey is invalid", async () => {
       const getOrCreateMock = jest

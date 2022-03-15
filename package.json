@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "doppler run -- next dev",
-    "dev:batch.task.qw": "NODE_PATH=. doppler run -- ts-node -O '{\"module\":\"commonjs\"}' functions/src/batchTaskQW.ts",
+    "dev:qw": "NODE_PATH=. doppler run -- ts-node -O '{\"module\":\"commonjs\"}' functions/src/queue-workers.ts",
     "build": "node scripts/create-env.js && next build",
     "build-functions": "node scripts/create-env.js && rm -rf build/ && webpack --config webpack.qw.config.js",
     "start": "node --require dd-trace/init node_modules/.bin/next start",
-    "start:batch.task.qw": "node -r dotenv/config build/batchTaskQW.ts/index.js",
+    "start:qw": "node -r dotenv/config build/queue-workers.ts/index.js",
     "flow": "flow",
     "test": "jest",
     "prepare": "husky install"

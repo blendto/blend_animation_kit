@@ -12,5 +12,14 @@ export enum BatchTaskType {
 }
 
 export interface ImageUploadMessage extends QueueMessage {
-  Records: any[];
+  Records: {
+    s3: {
+      bucket: {
+        name: string;
+      };
+      object: {
+        key: string;
+      };
+    };
+  }[];
 }

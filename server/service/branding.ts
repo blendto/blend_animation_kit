@@ -176,6 +176,41 @@ export default class BrandingService implements IService {
     return { url: uploadURL } as object;
   }
 
+  async markLogoUploadAsDone(fileKey: string): Promise<void> {
+    const id = fileKey.split("/")[0];
+    if (!id) {
+      throw new UserError("Invalid fileKey");
+    }
+    const brandingProfile: BrandingDocument = await this.model.get({ id });
+    if (!brandingProfile) {
+      throw new UserError("Invalid fileKey");
+    }
+
+    const logo = brandingProfile.logos?.entries?.find(
+      (e) => e.fileKey === fileKey
+    );
+    if (!logo) {
+      throw new UserError("Invalid fileKey");
+    }
+    if (logo.status === BrandingLogoStatus.UPLOADED) {
+      throw new UserError(
+        "Logo has already been marked as uploaded. Duplicate trigger?"
+      );
+    }
+
+    const { logos } = brandingProfile;
+    logos.entries.forEach((e) => {
+      if (e.fileKey === fileKey) {
+        e.status = BrandingLogoStatus.UPLOADED;
+      }
+    });
+    await this.model.update({ id }, {
+      $SET: {
+        logos,
+      },
+    } as object);
+  }
+
   async delLogo(userId: string, fileKey: string): Promise<void> {
     const currentData: BrandingDocument = await this.getOrCreate(userId);
     if (!currentData.logos?.entries?.map((e) => e.fileKey).includes(fileKey)) {

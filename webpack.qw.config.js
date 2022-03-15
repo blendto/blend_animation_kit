@@ -1,5 +1,6 @@
 const path = require("path");
 // const nodeExternals = require("webpack-node-externals");
+// eslint-disable-next-line import/no-extraneous-dependencies
 const glob = require("glob");
 
 const { NODE_ENV = "production" } = process.env;
@@ -32,7 +33,10 @@ module.exports = {
         use: [
           {
             loader: "ts-loader",
-            options: { compilerOptions: { noEmit: false } },
+            options: {
+              compilerOptions: { noEmit: false },
+              configFile: "tsconfig.webpack.json",
+            },
           },
         ],
       },

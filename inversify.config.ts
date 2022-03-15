@@ -15,9 +15,9 @@ import { SuggestionService } from "server/service/suggestion";
 import HeroImageService from "server/service/heroImage";
 import { SqsProvider } from "server/external/queue/sqs";
 import {
-  BlendImageUploadEventQueue,
-  BlendImageUploadSqsConfig,
-} from "server/external/queue/blendImageUploadQueue";
+  ImageUploadEventQueue,
+  ImageUploadSqsConfig,
+} from "server/external/queue/imageUploadQueue";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import BrandingService from "server/service/branding";
 import { RecipeService } from "server/service/recipe";
@@ -64,14 +64,12 @@ diContainer
   .to(HeroImageService)
   .inSingletonScope();
 diContainer
-  .bind<BlendImageUploadEventQueue<QueueConfig>>(
-    TYPES.BlendImageUploadEventQueue
-  )
+  .bind<ImageUploadEventQueue<QueueConfig>>(TYPES.ImageUploadEventQueue)
   .toDynamicValue(
     () =>
-      new BlendImageUploadEventQueue<BlendImageUploadSqsConfig>(
+      new ImageUploadEventQueue<ImageUploadSqsConfig>(
         new SqsProvider(),
-        new BlendImageUploadSqsConfig()
+        new ImageUploadSqsConfig()
       )
   );
 diContainer
@@ -90,5 +88,4 @@ diContainer
   .bind<InterServiceAuth>(TYPES.InterServiceAuth)
   .to(InterServiceAuth)
   .inSingletonScope();
-// eslint-disable-next-line import/prefer-default-export
 export { diContainer };

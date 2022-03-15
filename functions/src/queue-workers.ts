@@ -1,10 +1,11 @@
 import { diContainer } from "inversify.config";
+import logger from "server/base/Logger";
 import { TYPES } from "server/types";
 import { BatchTaskQueue } from "server/external/queue/batchTaskQueue";
 import { QueueConfig } from "server/external/queue";
 import { BatchActionService } from "server/service/queue/batch/batchAction";
 import { UploadService } from "server/service/queue/upload";
-import { BlendImageUploadEventQueue } from "server/external/queue/blendImageUploadQueue";
+import { ImageUploadEventQueue } from "server/external/queue/imageUploadQueue";
 
 const batchActionService = diContainer.get<BatchActionService>(
   TYPES.BatchActionService
@@ -13,17 +14,23 @@ const batchTaskQueue = diContainer.get<BatchTaskQueue<QueueConfig>>(
   TYPES.BatchTaskQueue
 );
 const uploadService = diContainer.get<UploadService>(TYPES.UploadService);
-const uploadEventQueue = diContainer.get<
-  BlendImageUploadEventQueue<QueueConfig>
->(TYPES.BlendImageUploadEventQueue);
+const uploadEventQueue = diContainer.get<ImageUploadEventQueue<QueueConfig>>(
+  TYPES.ImageUploadEventQueue
+);
 
 const batchTaskQueueConsumer = batchTaskQueue.createQueueConsumer(
   async (message) => {
     try {
-      console.info({ op: "PROCESSING_BATCH_TASK", message: message });
+      logger.info({
+        op: "PROCESSING_BATCH_TASK",
+        message: { qMessage: message },
+      });
       await batchActionService.processTask(message);
     } catch (e) {
-      console.error({ message: message, error: e });
+      logger.error({
+        op: "BATCH_PROCESS_FAILURE",
+        message: { qMessage: message, error: e as object },
+      });
       return Promise.reject(e);
     }
   }
@@ -31,15 +38,17 @@ const batchTaskQueueConsumer = batchTaskQueue.createQueueConsumer(
 
 const uploadQueueConsumer = uploadEventQueue.createQueueConsumer(
   async (message) => {
-    const bucket = message.Records[0].s3.bucket.name;
-    const fileKey = decodeURIComponent(
-      message.Records[0].s3.object.key.replace(/\+/g, " ")
-    );
     try {
-      console.info({ op: "PROCESSING_IMAGE_UPLOAD_TASK", message: message });
-      await uploadService.processHeroImageTrigger(bucket, fileKey);
+      logger.info({
+        op: "PROCESSING_IMAGE_UPLOAD_TRIGGER",
+        message: { qMessage: message },
+      });
+      await uploadService.processTrigger(message);
     } catch (e) {
-      console.error({ message: message, error: e });
+      logger.error({
+        op: "IMAGE_UPLOAD_TRIGGER_PROCESS_FAILURE",
+        message: { qMessage: message, error: e as object },
+      });
       return Promise.reject(e);
     }
   }
