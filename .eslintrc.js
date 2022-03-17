@@ -12,6 +12,7 @@ module.exports = {
   overrides: [
     {
       files: ["*.ts", "*.tsx"],
+      rules: { "@typescript-eslint/no-empty-interface": "off" },
       extends: [
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
@@ -41,7 +42,6 @@ module.exports = {
     quotes: "off",
     "comma-dangle": "off",
     "no-shadow": "off",
-    "@typescript-eslint/no-shadow": "error",
     "lines-between-class-members": "off",
     "max-classes-per-file": "off",
     "no-return-await": "off",
@@ -52,5 +52,6 @@ module.exports = {
     indent: "off",
     "brace-style": "off",
     "class-methods-use-this": "off",
+    "function-paren-newline": "off",
   },
 };

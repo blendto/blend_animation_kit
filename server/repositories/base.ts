@@ -1,0 +1,105 @@
+import { nanoid } from "nanoid";
+import {
+  aws,
+  model as dynamooseModel,
+  Schema as DynamooseSchema,
+} from "dynamoose";
+import { Document as DynamooseEntity } from "dynamoose/dist/Document";
+import { Model as DynamooseModel } from "dynamoose/dist/Model";
+import ConfigProvider from "server/base/ConfigProvider";
+import { getCredentials } from "server/external/aws";
+
+const { sdk } = aws;
+// Vercel envs have their own AWS config as default. Explicitly pick up our's
+sdk.config.update({
+  credentials: getCredentials(),
+  region: ConfigProvider.AWS_CLOUD_REGION,
+});
+
+type KeyObject = {
+  [attribute: string]: string | number;
+};
+
+export type JSONPatch = {
+  op: "add" | "remove" | "replace";
+  path: string;
+  value?: unknown;
+}[];
+
+export interface Entity {}
+
+export class Model {}
+
+export abstract class Repo<
+  ExtendedEntity extends Entity,
+  ExtendedModel extends Model
+> {
+  model: ExtendedModel;
+
+  abstract create?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity>;
+  abstract get?(params: KeyObject): Promise<ExtendedEntity | void>;
+  abstract query?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity[]>;
+  abstract update?(
+    keyObject: KeyObject,
+    jsonPatch: JSONPatch
+  ): Promise<ExtendedEntity>;
+}
+
+export class DynamooseRepo<
+  ExtendedEntity extends Entity,
+  DynamooseExtendedEntity extends DynamooseEntity
+> implements Repo<ExtendedEntity, DynamooseModel<DynamooseExtendedEntity>>
+{
+  model: DynamooseModel<DynamooseExtendedEntity>;
+
+  static generateId(size = 8): string {
+    return nanoid(size);
+  }
+
+  async create(params: Partial<ExtendedEntity>): Promise<ExtendedEntity> {
+    const id = DynamooseRepo.generateId();
+    try {
+      return (await this.model.create({
+        id,
+        ...params,
+      } as unknown as Partial<DynamooseExtendedEntity>)) as unknown as ExtendedEntity;
+    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (err.code === "ConditionalCheckFailedException") {
+        // Generated id already exists. Re-generate.
+        return await this.create(params);
+      }
+      throw err;
+    }
+  }
+
+  async get(keyObject: KeyObject): Promise<ExtendedEntity | void> {
+    return (await this.model.get(keyObject)) as unknown as ExtendedEntity;
+  }
+
+  async query(params: Partial<ExtendedEntity>): Promise<ExtendedEntity[]> {
+    return (await this.model
+      .query(params as unknown as Partial<DynamooseExtendedEntity>)
+      .exec()) as unknown as ExtendedEntity[];
+  }
+
+  async update(
+    keyObject: KeyObject,
+    jsonPatch: JSONPatch
+  ): Promise<ExtendedEntity> {
+    const updateSet = { $SET: {}, $REMOVE: [] };
+    jsonPatch.forEach((change) => {
+      if (["add", "replace"].includes(change.op)) {
+        updateSet.$SET[change.path] = change.value;
+      } else {
+        updateSet.$REMOVE.push(change.path);
+      }
+    });
+    return (await this.model.update(
+      keyObject,
+      updateSet as unknown as Partial<DynamooseExtendedEntity>
+    )) as unknown as ExtendedEntity;
+  }
+}
+
+export { DynamooseModel, DynamooseSchema, dynamooseModel, DynamooseEntity };

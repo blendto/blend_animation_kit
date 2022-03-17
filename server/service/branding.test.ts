@@ -1,17 +1,15 @@
 import ConfigProvider from "server/base/ConfigProvider";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
-import BrandingService, {
-  validUpdateOperations,
-  validUpdatePaths,
-} from "server/service/branding";
-import ModelHelper from "server/models/helper";
+import BrandingService from "server/service/branding";
 import {
-  BrandingStatus,
-  BrandingDocument,
-  BrandingModel,
   BrandingLogoStatus,
-} from "server/models/branding";
+  BrandingStatus,
+  BrandingUpdateOperations,
+  BrandingUpdatePaths,
+  BrandingEntity,
+  brandingRepo,
+} from "server/repositories/branding";
 import { UserError } from "server/base/errors";
 
 describe("BrandingService", () => {
@@ -22,7 +20,7 @@ describe("BrandingService", () => {
   const userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
   const updatedAt = 1646906641;
   const status = BrandingStatus.CREATED;
-  const brandingDoc: BrandingDocument = {
+  const brandingDoc = {
     id,
     userId,
     logos: {
@@ -30,7 +28,7 @@ describe("BrandingService", () => {
     },
     updatedAt,
     status,
-  };
+  } as BrandingEntity;
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -39,12 +37,10 @@ describe("BrandingService", () => {
   describe("Get or create", () => {
     it("Creates branding profile for the user if non-existent", async () => {
       const querySpy = jest
-        .spyOn(brandingService.model, "query")
-        .mockReturnValueOnce({
-          exec: async () => Promise.resolve([]),
-        });
+        .spyOn(brandingService.repo, "query")
+        .mockResolvedValue([]);
       const createSpy = jest
-        .spyOn(ModelHelper, "createWithId")
+        .spyOn(brandingService.repo, "create")
         .mockResolvedValueOnce(brandingDoc);
 
       const res = await brandingService.getOrCreate(userId);
@@ -54,19 +50,14 @@ describe("BrandingService", () => {
       expect(querySpy.mock.calls[0]).toMatchObject([{ userId }]);
 
       expect(createSpy.mock.calls.length).toBe(1);
-      expect(createSpy.mock.calls[0]).toMatchObject([
-        BrandingModel,
-        { userId },
-      ]);
+      expect(createSpy.mock.calls[0]).toMatchObject([{ userId }]);
     });
 
     it("Retrieves the branding profile for the user if existent", async () => {
       const querySpy = jest
-        .spyOn(brandingService.model, "query")
-        .mockReturnValueOnce({
-          exec: async () => Promise.resolve([brandingDoc]),
-        });
-      const createSpy = jest.spyOn(ModelHelper, "createWithId");
+        .spyOn(brandingService.repo, "query")
+        .mockResolvedValueOnce([brandingDoc]);
+      const createSpy = jest.spyOn(brandingService.repo, "create");
 
       const res = await brandingService.getOrCreate(userId);
       expect(res).toMatchObject(brandingDoc);
@@ -87,8 +78,8 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: validUpdateOperations.add,
-            path: validUpdatePaths.primaryLogo,
+            op: BrandingUpdateOperations.add,
+            path: BrandingUpdatePaths.primaryLogo,
             value: "SOME-KEY",
           },
         ])
@@ -102,7 +93,7 @@ describe("BrandingService", () => {
     it("Rejects primary logo update if it points to a un-uploaded key", async () => {
       const currentPrimaryKey = "PRIMARY-FILE-KEY";
       const unUploadedKey = "NON-UPLOADED-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: currentPrimaryKey,
@@ -117,7 +108,7 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
+      } as BrandingEntity;
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
         .mockResolvedValueOnce(brandingDocWithLogos);
@@ -125,8 +116,8 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: validUpdateOperations.add,
-            path: validUpdatePaths.primaryLogo,
+            op: BrandingUpdateOperations.add,
+            path: BrandingUpdatePaths.primaryLogo,
             value: unUploadedKey,
           },
         ])
@@ -140,7 +131,7 @@ describe("BrandingService", () => {
     it("Rejects primary logo update if it points to a non-existent key", async () => {
       const currentPrimaryKey = "PRIMARY-FILE-KEY";
       const nonExistentKey = "NON-EXISTENT-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: currentPrimaryKey,
@@ -151,7 +142,7 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
+      } as BrandingEntity;
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
         .mockResolvedValueOnce(brandingDocWithLogos);
@@ -159,8 +150,8 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: validUpdateOperations.add,
-            path: validUpdatePaths.primaryLogo,
+            op: BrandingUpdateOperations.add,
+            path: BrandingUpdatePaths.primaryLogo,
             value: nonExistentKey,
           },
         ])
@@ -174,7 +165,7 @@ describe("BrandingService", () => {
     it("Updates primary logo if it points to a valid key", async () => {
       const currentPrimaryKey = "PRIMARY-FILE-KEY";
       const anotherValidKey = "VALID-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: currentPrimaryKey,
@@ -189,8 +180,8 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
-      const updatedBrandingDoc: BrandingDocument = {
+      } as BrandingEntity;
+      const updatedBrandingDoc = {
         ...brandingDoc,
         logos: {
           primaryEntry: anotherValidKey,
@@ -205,21 +196,22 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
+      } as BrandingEntity;
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
         .mockResolvedValueOnce(brandingDocWithLogos);
       const modelUpdateMock = jest
-        .spyOn(brandingService.model, "update")
+        .spyOn(brandingService.repo, "updateWithFormatted")
         .mockResolvedValueOnce(updatedBrandingDoc);
 
-      const res = await brandingService.update(userId, [
+      const jsonPatch = [
         {
-          op: validUpdateOperations.add,
-          path: validUpdatePaths.primaryLogo,
+          op: BrandingUpdateOperations.add,
+          path: BrandingUpdatePaths.primaryLogo,
           value: anotherValidKey,
         },
-      ]);
+      ];
+      const res = await brandingService.update(userId, jsonPatch);
       expect(res).toMatchObject(updatedBrandingDoc);
 
       expect(getOrCreateMock.mock.calls.length).toBe(1);
@@ -227,19 +219,14 @@ describe("BrandingService", () => {
 
       expect(modelUpdateMock.mock.calls.length).toBe(1);
       expect(modelUpdateMock.mock.calls[0]).toMatchObject([
-        { id },
-        {
-          $SET: {
-            logos: updatedBrandingDoc.logos,
-          },
-          $REMOVE: [],
-        },
+        brandingDocWithLogos,
+        jsonPatch,
       ]);
     });
 
     it("Rejects unsetting primary logo", async () => {
       const primaryKey = "PRIMARY-FILE-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: primaryKey,
@@ -250,7 +237,7 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
+      } as BrandingEntity;
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
         .mockResolvedValueOnce(brandingDocWithLogos);
@@ -258,8 +245,8 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: validUpdateOperations.remove,
-            path: validUpdatePaths.primaryLogo,
+            op: BrandingUpdateOperations.remove,
+            path: BrandingUpdatePaths.primaryLogo,
           },
         ])
       ).rejects.toThrow(new UserError("Primary logo pointer can't be unset"));
@@ -271,28 +258,29 @@ describe("BrandingService", () => {
     it("Supports unsetting other attributes", async () => {
       const email = "engg@blend.to";
       const whatsappNo = "+91 999 999 9991@blend.to";
-      const brandingDocWithOtherAttrs: BrandingDocument = {
+      const brandingDocWithOtherAttrs = {
         ...brandingDoc,
         email,
         whatsappNo,
-      };
+      } as BrandingEntity;
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
         .mockResolvedValueOnce(brandingDocWithOtherAttrs);
       const modelUpdateMock = jest
-        .spyOn(brandingService.model, "update")
+        .spyOn(brandingService.repo, "updateWithFormatted")
         .mockResolvedValueOnce(brandingDoc);
 
-      const res = await brandingService.update(userId, [
+      const jsonPatch = [
         {
-          op: validUpdateOperations.remove,
-          path: validUpdatePaths.email,
+          op: BrandingUpdateOperations.remove,
+          path: BrandingUpdatePaths.email,
         },
         {
-          op: validUpdateOperations.remove,
-          path: validUpdatePaths.whatsappNo,
+          op: BrandingUpdateOperations.remove,
+          path: BrandingUpdatePaths.whatsappNo,
         },
-      ]);
+      ];
+      const res = await brandingService.update(userId, jsonPatch);
       expect(res).toMatchObject(brandingDoc);
 
       expect(getOrCreateMock.mock.calls.length).toBe(1);
@@ -300,11 +288,8 @@ describe("BrandingService", () => {
 
       expect(modelUpdateMock.mock.calls.length).toBe(1);
       expect(modelUpdateMock.mock.calls[0]).toMatchObject([
-        { id },
-        {
-          $SET: {},
-          $REMOVE: [validUpdatePaths.email, validUpdatePaths.whatsappNo],
-        },
+        brandingDocWithOtherAttrs,
+        jsonPatch,
       ]);
     });
   });
@@ -312,7 +297,7 @@ describe("BrandingService", () => {
   describe("Logo initiation", () => {
     it("Rejects request if the profile already already has 3 logos", async () => {
       const primaryKey = "PRIMARY-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: primaryKey,
@@ -331,7 +316,7 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
+      } as BrandingEntity;
 
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
@@ -347,7 +332,7 @@ describe("BrandingService", () => {
     it("Updates db and returns URL details to upload the logo to", async () => {
       const primaryKey = "PRIMARY-KEY";
       const anotherValidKey = "ANOTHER-VALID-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: primaryKey,
@@ -362,10 +347,22 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
+      } as BrandingEntity;
       const fileName = "foo.jpeg";
       const s3ResMock = "https://dont.care";
-      const updateResMock = { dont: "care" };
+      const updateResMock = {
+        ...brandingDocWithLogos,
+        logos: {
+          ...brandingDocWithLogos.logos,
+          entries: [
+            ...brandingDocWithLogos.logos.entries,
+            {
+              fileKey: "THE-NEWLY-GENERATED-KEY",
+              status: BrandingLogoStatus.INITIALIZED,
+            },
+          ],
+        },
+      } as BrandingEntity;
 
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
@@ -374,7 +371,7 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "createSignedUploadUrl")
         .mockResolvedValueOnce(s3ResMock);
       const updateMock = jest
-        .spyOn(brandingService.model, "update")
+        .spyOn(brandingService.repo, "update")
         .mockResolvedValueOnce(updateResMock);
 
       const createDestinationFileKeySpy = jest.spyOn(
@@ -403,28 +400,23 @@ describe("BrandingService", () => {
       expect(updateMock.mock.calls.length).toBe(1);
       expect(updateMock.mock.calls[0]).toMatchObject([
         { id },
-        {
-          $SET: {
-            logos: {
+        [
+          {
+            path: "logos",
+            op: "replace",
+            value: {
+              ...brandingDocWithLogos.logos,
               entries: [
-                {
-                  fileKey: primaryKey,
-                  status: BrandingLogoStatus.UPLOADED,
-                },
-                {
-                  fileKey: anotherValidKey,
-                  status: BrandingLogoStatus.UPLOADED,
-                },
+                ...brandingDocWithLogos.logos.entries,
                 {
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                   fileKey: createDestinationFileKeySpy.mock.results[0].value,
                   status: BrandingLogoStatus.INITIALIZED,
                 },
               ],
-              primaryEntry: primaryKey,
             },
           },
-        },
+        ],
       ]);
 
       expect(
@@ -441,15 +433,27 @@ describe("BrandingService", () => {
     });
 
     it("If the logo to be uploaded will be the only logo, sets it as primary", async () => {
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           entries: [],
         },
-      };
+      } as BrandingEntity;
       const fileName = "foo.jpeg";
       const s3ResMock = "https://dont.care";
-      const updateResMock = { dont: "care" };
+      const newlyGeneratedKey = "NEWLY-GENERATED-KEY";
+      const updateResMock = {
+        ...brandingDoc,
+        logos: {
+          entries: [
+            {
+              fileKey: newlyGeneratedKey,
+              status: BrandingLogoStatus.INITIALIZED,
+            },
+          ],
+          primaryEntry: newlyGeneratedKey,
+        },
+      } as BrandingEntity;
 
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
@@ -458,7 +462,7 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "createSignedUploadUrl")
         .mockResolvedValueOnce(s3ResMock);
       const updateMock = jest
-        .spyOn(brandingService.model, "update")
+        .spyOn(brandingService.repo, "update")
         .mockResolvedValueOnce(updateResMock);
 
       const createDestinationFileKeySpy = jest.spyOn(
@@ -487,9 +491,11 @@ describe("BrandingService", () => {
       expect(updateMock.mock.calls.length).toBe(1);
       expect(updateMock.mock.calls[0]).toMatchObject([
         { id },
-        {
-          $SET: {
-            logos: {
+        [
+          {
+            op: "replace",
+            path: "logos",
+            value: {
               entries: [
                 {
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -501,7 +507,7 @@ describe("BrandingService", () => {
               primaryEntry: createDestinationFileKeySpy.mock.results[0].value,
             },
           },
-        },
+        ],
       ]);
 
       expect(
@@ -528,7 +534,7 @@ describe("BrandingService", () => {
 
     it("Rejects request if the file key has invalid blend id", async () => {
       const getSpy = jest
-        .spyOn(brandingService.model, "get")
+        .spyOn(brandingService.repo, "get")
         .mockImplementation(async (brandingId) => Promise.resolve());
       await expect(
         brandingService.markLogoUploadAsDone(fileKey)
@@ -539,7 +545,7 @@ describe("BrandingService", () => {
 
     it("Rejects request if the corresponding blend has no such fileKey", async () => {
       const getSpy = jest
-        .spyOn(brandingService.model, "get")
+        .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce(brandingDoc);
       await expect(
         brandingService.markLogoUploadAsDone(fileKey)
@@ -550,14 +556,14 @@ describe("BrandingService", () => {
 
     it("Rejects request if the corresponding logo is seen as already uploaded", async () => {
       const getSpy = jest
-        .spyOn(brandingService.model, "get")
+        .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce({
           ...brandingDoc,
           logos: {
             primaryEntry: fileKey,
             entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
           },
-        });
+        } as BrandingEntity);
       await expect(
         brandingService.markLogoUploadAsDone(fileKey)
       ).rejects.toThrow(
@@ -571,17 +577,23 @@ describe("BrandingService", () => {
 
     it("Successfully does the update in the absence of above problems", async () => {
       const getSpy = jest
-        .spyOn(brandingService.model, "get")
+        .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce({
           ...brandingDoc,
           logos: {
             primaryEntry: fileKey,
             entries: [{ fileKey, status: BrandingLogoStatus.INITIALIZED }],
           },
-        });
+        } as BrandingEntity);
       const updateSpy = jest
-        .spyOn(brandingService.model, "update")
-        .mockResolvedValue({ what: "ever" });
+        .spyOn(brandingService.repo, "update")
+        .mockResolvedValue({
+          ...brandingDoc,
+          logos: {
+            primaryEntry: fileKey,
+            entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
+          },
+        } as BrandingEntity);
 
       await brandingService.markLogoUploadAsDone(fileKey);
 
@@ -591,14 +603,16 @@ describe("BrandingService", () => {
       expect(updateSpy.mock.calls.length).toBe(1);
       expect(updateSpy.mock.calls[0]).toMatchObject([
         { id },
-        {
-          $SET: {
-            logos: {
+        [
+          {
+            op: "replace",
+            path: "logos",
+            value: {
               primaryEntry: fileKey,
               entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
             },
           },
-        } as object,
+        ],
       ]);
     });
   });
@@ -620,7 +634,7 @@ describe("BrandingService", () => {
     it("Updates db and deletes file from s3", async () => {
       const primaryKey = "PRIMARY-KEY";
       const fileKeyToDelete = "ANOTHER-VALID-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: primaryKey,
@@ -635,8 +649,19 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
-      const updateResMock = { dont: "care" };
+      } as BrandingEntity;
+      const updateResMock = {
+        ...brandingDoc,
+        logos: {
+          primaryEntry: primaryKey,
+          entries: [
+            {
+              fileKey: primaryKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+          ],
+        },
+      } as BrandingEntity;
 
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
@@ -645,10 +670,11 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "deleteObject")
         .mockImplementationOnce(async () => Promise.resolve());
       const updateMock = jest
-        .spyOn(brandingService.model, "update")
+        .spyOn(brandingService.repo, "update")
         .mockResolvedValue(updateResMock);
 
-      await brandingService.delLogo(userId, fileKeyToDelete);
+      const res = await brandingService.delLogo(userId, fileKeyToDelete);
+      expect(res).toMatchObject(updateResMock);
 
       expect(getOrCreateMock.mock.calls.length).toBe(1);
       expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
@@ -662,9 +688,11 @@ describe("BrandingService", () => {
       expect(updateMock.mock.calls.length).toBe(1);
       expect(updateMock.mock.calls[0]).toMatchObject([
         { id },
-        {
-          $SET: {
-            logos: {
+        [
+          {
+            op: "replace",
+            path: "logos",
+            value: {
               primaryEntry: primaryKey,
               entries: [
                 {
@@ -674,14 +702,14 @@ describe("BrandingService", () => {
               ],
             },
           },
-        },
+        ],
       ]);
     });
 
     it("Resets the primary logo if the existing one is deleted", async () => {
       const fileKeyToDelete = "PRIMARY-KEY";
       const anotherKey = "ANOTHER-VALID-KEY";
-      const brandingDocWithLogos: BrandingDocument = {
+      const brandingDocWithLogos = {
         ...brandingDoc,
         logos: {
           primaryEntry: fileKeyToDelete,
@@ -696,8 +724,19 @@ describe("BrandingService", () => {
             },
           ],
         },
-      };
-      const updateResMock = { dont: "care" };
+      } as BrandingEntity;
+      const updateResMock = {
+        ...brandingDoc,
+        logos: {
+          primaryEntry: anotherKey,
+          entries: [
+            {
+              fileKey: anotherKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+          ],
+        },
+      } as BrandingEntity;
 
       const getOrCreateMock = jest
         .spyOn(brandingService, "getOrCreate")
@@ -706,10 +745,11 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "deleteObject")
         .mockImplementationOnce(async () => Promise.resolve());
       const updateMock = jest
-        .spyOn(brandingService.model, "update")
+        .spyOn(brandingService.repo, "update")
         .mockResolvedValue(updateResMock);
 
-      await brandingService.delLogo(userId, fileKeyToDelete);
+      const res = await brandingService.delLogo(userId, fileKeyToDelete);
+      expect(res).toMatchObject(updateResMock);
 
       expect(getOrCreateMock.mock.calls.length).toBe(1);
       expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
@@ -723,9 +763,11 @@ describe("BrandingService", () => {
       expect(updateMock.mock.calls.length).toBe(1);
       expect(updateMock.mock.calls[0]).toMatchObject([
         { id },
-        {
-          $SET: {
-            logos: {
+        [
+          {
+            op: "replace",
+            path: "logos",
+            value: {
               primaryEntry: anotherKey,
               entries: [
                 {
@@ -735,7 +777,7 @@ describe("BrandingService", () => {
               ],
             },
           },
-        },
+        ],
       ]);
     });
   });

@@ -72,6 +72,5 @@ async function delLogo(
     @typescript-eslint/no-unsafe-argument,
     @typescript-eslint/no-unsafe-member-access
   */
-  await brandingService.delLogo(req.uid, req.query.fileKey as string);
-  res.status(204).end();
+  res.send(await brandingService.delLogo(req.uid, req.query.fileKey as string));
 }

@@ -9,57 +9,33 @@ import {
   GetSignedUrlOperation,
 } from "server/external/s3";
 import { IService } from "server/service";
-import ModelHelper from "server/models/helper";
 import {
-  BrandingDocument,
+  BrandingEntity,
   BrandingLogoStatus,
-  BrandingModel,
+  brandingRepo,
   MAX_LOGOS,
-} from "server/models/branding";
-
-export enum validUpdatePaths {
-  email = "email",
-  contactNo = "contactNo",
-  whatsappNo = "whatsappNo",
-  instaHandle = "instaHandle",
-  website = "website",
-  address = "address",
-  primaryLogo = "logos.primaryEntry",
-}
-
-export enum validUpdateOperationsOnPrimaryLogo {
-  add = "add",
-  replace = "replace",
-}
-
-export enum validUpdateOperations {
-  add = "add",
-  replace = "replace",
-  remove = "remove",
-}
+  BrandingUpdatePaths,
+  BrandingUpdateOperations,
+} from "server/repositories/branding";
 
 @injectable()
 export default class BrandingService implements IService {
   validExtensions = ["png", "jpg", "jpeg", "webp"];
-  model = BrandingModel;
+  repo = brandingRepo;
 
   // Required as class attributes for mocking
   createDestinationFileKey = createDestinationFileKey;
   createSignedUploadUrl = createSignedUploadUrl;
   deleteObject = deleteObject;
 
-  private async create(params: { userId: string }): Promise<BrandingDocument> {
-    return await ModelHelper.createWithId<BrandingDocument>(this.model, params);
+  private async get(userId: string): Promise<BrandingEntity> {
+    return (await this.repo.query({ userId }))[0];
   }
 
-  private async get(userId: string): Promise<BrandingDocument> {
-    return (await this.model.query({ userId }).exec())[0];
-  }
-
-  async getOrCreate(userId: string): Promise<BrandingDocument> {
+  async getOrCreate(userId: string): Promise<BrandingEntity> {
     let existingProfile = await this.get(userId);
     if (!existingProfile) {
-      existingProfile = await this.create({ userId });
+      existingProfile = await this.repo.create({ userId });
     }
     return existingProfile;
   }
@@ -67,70 +43,43 @@ export default class BrandingService implements IService {
   async update(
     userId: string,
     changes: {
-      path: validUpdatePaths;
-      op: validUpdateOperations;
-      value?: string;
+      path: BrandingUpdatePaths;
+      op: BrandingUpdateOperations;
+      value?: unknown;
     }[]
-  ): Promise<BrandingDocument> {
+  ): Promise<BrandingEntity> {
     const currentData = await this.getOrCreate(userId);
-    const updateSet: {
-      $SET: {
-        email?: string;
-        contactNo?: string;
-        whatsappNo?: string;
-        instaHandle?: string;
-        website?: string;
-        address?: string;
-        logos?: {
-          primaryEntry: string;
-          entries: { fileKey: string; status: BrandingLogoStatus }[];
-        };
-      };
-      $REMOVE: validUpdatePaths[];
-    } = {
-      $SET: {},
-      $REMOVE: [],
-    };
 
     changes.forEach((change) => {
-      if (
-        [validUpdateOperations.add, validUpdateOperations.replace].includes(
-          change.op
-        )
-      ) {
-        if (change.path === validUpdatePaths.primaryLogo) {
+      if (change.path === BrandingUpdatePaths.primaryLogo) {
+        if (
+          [
+            BrandingUpdateOperations.add,
+            BrandingUpdateOperations.replace,
+          ].includes(change.op)
+        ) {
           const validLogoKeys = currentData.logos?.entries
             ?.filter((entry) => entry.status === BrandingLogoStatus.UPLOADED)
             .map((entry) => entry.fileKey);
-          if (!validLogoKeys.includes(change.value)) {
+          if (!validLogoKeys.includes(change.value as string)) {
             throw new UserError(
               "Primary logo is pointing to an invalid file key"
             );
           }
-          // Dynamoose doesn't support nested updates on maps. Override.
-          updateSet.$SET.logos = {
-            primaryEntry: change.value,
-            entries: currentData.logos.entries,
-          };
         } else {
-          updateSet.$SET[change.path] = change.value;
-        }
-      } else {
-        if (change.path === validUpdatePaths.primaryLogo) {
           throw new UserError("Primary logo pointer can't be unset");
         }
-        updateSet.$REMOVE.push(change.path);
       }
     });
 
-    return (await this.model.update(
-      { id: currentData.id },
-      updateSet as object
-    )) as unknown as BrandingDocument;
+    return await this.repo.updateWithFormatted(currentData, changes);
   }
 
-  async initLogoUpload(userId: string, fileName: string): Promise<object> {
-    const currentData: BrandingDocument = await this.getOrCreate(userId);
+  async initLogoUpload(
+    userId: string,
+    fileName: string
+  ): Promise<{ url: string }> {
+    const currentData = await this.getOrCreate(userId);
     const uploadedLogos =
       currentData.logos?.entries?.filter(
         (entry) => entry.status === BrandingLogoStatus.UPLOADED
@@ -139,41 +88,43 @@ export default class BrandingService implements IService {
       throw new UserError("You can't have more than 3 logos");
     }
 
-    const updateSet = {
-      $SET: {
-        logos: {
-          ...currentData.logos,
-          // If there are INITIALIZED logos, their upload probably failed in between.
-          // Assume so and delete them from the profile.
-          entries: uploadedLogos,
-        },
-      },
-    };
-
     const fileKey = this.createDestinationFileKey(
       fileName,
       this.validExtensions,
       `${currentData.id}/`
     );
-    updateSet.$SET.logos.entries.push({
-      status: BrandingLogoStatus.INITIALIZED,
-      fileKey,
-    });
-    if (updateSet.$SET.logos.entries.length === 1) {
-      // If there are logos, one should be primary
-      updateSet.$SET.logos.primaryEntry = fileKey;
-    }
 
-    const uploadURL = await this.createSignedUploadUrl(
+    const uploadURL = (await this.createSignedUploadUrl(
       fileName,
       ConfigProvider.BRANDING_BUCKET,
       this.validExtensions,
       { outFileKey: fileKey },
       GetSignedUrlOperation.putObject
-    );
+    )) as string;
 
-    await this.model.update({ id: currentData.id }, updateSet as object);
-    return { url: uploadURL } as object;
+    await this.repo.update({ id: currentData.id }, [
+      {
+        path: "logos",
+        op: "replace",
+        value: {
+          entries: [
+            // If there are initialized logos, their upload probably failed in between.
+            // Assume so and delete them from the profile.
+            ...uploadedLogos,
+            {
+              status: BrandingLogoStatus.INITIALIZED,
+              fileKey,
+            },
+          ],
+          // If no uploaded logos exist, mark this as primary
+          primaryEntry:
+            uploadedLogos.length === 0
+              ? fileKey
+              : currentData.logos.primaryEntry,
+        },
+      },
+    ]);
+    return { url: uploadURL };
   }
 
   async markLogoUploadAsDone(fileKey: string): Promise<void> {
@@ -181,7 +132,7 @@ export default class BrandingService implements IService {
     if (!id) {
       throw new UserError("Invalid fileKey");
     }
-    const brandingProfile: BrandingDocument = await this.model.get({ id });
+    const brandingProfile = await this.repo.get({ id });
     if (!brandingProfile) {
       throw new UserError("Invalid fileKey");
     }
@@ -204,40 +155,37 @@ export default class BrandingService implements IService {
         e.status = BrandingLogoStatus.UPLOADED;
       }
     });
-    await this.model.update({ id }, {
-      $SET: {
-        logos,
-      },
-    } as object);
+    await this.repo.update({ id }, [
+      { path: "logos", op: "replace", value: logos },
+    ]);
   }
 
-  async delLogo(userId: string, fileKey: string): Promise<void> {
-    const currentData: BrandingDocument = await this.getOrCreate(userId);
+  async delLogo(userId: string, fileKey: string): Promise<BrandingEntity> {
+    const currentData = await this.getOrCreate(userId);
     if (!currentData.logos?.entries?.map((e) => e.fileKey).includes(fileKey)) {
       throw new UserError("Invalid fileKey");
     }
 
-    const updateSet = {
-      $SET: {
-        logos: {
-          ...currentData.logos,
-          entries: currentData.logos.entries.filter(
-            (e) => e.fileKey !== fileKey
-          ),
-        },
-      },
+    const logos = {
+      entries: currentData.logos.entries.filter((e) => e.fileKey !== fileKey),
+      primaryEntry: currentData.logos.primaryEntry,
     };
 
     if (currentData.logos.primaryEntry === fileKey) {
-      if (updateSet.$SET.logos.entries.length) {
-        updateSet.$SET.logos.primaryEntry =
-          updateSet.$SET.logos.entries[0].fileKey;
+      if (logos.entries.length) {
+        logos.primaryEntry = logos.entries[0].fileKey;
       } else {
-        delete updateSet.$SET.logos.primaryEntry;
+        delete logos.primaryEntry;
       }
     }
 
     await this.deleteObject(ConfigProvider.BRANDING_BUCKET, fileKey);
-    await this.model.update({ id: currentData.id }, updateSet as object);
+    return await this.repo.update({ id: currentData.id }, [
+      {
+        op: "replace",
+        path: "logos",
+        value: logos,
+      },
+    ]);
   }
 }

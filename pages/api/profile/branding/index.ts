@@ -8,11 +8,12 @@ import {
   requestComponentToValidate,
   validate,
 } from "server/helpers/request";
-import BrandingService, {
-  validUpdateOperations,
-  validUpdateOperationsOnPrimaryLogo,
-  validUpdatePaths,
-} from "server/service/branding";
+import {
+  BrandingUpdateOperations,
+  BrandingUpdateOperationsOnPrimaryLogo,
+  BrandingUpdatePaths,
+} from "server/repositories/branding";
+import BrandingService from "server/service/branding";
 import { TYPES } from "server/types";
 
 export default withReqHandler(
@@ -45,14 +46,14 @@ const UPDATE_BODY_SCHEMA = Joi.object({
       Joi.object({
         path: Joi.string()
           .required()
-          .valid(...Object.values(validUpdatePaths)),
+          .valid(...Object.values(BrandingUpdatePaths)),
         op: Joi.string()
           .when("path", {
-            is: validUpdatePaths.primaryLogo,
+            is: BrandingUpdatePaths.primaryLogo,
             then: Joi.valid(
-              ...Object.values(validUpdateOperationsOnPrimaryLogo)
+              ...Object.values(BrandingUpdateOperationsOnPrimaryLogo)
             ),
-            otherwise: Joi.valid(...Object.values(validUpdateOperations)),
+            otherwise: Joi.valid(...Object.values(BrandingUpdateOperations)),
           })
           .required(),
         value: Joi.any().when("op", {
