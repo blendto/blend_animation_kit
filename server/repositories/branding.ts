@@ -23,13 +23,13 @@ export enum BrandingStatus {
 }
 
 export enum BrandingUpdatePaths {
-  email = "email",
-  contactNo = "contactNo",
-  whatsappNo = "whatsappNo",
-  instaHandle = "instaHandle",
-  website = "website",
-  address = "address",
-  primaryLogo = "logos.primaryEntry",
+  email = "/email",
+  contactNo = "/contactNo",
+  whatsappNo = "/whatsappNo",
+  instaHandle = "/instaHandle",
+  website = "/website",
+  address = "/address",
+  primaryLogo = "/logos/primaryEntry",
 }
 
 export enum BrandingUpdateOperationsOnPrimaryLogo {
@@ -153,9 +153,9 @@ class BrandingDynamooseRepo
     // dynamoose doesn't allow nested update on maps. Pass the whole logos object.
     // See https://github.com/dynamoose/dynamoose/issues/665
     jsonPatch.forEach((change) => {
-      if (change.path === "logos.primaryEntry") {
+      if (change.path === "/logos/primaryEntry") {
         // eslint-disable-next-line no-param-reassign
-        change.path = "logos";
+        change.path = "/logos";
         // eslint-disable-next-line no-param-reassign
         change.value = {
           ...currentData.logos,

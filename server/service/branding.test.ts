@@ -8,7 +8,6 @@ import {
   BrandingUpdateOperations,
   BrandingUpdatePaths,
   BrandingEntity,
-  brandingRepo,
 } from "server/repositories/branding";
 import { UserError } from "server/base/errors";
 
@@ -402,7 +401,7 @@ describe("BrandingService", () => {
         { id },
         [
           {
-            path: "logos",
+            path: "/logos",
             op: "replace",
             value: {
               ...brandingDocWithLogos.logos,
@@ -494,7 +493,7 @@ describe("BrandingService", () => {
         [
           {
             op: "replace",
-            path: "logos",
+            path: "/logos",
             value: {
               entries: [
                 {
@@ -606,7 +605,7 @@ describe("BrandingService", () => {
         [
           {
             op: "replace",
-            path: "logos",
+            path: "/logos",
             value: {
               primaryEntry: fileKey,
               entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
@@ -691,7 +690,7 @@ describe("BrandingService", () => {
         [
           {
             op: "replace",
-            path: "logos",
+            path: "/logos",
             value: {
               primaryEntry: primaryKey,
               entries: [
@@ -766,7 +765,7 @@ describe("BrandingService", () => {
         [
           {
             op: "replace",
-            path: "logos",
+            path: "/logos",
             value: {
               primaryEntry: anotherKey,
               entries: [

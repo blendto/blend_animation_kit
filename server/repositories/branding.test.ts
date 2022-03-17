@@ -51,7 +51,7 @@ describe("BrandingRepo", () => {
         [
           {
             op: BrandingUpdateOperations.replace,
-            path: "logos",
+            path: "/logos",
             value: {
               entries: [
                 { fileKey: fileKey1, status: BrandingLogoStatus.UPLOADED },

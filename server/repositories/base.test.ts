@@ -1,6 +1,5 @@
 import { DynamooseRepo } from "./base";
 import {
-  BrandingEntity,
   brandingRepo,
   BrandingStatus,
   BrandingUpdateOperations,
@@ -131,9 +130,9 @@ describe("Repo", () => {
         { id },
         {
           $SET: {
-            [BrandingUpdatePaths.whatsappNo]: whatsappNo,
+            whatsappNo,
           },
-          $REMOVE: [BrandingUpdatePaths.email],
+          $REMOVE: ["email"],
         },
       ]);
     });

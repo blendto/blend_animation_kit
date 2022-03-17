@@ -89,10 +89,11 @@ export class DynamooseRepo<
   ): Promise<ExtendedEntity> {
     const updateSet = { $SET: {}, $REMOVE: [] };
     jsonPatch.forEach((change) => {
+      const key = change.path.slice(1);
       if (["add", "replace"].includes(change.op)) {
-        updateSet.$SET[change.path] = change.value;
+        updateSet.$SET[key] = change.value;
       } else {
-        updateSet.$REMOVE.push(change.path);
+        updateSet.$REMOVE.push(key);
       }
     });
     return (await this.model.update(

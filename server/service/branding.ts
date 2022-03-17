@@ -104,7 +104,7 @@ export default class BrandingService implements IService {
 
     await this.repo.update({ id: currentData.id }, [
       {
-        path: "logos",
+        path: "/logos",
         op: "replace",
         value: {
           entries: [
@@ -156,7 +156,7 @@ export default class BrandingService implements IService {
       }
     });
     await this.repo.update({ id }, [
-      { path: "logos", op: "replace", value: logos },
+      { path: "/logos", op: "replace", value: logos },
     ]);
   }
 
@@ -183,7 +183,7 @@ export default class BrandingService implements IService {
     return await this.repo.update({ id: currentData.id }, [
       {
         op: "replace",
-        path: "logos",
+        path: "/logos",
         value: logos,
       },
     ]);
