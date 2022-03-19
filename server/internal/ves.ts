@@ -15,14 +15,17 @@ export interface PreviewRequestParams {
   };
 }
 
-export enum PreviewRequestSchema {
+export enum ExportRequestSchema {
   recipe = "RECIPE",
   blend = "BLEND",
 }
 
-export interface SavePreviewRequest {
+export interface SaveExportRequest {
   body: Recipe;
-  schema: PreviewRequestSchema;
+  schema: ExportRequestSchema;
+}
+
+export interface SavePreviewRequest extends SaveExportRequest {
   uploadDetails: PresignedPost;
 }
 
@@ -44,6 +47,12 @@ export default class VesApi {
   async savePreview(params: SavePreviewRequest) {
     return await handleAxiosCall(async () => {
       return (await this.httpClient.post("/savePreview", params)).data;
+    });
+  }
+
+  async saveExport(params: SaveExportRequest) {
+    return await handleAxiosCall(async () => {
+      return (await this.httpClient.post("/saveExport", params)).data;
     });
   }
 }

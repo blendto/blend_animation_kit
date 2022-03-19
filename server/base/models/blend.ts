@@ -13,6 +13,11 @@ export enum BlendVersion {
   generated = "GENERATED",
 }
 
+export enum BatchLevelEditStatus {
+  INDIVIDUALLY_EDITED = "INDIVIDUALLY_EDITED",
+  RECIPE_EDITED = "RECIPE_EDITED",
+}
+
 export interface Blend extends Recipe {
   id: string;
   version: BlendVersion;
@@ -30,6 +35,7 @@ export interface Blend extends Recipe {
   heroImages?: HeroImageFileKeys;
   statusUpdates: StatusUpdate[];
   expireAt?: number;
+  batchLevelEditStatus?: BatchLevelEditStatus;
 }
 
 export interface StatusUpdate {

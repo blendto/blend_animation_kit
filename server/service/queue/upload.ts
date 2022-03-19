@@ -31,7 +31,7 @@ export class UploadService implements IService {
       message.Records[0].s3.object.key.replace(/\+/g, " ")
     );
     switch (bucket) {
-      case ConfigProvider.HERO_IMAGES_BUCKET:
+      case ConfigProvider.BLEND_INGREDIENTS_BUCKET:
         await this.processHeroImageTrigger(fileKey);
         break;
       case ConfigProvider.BRANDING_BUCKET:
@@ -85,6 +85,15 @@ export class UploadService implements IService {
       logger.error({
         op: "BLEND_NOT_FOUND",
         message: "Blend not a part of any batch",
+      });
+      return;
+    }
+
+    const batch = await this.batchService.getBatch(batchId, blend.createdBy);
+    if (!batch.pendingUploads[blendId]) {
+      logger.info({
+        op: "BLEND_UPLOAD_NOT_PENDING",
+        message: `Uploaded file with fileKey(${fileKey}) not part of pending uploads in batch ${batchId}`,
       });
       return;
     }

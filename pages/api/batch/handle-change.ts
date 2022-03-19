@@ -1,6 +1,5 @@
 import { _Record } from "@aws-sdk/client-dynamodb-streams/dist-types/models/models_0";
 import type { NextApiResponse } from "next";
-import logger from "server/base/Logger";
 import { Batch } from "server/base/models/batch";
 import {
   ensureServiceAuth,
@@ -8,6 +7,10 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import { BlendMicroServices } from "server/internal/inter-service-auth";
+import { diContainer } from "inversify.config";
+import { BatchService } from "server/service/batch";
+import { TYPES } from "server/types";
+import AWS from "server/external/aws";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -32,12 +35,10 @@ export const onBatchChange = async (
 ) => {
   const record = req.body as _Record;
 
-  const batch = record.dynamodb.NewImage as unknown as Batch;
-
-  logger.info({
-    op: "BatchHandleChange.OnBatchChange",
-    outputs: batch.outputs,
-  });
-
+  const batch = AWS.DynamoDB.Converter.unmarshall(
+    record.dynamodb.NewImage
+  ) as Batch;
+  const service = diContainer.get<BatchService>(TYPES.BatchService);
+  await service.consolidateBatchStatus(batch);
   res.send({ success: true });
 };

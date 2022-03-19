@@ -2,7 +2,7 @@ import {
   BatchOperation,
   SelectRecipeOperation,
 } from "server/base/models/batchOperations";
-import { ElementSource, Recipe } from "server/base/models/recipe";
+import { Recipe, RecipeWrapper } from "server/base/models/recipe";
 import { diContainer } from "inversify.config";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
@@ -24,33 +24,20 @@ export default class BatchRecipeProcessor {
   async generateRecipe(): Promise<Recipe> {
     const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
 
-    let recipe = await recipeService.getRecipe(
+    const recipe = await recipeService.getRecipe(
       this.selectRecipeOperation.recipeId,
       this.selectRecipeOperation.variant
     );
 
-    // TODO: move this method to Recipe
-    this.replaceHero(recipe);
+    const recipeWrapper = new RecipeWrapper(recipe);
+    recipeWrapper.replaceHero(this.blend.heroImages.withoutBg);
 
     return this.addInteractionsToRecipe(recipe);
   }
 
   // noinspection JSMethodCanBeStatic
-  private async addInteractionsToRecipe(recipe: Recipe): Promise<Recipe> {
+  private addInteractionsToRecipe(recipe: Recipe): Recipe {
     // TODO: Add interactions from other operations
     return recipe;
-  }
-
-  private replaceHero(recipe: Recipe) {
-    const heroUid = recipe.recipeDetails?.elements?.hero?.uid;
-    if (!heroUid) {
-      return;
-    }
-    recipe.images?.forEach((image) => {
-      if (image.uid === heroUid) {
-        image.source = ElementSource.blend;
-        image.uri = this.blend.heroImages.withoutBg;
-      }
-    });
   }
 }

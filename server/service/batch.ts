@@ -13,13 +13,12 @@ import {
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
-import { Blend, BlendStatus } from "server/base/models/blend";
+import { BatchLevelEditStatus, Blend } from "server/base/models/blend";
 import {
   copyObject,
   createDestinationFileKey,
   createSignedUploadUrl,
 } from "server/external/s3";
-import { IService } from "./index";
 import { customAlphabet } from "nanoid";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
@@ -32,6 +31,10 @@ import { ImageMetadata } from "server/base/models/recipe";
 import { BatchActionService } from "server/service/queue/batch/batchAction";
 import { BatchOperationHandler } from "server/service/queue/batch/batchOperationHandler";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
+import HeroImageService from "server/service/heroImage";
+import { ExpressionAttributeNameMap } from "aws-sdk/clients/dynamodb";
+import { EncodedPageKey } from "server/helpers/paginationUtils";
+import { IService } from "./index";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
@@ -74,23 +77,37 @@ export class BatchService implements IService {
     if (
       !BatchModelValidators.validateRequestConfig(uploadRequestCreationConfig)
     ) {
-      throw new UserError("Invalid fileNames", 400);
+      throw new UserError("Invalid fileNames/heroImages", 400);
     }
   }
 
   async initUpload(
     batchId: string,
     uid: string,
-    uploadRequestCreationConfig: UploadRequestCreationConfig
+    creationConfig: UploadRequestCreationConfig
   ): Promise<UploadRequests> {
-    await this.initUploadValidations(batchId, uid, uploadRequestCreationConfig);
+    await this.initUploadValidations(batchId, uid, creationConfig);
 
-    const promises = uploadRequestCreationConfig.fileNames.map((fileName) =>
+    const promises = creationConfig.fileNames.map((fileName) =>
       BatchService.buildUploadRequest(fileName, uid, batchId)
     );
+    const newBlendIdPromises = HeroImageService.createBatchBlends(
+      creationConfig.heroImages,
+      uid,
+      batchId
+    );
+
     const uploadRequests = await Promise.all(promises);
     await this.updateUploadRequests(batchId, uploadRequests);
-    return { uploadRequests: uploadRequests } as UploadRequests;
+
+    const blendsFromHeroImages = await Promise.all(newBlendIdPromises);
+    await BatchService.enqueueBatchTask(
+      batchId,
+      blendsFromHeroImages.map((e) => e.blendId),
+      BatchTaskType.process_operations
+    );
+
+    return { uploadRequests, blendsFromHeroImages } as UploadRequests;
   }
 
   private static async buildUploadRequest(
@@ -101,10 +118,7 @@ export class BatchService implements IService {
     const heroFileName = createDestinationFileKey(fileName, VALID_EXTENSIONS);
     const blend: Blend = await diContainer
       .get<BlendService>(TYPES.BlendService)
-      .initBlend(uid, {
-        batchId: batchId,
-        heroFileName: heroFileName,
-      });
+      .initBlend(uid, { batchId, heroFileName });
 
     const fileKey = `${blend.id}/${heroFileName}`;
     const urlDetails = (await createSignedUploadUrl(
@@ -118,9 +132,9 @@ export class BatchService implements IService {
     )) as PresignedPost;
 
     return {
-      fileName: fileName,
+      fileName,
       blendId: blend.id,
-      fileKey: fileKey,
+      fileKey,
       presignedUploadRequest: urlDetails,
     };
   }
@@ -165,10 +179,24 @@ export class BatchService implements IService {
   }
 
   private constructBulkUpdate(uploadRequests: UploadRequest[]): {
-    expressionAttributeNames;
-    expressionAttributeValues;
-    expression;
+    expressionAttributeNames: ExpressionAttributeNameMap;
+    expressionAttributeValues: Record<string, unknown>;
+    expression: string;
   } {
+    if (uploadRequests.length === 0) {
+      return {
+        expressionAttributeNames: {
+          "#updatedAt": "updatedAt",
+          "#status": "status",
+        },
+        expressionAttributeValues: {
+          ":updatedAt": Date.now(),
+          ":status": BatchState.PROCESSING,
+        },
+        expression: "SET #updatedAt = :updatedAt, #status = :status",
+      };
+    }
+
     const updates = {
       expressionAttributeNames: {
         "#updatedAt": "updatedAt",
@@ -204,16 +232,29 @@ export class BatchService implements IService {
     previewFileKey: string
   ) {
     await this.dataStore.updateItem({
+      UpdateExpression: `SET updatedAt = :updatedAt, previews.#blendId = :descriptor`,
+      ExpressionAttributeNames: {
+        "#blendId": blendId,
+      },
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":descriptor": { blendId, preview: previewFileKey },
+      },
+      Key: { id: batchId },
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
+  async updateExport(batchId: string, blendId: string, output: unknown) {
+    await this.dataStore.updateItem({
       UpdateExpression: `SET updatedAt = :updatedAt, outputs.#blendId = :descriptor`,
       ExpressionAttributeNames: {
         "#blendId": blendId,
       },
       ExpressionAttributeValues: {
         ":updatedAt": Date.now(),
-        ":descriptor": {
-          blendId: blendId,
-          preview: previewFileKey,
-        },
+        ":descriptor": output,
       },
       Key: { id: batchId },
       TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
@@ -251,9 +292,10 @@ export class BatchService implements IService {
       TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
-    await BatchService.seedProcessActionsToQueue(
+    await BatchService.enqueueBatchTask(
       batch.id,
-      updatedBatchOperations.blendsForPreviewRegeneration
+      updatedBatchOperations.blendsForPreviewRegeneration,
+      BatchTaskType.process_operations
     );
   }
 
@@ -263,20 +305,23 @@ export class BatchService implements IService {
     await Promise.all(reInitAll);
   }
 
-  private static async seedProcessActionsToQueue(
+  private static async enqueueBatchTask(
     batchId: string,
-    blendIds: string[]
+    blendIds: string[],
+    taskType: BatchTaskType
   ): Promise<void> {
     const batchActionService = diContainer.get<BatchActionService>(
       TYPES.BatchActionService
     );
-    for (const blendId of blendIds) {
-      await batchActionService.queueBatchProcessingTask({
-        batchId: batchId,
-        blendId: blendId,
-        type: BatchTaskType.process_operations,
-      });
-    }
+    const promises = blendIds.map(
+      async (blendId) =>
+        await batchActionService.queueBatchProcessingTask({
+          batchId,
+          blendId,
+          type: taskType,
+        })
+    );
+    await Promise.all(promises);
   }
 
   async applyRecipeToBatchBlend(
@@ -285,26 +330,29 @@ export class BatchService implements IService {
     uid: string
   ): Promise<void> {
     const blend = await this.blendService.getBlend(blendId);
-    if ([BlendStatus.Submitted, BlendStatus.Generated].includes(blend.status)) {
+    if (
+      blend.batchLevelEditStatus === BatchLevelEditStatus.INDIVIDUALLY_EDITED
+    ) {
       return;
     }
     const batch = await this.getBatch(batchId, uid);
     const operationProcessor = new BatchRecipeProcessor(batch, blend);
     const recipe = await operationProcessor.generateRecipe();
 
-    let copyFilePromises = [];
-    const heroImages = blend.heroImages;
+    const copyFilePromises = [];
+    const { heroImages } = blend;
     let interactionUpdatePromise;
 
     const blendImages = recipe.images.map((image) => {
       if (image.uid === recipe.recipeDetails.elements.hero.uid) {
         const interaction = recipe.interactions.find(
-          (interaction) =>
-            interaction.assetType == "IMAGE" &&
-            interaction.assetUid == image.uid
+          // eslint-disable-next-line eqeqeq
+          (_) => _.assetType == "IMAGE" && _.assetUid == image.uid
         );
-        // Starting from 2.5, we only show the cropped area in the mobile_app instead of actually cropping the image and uploading it.
-        // The hero image should not have cropRect property in a recipe as it will get replaced.
+        // Starting from 2.5, we only show the cropped area in the mobile_app
+        // instead of actually cropping the image and uploading it.
+        // The hero image should not have cropRect property in a recipe as it
+        // will get replaced.
         (interaction.metadata as ImageMetadata).cropRect = null;
         if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
           interactionUpdatePromise = adjustSizeToFit(
@@ -319,9 +367,9 @@ export class BatchService implements IService {
         );
         return { ...image, uri: heroImages.original };
       }
-      let uriParts = image.uri.split("/");
+      const uriParts = image.uri.split("/");
       uriParts[0] = blendId;
-      let targetUri = uriParts.join("/");
+      const targetUri = uriParts.join("/");
       copyFilePromises.push(
         copyObject(
           ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
@@ -346,5 +394,103 @@ export class BatchService implements IService {
     } as Blend;
 
     await this.blendService.updateBlend(modifiedBlend);
+  }
+
+  async exportBatch(batchId: string, uid: string) {
+    const batch = await this.getBatch(batchId, uid, true);
+    await BatchService.enqueueBatchTask(
+      batchId,
+      batch.blends,
+      BatchTaskType.process_export
+    );
+    await this.dataStore.updateItem({
+      UpdateExpression:
+        "SET #updatedAt = :updatedAt, #status = :status, outputs = :outputs",
+      ExpressionAttributeNames: {
+        "#updatedAt": "updatedAt",
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":status": BatchState.GENERATING,
+        ":outputs": {},
+      },
+      Key: { id: batchId },
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
+  async consolidateBatchStatus(updatedBatch: Batch) {
+    const { id } = updatedBatch;
+
+    switch (updatedBatch.status) {
+      case BatchState.PROCESSING: {
+        const blends = await this.blendService.getBlendIdsForBatch(id);
+        if (Object.keys(updatedBatch.previews).length === blends.length) {
+          await this.updateStatus(id, BatchState.IDLE);
+        }
+        break;
+      }
+      case BatchState.GENERATING: {
+        const blends = await this.blendService.getBlendIdsForBatch(id);
+        if (Object.keys(updatedBatch.outputs).length === blends.length) {
+          await this.updateStatus(id, BatchState.GENERATED);
+        }
+        break;
+      }
+      default:
+    }
+  }
+
+  async updateStatus(batchId: string, status: BatchState) {
+    await this.dataStore.updateItem({
+      UpdateExpression: "SET updatedAt = :updatedAt, #st = :st",
+      ExpressionAttributeNames: {
+        "#st": "status",
+      },
+      ExpressionAttributeValues: {
+        ":st": status,
+        ":updatedAt": Date.now(),
+      },
+      Key: { id: batchId },
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
+  async getAllBatches(
+    uid: string,
+    pageKey: string
+  ): Promise<{ batches: Batch[]; nextPageKey: string }> {
+    const encodedPageKey = new EncodedPageKey(pageKey);
+    if (encodedPageKey.exists() && !encodedPageKey.isValid()) {
+      throw new UserError("pageKey should be a string");
+    }
+    const pageKeyObject = encodedPageKey.decode();
+
+    const data = await this.dataStore.queryItems({
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
+      KeyConditionExpression: "#createdBy = :createdBy",
+      IndexName: "createdBy-updatedAt-index",
+      ExpressionAttributeNames: {
+        "#createdBy": "createdBy",
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":createdBy": uid,
+        ":deleted": BatchState.DELETED,
+      },
+      ProjectionExpression: "id, batchPreviewFileKey, updatedAt, #status",
+      FilterExpression: "#status <> :deleted",
+      ScanIndexForward: false,
+      ExclusiveStartKey: pageKeyObject as Record<string, unknown>,
+      Limit: 15,
+    });
+
+    const batches = data.Items as Batch[];
+    const nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
+
+    return { batches, nextPageKey };
   }
 }

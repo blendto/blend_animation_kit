@@ -2,14 +2,18 @@ import { NextApiResponse } from "next";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { SuggestionService } from "server/service/suggestion";
-import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
-        return suggestBatchRecipes(req, res);
+        return ensureAuth(suggestBatchRecipes, req, res);
       default:
         res.status(405).end();
     }

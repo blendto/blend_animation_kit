@@ -28,4 +28,4 @@ export class IndividualBlendEditOperation implements BatchOperation {
 }
 
 export const DEFAULT_BATCH_OPERATION: BatchOperation =
-  new SelectRecipeOperation("bday-temp-1", "1:1");
+  new SelectRecipeOperation("Solid0035", "1:1");

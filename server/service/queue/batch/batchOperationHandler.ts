@@ -28,14 +28,19 @@ export class BatchOperationHandler {
     incomingOperation: BatchOperation
   ): Promise<UpdatedBatchOperations> {
     switch (incomingOperation.op) {
-      case BatchOperationType.select_recipe:
+      case BatchOperationType.select_recipe: {
         const selectOp = incomingOperation as SelectRecipeOperation;
         return new SelectRecipeHandler(selectOp).handle(batch);
-      case BatchOperationType.individual_blend_edit:
+      }
+      case BatchOperationType.individual_blend_edit: {
         const editOp = incomingOperation as IndividualBlendEditOperation;
         return new IndividualBlendEditHandler(editOp).handle(batch);
+      }
+      default:
+        throw new UserError(
+          `Unknown BatchOperationType: ${String(incomingOperation.op)}`
+        );
     }
-    throw new UserError(`Unknown BatchOperationType: ${incomingOperation.op}`);
   }
 
   constructOutputsDeleteRequest(blends: string[]): BatchOutputsDeleteRequest {
@@ -50,7 +55,7 @@ export class BatchOperationHandler {
         10
       )();
       updates.expressionAttributeNames[`#${key}`] = blendId;
-      expressionItems.push(`outputs.#${key}`);
+      expressionItems.push(`previews.#${key}`);
     });
     updates.removeExpression = " REMOVE " + expressionItems.join(", ");
     return updates;
@@ -84,7 +89,7 @@ export class IndividualBlendEditHandler extends BatchOperationHandler {
   }
   handle(batch: Batch): UpdatedBatchOperations {
     const batchWrapper = new BatchWrapper(batch);
-    const blendId = this.incomingOperation.blendId;
+    const { blendId } = this.incomingOperation;
     if (!batchWrapper.isBlendModified(blendId)) {
       return {
         updatedOperations: [...batch.operations, this.incomingOperation],

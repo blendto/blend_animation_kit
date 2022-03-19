@@ -48,10 +48,12 @@ module.exports = {
     "object-curly-newline": "off",
     "implicit-arrow-linebreak": "off",
     "operator-linebreak": "off",
+    "function-paren-newline": "off",
+    "prefer-template": "off",
+    "no-constant-condition": "off",
     "import/prefer-default-export": "off",
     indent: "off",
     "brace-style": "off",
     "class-methods-use-this": "off",
-    "function-paren-newline": "off",
   },
 };

@@ -8,8 +8,11 @@ import {
   listObjectsInFolder,
 } from "server/external/s3";
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
-import VesApi, { PreviewRequestSchema } from "server/internal/ves";
-import { Recipe } from "server/base/models/recipe";
+import VesApi, {
+  ExportRequestSchema,
+  SaveExportRequest,
+} from "server/internal/ves";
+import { Recipe, RecipeWrapper } from "server/base/models/recipe";
 import { Blend } from "server/base/models/blend";
 import { Batch, BatchWrapper } from "server/base/models/batch";
 import { diContainer } from "inversify.config";
@@ -40,7 +43,7 @@ export class BatchPreviewGenerator {
     );
 
     await this.vesApi.savePreview({
-      ...this.previewRequest(),
+      ...this.exportRequest(),
       uploadDetails,
     });
 
@@ -53,18 +56,25 @@ export class BatchPreviewGenerator {
     );
   }
 
+  async saveExport() {
+    const output = await this.vesApi.saveExport(this.exportRequest());
+    const batchService = diContainer.get<BatchService>(TYPES.BatchService);
+    await batchService.updateExport(this.batch.id, this.blend.id, output);
+  }
+
   private async deletePreviews({ skipFileKey }) {
     try {
       const objects = await listObjectsInFolder(
         ConfigProvider.BLEND_OUTPUT_BUCKET,
         this.blend.id
       );
-      for (const object of objects) {
+      const promises = objects.map(async (object) => {
         if (object.Key === skipFileKey) {
-          continue;
+          return;
         }
         await deleteObject(ConfigProvider.BLEND_OUTPUT_BUCKET, object.Key);
-      }
+      });
+      await Promise.all(promises);
     } catch (err) {
       logger.error(err);
     }
@@ -83,19 +93,23 @@ export class BatchPreviewGenerator {
   }
 
   private previewFileKey(recipe: Recipe) {
-    const isStatic: Boolean =
+    const isStatic: boolean =
       recipe.gifsOrStickers === null || recipe.gifsOrStickers.length === 0;
     const fileName = isStatic ? `${Date.now()}.jpeg` : `${Date.now()}.webp`;
     const previewFileKey = `${this.blend.id}/preview/${fileName}`;
     return { fileName, previewFileKey };
   }
 
-  private previewRequest(): {
-    body: Recipe;
-    schema: PreviewRequestSchema;
-  } {
+  private exportRequest(): SaveExportRequest {
+    // TODO:  Remove this hack.
+    //        This is needed because VES uses the id to decided which
+    //        output folder to write to.
+    //        Ideally, we should send a separate folder prefix.
+    const wrapper = new RecipeWrapper(this.recipe);
+    wrapper.replaceId(this.blend.id);
+
     return new BatchWrapper(this.batch).isBlendModified(this.blend.id)
-      ? { body: this.blend, schema: PreviewRequestSchema.blend }
-      : { body: this.recipe, schema: PreviewRequestSchema.recipe };
+      ? { body: this.blend, schema: ExportRequestSchema.blend }
+      : { body: this.recipe, schema: ExportRequestSchema.recipe };
   }
 }

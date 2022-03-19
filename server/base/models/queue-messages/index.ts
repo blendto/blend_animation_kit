@@ -9,6 +9,7 @@ export interface BatchTaskMessage extends QueueMessage {
 export enum BatchTaskType {
   process_upload = "PROCESS_UPLOAD",
   process_operations = "PROCESS_OPERATIONS",
+  process_export = "PROCESS_EXPORT",
 }
 
 export interface ImageUploadMessage extends QueueMessage {

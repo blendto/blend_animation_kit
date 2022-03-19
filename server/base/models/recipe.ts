@@ -141,3 +141,28 @@ export class RecipeUtils {
     return `${aspectRatio.width}:${aspectRatio.height}`;
   }
 }
+
+export class RecipeWrapper {
+  private recipe: Recipe;
+
+  constructor(recipe: Recipe) {
+    this.recipe = recipe;
+  }
+
+  replaceHero(newHero: string) {
+    const heroUid = this.recipe.recipeDetails?.elements?.hero?.uid;
+    if (!heroUid) {
+      return;
+    }
+    this.recipe.images?.forEach((image) => {
+      if (image.uid === heroUid) {
+        image.source = ElementSource.blend;
+        image.uri = newHero;
+      }
+    });
+  }
+
+  replaceId(id: string) {
+    this.recipe.id = id;
+  }
+}

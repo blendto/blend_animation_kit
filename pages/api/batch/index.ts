@@ -4,7 +4,14 @@ import { Batch, BatchState } from "server/base/models/batch";
 import DynamoDB from "server/external/dynamodb";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DEFAULT_BATCH_OPERATION } from "server/base/models/batchOperations";
-import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
+import { diContainer } from "inversify.config";
+import { TYPES } from "server/types";
+import { BatchService } from "server/service/batch";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -12,6 +19,8 @@ export default withReqHandler(
     switch (method) {
       case "POST":
         return createBatch(req, res, DynamoDB._());
+      case "GET":
+        return ensureAuth(getAllBatches, req, res);
       default:
         res.status(405).end();
     }
@@ -32,6 +41,7 @@ const createBatch = async (
     updatedAt: now,
     operations: [DEFAULT_BATCH_OPERATION],
     pendingUploads: {},
+    previews: {},
     outputs: {},
   } as Batch;
   await dataStore.putItem({
@@ -41,3 +51,15 @@ const createBatch = async (
 
   res.status(200).json(newBatch);
 };
+
+async function getAllBatches(
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+): Promise<void> {
+  const batchService = diContainer.get<BatchService>(TYPES.BatchService);
+  const {
+    query: { pageKey },
+  } = req;
+  const batches = await batchService.getAllBatches(req.uid, pageKey as string);
+  res.status(200).send(batches);
+}

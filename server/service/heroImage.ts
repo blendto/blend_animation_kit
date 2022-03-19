@@ -24,6 +24,10 @@ import { IService } from "server/service";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import logger from "server/base/Logger";
+import { diContainer } from "inversify.config";
+import { BlendService } from "server/service/blend";
+import { HeroImageIdBased } from "server/service/fileKeysProcessingStrategy";
+import { BlendFromHeroImage } from "server/base/models/batch";
 
 @injectable()
 export default class HeroImageService implements IService {
@@ -212,5 +216,21 @@ export default class HeroImageService implements IService {
       ReturnValues: "NONE",
     });
     return;
+  }
+
+  public static createBatchBlends(
+    heroImageIds: string[],
+    uid: string,
+    batchId: string
+  ): Promise<BlendFromHeroImage>[] {
+    const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+    return heroImageIds.map(async (id) => {
+      const blend = await blendService.initBlend(uid, {
+        batchId: batchId,
+      });
+      const fileKeys = await new HeroImageIdBased(id, blend.id, uid).process();
+      await blendService.addHeroKeysToBlend(blend.id, fileKeys);
+      return { blendId: blend.id, heroImageId: id };
+    });
   }
 }

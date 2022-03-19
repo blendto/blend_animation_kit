@@ -32,6 +32,7 @@ export class BatchActionService implements IService {
   async processTask(batchMessage: BatchTaskMessage) {
     switch (batchMessage.type) {
       case BatchTaskType.process_operations:
+      case BatchTaskType.process_export:
         return await this.processOperations(batchMessage);
       case BatchTaskType.process_upload:
         return await this.processUpload(batchMessage);
@@ -65,6 +66,13 @@ export class BatchActionService implements IService {
 
     const operationProcessor = new BatchRecipeProcessor(batch, blend);
     const recipe = await operationProcessor.generateRecipe();
-    await new BatchPreviewGenerator(blend, batch, recipe).savePreview();
+    const previewGenerator = new BatchPreviewGenerator(blend, batch, recipe);
+
+    switch (message.type) {
+      case BatchTaskType.process_operations:
+        return previewGenerator.savePreview();
+      case BatchTaskType.process_export:
+        return previewGenerator.saveExport();
+    }
   }
 }

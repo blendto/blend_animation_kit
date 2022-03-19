@@ -35,7 +35,6 @@ const initBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   } catch (err) {
     logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
-    return;
   }
 };
 
@@ -61,7 +60,7 @@ const getAllBlends = async (
   }
 
   let items = [];
-  let nextPageKey = null;
+  let nextPageKey: unknown = null;
   try {
     const data = await DynamoDB._().queryItems({
       TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
@@ -72,6 +71,7 @@ const getAllBlends = async (
         "#status": "status",
         "#output": "output",
         "#version": "version",
+        "#batchId": "batchId",
       },
       ExpressionAttributeValues: {
         ":createdBy": req.uid,
@@ -82,15 +82,15 @@ const getAllBlends = async (
       ProjectionExpression:
         "id, filePath, imagePath, thumbnail, #output, createdAt, updatedAt, #status",
       FilterExpression:
-        "(#version = :currentVersion) AND (#status = :generated OR #status = :submitted)",
+        "(#version = :currentVersion) AND (#status = :generated OR #status = :submitted) AND attribute_not_exists(#batchId)",
       ScanIndexForward: false,
-      ExclusiveStartKey: pageKeyObject,
+      ExclusiveStartKey: pageKeyObject as Record<string, unknown>,
       Limit: 15,
     });
 
-    items = data.Items.map((item) => {
-      return blendService.backfillBlendOutput(<Blend>item);
-    });
+    items = data.Items.map((item) =>
+      blendService.backfillBlendOutput(<Blend>item)
+    );
 
     nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
   } catch (err) {

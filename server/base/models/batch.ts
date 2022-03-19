@@ -15,6 +15,7 @@ export enum BatchState {
 
 export interface UploadRequestCreationConfig {
   fileNames: string[];
+  heroImages: string[];
 }
 
 export interface UploadRequest {
@@ -24,9 +25,20 @@ export interface UploadRequest {
   presignedUploadRequest: PresignedPost;
 }
 
+export type BlendFromHeroImage = {
+  blendId: string;
+  heroImageId: string;
+};
+
 export interface UploadRequests {
   uploadRequests: UploadRequest[];
+  blendsFromHeroImages: BlendFromHeroImage[];
 }
+
+export type BatchItemPreview = {
+  blendId: string;
+  preview: string;
+};
 
 export interface Batch {
   id: string;
@@ -37,7 +49,9 @@ export interface Batch {
   createdBy: string;
   createdAt: number;
   updatedAt: number;
-  outputs: any;
+  previews: Record<string, BatchItemPreview>;
+  batchPreviewFileKey?: string;
+  outputs: Record<string, unknown>;
 }
 
 export class BatchWrapper {
@@ -48,12 +62,11 @@ export class BatchWrapper {
   }
 
   isBlendModified(blendId: string) {
-    return this.batch.operations.some((operation) => {
-      return (
+    return this.batch.operations.some(
+      (operation) =>
         operation.op === BatchOperationType.individual_blend_edit &&
         (operation as IndividualBlendEditOperation).blendId === blendId
-      );
-    });
+    );
   }
 
   getIndividuallyEditedBlends(): string[] {
@@ -67,13 +80,13 @@ export class BatchWrapper {
 
 export class BatchModelValidators {
   static validateRequestConfig(request: UploadRequestCreationConfig): boolean {
-    if (!request.fileNames) {
+    const { fileNames, heroImages } = request;
+    const names: string[] = [...fileNames, ...heroImages];
+    const length = names?.length;
+    if (!length) {
       return false;
     }
-    return (
-      request.fileNames.length > 0 &&
-      request.fileNames.length <= 20 &&
-      request.fileNames.length === new Set(request.fileNames).size
-    );
+
+    return length > 0 && length <= 20 && length === new Set(names).size;
   }
 }

@@ -2,13 +2,18 @@ import "reflect-metadata";
 import { nanoid } from "nanoid";
 import { DateTime } from "luxon";
 
-import { IService } from "./index";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import DynamoDB from "server/external/dynamodb";
-import { Blend, BlendStatus, BlendVersion } from "server/base/models/blend";
+import {
+  BatchLevelEditStatus,
+  Blend,
+  BlendStatus,
+  BlendVersion,
+} from "server/base/models/blend";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
+import { IService } from "./index";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -78,10 +83,7 @@ export class BlendService implements IService {
   ): Promise<Blend> {
     let blend = await this.dataStore.getItem({
       TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
-      Key: {
-        id,
-        version: version,
-      },
+      Key: { id, version },
     });
 
     if (!blend) {
@@ -103,11 +105,12 @@ export class BlendService implements IService {
 
   async initBlend(
     uid: string,
-    options?: { batchId: string; heroFileName: string }
+    options?: { batchId: string; heroFileName?: string }
   ): Promise<Blend> {
     let blendRequestId: string;
     do {
       blendRequestId = nanoid(8);
+      /* eslint-disable no-await-in-loop */
       const item = await this.dataStore.getItem({
         TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
         Key: {
@@ -127,7 +130,7 @@ export class BlendService implements IService {
     return await this.addBlendToDB(blendRequestId, uid, {
       batchId: options?.batchId,
       heroImages: {
-        original: fileKey,
+        original: fileKey as string,
       },
     });
   }
@@ -140,8 +143,8 @@ export class BlendService implements IService {
     const currentTime = Date.now();
     const currentDate = DateTime.utc().toISODate();
 
-    let blend: Blend = {
-      id: id,
+    const blend: Blend = {
+      id,
       version: BlendVersion.current,
       batchId: options?.batchId,
       status: BlendStatus.Initialized,
@@ -171,9 +174,10 @@ export class BlendService implements IService {
   }
 
   backfillBlendOutput(item: Blend) {
-    let { filePath, imagePath, thumbnail, output, status } = item;
+    const { filePath, imagePath, thumbnail, status } = item;
+    let { output } = item;
 
-    if (!output && status == "GENERATED") {
+    if (!output && status === BlendStatus.Generated) {
       output = {
         video: {
           path: filePath,
@@ -218,6 +222,7 @@ export class BlendService implements IService {
           "#createdBy": "createdBy",
           "#status": "status",
           "#version": "version",
+          "#metadata": "metadata",
         },
         ExpressionAttributeValues: {
           ":createdBy": uid,
@@ -226,7 +231,7 @@ export class BlendService implements IService {
         },
         ProjectionExpression: "id, metadata",
         FilterExpression:
-          "#version = :generatedVersion AND #status = :generatedStatus",
+          "#version = :generatedVersion AND #status = :generatedStatus AND attribute_exists(#metadata)",
         ScanIndexForward: false,
         Limit: 20,
       })
@@ -253,9 +258,10 @@ export class BlendService implements IService {
         "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
         "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
         "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-        "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn REMOVE expireAt",
+        "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #batchSt = :batchSt REMOVE expireAt",
       ExpressionAttributeNames: {
         "#st": "status",
+        "#batchSt": "batchLevelEditStatus",
       },
       ExpressionAttributeValues: {
         ":s": "SUBMITTED",
@@ -274,6 +280,7 @@ export class BlendService implements IService {
         ":metadata": metadata,
         ":updatedAt": now,
         ":updatedOn": updatedOn,
+        ":batchSt": BatchLevelEditStatus.INDIVIDUALLY_EDITED,
       },
       Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
@@ -288,14 +295,12 @@ export class BlendService implements IService {
     const updatedOn = DateTime.utc().toISODate();
     await this.dataStore.updateItem({
       UpdateExpression:
-        "SET #st = :s, statusUpdates = list_append(statusUpdates, :update)," +
-        "updatedAt = :updatedAt, updatedOn = :updatedOn",
+        "SET #st = :s, updatedAt = :updatedAt, updatedOn = :updatedOn",
       ExpressionAttributeNames: {
-        "#st": "status",
+        "#st": "batchLevelEditStatus",
       },
       ExpressionAttributeValues: {
-        ":s": BlendStatus.Initialized,
-        ":update": [{ status: BlendStatus.Initialized, on: now }],
+        ":s": BatchLevelEditStatus.RECIPE_EDITED,
         ":updatedAt": now,
         ":updatedOn": updatedOn,
       },
