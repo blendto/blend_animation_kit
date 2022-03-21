@@ -1,7 +1,7 @@
-import ConfigProvider from "server/base/ConfigProvider";
 import { diContainer } from "inversify.config";
-import { TYPES } from "server/types";
-import BrandingService from "server/service/branding";
+
+import ConfigProvider from "server/base/ConfigProvider";
+import { UserError } from "server/base/errors";
 import {
   BrandingLogoStatus,
   BrandingStatus,
@@ -9,7 +9,8 @@ import {
   BrandingUpdatePaths,
   BrandingEntity,
 } from "server/repositories/branding";
-import { UserError } from "server/base/errors";
+import BrandingService from "server/service/branding";
+import { TYPES } from "server/types";
 
 describe("BrandingService", () => {
   const brandingService = diContainer.get<BrandingService>(
@@ -200,7 +201,7 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "getOrCreate")
         .mockResolvedValueOnce(brandingDocWithLogos);
       const modelUpdateMock = jest
-        .spyOn(brandingService.repo, "updateWithFormatted")
+        .spyOn(brandingService.repo, "update")
         .mockResolvedValueOnce(updatedBrandingDoc);
 
       const jsonPatch = [
@@ -218,8 +219,9 @@ describe("BrandingService", () => {
 
       expect(modelUpdateMock.mock.calls.length).toBe(1);
       expect(modelUpdateMock.mock.calls[0]).toMatchObject([
-        brandingDocWithLogos,
+        { id },
         jsonPatch,
+        brandingDocWithLogos,
       ]);
     });
 
@@ -266,7 +268,7 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "getOrCreate")
         .mockResolvedValueOnce(brandingDocWithOtherAttrs);
       const modelUpdateMock = jest
-        .spyOn(brandingService.repo, "updateWithFormatted")
+        .spyOn(brandingService.repo, "update")
         .mockResolvedValueOnce(brandingDoc);
 
       const jsonPatch = [
@@ -287,8 +289,9 @@ describe("BrandingService", () => {
 
       expect(modelUpdateMock.mock.calls.length).toBe(1);
       expect(modelUpdateMock.mock.calls[0]).toMatchObject([
-        brandingDocWithOtherAttrs,
+        { id },
         jsonPatch,
+        brandingDocWithOtherAttrs,
       ]);
     });
   });
@@ -416,6 +419,7 @@ describe("BrandingService", () => {
             },
           },
         ],
+        brandingDocWithLogos,
       ]);
 
       expect(
@@ -507,6 +511,7 @@ describe("BrandingService", () => {
             },
           },
         ],
+        brandingDocWithLogos,
       ]);
 
       expect(
@@ -534,7 +539,7 @@ describe("BrandingService", () => {
     it("Rejects request if the file key has invalid blend id", async () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
-        .mockImplementation(async (brandingId) => Promise.resolve());
+        .mockImplementation((brandingId) => Promise.resolve());
       await expect(
         brandingService.markLogoUploadAsDone(fileKey)
       ).rejects.toThrow(new UserError("Invalid fileKey"));
@@ -575,15 +580,16 @@ describe("BrandingService", () => {
     });
 
     it("Successfully does the update in the absence of above problems", async () => {
+      const currentData: BrandingEntity = {
+        ...brandingDoc,
+        logos: {
+          primaryEntry: fileKey,
+          entries: [{ fileKey, status: BrandingLogoStatus.INITIALIZED }],
+        },
+      };
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
-        .mockResolvedValueOnce({
-          ...brandingDoc,
-          logos: {
-            primaryEntry: fileKey,
-            entries: [{ fileKey, status: BrandingLogoStatus.INITIALIZED }],
-          },
-        } as BrandingEntity);
+        .mockResolvedValueOnce(currentData);
       const updateSpy = jest
         .spyOn(brandingService.repo, "update")
         .mockResolvedValue({
@@ -612,6 +618,7 @@ describe("BrandingService", () => {
             },
           },
         ],
+        currentData,
       ]);
     });
   });
@@ -667,7 +674,7 @@ describe("BrandingService", () => {
         .mockResolvedValueOnce(brandingDocWithLogos);
       const s3DeleteMock = jest
         .spyOn(brandingService, "deleteObject")
-        .mockImplementationOnce(async () => Promise.resolve());
+        .mockImplementationOnce(() => Promise.resolve());
       const updateMock = jest
         .spyOn(brandingService.repo, "update")
         .mockResolvedValue(updateResMock);
@@ -702,6 +709,7 @@ describe("BrandingService", () => {
             },
           },
         ],
+        brandingDocWithLogos,
       ]);
     });
 
@@ -742,7 +750,7 @@ describe("BrandingService", () => {
         .mockResolvedValueOnce(brandingDocWithLogos);
       const s3DeleteMock = jest
         .spyOn(brandingService, "deleteObject")
-        .mockImplementationOnce(async () => Promise.resolve());
+        .mockImplementationOnce(() => Promise.resolve());
       const updateMock = jest
         .spyOn(brandingService.repo, "update")
         .mockResolvedValue(updateResMock);
@@ -777,6 +785,7 @@ describe("BrandingService", () => {
             },
           },
         ],
+        brandingDocWithLogos,
       ]);
     });
   });

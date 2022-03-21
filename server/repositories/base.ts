@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import {
   aws,
   model as dynamooseModel,
@@ -6,7 +5,11 @@ import {
 } from "dynamoose";
 import { Document as DynamooseEntity } from "dynamoose/dist/Document";
 import { Model as DynamooseModel } from "dynamoose/dist/Model";
+import { get, set } from "lodash";
+import { nanoid } from "nanoid";
+
 import ConfigProvider from "server/base/ConfigProvider";
+import { UserError } from "server/base/errors";
 import { getCredentials } from "server/external/aws";
 
 const { sdk } = aws;
@@ -28,27 +31,21 @@ export type JSONPatch = {
 
 export interface Entity {}
 
-export class Model {}
-
-export abstract class Repo<
-  ExtendedEntity extends Entity,
-  ExtendedModel extends Model
-> {
-  model: ExtendedModel;
-
+export abstract class Repo<ExtendedEntity extends Entity> {
   abstract create?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity>;
-  abstract get?(params: KeyObject): Promise<ExtendedEntity | void>;
+  abstract get?(keyObject: KeyObject): Promise<ExtendedEntity | void>;
   abstract query?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity[]>;
   abstract update?(
     keyObject: KeyObject,
-    jsonPatch: JSONPatch
+    jsonPatch: JSONPatch,
+    currentData?: ExtendedEntity
   ): Promise<ExtendedEntity>;
 }
 
 export class DynamooseRepo<
   ExtendedEntity extends Entity,
   DynamooseExtendedEntity extends DynamooseEntity
-> implements Repo<ExtendedEntity, DynamooseModel<DynamooseExtendedEntity>>
+> implements Repo<ExtendedEntity>
 {
   model: DynamooseModel<DynamooseExtendedEntity>;
 
@@ -85,13 +82,37 @@ export class DynamooseRepo<
 
   async update(
     keyObject: KeyObject,
-    jsonPatch: JSONPatch
+    jsonPatch: JSONPatch,
+    currentData?: ExtendedEntity
   ): Promise<ExtendedEntity> {
     const updateSet = { $SET: {}, $REMOVE: [] };
+    if (!currentData) {
+      // eslint-disable-next-line no-param-reassign
+      currentData = (await this.get(keyObject)) as ExtendedEntity;
+      if (!currentData) {
+        throw new UserError("Invalid keyObject");
+      }
+    }
     jsonPatch.forEach((change) => {
-      const key = change.path.slice(1);
+      // Remove the first slash. Eg: "/logos" => "logos"
+      let key = change.path.slice(1);
+      // Replace the other slashes with dot notation.
+      // Eg: "logos/primaryEntry" => "logos.primaryEntry"
+      key = key.replace("/", ".");
+
+      let { value } = change;
+      // dynamoose doesn't allow nested update on maps. Pass whole maps instead.
+      // See https://github.com/dynamoose/dynamoose/issues/665
+      if (key.includes(".")) {
+        const keySplit = key.split(".");
+        const nestedValue = value;
+        key = keySplit[0];
+        value = get(currentData, keySplit[0]);
+        set(value as object, keySplit.slice(1).join("."), nestedValue);
+      }
+
       if (["add", "replace"].includes(change.op)) {
-        updateSet.$SET[key] = change.value;
+        updateSet.$SET[key] = value;
       } else {
         updateSet.$REMOVE.push(key);
       }

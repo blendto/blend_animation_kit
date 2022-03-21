@@ -72,7 +72,7 @@ export default class BrandingService implements IService {
       }
     });
 
-    return await this.repo.updateWithFormatted(currentData, changes);
+    return await this.repo.update({ id: currentData.id }, changes, currentData);
   }
 
   async initLogoUpload(
@@ -102,28 +102,32 @@ export default class BrandingService implements IService {
       GetSignedUrlOperation.putObject
     )) as string;
 
-    await this.repo.update({ id: currentData.id }, [
-      {
-        path: "/logos",
-        op: "replace",
-        value: {
-          entries: [
-            // If there are initialized logos, their upload probably failed in between.
-            // Assume so and delete them from the profile.
-            ...uploadedLogos,
-            {
-              status: BrandingLogoStatus.INITIALIZED,
-              fileKey,
-            },
-          ],
-          // If no uploaded logos exist, mark this as primary
-          primaryEntry:
-            uploadedLogos.length === 0
-              ? fileKey
-              : currentData.logos.primaryEntry,
+    await this.repo.update(
+      { id: currentData.id },
+      [
+        {
+          path: "/logos",
+          op: "replace",
+          value: {
+            entries: [
+              // If there are initialized logos, their upload probably failed in between.
+              // Assume so and delete them from the profile.
+              ...uploadedLogos,
+              {
+                status: BrandingLogoStatus.INITIALIZED,
+                fileKey,
+              },
+            ],
+            // If no uploaded logos exist, mark this as primary
+            primaryEntry:
+              uploadedLogos.length === 0
+                ? fileKey
+                : currentData.logos.primaryEntry,
+          },
         },
-      },
-    ]);
+      ],
+      currentData
+    );
     return { url: uploadURL };
   }
 
@@ -155,9 +159,11 @@ export default class BrandingService implements IService {
         e.status = BrandingLogoStatus.UPLOADED;
       }
     });
-    await this.repo.update({ id }, [
-      { path: "/logos", op: "replace", value: logos },
-    ]);
+    await this.repo.update(
+      { id },
+      [{ path: "/logos", op: "replace", value: logos }],
+      brandingProfile
+    );
   }
 
   async delLogo(userId: string, fileKey: string): Promise<BrandingEntity> {
@@ -180,12 +186,16 @@ export default class BrandingService implements IService {
     }
 
     await this.deleteObject(ConfigProvider.BRANDING_BUCKET, fileKey);
-    return await this.repo.update({ id: currentData.id }, [
-      {
-        op: "replace",
-        path: "/logos",
-        value: logos,
-      },
-    ]);
+    return await this.repo.update(
+      { id: currentData.id },
+      [
+        {
+          op: "replace",
+          path: "/logos",
+          value: logos,
+        },
+      ],
+      currentData
+    );
   }
 }

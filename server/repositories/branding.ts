@@ -1,13 +1,12 @@
 import ConfigProvider from "server/base/ConfigProvider";
+
 import {
   DynamooseModel,
   DynamooseSchema,
   dynamooseModel,
-  JSONPatch,
   DynamooseEntity,
   DynamooseRepo,
   Entity,
-  Model,
   Repo,
 } from "./base";
 
@@ -43,18 +42,6 @@ export enum BrandingUpdateOperations {
   remove = "remove",
 }
 
-abstract class BrandingRepo<
-  BrandingEntity extends Entity,
-  BrandingModel extends Model
-> extends Repo<BrandingEntity, BrandingModel> {
-  model: BrandingModel;
-
-  abstract updateWithFormatted(
-    currentData: BrandingEntity,
-    jsonPatch: JSONPatch
-  ): Promise<BrandingEntity>;
-}
-
 export interface BrandingEntity extends Entity {
   id: string;
   userId: string;
@@ -74,8 +61,6 @@ export interface BrandingEntity extends Entity {
   status?: BrandingStatus;
 }
 interface BrandingDynamooseEntity extends DynamooseEntity, BrandingEntity {}
-
-class BrandingModel extends Model {}
 
 const brandingDynamooseSchema = new DynamooseSchema(
   {
@@ -134,9 +119,9 @@ const brandingDynamooseSchema = new DynamooseSchema(
   }
 );
 
-class BrandingDynamooseRepo
+export class BrandingDynamooseRepo
   extends DynamooseRepo<BrandingEntity, BrandingDynamooseEntity>
-  implements BrandingRepo<BrandingEntity, BrandingModel>
+  implements Repo<BrandingEntity>
 {
   model: DynamooseModel<BrandingDynamooseEntity> = dynamooseModel(
     ConfigProvider.BRANDING_DYNAMODB_TABLE,
@@ -145,27 +130,6 @@ class BrandingDynamooseRepo
       create: false,
     }
   );
-
-  async updateWithFormatted(
-    currentData: BrandingEntity,
-    jsonPatch: JSONPatch
-  ): Promise<BrandingEntity> {
-    // dynamoose doesn't allow nested update on maps. Pass the whole logos object.
-    // See https://github.com/dynamoose/dynamoose/issues/665
-    jsonPatch.forEach((change) => {
-      if (change.path === "/logos/primaryEntry") {
-        // eslint-disable-next-line no-param-reassign
-        change.path = "/logos";
-        // eslint-disable-next-line no-param-reassign
-        change.value = {
-          ...currentData.logos,
-          primaryEntry: change.value,
-        };
-      }
-    });
-    return await this.update({ id: currentData.id }, jsonPatch);
-  }
 }
 
-export const brandingRepo: BrandingRepo<BrandingEntity, BrandingModel> =
-  new BrandingDynamooseRepo();
+export const brandingRepo: Repo<BrandingEntity> = new BrandingDynamooseRepo();

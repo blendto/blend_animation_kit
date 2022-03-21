@@ -55,5 +55,12 @@ module.exports = {
     indent: "off",
     "brace-style": "off",
     "class-methods-use-this": "off",
+    "prefer-destructuring": [
+      "error",
+      {
+        array: false,
+        object: true,
+      },
+    ],
   },
 };

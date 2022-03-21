@@ -1,12 +1,18 @@
+import { UserError } from "server/base/errors";
+
 import { DynamooseRepo } from "./base";
 import {
-  brandingRepo,
+  BrandingDynamooseRepo,
+  BrandingEntity,
+  BrandingLogoStatus,
   BrandingStatus,
   BrandingUpdateOperations,
   BrandingUpdatePaths,
 } from "./branding";
 
 describe("Repo", () => {
+  const brandingRepo = new BrandingDynamooseRepo();
+
   afterEach(() => {
     jest.restoreAllMocks();
   });
@@ -61,10 +67,13 @@ describe("Repo", () => {
         .mockReturnValueOnce(anotherId);
       const createSpy = jest
         .spyOn(brandingRepo.model, "create")
-        .mockRejectedValueOnce({
-          code: "ConditionalCheckFailedException",
-        } as never)
-        .mockImplementationOnce(async (params) =>
+        .mockImplementationOnce((params) =>
+          // eslint-disable-next-line prefer-promise-reject-errors
+          Promise.reject({
+            code: "ConditionalCheckFailedException",
+          })
+        )
+        .mockImplementationOnce((params) =>
           Promise.resolve({
             ...params,
             logos,
@@ -95,22 +104,40 @@ describe("Repo", () => {
   });
 
   describe("update", () => {
-    it("transforms update body from JSONPatch to dynamoose specific patch", async () => {
+    it("Transforms update body from JSONPatch to dynamoose specific patch", async () => {
       const id = "wNALVbEj";
       const userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
       const updatedAt = 1646906641;
       const status = BrandingStatus.CREATED;
+      const primaryLogoFileKey = "FILE-KEY-1";
+      const otherLogoFileKey = "FILE-KEY-2";
+      const branding: BrandingEntity = {
+        id,
+        userId,
+        logos: {
+          entries: [
+            {
+              fileKey: primaryLogoFileKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: otherLogoFileKey,
+              status: BrandingLogoStatus.UPLOADED,
+            },
+          ],
+          primaryEntry: primaryLogoFileKey,
+        },
+        updatedAt,
+        status,
+      };
+      const modelGetSyp = jest
+        .spyOn(brandingRepo, "get")
+        .mockResolvedValueOnce(branding);
       const modelUpdateSpy = jest
         .spyOn(brandingRepo.model, "update")
-        .mockResolvedValueOnce({
-          id,
-          userId,
-          logos: {
-            entries: [],
-          },
-          updatedAt,
-          status,
-        } as never);
+        .mockImplementation((keyObject, updateSet) =>
+          Promise.resolve(branding)
+        );
 
       const whatsappNo = "+91 999 888 7776";
       await brandingRepo.update({ id }, [
@@ -123,18 +150,51 @@ describe("Repo", () => {
           path: BrandingUpdatePaths.whatsappNo,
           value: whatsappNo,
         },
+        {
+          op: BrandingUpdateOperations.replace,
+          path: BrandingUpdatePaths.primaryLogo,
+          value: otherLogoFileKey,
+        },
       ]);
 
+      expect(modelGetSyp.mock.calls.length).toBe(1);
+      expect(modelGetSyp.mock.calls[0]).toMatchObject([{ id }]);
       expect(modelUpdateSpy.mock.calls.length).toBe(1);
       expect(modelUpdateSpy.mock.calls[0]).toMatchObject([
         { id },
         {
           $SET: {
             whatsappNo,
+            logos: {
+              entries: [
+                {
+                  fileKey: primaryLogoFileKey,
+                  status: "UPLOADED",
+                },
+                {
+                  fileKey: otherLogoFileKey,
+                  status: "UPLOADED",
+                },
+              ],
+              primaryEntry: otherLogoFileKey,
+            },
           },
           $REMOVE: ["email"],
         },
       ]);
+    });
+
+    it("Rejects request if the keyObject is invalid", async () => {
+      const id = "wNALVbEj";
+      const modelGetSyp = jest
+        .spyOn(brandingRepo, "get")
+        .mockImplementation(({ id }) => Promise.resolve());
+
+      await expect(brandingRepo.update({ id }, [])).rejects.toThrow(
+        new UserError("Invalid keyObject")
+      );
+      expect(modelGetSyp.mock.calls.length).toBe(1);
+      expect(modelGetSyp.mock.calls[0]).toMatchObject([{ id }]);
     });
   });
 });
