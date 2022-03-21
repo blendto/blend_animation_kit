@@ -13,12 +13,16 @@ import {
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
+import { EncodedPageKey } from "server/helpers/paginationUtils";
+import UserError from "server/base/errors/UserError";
 import { IService } from "./index";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
 const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
 const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
+type BlendsPage = { blends: Blend[]; nextPageKey: string };
+const PAGE_SIZE = 15;
 
 @injectable()
 export class BlendService implements IService {
@@ -308,5 +312,64 @@ export class BlendService implements IService {
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
+  }
+
+  private async getBlendPage(
+    uid: string,
+    pageKey?: string
+  ): Promise<BlendsPage> {
+    const encodedPageKey = new EncodedPageKey(pageKey);
+    if (encodedPageKey.exists() && !encodedPageKey.isValid()) {
+      throw new UserError("pageKey should be a string");
+    }
+    const pageKeyObject = encodedPageKey.decode();
+
+    const data = await this.dataStore.queryItems({
+      TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
+      KeyConditionExpression: "#createdBy = :createdBy",
+      IndexName: "createdBy-updatedAt-idx",
+      ExpressionAttributeNames: {
+        "#createdBy": "createdBy",
+        "#status": "status",
+        "#output": "output",
+        "#version": "version",
+        "#batchId": "batchId",
+      },
+      ExpressionAttributeValues: {
+        ":createdBy": uid,
+        ":generated": "GENERATED",
+        ":submitted": "SUBMITTED",
+        ":currentVersion": "CURRENT",
+      },
+      ProjectionExpression:
+        "id, filePath, imagePath, thumbnail, #output, createdAt, updatedAt, #status",
+      FilterExpression:
+        "(#version = :currentVersion) AND (#status = :generated OR #status = :submitted) AND attribute_not_exists(#batchId)",
+      ScanIndexForward: false,
+      ExclusiveStartKey: pageKeyObject as Record<string, unknown>,
+      Limit: PAGE_SIZE,
+    });
+
+    const blends = data.Items.map((item) =>
+      this.backfillBlendOutput(<Blend>item)
+    );
+    const nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
+
+    return { blends, nextPageKey };
+  }
+
+  async getAllBlendsForUser(
+    uid: string,
+    pageKey: string
+  ): Promise<{ data: Blend[]; nextPageKey: string }> {
+    const pageItems = { data: [], nextPageKey: pageKey };
+    let fetched: BlendsPage;
+    do {
+      fetched = await this.getBlendPage(uid, pageItems.nextPageKey);
+      pageItems.data.push(...fetched.blends);
+      pageItems.nextPageKey = fetched.nextPageKey;
+    } while (pageItems.data.length < PAGE_SIZE && fetched.nextPageKey);
+
+    return pageItems;
   }
 }
