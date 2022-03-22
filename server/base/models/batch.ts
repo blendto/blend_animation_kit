@@ -37,7 +37,14 @@ export interface UploadRequests {
 
 export type BatchItemPreview = {
   blendId: string;
-  preview: string;
+  preview?: string;
+  failed: boolean;
+};
+
+export type BatchItemExport = {
+  blendId: string;
+  output?: unknown;
+  failed: boolean;
 };
 
 export interface Batch {
@@ -51,7 +58,7 @@ export interface Batch {
   updatedAt: number;
   previews: Record<string, BatchItemPreview>;
   batchPreviewFileKey?: string;
-  outputs: Record<string, unknown>;
+  outputs: Record<string, BatchItemExport>;
 }
 
 export class BatchWrapper {

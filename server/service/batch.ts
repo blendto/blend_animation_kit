@@ -2,6 +2,8 @@ import "reflect-metadata";
 import DynamoDB from "server/external/dynamodb";
 import {
   Batch,
+  BatchItemExport,
+  BatchItemPreview,
   BatchModelValidators,
   BatchState,
   BatchWrapper,
@@ -229,7 +231,8 @@ export class BatchService implements IService {
   async updatePreview(
     batchId: string,
     blendId: string,
-    previewFileKey: string
+    preview: string,
+    failed = false
   ) {
     await this.dataStore.updateItem({
       UpdateExpression: `SET updatedAt = :updatedAt, previews.#blendId = :descriptor`,
@@ -238,7 +241,7 @@ export class BatchService implements IService {
       },
       ExpressionAttributeValues: {
         ":updatedAt": Date.now(),
-        ":descriptor": { blendId, preview: previewFileKey },
+        ":descriptor": { blendId, preview, failed } as BatchItemPreview,
       },
       Key: { id: batchId },
       TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
@@ -246,7 +249,12 @@ export class BatchService implements IService {
     });
   }
 
-  async updateExport(batchId: string, blendId: string, output: unknown) {
+  async updateExport(
+    batchId: string,
+    blendId: string,
+    output: unknown,
+    failed = false
+  ) {
     await this.dataStore.updateItem({
       UpdateExpression: `SET updatedAt = :updatedAt, outputs.#blendId = :descriptor`,
       ExpressionAttributeNames: {
@@ -254,7 +262,7 @@ export class BatchService implements IService {
       },
       ExpressionAttributeValues: {
         ":updatedAt": Date.now(),
-        ":descriptor": output,
+        ":descriptor": { blendId, output, failed } as BatchItemExport,
       },
       Key: { id: batchId },
       TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,

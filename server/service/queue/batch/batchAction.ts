@@ -14,6 +14,7 @@ import { RemoveBgService } from "server/internal/remove-bg-service";
 import { BatchPreviewGenerator } from "server/service/queue/batch/batchPreviewGenerator";
 import { RecipeService } from "server/service/recipe";
 import BatchRecipeProcessor from "server/service/queue/batch/batchRecipeProcessor";
+import logger from "server/base/Logger";
 
 @injectable()
 export class BatchActionService implements IService {
@@ -33,15 +34,18 @@ export class BatchActionService implements IService {
     switch (batchMessage.type) {
       case BatchTaskType.process_operations:
       case BatchTaskType.process_export:
-        return await this.processOperations(batchMessage);
+        return await this.processOperations(batchMessage).catch(async (e) => {
+          await this.handleProcessingError(batchMessage, e);
+        });
       case BatchTaskType.process_upload:
         return await this.processUpload(batchMessage);
+      default:
     }
   }
 
   async processUpload(message: BatchTaskMessage): Promise<void> {
     const blend = await this.blendService.getBlend(message.blendId);
-    let updatedHeroImages = await this.removeBgService.removeBgAndStore(
+    const updatedHeroImages = await this.removeBgService.removeBgAndStore(
       blend.heroImages
     );
     if (updatedHeroImages.updated) {
@@ -73,6 +77,21 @@ export class BatchActionService implements IService {
         return previewGenerator.savePreview();
       case BatchTaskType.process_export:
         return previewGenerator.saveExport();
+      default:
+    }
+  }
+
+  private async handleProcessingError(message: BatchTaskMessage, e: unknown) {
+    logger.error({
+      op: "BATCH_PROCESS_FAILURE_SKIP_RETRY",
+      message: { qMessage: message, error: e },
+    });
+    const { batchId, blendId } = message;
+    if (message.type === BatchTaskType.process_operations) {
+      await this.batchService.updatePreview(batchId, blendId, null, true);
+    }
+    if (message.type === BatchTaskType.process_export) {
+      await this.batchService.updateExport(batchId, blendId, null, true);
     }
   }
 }
