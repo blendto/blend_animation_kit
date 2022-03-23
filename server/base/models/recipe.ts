@@ -1,4 +1,8 @@
-import { RecipeVariantId } from "./recipeList";
+import { isEmpty } from "lodash";
+import { RecipeVariantId } from "server/base/models/recipeList";
+import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
+import { UserError } from "../errors";
+import { HeroImageFileKeys } from "./heroImage";
 
 export enum ElementSource {
   blend = "BLEND",
@@ -11,6 +15,15 @@ export interface StoredImage {
   source?: ElementSource;
 }
 
+export interface BrandingDetails {
+  logo?: {
+    fileKey: string;
+  };
+  info?: {
+    [attribute in BrandingInfoType]?: { value?: string };
+  };
+}
+
 export interface ElementRef {
   uid: string;
   assetType: string;
@@ -18,7 +31,7 @@ export interface ElementRef {
 
 export interface Elements {
   hero: ElementRef;
-  bg: ElementRef;
+  background: ElementRef;
   title: ElementRef;
 }
 
@@ -33,7 +46,8 @@ export type AssetType =
   | "GIF"
   | "STICKER"
   | "TEXT"
-  | "LINK";
+  | "LINK"
+  | "BRANDING";
 
 export interface Offset {
   dx: number;
@@ -52,8 +66,22 @@ export interface Rect {
   width: number;
 }
 
+export enum InteractionLayerTypes {
+  Background = "BACKGROUND",
+  Text = "TEXT",
+  Image = "IMAGE",
+  Sticker = "STICKER",
+  Shape = "SHAPE",
+  Gif = "GIF",
+  Link = "LINK",
+  Element = "ELEMENT",
+  BrandingInfo = "BRANDING_INFO",
+  BrandingLogo = "BRANDING_LOGO",
+}
+
 export interface InteractionMetadata {
   $: string;
+  layerType?: InteractionLayerTypes;
 }
 
 export interface GeometricPositionable extends InteractionMetadata {
@@ -72,6 +100,8 @@ export interface ImageMetadata extends GeometricPositionable {
   fillColor?: string;
 }
 
+export interface BrandingLogoMetadata extends GeometricPositionable {}
+
 type TextAlignment = "LEFT" | "CENTER" | "RIGHT";
 type TextBackgroundShape = "RECT" | "ROUNDED_RECT";
 
@@ -86,8 +116,12 @@ export interface TextMetadata extends GeometricPositionable {
   font: string;
   fontSize: number;
   textScaleFactor: number;
-  alignment: TextAlignment;
-  background: TextBackground;
+  alignment?: TextAlignment;
+  background?: TextBackground;
+}
+
+export interface BrandingInfoMetadata extends TextMetadata {
+  iconSet: string;
 }
 
 export interface Interaction {
@@ -96,6 +130,7 @@ export interface Interaction {
   assetUid: string;
   metadata: InteractionMetadata;
   userInteraction?: UserInteraction;
+  time?: number;
 }
 
 export interface UserInteraction {
@@ -127,6 +162,7 @@ export interface Recipe {
   variant?: string;
   images?: StoredImage[];
   externalImages?: any[];
+  branding?: BrandingDetails;
   gifsOrStickers?: any[];
   texts?: any[];
   buttons?: any[];
@@ -149,15 +185,55 @@ export class RecipeWrapper {
     this.recipe = recipe;
   }
 
-  replaceHero(newHero: string) {
+  replaceHero(
+    fileKeys: HeroImageFileKeys,
+    image?: StoredImage,
+    interaction?: Interaction
+  ) {
     const heroUid = this.recipe.recipeDetails?.elements?.hero?.uid;
     if (!heroUid) {
       return;
     }
-    this.recipe.images?.forEach((image) => {
-      if (image.uid === heroUid) {
-        image.source = ElementSource.blend;
-        image.uri = newHero;
+
+    if (!image) {
+      image = this.recipe.images.find((image) => image.uid === heroUid);
+    }
+    if (!interaction) {
+      interaction = this.recipe.interactions.find(
+        (interaction) =>
+          interaction.assetType === "IMAGE" && interaction.assetUid === heroUid
+      );
+    }
+
+    if (!image || !interaction) {
+      throw new UserError(
+        `Either/both of hero image and interaction is missing`
+      );
+    }
+    image.source = ElementSource.blend;
+    if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
+      image.uri = fileKeys.withoutBg;
+    } else {
+      image.uri = fileKeys.original;
+    }
+    // Starting from 2.5, we only show the cropped area in the mobile_app instead of actually
+    // cropping the image and uploading it.
+    // The hero image should not have cropRect property in a recipe as it will get replaced.
+    delete (interaction.metadata as ImageMetadata).cropRect;
+  }
+
+  replaceBrandingInfo(brandingProfile: BrandingEntity): void {
+    if (!this.recipe.branding) {
+      return;
+    }
+
+    this.recipe.branding.logo.fileKey = brandingProfile.logos.primaryEntry;
+
+    Object.keys(this.recipe.branding.info).forEach((key: BrandingInfoType) => {
+      if (brandingProfile[key]) {
+        this.recipe.branding.info[key].value = brandingProfile[key];
+      } else {
+        delete this.recipe.branding.info[key];
       }
     });
   }

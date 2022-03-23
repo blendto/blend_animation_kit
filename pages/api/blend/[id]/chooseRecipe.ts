@@ -1,11 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import DynamoDB from "server/external/dynamodb";
 import ConfigProvider from "server/base/ConfigProvider";
 import { copyObject } from "server/external/s3";
-import type { ImageMetadata, Recipe } from "server/base/models/recipe";
-import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
-import { withReqHandler } from "server/helpers/request";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
+import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
+import {
+  requestComponentToValidate,
+  validate,
+  withReqHandler,
+} from "server/helpers/request";
+import Joi from "joi";
+import { diContainer } from "inversify.config";
+import { RecipeService } from "server/service/recipe";
+import { TYPES } from "server/types";
+import { UserError } from "server/base/errors";
+import { RecipeWrapper } from "server/base/models/recipe";
 
 export default withReqHandler(
   async (req: NextApiRequest, res: NextApiResponse) => {
@@ -19,93 +27,60 @@ export default withReqHandler(
   }
 );
 
-export const _getRecipe = async (
-  id: string,
-  variant: string = "9:16"
-): Promise<Recipe> => {
-  const recipe = await DynamoDB._().getItem({
-    TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
-    Key: {
-      id,
-      variant,
-    },
-  });
-  return <Recipe>recipe;
-};
+const CHOOSE_RECIPE_SCHEMA = Joi.object({
+  recipeId: Joi.string().required(),
+  variant: Joi.string(),
+  fileKeys: Joi.object({
+    original: Joi.string().required(),
+    withoutBg: Joi.string().required(),
+  }).required(),
+  encoderVersion: Joi.number().required(),
+});
 
 const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
-  const {
-    query: { id: blendId },
-    body,
-  } = req;
+  const { id: blendId } = req.query;
+  const body = validate(
+    req.body as object,
+    requestComponentToValidate.body,
+    CHOOSE_RECIPE_SCHEMA
+  ) as {
+    recipeId: string;
+    variant?: string;
+    fileKeys: { original: string; withoutBg: string };
+    encoderVersion: number;
+  };
+  const { recipeId, variant, fileKeys, encoderVersion } = body;
+  const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
 
-  if (!body) {
-    return res
-      .status(400)
-      .json({ code: 400, message: "request body is mandatory!" });
-  }
-  const { recipeId, variant = "9:16", fileKeys, encoderVersion } = req.body;
-  if (!recipeId) {
-    return res
-      .status(400)
-      .json({ code: 400, message: "recipeId not present!" });
-  }
-
-  if (!variant) {
-    return res.status(400).json({ code: 400, message: "invalid variant!" });
-  }
-
-  if (
-    !fileKeys ||
-    typeof fileKeys != "object" ||
-    !fileKeys.original ||
-    !fileKeys.withoutBg
-  ) {
-    return res.status(400).send({ message: "Invalid filekeys" });
-  }
-
-  let recipe: Recipe;
-
-  recipe = await _getRecipe(recipeId as string, variant as string);
+  const recipe = await recipeService.getRecipe(recipeId, variant);
   if (!recipe) {
-    return res.status(400).send({ message: "No such recipe" });
+    throw new UserError("No such recipe");
   }
+  const recipeWrapper = new RecipeWrapper(recipe);
 
   if (!checkCompatibilityWithElements(recipe, encoderVersion)) {
-    return res.status(400).json({
-      message:
-        "This recipe cannot be used on this app version. Please upgrade the app.",
-    });
+    throw new UserError(
+      "This recipe cannot be used on this app version. Please upgrade the app."
+    );
   }
 
-  let copyFilePromises = [];
+  const copyFilePromises = [];
   let interactionUpdatePromise;
 
   const blendImages = recipe.images.map((image) => {
     if (image.uid === recipe.recipeDetails.elements.hero.uid) {
       const interaction = recipe.interactions.find(
         (interaction) =>
-          interaction.assetType == "IMAGE" && interaction.assetUid == image.uid
+          interaction.assetType === "IMAGE" &&
+          interaction.assetUid === image.uid
       );
-      // Starting from 2.5, we only show the cropped area in the mobile_app instead of actually cropping the image and uploading it.
-      // The hero image should not have cropRect property in a recipe as it will get replaced.
-      (interaction.metadata as ImageMetadata).cropRect = null;
-      if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
-        interactionUpdatePromise = adjustSizeToFit(
-          interaction,
-          fileKeys.withoutBg
-        );
-        return { ...image, uri: fileKeys.withoutBg };
-      }
-      interactionUpdatePromise = adjustSizeToFit(
-        interaction,
-        fileKeys.original
-      );
-      return { ...image, uri: fileKeys.original };
+      recipeWrapper.replaceHero(fileKeys, image, interaction);
+      interactionUpdatePromise = adjustSizeToFit(interaction, image.uri);
+      return image;
     }
-    let uriParts = image.uri.split("/");
+    const uriParts = image.uri.split("/");
     uriParts[0] = blendId as string;
-    let targetUri = uriParts.join("/");
+    const targetUri = uriParts.join("/");
     copyFilePromises.push(
       copyObject(
         ConfigProvider.RECIPE_INGREDIENTS_BUCKET,

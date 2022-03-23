@@ -1,18 +1,19 @@
+import { diContainer } from "inversify.config";
+import { ObjectSchema } from "joi";
+import { pick } from "lodash";
 import type { NextApiRequest, NextApiResponse } from "next";
+
 import logger from "server/base/Logger";
-import firebase from "server/external/firebase";
 import {
   ObjectNotFoundError,
   UnauthorizedError,
   UserError,
 } from "server/base/errors";
-import { pick } from "lodash";
-import { diContainer } from "inversify.config";
+import firebase from "server/external/firebase";
 import InterServiceAuth, {
   BlendMicroServices,
 } from "server/internal/inter-service-auth";
 import { TYPES } from "server/types";
-import { ObjectSchema } from "joi";
 
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
@@ -119,4 +120,5 @@ export function validate(
       `Error in ${type.toLowerCase()}. ${validation.error.message}.`
     );
   }
+  return validation.value as unknown;
 }

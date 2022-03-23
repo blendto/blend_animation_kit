@@ -42,17 +42,28 @@ export enum BrandingUpdateOperations {
   remove = "remove",
 }
 
+export enum BrandingInfoType {
+  BrandName = "brandName",
+  UpiHandle = "upiHandle",
+  Email = "email",
+  ContactNo = "contactNo",
+  WhatsappNo = "whatsappNo",
+  InstaHandle = "instaHandle",
+  Website = "website",
+  Address = "address",
+}
+
 export interface BrandingEntity extends Entity {
   id: string;
   userId: string;
-  brandName?: string;
-  upiHandle?: string;
-  email?: string;
-  contactNo?: string;
-  whatsappNo?: string;
-  instaHandle?: string;
-  website?: string;
-  address?: string;
+  [BrandingInfoType.BrandName]?: string;
+  [BrandingInfoType.UpiHandle]?: string;
+  [BrandingInfoType.Email]?: string;
+  [BrandingInfoType.ContactNo]?: string;
+  [BrandingInfoType.WhatsappNo]?: string;
+  [BrandingInfoType.InstaHandle]?: string;
+  [BrandingInfoType.Website]?: string;
+  [BrandingInfoType.Address]?: string;
   logos: {
     primaryEntry?: string;
     entries: { fileKey: string; status: BrandingLogoStatus }[];

@@ -30,7 +30,7 @@ export default class BatchRecipeProcessor {
     );
 
     const recipeWrapper = new RecipeWrapper(recipe);
-    recipeWrapper.replaceHero(this.blend.heroImages.withoutBg);
+    recipeWrapper.replaceHero(this.blend.heroImages);
 
     return this.addInteractionsToRecipe(recipe);
   }

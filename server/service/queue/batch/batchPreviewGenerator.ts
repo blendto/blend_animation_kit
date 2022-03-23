@@ -109,7 +109,7 @@ export class BatchPreviewGenerator {
     wrapper.replaceId(this.blend.id);
 
     return new BatchWrapper(this.batch).isBlendModified(this.blend.id)
-      ? { body: this.blend, schema: ExportRequestSchema.blend }
-      : { body: this.recipe, schema: ExportRequestSchema.recipe };
+      ? { body: this.blend, schema: ExportRequestSchema.Blend }
+      : { body: this.recipe, schema: ExportRequestSchema.Recipe };
   }
 }

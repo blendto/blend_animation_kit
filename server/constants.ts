@@ -1,2 +1,2 @@
 export const MIN_SUPPORTED_ENCODER_VERSION = 1.0;
-export const CURRENT_ENCODER_VERSION = 2.5;
+export const CURRENT_ENCODER_VERSION = 3.0;

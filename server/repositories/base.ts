@@ -87,7 +87,6 @@ export class DynamooseRepo<
   ): Promise<ExtendedEntity> {
     const updateSet = { $SET: {}, $REMOVE: [] };
     if (!currentData) {
-      // eslint-disable-next-line no-param-reassign
       currentData = (await this.get(keyObject)) as ExtendedEntity;
       if (!currentData) {
         throw new UserError("Invalid keyObject");

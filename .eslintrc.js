@@ -12,7 +12,10 @@ module.exports = {
   overrides: [
     {
       files: ["*.ts", "*.tsx"],
-      rules: { "@typescript-eslint/no-empty-interface": "off" },
+      rules: {
+        "@typescript-eslint/no-empty-interface": "off",
+        "@typescript-eslint/restrict-template-expressions": "off",
+      },
       extends: [
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
@@ -62,5 +65,6 @@ module.exports = {
         object: true,
       },
     ],
+    "no-param-reassign": "off",
   },
 };

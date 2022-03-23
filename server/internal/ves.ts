@@ -1,8 +1,9 @@
-import axios from "axios";
-import ConfigProvider from "server/base/ConfigProvider";
-import { handleAxiosCall } from "server/helpers/network";
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
+import axios from "axios";
+
+import ConfigProvider from "server/base/ConfigProvider";
 import { Recipe } from "server/base/models/recipe";
+import { handleAxiosCall } from "server/helpers/network";
 
 const VES_SERVICE_BASE_URL = ConfigProvider.VES_API_BASE_PATH;
 
@@ -14,10 +15,14 @@ export interface PreviewRequestParams {
     withoutBg: string;
   };
 }
+export interface PreviewRequestParamsV2 {
+  body: Recipe;
+  schema: "RECIPE" | "BLEND";
+}
 
 export enum ExportRequestSchema {
-  recipe = "RECIPE",
-  blend = "BLEND",
+  Recipe = "RECIPE",
+  Blend = "BLEND",
 }
 
 export interface SaveExportRequest {
@@ -34,25 +39,39 @@ export default class VesApi {
     baseURL: VES_SERVICE_BASE_URL,
   });
 
-  preview = async (params: PreviewRequestParams) => {
-    return await handleAxiosCall(async () => {
-      return (
-        await this.httpClient.post("/preview", params, {
-          responseType: "stream",
-        })
-      ).data;
-    });
-  };
+  preview = async (params: PreviewRequestParams) =>
+    (
+      await handleAxiosCall(
+        async () =>
+          await this.httpClient.post("/preview", params, {
+            responseType: "stream",
+          })
+      )
+    ).data;
+
+  previewV2 = async (params: PreviewRequestParamsV2) =>
+    (
+      await handleAxiosCall(
+        async () =>
+          await this.httpClient.post("/preview-v2", params, {
+            responseType: "stream",
+          })
+      )
+    ).data;
 
   async savePreview(params: SavePreviewRequest) {
-    return await handleAxiosCall(async () => {
-      return (await this.httpClient.post("/savePreview", params)).data;
-    });
+    return (
+      await handleAxiosCall(
+        async () => await this.httpClient.post("/savePreview", params)
+      )
+    ).data;
   }
 
   async saveExport(params: SaveExportRequest) {
-    return await handleAxiosCall(async () => {
-      return (await this.httpClient.post("/saveExport", params)).data;
-    });
+    return (
+      await handleAxiosCall(
+        async () => await this.httpClient.post("/saveExport", params)
+      )
+    ).data;
   }
 }
