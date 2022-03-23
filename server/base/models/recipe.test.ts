@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import {
   BrandingEntity,
   BrandingLogoStatus,
@@ -5,12 +6,18 @@ import {
 } from "server/repositories/branding";
 import { UserError } from "../errors";
 import { ElementSource, ImageMetadata, Recipe, RecipeWrapper } from "./recipe";
-import { recipe } from "./sampleData";
+
+function getSampleRecipe() {
+  return JSON.parse(
+    readFileSync("__tests__/resources/sample-recipe.json", "utf8")
+  ) as Recipe;
+}
 
 describe("RecipeWrapper", () => {
+  const recipe = getSampleRecipe();
   let recipeCopy: Recipe;
   beforeEach(() => {
-    recipeCopy = JSON.parse(JSON.stringify(recipe)) as Recipe;
+    recipeCopy = getSampleRecipe();
   });
   describe("replaceHero", () => {
     const fileKeys = {
@@ -20,7 +27,7 @@ describe("RecipeWrapper", () => {
 
     it("retains the recipe as is in the absence of hero details", () => {
       delete recipeCopy.recipeDetails.elements.hero;
-      const recipeCopy2 = JSON.parse(JSON.stringify(recipe)) as Recipe;
+      const recipeCopy2 = getSampleRecipe();
       delete recipeCopy2.recipeDetails.elements.hero;
       const wrapper = new RecipeWrapper(recipeCopy);
       wrapper.replaceHero(fileKeys);
@@ -93,7 +100,7 @@ describe("RecipeWrapper", () => {
 
     it("retains the recipe as is in the absence of branding details", () => {
       delete recipeCopy.branding;
-      const recipeCopy2 = JSON.parse(JSON.stringify(recipe)) as Recipe;
+      const recipeCopy2 = getSampleRecipe();
       delete recipeCopy2.branding;
       const wrapper = new RecipeWrapper(recipeCopy);
       wrapper.replaceBrandingInfo(brandingProfile);

@@ -1,0 +1,349 @@
+{
+  "links": [],
+  "metadata": {
+    "sourceBlendId": "Bt5OJgzL",
+    "source": { "type": "MOBILE", "version": 2 }
+  },
+  "texts": [
+    { "value": "2021", "uid": "7e298d49-322b-4064-aa0f-2aea9ca4a6dc" },
+    { "value": "Shop Now", "uid": "d16f5afa-6dd9-4196-b9ba-a78f7d26b13a" },
+    { "value": "New Arrivals", "uid": "438ed376-2778-4622-bc9c-709fab00e173" }
+  ],
+  "buttons": [],
+  "recipeDetails": {
+    "elements": {
+      "title": null,
+      "background": { "uid": "UNSPLASH-ZYiG1HjaV0g", "assetType": "EXT_IMAGE" },
+      "hero": {
+        "uid": "64d7ce16-8a2e-4b9f-bd2b-1a01bb0042ee",
+        "assetType": "IMAGE"
+      }
+    }
+  },
+  "gifsOrStickers": [],
+  "externalImages": [
+    {
+      "url": "https://static.thenounproject.com/png/88240-200.png",
+      "source": "NOUNPROJECT",
+      "id": "88240"
+    },
+    {
+      "url": "https://static.thenounproject.com/png/924522-200.png",
+      "source": "NOUNPROJECT",
+      "id": "924522"
+    },
+    {
+      "url": "https://static.thenounproject.com/png/12986-200.png",
+      "source": "NOUNPROJECT",
+      "id": "12986"
+    },
+    {
+      "source": "UNSPLASH",
+      "id": "ZYiG1HjaV0g",
+      "credit": {
+        "name": "Emily Bernal",
+        "url": "https://unsplash.com/@emilybernal"
+      },
+      "url": "https://images.unsplash.com/photo-1603413247590-4349a845dc0e?ixid=MnwxOTY2NDJ8MHwxfHNlYXJjaHwxMXx8Ymx1ZSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNjE1NTM0Mjc3&ixlib=rb-1.2.1"
+    },
+    {
+      "url": "https://static.thenounproject.com/png/1732256-200.png",
+      "source": "NOUNPROJECT",
+      "id": "1732256"
+    }
+  ],
+  "branding": {
+    "logo": { "fileKey": "NG-e8G14/7UybDOVCtQKCApD-7djxi.jpeg" },
+    "info": { "brandName": {}, "whatsappNo": {}, "email": {} }
+  },
+  "interactions": [
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "64d7ce16-8a2e-4b9f-bd2b-1a01bb0042ee",
+      "metadata": {
+        "layerType": "IMAGE",
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "ImageMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 323, "height": 387 },
+        "rotation": 0,
+        "hasBgRemoved": true,
+        "position": { "dx": -2.1420240406581286, "dy": 71.43687032566032 },
+        "zIndex": 9,
+        "cropRect": { "left": 1, "top": 1, "height": 1, "width": 1 }
+      },
+      "time": 0,
+      "assetType": "IMAGE"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "53d7ce27-8a2e-4b9f-bd2b-1a01bb0042ee",
+      "metadata": {
+        "layerType": "BRANDING_LOGO",
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "BrandingLogoMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 323, "height": 387 },
+        "rotation": 0,
+        "position": { "dx": -2.1420240406581286, "dy": 71.43687032566032 },
+        "zIndex": 9
+      },
+      "time": 0,
+      "assetType": "BRANDING"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "NOUNPROJECT-88240",
+      "metadata": {
+        "layerType": "IMAGE",
+        "fillColor": "#ffc9e4de",
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "ImageMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 256.4391562866283, "height": 256.4391562866283 },
+        "rotation": -0.007414869420466208,
+        "hasBgRemoved": false,
+        "position": { "dx": 48.67223011363644, "dy": 307.75568181818187 },
+        "zIndex": 1
+      },
+      "time": 0,
+      "assetType": "EXT_IMAGE"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "NOUNPROJECT-924522",
+      "metadata": {
+        "layerType": "IMAGE",
+        "fillColor": "#ffc9e4de",
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "ImageMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 141.83522727272728, "height": 141.83522727272728 },
+        "rotation": 0,
+        "hasBgRemoved": false,
+        "position": { "dx": -15.722301136363686, "dy": -18.732954545454557 },
+        "zIndex": 2
+      },
+      "time": 0,
+      "assetType": "EXT_IMAGE"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "NOUNPROJECT-924522",
+      "metadata": {
+        "layerType": "IMAGE",
+        "fillColor": "#ff3d3d3d",
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "ImageMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 155.71768465909082, "height": 155.71768465909082 },
+        "rotation": 0,
+        "hasBgRemoved": false,
+        "position": { "dx": 246.70632102272754, "dy": 524.6899857954551 },
+        "zIndex": 3
+      },
+      "time": 0,
+      "assetType": "EXT_IMAGE"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "438ed376-2778-4622-bc9c-709fab00e173",
+      "metadata": {
+        "layerType": "TEXT",
+        "$": "TextMetadata",
+        "color": "#ff000000",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "rotation": 0,
+        "align": "LEFT",
+        "textScaleFactor": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": { "width": 245.14479283544787, "height": 104.87307010210168 },
+        "fontSize": 34,
+        "position": { "dx": 62.55468749999986, "dy": 448.92187499999966 },
+        "font": "Racing Sans One",
+        "zIndex": 5
+      },
+      "time": 0,
+      "assetType": "TEXT"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "438ed376-2778-4622-bc9c-709fab00e173",
+      "metadata": {
+        "layerType": "BRANDING_INFO",
+        "$": "BrandingInfoMetadata",
+        "color": "#ff000000",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "rotation": 0,
+        "align": "LEFT",
+        "textScaleFactor": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": { "width": 245.14479283544787, "height": 104.87307010210168 },
+        "fontSize": 34,
+        "position": { "dx": 62.55468749999986, "dy": 448.92187499999966 },
+        "font": "Racing Sans One",
+        "zIndex": 5,
+        "iconSet": "Essential Set"
+      },
+      "time": 0,
+      "assetType": "BRANDING"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "7e298d49-322b-4064-aa0f-2aea9ca4a6dc",
+      "metadata": {
+        "layerType": "TEXT",
+        "$": "TextMetadata",
+        "color": "#ff3d3d3d",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "rotation": 0,
+        "align": "LEFT",
+        "textScaleFactor": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": { "width": 180.63920454545453, "height": 96.1318359375 },
+        "fontSize": 38,
+        "position": { "dx": 45.49431818181819, "dy": -6.690340909090918 },
+        "font": "Yellowtail",
+        "zIndex": 6
+      },
+      "time": 0,
+      "assetType": "TEXT"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "d16f5afa-6dd9-4196-b9ba-a78f7d26b13a",
+      "metadata": {
+        "layerType": "TEXT",
+        "$": "TextMetadata",
+        "color": "#ffc9e4de",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "rotation": 0,
+        "align": "LEFT",
+        "textScaleFactor": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": { "width": 172.7559632289879, "height": 55.27272727272742 },
+        "fontSize": 26,
+        "position": { "dx": 108.07066761363639, "dy": 568.5884232954552 },
+        "font": "Josefin Slab",
+        "zIndex": 7
+      },
+      "time": 0,
+      "assetType": "TEXT"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "NOUNPROJECT-1732256",
+      "metadata": {
+        "layerType": "IMAGE",
+        "fillColor": "#ff3d3d3d",
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "ImageMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 145.34765625000043, "height": 145.34765625000043 },
+        "rotation": 0,
+        "hasBgRemoved": false,
+        "position": { "dx": 102.73259943181795, "dy": 520.854048295454 },
+        "zIndex": 4
+      },
+      "time": 0,
+      "assetType": "EXT_IMAGE"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "NOUNPROJECT-12986",
+      "metadata": {
+        "layerType": "IMAGE",
+        "fillColor": "#fffaedcb",
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "ImageMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 655.3188920454556, "height": 655.3188920454556 },
+        "rotation": 0,
+        "hasBgRemoved": false,
+        "position": { "dx": -272.29687499999926, "dy": -7.024857954544841 },
+        "zIndex": 0
+      },
+      "time": 0,
+      "assetType": "EXT_IMAGE"
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetUid": "UNSPLASH-ZYiG1HjaV0g",
+      "metadata": {
+        "layerType": "IMAGE",
+        "cropRect": {
+          "width": 597.5369792002112,
+          "top": 0,
+          "left": 0,
+          "height": 1066.7182166519785
+        },
+        "rotationX": 0,
+        "rotationY": 0,
+        "$": "ImageMetadata",
+        "relativeSize": {
+          "width": 361.27840909090907,
+          "height": 642.2727272727273
+        },
+        "size": { "width": 208.13225937631975, "height": 371.55603799922363 },
+        "rotation": 0.004715470727162746,
+        "hasBgRemoved": false,
+        "position": { "dx": 75.8502694771, "dy": 58.90909090909088 },
+        "zIndex": 8
+      },
+      "time": 0,
+      "assetType": "EXT_IMAGE"
+    }
+  ],
+  "images": [
+    {
+      "uri": "fas-0002/qiuqt85541BQL5sdWk4Wp.png",
+      "uid": "64d7ce16-8a2e-4b9f-bd2b-1a01bb0042ee"
+    }
+  ],
+  "variant": "9:16",
+  "id": "fas-0002"
+}
