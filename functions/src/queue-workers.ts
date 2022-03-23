@@ -7,6 +7,8 @@ import { BatchActionService } from "server/service/queue/batch/batchAction";
 import { UploadService } from "server/service/queue/upload";
 import { ImageUploadEventQueue } from "server/external/queue/imageUploadQueue";
 
+const SIMULTANEOUS_QUEUE_COUNT = 10;
+
 const batchActionService = diContainer.get<BatchActionService>(
   TYPES.BatchActionService
 );
@@ -18,43 +20,37 @@ const uploadEventQueue = diContainer.get<ImageUploadEventQueue<QueueConfig>>(
   TYPES.ImageUploadEventQueue
 );
 
-const batchTaskQueueConsumer = batchTaskQueue.createQueueConsumer(
-  async (message) => {
+function logMessage(op: string, qMessage: object) {
+  logger.info({ op, message: { qMessage } });
+}
+
+function logError(op: string, qMessage: object, e: unknown): Promise<void> {
+  logger.error({ op, message: { qMessage, error: e as object } });
+  return Promise.reject(e);
+}
+
+for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
+  const consumer = batchTaskQueue.createQueueConsumer(async (message) => {
     try {
-      logger.info({
-        op: "PROCESSING_BATCH_TASK",
-        message: { qMessage: message },
-      });
+      logMessage("PROCESSING_BATCH_TASK", message);
       await batchActionService.processTask(message);
     } catch (e) {
-      logger.error({
-        op: "BATCH_PROCESS_FAILURE",
-        message: { qMessage: message, error: e as object },
-      });
-      return Promise.reject(e);
+      return logError("BATCH_PROCESS_FAILURE", message, e);
     }
-  }
-);
+  });
+  consumer.start();
+}
 
-const uploadQueueConsumer = uploadEventQueue.createQueueConsumer(
-  async (message) => {
+for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
+  const consumer = uploadEventQueue.createQueueConsumer(async (message) => {
     try {
-      logger.info({
-        op: "PROCESSING_IMAGE_UPLOAD_TRIGGER",
-        message: { qMessage: message },
-      });
+      logMessage("PROCESSING_IMAGE_UPLOAD_TRIGGER", message);
       await uploadService.processTrigger(message);
-    } catch (e) {
-      logger.error({
-        op: "IMAGE_UPLOAD_TRIGGER_PROCESS_FAILURE",
-        message: { qMessage: message, error: e as object },
-      });
-      return Promise.reject(e);
+    } catch (e: unknown) {
+      return logError("IMAGE_UPLOAD_TRIGGER_PROCESS_FAILURE", message, e);
     }
-  }
-);
-
-batchTaskQueueConsumer.start();
-uploadQueueConsumer.start();
+  });
+  consumer.start();
+}
 
 process.stdin.resume();

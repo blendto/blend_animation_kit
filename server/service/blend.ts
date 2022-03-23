@@ -372,4 +372,20 @@ export class BlendService implements IService {
 
     return pageItems;
   }
+
+  async deleteBlend(blendId: string) {
+    await this.dataStore.updateItem({
+      UpdateExpression: `SET #status = :status, updatedAt = :updatedAt`,
+      ExpressionAttributeNames: {
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":status": BlendStatus.Deleted,
+      },
+      Key: { id: blendId },
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
 }

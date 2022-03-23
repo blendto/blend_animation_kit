@@ -41,6 +41,14 @@ import { IService } from "./index";
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
+type UpdateRequest = {
+  updateExpression: string;
+  expressionAttributeNames: Record<string, string>;
+  expressionAttributeValues?: Record<string, string>;
+};
+
+const AtoZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
 @injectable()
 export class BatchService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
@@ -160,6 +168,7 @@ export class BatchService implements IService {
     uploadRequests: UploadRequest[]
   ): UploadRequest[] {
     return uploadRequests.map((request) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { presignedUploadRequest, ...required } = request;
       return required as UploadRequest;
     });
@@ -213,10 +222,7 @@ export class BatchService implements IService {
     };
     const expressionItems: string[] = [];
     this.withoutPresignedUrls(uploadRequests).forEach((uploadRequest) => {
-      const key = customAlphabet(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-        10
-      )();
+      const key = customAlphabet(AtoZ, 10)();
       updates.expressionAttributeNames[`#${key}`] = uploadRequest.blendId;
       updates.expressionAttributeValues[`:${key}`] = uploadRequest;
       expressionItems.push(`#pendingUploads.#${key} = :${key}`);
@@ -488,9 +494,10 @@ export class BatchService implements IService {
       ExpressionAttributeValues: {
         ":createdBy": uid,
         ":deleted": BatchState.DELETED,
+        ":emptyMap": {},
       },
       ProjectionExpression: "id, batchPreviewFileKey, updatedAt, #status",
-      FilterExpression: "#status <> :deleted",
+      FilterExpression: "#status <> :deleted and previews <> :emptyMap",
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject as Record<string, unknown>,
       Limit: 15,
@@ -500,5 +507,83 @@ export class BatchService implements IService {
     const nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
 
     return { batches, nextPageKey };
+  }
+
+  async deleteBatchedBlends(id: string, uid: string, blendIds: string[]) {
+    const batch = await this.getBatch(id, uid, true);
+    await this.deleteBatchedBlendsInternal(batch, blendIds, false);
+  }
+
+  async deleteBatch(id: string, uid: string) {
+    const batch = await this.getBatch(id, uid, true);
+    await this.deleteBatchedBlendsInternal(batch, batch.blends, true);
+  }
+
+  private async deleteBatchedBlendsInternal(
+    batch: Batch,
+    blendsToDelete: string[],
+    shouldDeleteBatch: boolean
+  ) {
+    if (!batch) {
+      throw new UserError("Invalid batch for user.");
+    }
+    const invalidBlends = blendsToDelete.filter(
+      (id) => !batch.blends.includes(id)
+    );
+    if (invalidBlends.length > 0) {
+      throw new UserError(
+        `Blends (${invalidBlends.toString()}) not present for batch`
+      );
+    }
+
+    const deletePromises = blendsToDelete.map((id) =>
+      this.blendService.deleteBlend(id)
+    );
+    await Promise.all(deletePromises);
+    const updateRequest = this.batchItemsDeleteRequest(
+      blendsToDelete,
+      shouldDeleteBatch
+    );
+    await this.dataStore.updateItem({
+      UpdateExpression: updateRequest.updateExpression,
+      ExpressionAttributeNames: updateRequest.expressionAttributeNames,
+      ExpressionAttributeValues: updateRequest.expressionAttributeValues,
+      Key: { id: batch.id },
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
+  private batchItemsDeleteRequest(
+    blendIds: string[],
+    shouldDeleteBatch: boolean
+  ): UpdateRequest {
+    const request = {
+      updateExpression: null,
+      expressionAttributeNames: {},
+      expressionAttributeValues: null,
+    } as UpdateRequest;
+
+    const operationGroups: string[] = [];
+    if (shouldDeleteBatch) {
+      operationGroups.push("SET #st = :st");
+      request.expressionAttributeNames["#st"] = "status";
+      request.expressionAttributeValues = { ":st": BatchState.DELETED };
+    }
+
+    const expressionItems: string[] = [];
+    blendIds.forEach((id) => {
+      const key = customAlphabet(AtoZ, 10)();
+      request.expressionAttributeNames[`#${key}`] = id;
+      expressionItems.push(`previews.#${key}`);
+      expressionItems.push(`outputs.#${key}`);
+      expressionItems.push(`pendingUploads.#${key}`);
+    });
+    if (blendIds.length > 0) {
+      operationGroups.push("REMOVE " + expressionItems.join(", "));
+    }
+
+    request.updateExpression = operationGroups.join(" ");
+    return request;
   }
 }

@@ -58,6 +58,7 @@ module.exports = {
     indent: "off",
     "brace-style": "off",
     "class-methods-use-this": "off",
+    "no-plusplus": "off",
     "prefer-destructuring": [
       "error",
       {
