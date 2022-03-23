@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import logger from "server/base/Logger";
 import {
+  MethodNotAllowedError,
   ObjectNotFoundError,
   UnauthorizedError,
   UserError,
@@ -49,6 +50,9 @@ export function withReqHandler(
       }
       if (err instanceof ObjectNotFoundError) {
         return res.status(404).send({ message: err.message });
+      }
+      if (err instanceof MethodNotAllowedError) {
+        return res.status(405).send({ message: err.message });
       }
       logger.error({
         op: "SERVER_ERROR",
