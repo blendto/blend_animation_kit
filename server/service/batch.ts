@@ -261,6 +261,19 @@ export class BatchService implements IService {
     });
   }
 
+  async updateThumbnail(batchId: string, thumbnailFileKey: string) {
+    await this.dataStore.updateItem({
+      UpdateExpression: `SET updatedAt = :updatedAt, thumbnail = :thumbnail`,
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":thumbnail": thumbnailFileKey,
+      },
+      Key: { id: batchId },
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
   async updateExport(
     batchId: string,
     blendId: string,
@@ -505,7 +518,7 @@ export class BatchService implements IService {
         ":deleted": BatchState.DELETED,
         ":emptyMap": {},
       },
-      ProjectionExpression: "id, batchPreviewFileKey, updatedAt, #status",
+      ProjectionExpression: "id, updatedAt, #status, thumbnail",
       FilterExpression: "#status <> :deleted and previews <> :emptyMap",
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject as Record<string, unknown>,

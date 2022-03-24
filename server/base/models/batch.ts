@@ -57,7 +57,7 @@ export interface Batch {
   createdAt: number;
   updatedAt: number;
   previews: Record<string, BatchItemPreview>;
-  batchPreviewFileKey?: string;
+  thumbnail?: string;
   outputs: Record<string, BatchItemExport>;
 }
 

@@ -34,6 +34,12 @@ export interface SavePreviewRequest extends SaveExportRequest {
   uploadDetails: PresignedPost;
 }
 
+export interface SaveThumbnailRequest {
+  inputs: { url: string }[];
+  count: string;
+  uploadDetails: PresignedPost;
+}
+
 export default class VesApi {
   httpClient = axios.create({
     baseURL: VES_SERVICE_BASE_URL,
@@ -63,6 +69,14 @@ export default class VesApi {
     return (
       await handleAxiosCall(
         async () => await this.httpClient.post("/savePreview", params)
+      )
+    ).data;
+  }
+
+  async generateBatchThumbnail(params: SaveThumbnailRequest) {
+    return (
+      await handleAxiosCall(
+        async () => await this.httpClient.post("/saveStackedImages", params)
       )
     ).data;
   }
