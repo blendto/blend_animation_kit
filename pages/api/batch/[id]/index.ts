@@ -28,7 +28,7 @@ const getBatch = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   } = req;
 
   const service = diContainer.get<BatchService>(TYPES.BatchService);
-  const batch = await service.getBatch(id as string, req.uid, true);
+  const batch = await service.getBatch(id as string, req.uid, true, true);
   if (!batch) {
     return res.status(404).send("No such batch for user");
   }

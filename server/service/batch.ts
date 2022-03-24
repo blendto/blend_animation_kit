@@ -36,6 +36,7 @@ import { adjustSizeToFit } from "server/helpers/imageUtils";
 import HeroImageService from "server/service/heroImage";
 import { ExpressionAttributeNameMap } from "aws-sdk/clients/dynamodb";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
+import { fireAndForget } from "server/helpers/async-runner";
 import { IService } from "./index";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
@@ -57,7 +58,8 @@ export class BatchService implements IService {
   async getBatch(
     batchId: string,
     uid: string,
-    includeBlendIds = false
+    includeBlendIds = false,
+    consolidateStatus = false
   ): Promise<Batch> {
     const batch = (await this.dataStore.getItem({
       TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
@@ -67,8 +69,12 @@ export class BatchService implements IService {
     if (batch == null || ![uid].includes(batch.createdBy)) {
       return null;
     }
-    if (includeBlendIds) {
+    if (includeBlendIds || consolidateStatus) {
       batch.blends = await this.blendService.getBlendIdsForBatch(batchId);
+    }
+
+    if (consolidateStatus) {
+      return this.consolidateBatchStatusInBg(batch);
     }
 
     return batch;
@@ -435,26 +441,29 @@ export class BatchService implements IService {
     });
   }
 
-  async consolidateBatchStatus(updatedBatch: Batch) {
-    const { id } = updatedBatch;
+  consolidateBatchStatusInBg(batch: Batch): Batch {
+    const { id, blends } = batch;
+    const updateStatus = (status: BatchState) => {
+      fireAndForget(() => this.updateStatus(id, status)).catch(() => {});
+      batch.status = status;
+    };
 
-    switch (updatedBatch.status) {
+    switch (batch.status) {
       case BatchState.PROCESSING: {
-        const blends = await this.blendService.getBlendIdsForBatch(id);
-        if (Object.keys(updatedBatch.previews).length === blends.length) {
-          await this.updateStatus(id, BatchState.IDLE);
+        if (Object.keys(batch.previews).length >= blends.length) {
+          updateStatus(BatchState.IDLE);
         }
         break;
       }
       case BatchState.GENERATING: {
-        const blends = await this.blendService.getBlendIdsForBatch(id);
-        if (Object.keys(updatedBatch.outputs).length === blends.length) {
-          await this.updateStatus(id, BatchState.GENERATED);
+        if (Object.keys(batch.outputs).length >= blends.length) {
+          updateStatus(BatchState.GENERATED);
         }
         break;
       }
       default:
     }
+    return batch;
   }
 
   async updateStatus(batchId: string, status: BatchState) {

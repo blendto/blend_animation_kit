@@ -23,7 +23,7 @@ export type NextApiRequestExtended = NextApiRequest & {
 type RoutingFunctionExtended = (
   req: NextApiRequestExtended,
   res: NextApiResponse
-) => Promise<void>;
+) => Promise<void> | void;
 
 type RoutingFunction = (
   req: NextApiRequest,

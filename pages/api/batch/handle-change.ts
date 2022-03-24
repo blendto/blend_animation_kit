@@ -7,10 +7,8 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import { BlendMicroServices } from "server/internal/inter-service-auth";
-import { diContainer } from "inversify.config";
-import { BatchService } from "server/service/batch";
-import { TYPES } from "server/types";
 import AWS from "server/external/aws";
+import logger from "server/base/Logger";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -29,7 +27,7 @@ export default withReqHandler(
   }
 );
 
-export const onBatchChange = async (
+export const onBatchChange = (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
@@ -38,7 +36,6 @@ export const onBatchChange = async (
   const batch = AWS.DynamoDB.Converter.unmarshall(
     record.dynamodb.NewImage
   ) as Batch;
-  const service = diContainer.get<BatchService>(TYPES.BatchService);
-  await service.consolidateBatchStatus(batch);
+  logger.info(batch);
   res.send({ success: true });
 };

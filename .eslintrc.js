@@ -15,6 +15,7 @@ module.exports = {
       rules: {
         "@typescript-eslint/no-empty-interface": "off",
         "@typescript-eslint/restrict-template-expressions": "off",
+        "@typescript-eslint/no-empty-function": "off",
       },
       extends: [
         "plugin:@typescript-eslint/recommended",
