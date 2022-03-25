@@ -309,10 +309,11 @@ export class BatchService implements IService {
 
     await this.dataStore.updateItem({
       UpdateExpression:
-        "SET updatedAt = :updatedAt, #operations = :operations, #st = :st" +
+        "SET updatedAt = :updatedAt, #operations = :operations, #st = :st, #outputs = :outputs" +
         updatedBatchOperations.outputsDeleteRequest.removeExpression,
       ExpressionAttributeNames: {
         "#operations": "operations",
+        "#outputs": "outputs",
         "#st": "status",
         ...updatedBatchOperations.outputsDeleteRequest.expressionAttributeNames,
       },
@@ -320,6 +321,7 @@ export class BatchService implements IService {
         ":st": BatchState.PROCESSING,
         ":updatedAt": Date.now(),
         ":operations": updatedBatchOperations.updatedOperations,
+        ":outputs": {},
       },
       Key: { id: batchId },
       TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
