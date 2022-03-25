@@ -83,11 +83,13 @@ export class BlendService implements IService {
 
   async getBlend(
     id: string,
-    version: BlendVersion = BlendVersion.current
+    version: BlendVersion = BlendVersion.current,
+    consistentRead = false
   ): Promise<Blend> {
     let blend = await this.dataStore.getItem({
       TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
       Key: { id, version },
+      ConsistentRead: consistentRead,
     });
 
     if (!blend) {
@@ -97,6 +99,7 @@ export class BlendService implements IService {
         Key: {
           id,
         },
+        ConsistentRead: consistentRead,
       });
     }
 

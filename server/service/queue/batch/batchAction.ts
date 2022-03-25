@@ -15,6 +15,7 @@ import { BatchPreviewGenerator } from "server/service/queue/batch/batchPreviewGe
 import { RecipeService } from "server/service/recipe";
 import BatchRecipeProcessor from "server/service/queue/batch/batchRecipeProcessor";
 import logger from "server/base/Logger";
+import { BlendVersion } from "server/base/models/blend";
 
 @injectable()
 export class BatchActionService implements IService {
@@ -61,7 +62,11 @@ export class BatchActionService implements IService {
   }
 
   async processOperations(message: BatchTaskMessage): Promise<void> {
-    const blend = await this.blendService.getBlend(message.blendId);
+    const blend = await this.blendService.getBlend(
+      message.blendId,
+      BlendVersion.current,
+      true
+    );
     const batch = await this.batchService.getBatch(
       blend.batchId,
       blend.createdBy,

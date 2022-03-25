@@ -63,29 +63,17 @@ export class UploadService implements IService {
   async processHeroImageTrigger(fileKey: string): Promise<void> {
     const blendId = BlendModelUtils.getBlendIdFromFileKey(fileKey);
     if (!blendId) {
-      logger.error({
-        op: "INVALID_HERO_IMAGE_FILEKEY",
-        message: `${fileKey} does not match "{blendId}/{filename}.{extension}" format`,
-      });
       return;
     }
 
     const blend = await this.blendService.getBlend(blendId);
     if (!blend || blend.heroImages?.original !== fileKey) {
-      logger.error({
-        op: "NOT_HERO_IMAGE_FILEKEY",
-        message: `Either, fileKey(${fileKey}) does not belong to a valid blend, or, is not of a hero image`,
-      });
       return;
     }
 
     const { batchId } = blend;
 
     if (!batchId) {
-      logger.error({
-        op: "BLEND_NOT_FOUND",
-        message: "Blend not a part of any batch",
-      });
       return;
     }
 
