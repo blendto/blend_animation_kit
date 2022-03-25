@@ -6,7 +6,9 @@ import {
   createDestinationFileKey,
   createSignedUploadUrl,
   deleteObject,
+  getObject,
   GetSignedUrlOperation,
+  uploadObject,
 } from "server/external/s3";
 import { IService } from "server/service";
 import {
@@ -17,6 +19,7 @@ import {
   BrandingUpdatePaths,
   BrandingUpdateOperations,
 } from "server/repositories/branding";
+import { convertImageToWebp, rescaleImage } from "server/helpers/imageUtils";
 
 @injectable()
 export default class BrandingService implements IService {
@@ -27,6 +30,8 @@ export default class BrandingService implements IService {
   createDestinationFileKey = createDestinationFileKey;
   createSignedUploadUrl = createSignedUploadUrl;
   deleteObject = deleteObject;
+  uploadObject = uploadObject;
+  getObject = getObject;
 
   private async get(userId: string): Promise<BrandingEntity> {
     return (await this.repo.query({ userId }))[0];
@@ -131,7 +136,7 @@ export default class BrandingService implements IService {
     return { url: uploadURL };
   }
 
-  async markLogoUploadAsDone(fileKey: string): Promise<void> {
+  async completeLogoUpload(fileKey: string): Promise<void> {
     const id = fileKey.split("/")[0];
     if (!id) {
       throw new UserError("Invalid fileKey");
@@ -141,29 +146,43 @@ export default class BrandingService implements IService {
       throw new UserError("Invalid fileKey");
     }
 
-    const logo = brandingProfile.logos?.entries?.find(
+    const logoData = brandingProfile.logos?.entries?.find(
       (e) => e.fileKey === fileKey
     );
-    if (!logo) {
+    if (!logoData) {
       throw new UserError("Invalid fileKey");
     }
-    if (logo.status === BrandingLogoStatus.UPLOADED) {
+    if (logoData.status === BrandingLogoStatus.UPLOADED) {
       throw new UserError(
         "Logo has already been marked as uploaded. Duplicate trigger?"
       );
     }
 
-    const { logos } = brandingProfile;
-    logos.entries.forEach((e) => {
-      if (e.fileKey === fileKey) {
-        e.status = BrandingLogoStatus.UPLOADED;
-      }
-    });
+    const logo = await this.getObject(ConfigProvider.BRANDING_BUCKET, fileKey);
+    const [fileName, extension] = fileKey.split(".");
+    const webpFileKey = `${fileName}.webp`;
+    await this.uploadObject(
+      ConfigProvider.BRANDING_BUCKET,
+      webpFileKey,
+      await rescaleImage(await convertImageToWebp(logo), {
+        width: 512,
+        height: 512,
+        withoutEnlargement: true,
+      })
+    );
+
+    if (brandingProfile.logos.primaryEntry === logoData.fileKey) {
+      brandingProfile.logos.primaryEntry = webpFileKey;
+    }
+    logoData.fileKey = webpFileKey;
+    logoData.status = BrandingLogoStatus.UPLOADED;
     await this.repo.update(
       { id },
-      [{ path: "/logos", op: "replace", value: logos }],
+      [{ path: "/logos", op: "replace", value: brandingProfile.logos }],
       brandingProfile
     );
+
+    await this.deleteObject(ConfigProvider.BRANDING_BUCKET, fileKey);
   }
 
   async delLogo(userId: string, fileKey: string): Promise<BrandingEntity> {

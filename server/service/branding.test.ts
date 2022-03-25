@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import { diContainer } from "inversify.config";
 
 import ConfigProvider from "server/base/ConfigProvider";
@@ -531,7 +532,7 @@ describe("BrandingService", () => {
   describe("Logo update as uploaded on s3 trigger", () => {
     const fileKey = `${id}/avsDCf2bQ_MVjSKaR9IvN.jpeg`;
     it("Rejects request if the file key is missing blend id", async () => {
-      await expect(brandingService.markLogoUploadAsDone("")).rejects.toThrow(
+      await expect(brandingService.completeLogoUpload("")).rejects.toThrow(
         new UserError("Invalid fileKey")
       );
     });
@@ -540,9 +541,9 @@ describe("BrandingService", () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockImplementation((brandingId) => Promise.resolve());
-      await expect(
-        brandingService.markLogoUploadAsDone(fileKey)
-      ).rejects.toThrow(new UserError("Invalid fileKey"));
+      await expect(brandingService.completeLogoUpload(fileKey)).rejects.toThrow(
+        new UserError("Invalid fileKey")
+      );
       expect(getSpy.mock.calls.length).toBe(1);
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
     });
@@ -551,9 +552,9 @@ describe("BrandingService", () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce(brandingDoc);
-      await expect(
-        brandingService.markLogoUploadAsDone(fileKey)
-      ).rejects.toThrow(new UserError("Invalid fileKey"));
+      await expect(brandingService.completeLogoUpload(fileKey)).rejects.toThrow(
+        new UserError("Invalid fileKey")
+      );
       expect(getSpy.mock.calls.length).toBe(1);
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
     });
@@ -568,9 +569,7 @@ describe("BrandingService", () => {
             entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
           },
         } as BrandingEntity);
-      await expect(
-        brandingService.markLogoUploadAsDone(fileKey)
-      ).rejects.toThrow(
+      await expect(brandingService.completeLogoUpload(fileKey)).rejects.toThrow(
         new UserError(
           "Logo has already been marked as uploaded. Duplicate trigger?"
         )
@@ -590,6 +589,14 @@ describe("BrandingService", () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce(currentData);
+      const logoImage = readFileSync("__tests__/assets/small-png.png");
+      jest.spyOn(brandingService, "getObject").mockResolvedValueOnce(logoImage);
+      jest
+        .spyOn(brandingService, "uploadObject")
+        .mockImplementationOnce(() => Promise.resolve());
+      jest
+        .spyOn(brandingService, "deleteObject")
+        .mockImplementationOnce(() => Promise.resolve());
       const updateSpy = jest
         .spyOn(brandingService.repo, "update")
         .mockResolvedValue({
@@ -600,11 +607,12 @@ describe("BrandingService", () => {
           },
         } as BrandingEntity);
 
-      await brandingService.markLogoUploadAsDone(fileKey);
+      await brandingService.completeLogoUpload(fileKey);
 
       expect(getSpy.mock.calls.length).toBe(1);
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
 
+      const webpFileKey = `${fileKey.split(".")[0]}.webp`;
       expect(updateSpy.mock.calls.length).toBe(1);
       expect(updateSpy.mock.calls[0]).toMatchObject([
         { id },
@@ -613,8 +621,10 @@ describe("BrandingService", () => {
             op: "replace",
             path: "/logos",
             value: {
-              primaryEntry: fileKey,
-              entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
+              primaryEntry: webpFileKey,
+              entries: [
+                { fileKey: webpFileKey, status: BrandingLogoStatus.UPLOADED },
+              ],
             },
           },
         ],

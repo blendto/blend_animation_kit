@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-unresolved
 import { Stream } from "node:stream";
 import { randomBytes } from "crypto";
 
@@ -16,26 +17,26 @@ import logger from "server/base/Logger";
 
 describe("HeroImageService", () => {
   const heroImageService = diContainer.get<HeroImageService>(
-      TYPES.HeroImageService
-    ),
-    imageId = "b-_-sDqEW7LK150e",
-    userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2",
-    anotherUserId = "L8aASeH26gRzSvr6K9Yb3InuKb02",
-    now = 1645009809102,
-    image = {
-      id: imageId,
-      original: "b-_-sDqEW7LK150e.jpg",
-      withoutBg: "b-_-sDqEW7LK150e-bg-removed.png",
-      thumbnail: "b-_-sDqEW7LK150e-thumbnail.png",
-      lastUsedAt: now,
-      createdAt: now,
-      userId,
-      sourceBlendId: "NxY2SIx2",
-    },
-    defaultUserimage = {
-      ...image,
-      userId: "DEFAULT_USER",
-    };
+    TYPES.HeroImageService
+  );
+  const imageId = "b-_-sDqEW7LK150e";
+  const userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
+  const anotherUserId = "L8aASeH26gRzSvr6K9Yb3InuKb02";
+  const now = 1645009809102;
+  const image = {
+    id: imageId,
+    original: "b-_-sDqEW7LK150e.jpg",
+    withoutBg: "b-_-sDqEW7LK150e-bg-removed.png",
+    thumbnail: "b-_-sDqEW7LK150e-thumbnail.png",
+    lastUsedAt: now,
+    createdAt: now,
+    userId,
+    sourceBlendId: "NxY2SIx2",
+  };
+  const defaultUserimage = {
+    ...image,
+    userId: "DEFAULT_USER",
+  };
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -208,7 +209,7 @@ describe("HeroImageService", () => {
         thumbnail: heroImageFileKeyThumbnail,
         lastUsedAt: now,
         createdAt: now,
-        userId: userId,
+        userId,
         sourceBlendId: blendId,
         updatedAt,
         status,
@@ -216,6 +217,7 @@ describe("HeroImageService", () => {
       } as HeroImage;
 
       heroImageService.nanoid = jest.fn(() => newImageId);
+      // eslint-disable-next-line no-multi-assign
       const copyObjectMock = (heroImageService.copyObject = jest.fn(
         async (
           sourceBucket: string,
@@ -226,16 +228,12 @@ describe("HeroImageService", () => {
       ));
       const getObjectMockRes = randomBytes(64);
       const getObjectMock = (heroImageService.getObject = jest.fn(
-        async (bucketName: string, fileKey: string): Promise<Buffer> =>
-          getObjectMockRes
+        (bucketName: string, fileKey: string) =>
+          Promise.resolve(getObjectMockRes)
       ));
       const rescaleImageMockRes = randomBytes(32);
       const rescaleImageMock = (heroImageService.rescaleImage = jest.fn(
-        async (
-          image: Buffer,
-          width: number,
-          height?: number
-        ): Promise<Buffer> => rescaleImageMockRes
+        (image: Buffer, params) => Promise.resolve(rescaleImageMockRes)
       ));
       const bufferToStreamMockRes =
         heroImageService.bufferToStream(rescaleImageMockRes);
@@ -276,7 +274,7 @@ describe("HeroImageService", () => {
       expect(rescaleImageMock.mock.calls.length).toBe(1);
       expect(rescaleImageMock.mock.calls[0]).toMatchObject([
         getObjectMockRes,
-        240,
+        { width: 240 },
       ]);
       expect(bufferToStreamMock.mock.calls.length).toBe(1);
       expect(bufferToStreamMock.mock.calls[0]).toMatchObject([

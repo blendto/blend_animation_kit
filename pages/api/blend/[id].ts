@@ -2,7 +2,7 @@ import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
-import { Recipe } from "server/base/models/recipe";
+import { Recipe, StoredImage } from "server/base/models/recipe";
 import { BlendStatus, BlendVersion } from "server/base/models/blend";
 import {
   CURRENT_ENCODER_VERSION,
@@ -16,9 +16,15 @@ import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
 import {
   ensureAuth,
+  ensureBrandingEntitlement,
   NextApiRequestExtended,
   withReqHandler,
 } from "server/helpers/request";
+import {
+  MethodNotAllowedError,
+  ObjectNotFoundError,
+  UserError,
+} from "server/base/errors";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -31,7 +37,7 @@ export default withReqHandler(
       case "DELETE":
         return ensureAuth(deleteBlend, req, res);
       default:
-        res.status(405).end();
+        throw new MethodNotAllowedError();
     }
   }
 );
@@ -67,25 +73,24 @@ const deleteBlend = async (
   const blend = await blendService.getBlend(id as string);
 
   if (!blend) {
-    return res.status(404).send({ message: "Blend not found!" });
+    throw new ObjectNotFoundError("Blend not found");
+  }
+  if (blend.createdBy !== req.uid) {
+    logger.error(
+      `A user is trying to access another user's blend. Blend id: ${id}. ` +
+        `Owner id: ${blend.createdBy}. Requesting user id: ${req.uid}`
+    );
+    // Don't let the possible attacker know that this is a valid blend id.
+    throw new ObjectNotFoundError("Blend not found");
   }
 
-  if (blend.createdBy != req.uid) {
-    return res.status(403).send({ message: "Forbidden" });
-  }
-
-  if (blend.status != "GENERATED") {
-    try {
-      await DynamoDB._().deleteItem({
-        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-        Key: {
-          id: id,
-        },
-      });
-    } catch (err) {
-      logger.error(err);
-      return res.status(500).json({ message: "Something went wrong!" });
-    }
+  if (blend.status !== "GENERATED") {
+    await DynamoDB._().deleteItem({
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      Key: {
+        id,
+      },
+    });
   } else {
     const now = Date.now();
     const updatedOn = DateTime.utc().toISODate();
@@ -102,22 +107,19 @@ const deleteBlend = async (
         ":updatedAt": now,
         ":updatedOn": updatedOn,
       },
-      Key: { id: id },
+      Key: { id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     };
 
-    try {
-      await DynamoDB._().updateItem(params);
-    } catch (err) {
-      logger.error(err);
-      return res.status(500).json({ message: "Something went wrong!" });
-    }
+    await DynamoDB._().updateItem(params);
   }
 
   // Hack: To avoid consistency issues coz the app reads /blend immediately after this,
   // We wait 1 second before responding
-  await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => {
+    setTimeout(r, 1000);
+  });
 
   res.send({ status: "Success" });
 };
@@ -132,11 +134,10 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     query: { id, format, target },
   } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  let blend = await blendService.getBlend(id as string, BlendVersion.current);
+  const blend = await blendService.getBlend(id as string, BlendVersion.current);
 
   if (!blend || blend?.status === BlendStatus.Deleted) {
-    res.status(404).send({ message: "Blend not found!" });
-    return;
+    throw new ObjectNotFoundError("Blend not found");
   }
 
   const {
@@ -161,13 +162,12 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       parseFloat(target as string)
     )
   ) {
-    return res.status(400).json({
-      message:
-        "This recipe cannot be remixed on this app version. Please upgrade the app.",
-    });
+    throw new UserError(
+      "This recipe cannot be remixed on this app version. Please upgrade the app."
+    );
   }
 
-  if ((format as string)?.toUpperCase() == "RECIPE") {
+  if ((format as string)?.toUpperCase() === "RECIPE") {
     const recipe = {
       id,
       images,
@@ -181,21 +181,18 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     };
 
     if (metadata.source.version >= 2.0 && target == null) {
-      return res.status(400).json({
-        message:
-          "This recipe cannot be remixed on this app version. Please upgrade the app.",
-      });
-    } else if (
+      throw new UserError(
+        "This recipe cannot be remixed on this app version. Please upgrade the app."
+      );
+    }
+    if (
       metadata.source.version < 2.0 &&
       parseFloat((target as string) ?? "1000") >= 2.0
     ) {
-      return res.status(400).json({
-        message: "This recipe is old and can no longer be blended :(",
-      });
+      throw new UserError("This recipe is old and can no longer be blended :(");
     }
 
-    res.send(recipe);
-    return;
+    return res.send(recipe);
   }
 
   const trimmedBlend = {
@@ -215,10 +212,8 @@ const submitBlend = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const {
-    query: { id },
-    body: recipe,
-  } = req;
+  const { id } = req.query;
+  const recipe = req.body as Recipe;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   let existingBlend = await blendService.getBlend(id as string);
 
@@ -227,70 +222,66 @@ const submitBlend = async (
     existingBlend = await blendService.addBlendToDB(id as string, req.uid);
   }
 
-  if (existingBlend.createdBy != req.uid) {
-    return res
-      .status(403)
-      .send({ message: "Cannot edit someone else's blend" });
+  if (existingBlend.createdBy !== req.uid) {
+    logger.error(
+      `A user is trying to access another user's blend. Blend id: ${id}. ` +
+        `Owner id: ${existingBlend.createdBy}. Requesting user id: ${req.uid}`
+    );
+    // Don't let the possible attacker know that this is a valid blend id.
+    throw new ObjectNotFoundError("Blend not found");
   }
 
   const {
-    title,
     images,
     externalImages,
-    audios,
-    slides,
-    cameraClips,
     gifsOrStickers,
     texts,
     buttons,
     links,
     interactions,
     metadata,
+    branding,
   } = recipe;
 
   if (!metadata) {
-    return res.status(400).json({ message: "metadata expected" });
+    throw new UserError("body.metadata is missing ");
   }
   const { source } = metadata;
-
   if (!source) {
-    return res.status(400).json({ message: "Expected source" });
+    throw new UserError("body.metadata.source is missing");
   }
-
   const { type, version } = source;
-
   if (!["WEB", "MOBILE"].includes(type)) {
-    return res.status(400).json({ message: "invalid source type" });
+    throw new UserError("Invalid body.metadata.source.type");
   }
-
   if (
     !version ||
     version < MIN_SUPPORTED_ENCODER_VERSION ||
     version > CURRENT_ENCODER_VERSION
   ) {
-    return res.status(400).json({ message: "unsupported source version" });
+    throw new UserError("Unsupported body.metadata.source.version");
   }
+  await ensureBrandingEntitlement(recipe, req.uid);
 
-  const imageObjects = images.map(({ fileKey, uid }) => ({
-    uri: fileKey,
-    uid,
-  }));
-
-  const audioObjects = audios.map(({ fileKey }) => ({ uri: fileKey }));
-
-  const slideObjects = (slides || []).map(({ fileKey }) => ({ uri: fileKey }));
-
-  const cameraClipObjects = cameraClips.map(({ fileKey }) => ({
-    uri: fileKey,
+  // The mobile apps use "fileKey" attribute instead of uri
+  // The "uri" that the server sends in chooseRecipe API is converted
+  // by them and here we need to convert back
+  // This is messy, we know, gotta fix.
+  interface clientStoredImage extends StoredImage {
+    fileKey: string;
+  }
+  const imageObjects = images.map((image: clientStoredImage) => ({
+    uri: image.fileKey,
+    uid: image.uid,
   }));
 
   const now = Date.now();
   const updatedOn = DateTime.utc().toISODate();
   const params = {
     UpdateExpression:
-      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
-      "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
-      "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
+      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), branding = :branding," +
+      "interactions = :inter, images = :images, externalImages = :externalImages," +
+      "gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
       "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
@@ -298,13 +289,10 @@ const submitBlend = async (
     ExpressionAttributeValues: {
       ":s": "SUBMITTED",
       ":update": [{ status: "SUBMITTED", on: now }],
-      ":title": title,
+      ":branding": branding || {},
       ":inter": interactions,
       ":images": imageObjects,
       ":externalImages": externalImages,
-      ":audios": audioObjects,
-      ":slides": slideObjects,
-      ":clips": cameraClipObjects,
       ":gifsOrStickers": gifsOrStickers,
       ":texts": texts,
       ":buttons": buttons || [],
@@ -313,24 +301,18 @@ const submitBlend = async (
       ":updatedAt": now,
       ":updatedOn": updatedOn,
     },
-    Key: { id: id },
+    Key: { id },
     TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     ReturnValues: "ALL_NEW",
   };
 
-  let updatedRecipe: { [x: string]: string | string[] };
-  try {
-    const dbUpdateResponse = await DynamoDB._().updateItem(params);
-    updatedRecipe = dbUpdateResponse.Attributes;
+  const dbUpdateResponse = await DynamoDB._().updateItem(params);
+  const updatedRecipe = dbUpdateResponse.Attributes;
 
-    await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage({ id });
-  } catch (err) {
-    logger.error(err);
-    return res.status(500).json({ message: "Something went wrong!" });
-  }
+  await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage({ id });
 
   // Add id
-  updatedRecipe["id"] = id;
+  updatedRecipe.id = id;
 
   res.send(updatedRecipe);
 };

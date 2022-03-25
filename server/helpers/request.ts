@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import logger from "server/base/Logger";
 import {
+  ForbiddenError,
   MethodNotAllowedError,
   ObjectNotFoundError,
   UnauthorizedError,
@@ -15,6 +16,8 @@ import InterServiceAuth, {
   BlendMicroServices,
 } from "server/internal/inter-service-auth";
 import { TYPES } from "server/types";
+import { Recipe } from "server/base/models/recipe";
+import { Entitlement, revenueCat } from "server/external/revenue-cat";
 
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
@@ -47,6 +50,9 @@ export function withReqHandler(
       }
       if (err instanceof UnauthorizedError) {
         return res.status(401).send({ message: err.message });
+      }
+      if (err instanceof ForbiddenError) {
+        return res.status(403).send({ message: err.message });
       }
       if (err instanceof ObjectNotFoundError) {
         return res.status(404).send({ message: err.message });
@@ -102,6 +108,21 @@ export async function ensureServiceAuth(
   await interServiceAuth.validate(serviceType, authHeader as string);
 
   return await controller(req, res);
+}
+
+async function ensureEntitlement(userId: string, entitlement: Entitlement) {
+  if (!(await revenueCat.hasEntitlement(userId, entitlement))) {
+    throw new ForbiddenError(`User doesn't have ${entitlement} entitlement`);
+  }
+}
+
+export async function ensureBrandingEntitlement(
+  recipe: Recipe,
+  userId: string
+) {
+  if (recipe.branding) {
+    await ensureEntitlement(userId, Entitlement.BRANDING);
+  }
 }
 
 export enum requestComponentToValidate {

@@ -29,6 +29,8 @@
   "BRANDING_DYNAMODB_TABLE",
   "BRANDING_DYNAMODB_USER_ID_INDEX",
   "BRANDING_BUCKET",
+  "REVENUECAT_API_BASE_PATH",
+  "REVENUECAT_API_KEY",
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });

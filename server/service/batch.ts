@@ -14,7 +14,7 @@ import {
 
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
 import ConfigProvider from "server/base/ConfigProvider";
-import { UserError } from "server/base/errors";
+import { ObjectNotFoundError, UserError } from "server/base/errors";
 import { BatchLevelEditStatus, Blend } from "server/base/models/blend";
 import {
   copyObject,
@@ -87,13 +87,13 @@ export class BatchService implements IService {
   ) {
     const batch = await this.getBatch(batchId, uid);
     if (!batch) {
-      throw new UserError("No such batch for user", 404);
+      throw new ObjectNotFoundError("No such batch for user");
     }
 
     if (
       !BatchModelValidators.validateRequestConfig(uploadRequestCreationConfig)
     ) {
-      throw new UserError("Invalid fileNames/heroImages", 400);
+      throw new UserError("Invalid fileNames/heroImages");
     }
   }
 

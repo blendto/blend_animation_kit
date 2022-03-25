@@ -76,7 +76,7 @@ export default class HeroImageService implements IService {
   async getImage(
     id: string,
     uid: string,
-    returnOnlyOwn: boolean = false
+    returnOnlyOwn = false
   ): Promise<HeroImage | null> {
     const heroImage = (await this.dataStore.getItem({
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
@@ -101,13 +101,13 @@ export default class HeroImageService implements IService {
     return heroImage;
   }
 
-  async markImageUsage(id: String): Promise<void> {
+  async markImageUsage(id: string): Promise<void> {
     const params = {
       UpdateExpression: "SET lastUsedAt = :lastUsedAt",
       ExpressionAttributeValues: {
         ":lastUsedAt": Date.now(),
       },
-      Key: { id: id },
+      Key: { id },
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     };
@@ -115,8 +115,8 @@ export default class HeroImageService implements IService {
   }
 
   async createNewImage(
-    blendId: String,
-    userId: String,
+    blendId: string,
+    userId: string,
     blendBucketFileKeys: HeroImageFileKeys
   ): Promise<HeroImage> {
     const heroImageId = this.nanoid(16);
@@ -157,7 +157,7 @@ export default class HeroImageService implements IService {
       lastUsedAt: now,
       createdAt: now,
       updatedAt,
-      userId: userId,
+      userId,
       sourceBlendId: blendId,
       status,
       statusHistory: [{ status, updatedAt } as HeroImageStatusUpdate],
@@ -178,7 +178,7 @@ export default class HeroImageService implements IService {
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       inputFileKey
     );
-    const thumbnail = await this.rescaleImage(bgRemoved, 240);
+    const thumbnail = await this.rescaleImage(bgRemoved, { width: 240 });
     await this.uploadObject(
       ConfigProvider.HERO_IMAGES_BUCKET,
       thumbnailFileKey,
@@ -187,7 +187,7 @@ export default class HeroImageService implements IService {
   }
 
   async deleteImage(id: string, uid: string): Promise<void> {
-    const heroImage = (await this.getImage(id, uid, true)) as HeroImage | null;
+    const heroImage = await this.getImage(id, uid, true);
     await this.deleteObject(
       ConfigProvider.HERO_IMAGES_BUCKET,
       heroImage.original
@@ -211,11 +211,10 @@ export default class HeroImageService implements IService {
         ":empty_list": [],
         ":statusUpdate": [{ status, updatedAt } as HeroImageStatusUpdate],
       },
-      Key: { id: id },
+      Key: { id },
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
-    return;
   }
 
   public static createBatchBlends(
@@ -226,7 +225,7 @@ export default class HeroImageService implements IService {
     const blendService = diContainer.get<BlendService>(TYPES.BlendService);
     return heroImageIds.map(async (id) => {
       const blend = await blendService.initBlend(uid, {
-        batchId: batchId,
+        batchId,
       });
       const fileKeys = await new HeroImageIdBased(id, blend.id, uid).process();
       await blendService.addHeroKeysToBlend(blend.id, fileKeys);

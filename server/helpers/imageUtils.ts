@@ -13,7 +13,7 @@ interface SharpResolveObject {
 export const applyMask = async (
   image: Buffer,
   mask: Buffer,
-  trim: Boolean = true
+  trim = true
 ): Promise<SharpResolveObject> => {
   const output = await sharp(image)
     .rotate()
@@ -30,9 +30,23 @@ export const applyMask = async (
     .toBuffer({ resolveWithObject: true });
 };
 
-export const rescaleImage = (image: Buffer, width: number, height?: number) => {
-  return sharp(image).resize({ width, height }).toBuffer();
-};
+// Keep default quality same as sharp, 80
+export const convertImageToWebp = async (image: Buffer, quality = 80) =>
+  // failOnError: false helps blow past errors like
+  // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
+  // https://github.com/lovell/sharp/issues/1578
+  await sharp(image, { failOnError: false })
+    .toFormat("webp", { quality })
+    .toBuffer();
+
+export const rescaleImage = async (
+  image: Buffer,
+  options: {
+    width: number;
+    height?: number;
+    withoutEnlargement?: boolean;
+  }
+) => await sharp(image).resize(options).toBuffer();
 
 /**
  *

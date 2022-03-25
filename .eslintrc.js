@@ -68,5 +68,6 @@ module.exports = {
       },
     ],
     "no-param-reassign": "off",
+    "no-multi-assign": "off",
   },
 };

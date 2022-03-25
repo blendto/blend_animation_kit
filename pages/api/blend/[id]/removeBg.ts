@@ -3,15 +3,19 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import Joi from "joi";
 
 import { Blend } from "server/base/models/blend";
-import { UserError } from "server/base/errors";
+import { MethodNotAllowedError, UserError } from "server/base/errors";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import {
   RemoveBgService,
   RemoveBGSource,
 } from "server/internal/remove-bg-service";
-import { applyMask, rescaleImage } from "server/helpers/imageUtils";
-import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
+import {
+  applyMask,
+  convertImageToWebp,
+  rescaleImage,
+} from "server/helpers/imageUtils";
+import { bufferToStream } from "server/helpers/bufferUtils";
 import sharp from "sharp";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
@@ -28,7 +32,7 @@ export default withReqHandler(
       case "POST":
         return removeBgAndStore(req, res);
       default:
-        res.status(405).end();
+        throw new MethodNotAllowedError();
     }
   }
 );
@@ -44,10 +48,11 @@ export const RemoveBgRequestSchema = Joi.object({
 });
 
 const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
-  const {
-    query: { id },
-    body,
-  } = req;
+  const body = req.body as {
+    fileKey: string;
+    useMask?: boolean;
+  };
+  const { id } = req.query;
 
   const blend: Blend = await diContainer
     .get<BlendService>(TYPES.BlendService)
@@ -76,7 +81,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   const { bgRemovedFileKey, bgMaskFileKey, fileNameWithExt } =
     RemoveBgService.constructBgRemovedFileKey(fileKey);
 
-  var trimLTWH: Array<Number> | null = null;
+  let trimLTWH: Array<number> | null = null;
 
   const bgRemovedElementExists = await doesObjectExist(
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -90,12 +95,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       !["jpeg", "jpg"].includes(metadata.format) ||
       metadata.size > 1024 * 1024 * 10
     ) {
-      // failOnError: false helps blow past errors like
-      // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
-      // https://github.com/lovell/sharp/issues/1578
-      originalImage = await sharp(originalImage, { failOnError: false })
-        .toFormat("webp", { quality: 90 })
-        .toBuffer();
+      originalImage = await convertImageToWebp(originalImage, 90);
       const compressedImageMetadata = await sharp(originalImage).metadata();
       logger.info({
         op: "RESIZE_IMAGE",
@@ -104,7 +104,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       });
 
       if (compressedImageMetadata.size > 1024 * 1024 * 10) {
-        throw new UserError("Image too big in size", 400);
+        throw new UserError("Image too big in size");
       }
     }
     // As of now this logic just works by assuming file name is unique
@@ -126,7 +126,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (useMask) {
       const { width, height } = await sharp(originalImage).metadata();
-      const rescaledMask = await rescaleImage(bgRemoved, width, height);
+      const rescaledMask = await rescaleImage(bgRemoved, { width, height });
       const bgRemovedImageUsingMask = await applyMask(
         originalImage,
         rescaledMask

@@ -47,7 +47,7 @@ export class UploadService implements IService {
 
   async processBrandingLogoTrigger(fileKey: string): Promise<void> {
     try {
-      await this.brandingService.markLogoUploadAsDone(fileKey);
+      await this.brandingService.completeLogoUpload(fileKey);
     } catch (error) {
       if (error instanceof UserError) {
         logger.error({

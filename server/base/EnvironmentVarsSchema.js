@@ -33,6 +33,8 @@ module.exports = {
       BRANDING_DYNAMODB_USER_ID_INDEX: Joi.string().required(),
       BRANDING_BUCKET: Joi.string().required(),
       SERVICE_API_KEYS_SECRET_ARN: Joi.string().required(),
+      REVENUECAT_API_BASE_PATH: Joi.string().required(),
+      REVENUECAT_API_KEY: Joi.string().required(),
     })
     .unknown(true),
 };

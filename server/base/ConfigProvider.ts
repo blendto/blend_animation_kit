@@ -161,6 +161,14 @@ class ConfigProvider {
   public get SERVICE_API_KEYS_SECRET_ARN(): string {
     return process.env.SERVICE_API_KEYS_SECRET_ARN;
   }
+
+  public get REVENUECAT_API_BASE_PATH() {
+    return this.retrieveOrCrash("REVENUECAT_API_BASE_PATH");
+  }
+
+  public get REVENUECAT_API_KEY() {
+    return this.retrieveOrCrash("REVENUECAT_API_KEY");
+  }
 }
 
 export default new ConfigProvider();

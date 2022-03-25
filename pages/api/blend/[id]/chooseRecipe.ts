@@ -1,9 +1,11 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiResponse } from "next";
 import ConfigProvider from "server/base/ConfigProvider";
 import { copyObject } from "server/external/s3";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import {
+  ensureBrandingEntitlement,
+  NextApiRequestExtended,
   requestComponentToValidate,
   validate,
   withReqHandler,
@@ -12,17 +14,18 @@ import Joi from "joi";
 import { diContainer } from "inversify.config";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
-import { UserError } from "server/base/errors";
+import { MethodNotAllowedError, UserError } from "server/base/errors";
 import { RecipeWrapper } from "server/base/models/recipe";
+import BrandingService from "server/service/branding";
 
 export default withReqHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
         return useRecipeForBlend(req, res);
       default:
-        res.status(405).end();
+        throw new MethodNotAllowedError();
     }
   }
 );
@@ -37,7 +40,10 @@ const CHOOSE_RECIPE_SCHEMA = Joi.object({
   encoderVersion: Joi.number().required(),
 });
 
-const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
+const useRecipeForBlend = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const { id: blendId } = req.query;
   const body = validate(
     req.body as object,
@@ -51,6 +57,9 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
   };
   const { recipeId, variant, fileKeys, encoderVersion } = body;
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
+  const brandingService = diContainer.get<BrandingService>(
+    TYPES.BrandingService
+  );
 
   const recipe = await recipeService.getRecipe(recipeId, variant);
   if (!recipe) {
@@ -66,6 +75,12 @@ const useRecipeForBlend = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const copyFilePromises = [];
   let interactionUpdatePromise;
+
+  if (req.uid) {
+    await ensureBrandingEntitlement(recipe, req.uid);
+    const brandingProfile = await brandingService.getOrCreate(req.uid);
+    recipeWrapper.replaceBrandingInfo(brandingProfile);
+  }
 
   const blendImages = recipe.images.map((image) => {
     if (image.uid === recipe.recipeDetails.elements.hero.uid) {

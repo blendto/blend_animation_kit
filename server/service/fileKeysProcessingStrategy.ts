@@ -25,10 +25,10 @@ import HeroImageService from "server/service/heroImage";
 
 export abstract class FileKeysProcessingStrategy {
   static choose(
-    blendId: String,
-    userId: String,
+    blendId: string,
+    userId: string,
     fileKeys?: HeroImageFileKeys,
-    heroImageId?: String
+    heroImageId?: string
   ): FileKeysProcessingStrategy {
     if (heroImageId) {
       return new HeroImageIdBased(heroImageId, blendId, userId);
@@ -40,10 +40,10 @@ export abstract class FileKeysProcessingStrategy {
 }
 
 export class HeroImageIdBased extends FileKeysProcessingStrategy {
-  heroImageId: String;
-  blendId: String;
-  userId: String;
-  constructor(heroImageId: String, blendId: String, userId: String) {
+  heroImageId: string;
+  blendId: string;
+  userId: string;
+  constructor(heroImageId: string, blendId: string, userId: string) {
     super();
     this.heroImageId = heroImageId;
     this.blendId = blendId;
@@ -56,8 +56,8 @@ export class HeroImageIdBased extends FileKeysProcessingStrategy {
     );
 
     const heroImage: HeroImage | null = await heroImageService.getImage(
-      this.heroImageId as string,
-      this.userId as string
+      this.heroImageId,
+      this.userId
     );
     if (!heroImage) {
       throw new UserError("No such hero image for user");
@@ -90,9 +90,9 @@ export class HeroImageIdBased extends FileKeysProcessingStrategy {
 
 export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
   fileKeys: HeroImageFileKeys;
-  blendId: String;
-  userId: String;
-  constructor(fileKeys: HeroImageFileKeys, blendId: String, userId: String) {
+  blendId: string;
+  userId: string;
+  constructor(fileKeys: HeroImageFileKeys, blendId: string, userId: string) {
     super();
     this.fileKeys = fileKeys;
     this.blendId = blendId;
@@ -105,7 +105,7 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     );
 
     if (this.fileKeys.withoutBg) {
-      // noinspection ES6MissingAwait
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       fireAndForget(() =>
         heroImageService.createNewImage(
           this.blendId,
@@ -128,7 +128,7 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     );
 
     if (!bgRemovedElementExists) {
-      let originalImage: Buffer = await getObject(
+      const originalImage: Buffer = await getObject(
         ConfigProvider.BLEND_INGREDIENTS_BUCKET,
         this.fileKeys.original
       );
@@ -145,7 +145,7 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
       withoutBg: bgRemovedFileKey,
     } as HeroImageFileKeys;
 
-    // noinspection ES6MissingAwait
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     fireAndForget(() =>
       heroImageService.createNewImage(this.blendId, this.userId, this.fileKeys)
     );
@@ -159,80 +159,79 @@ async function createBgRemovedImage(
   fileKeys: HeroImageFileKeys,
   bgRemovedFileKey: string
 ) {
-  {
+  logger.info({
+    fileNameWithExt,
+    fileKeys,
+  });
+  const metadata = await sharp(originalImage).metadata();
+
+  if (
+    !["jpeg", "jpg"].includes(metadata.format) ||
+    metadata.size > 1024 * 1024 * 10
+  ) {
+    logger.info({ format: metadata.format });
+
+    // failOnError: false helps blow past errors like
+    // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
+    // https://github.com/lovell/sharp/issues/1578
+    originalImage = await sharp(originalImage, { failOnError: false })
+      .resize({
+        width: 3840,
+        height: 3840,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .toFormat("jpeg")
+      .toBuffer();
+    const resizedImageMetadata = await sharp(originalImage).metadata();
     logger.info({
-      fileNameWithExt,
-      fileKeys,
+      op: "BlendSuggest.ResizeImage",
+      sourceSize: metadata.size,
+      finalSize: resizedImageMetadata.size,
+      sourceDimensions: { width: metadata.width, height: metadata.height },
+      finalDimensions: {
+        width: resizedImageMetadata.width,
+        height: resizedImageMetadata.height,
+      },
     });
-    const metadata = await sharp(originalImage).metadata();
+  }
 
-    if (
-      !["jpeg", "jpg"].includes(metadata.format) ||
-      metadata.size > 1024 * 1024 * 10
-    ) {
-      logger.info({ format: metadata.format });
+  const removeBgService = diContainer.get<RemoveBgService>(
+    TYPES.RemoveBgService
+  );
+  const bgRemoved = await removeBgService.removeBg(
+    originalImage,
+    fileNameWithExt,
+    true,
+    false,
+    {
+      source: RemoveBGSource.BLEND,
+      fileKeys: {
+        original: fileKeys.original,
+        withoutBg: bgRemovedFileKey,
+      },
+    }
+  );
 
-      // failOnError: false helps blow past errors like
-      // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
-      // https://github.com/lovell/sharp/issues/1578
-      originalImage = await sharp(originalImage, { failOnError: false })
-        .resize({
-          width: 3840,
-          height: 3840,
-          fit: "inside",
-          withoutEnlargement: true,
-        })
-        .toFormat("jpeg")
-        .toBuffer();
-      const resizedImageMetadata = await sharp(originalImage).metadata();
-      logger.info({
-        op: "BlendSuggest.ResizeImage",
-        sourceSize: metadata.size,
-        finalSize: resizedImageMetadata.size,
-        sourceDimensions: { width: metadata.width, height: metadata.height },
-        finalDimensions: {
-          width: resizedImageMetadata.width,
-          height: resizedImageMetadata.height,
-        },
+  try {
+    await uploadObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      bgRemovedFileKey,
+      bgRemoved
+    );
+  } catch (ex) {
+    if (axios.isAxiosError(ex)) {
+      logger.error({
+        code: "BlendSuggest.S3UploadFailed",
+        statusCode: ex.response.status,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        message: ex.response?.data ?? "No response",
       });
-    }
 
-    const removeBgService = diContainer.get<RemoveBgService>(
-      TYPES.RemoveBgService
-    );
-    const bgRemoved = await removeBgService.removeBg(
-      originalImage,
-      fileNameWithExt,
-      true,
-      false,
-      {
-        source: RemoveBGSource.BLEND,
-        fileKeys: {
-          original: fileKeys.original,
-          withoutBg: bgRemovedFileKey,
-        },
-      }
-    );
-
-    try {
-      await uploadObject(
-        ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-        bgRemovedFileKey,
-        bgRemoved
+      throw new UserError(
+        "Something went wrong while removing background! Try again!"
       );
-    } catch (ex) {
-      if (axios.isAxiosError(ex)) {
-        logger.error({
-          code: "BlendSuggest.S3UploadFailed",
-          statusCode: ex.response.status,
-          message: ex.response?.data ?? "No response",
-        });
-
-        throw new UserError(
-          "Something went wrong while removing background! Try again!"
-        );
-      }
-      throw ex;
     }
+    throw ex;
   }
 }
