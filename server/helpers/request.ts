@@ -1,6 +1,6 @@
 import { diContainer } from "inversify.config";
 import { ObjectSchema } from "joi";
-import { pick } from "lodash";
+import { isEmpty, pick } from "lodash";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import logger from "server/base/Logger";
@@ -120,7 +120,7 @@ export async function ensureBrandingEntitlement(
   recipe: Recipe,
   userId: string
 ) {
-  if (recipe.branding) {
+  if (!isEmpty(recipe.branding)) {
     await ensureEntitlement(userId, Entitlement.BRANDING);
   }
 }

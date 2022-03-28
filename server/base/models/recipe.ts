@@ -223,7 +223,7 @@ export class RecipeWrapper {
   }
 
   replaceBrandingInfo(brandingProfile: BrandingEntity): void {
-    if (!this.recipe.branding) {
+    if (isEmpty(this.recipe.branding)) {
       return;
     }
 

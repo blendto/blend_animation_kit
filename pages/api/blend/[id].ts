@@ -308,11 +308,9 @@ const submitBlend = async (
 
   const dbUpdateResponse = await DynamoDB._().updateItem(params);
   const updatedRecipe = dbUpdateResponse.Attributes;
-
-  await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage({ id });
-
   // Add id
   updatedRecipe.id = id;
 
+  await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(updatedRecipe);
   res.send(updatedRecipe);
 };
