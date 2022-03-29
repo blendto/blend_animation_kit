@@ -17,10 +17,12 @@ export interface StoredImage {
 
 export interface BrandingDetails {
   logo?: {
-    fileKey: string;
+    isPlaceholder: boolean;
+    data: { fileKey: string };
   };
   info?: {
-    [attribute in BrandingInfoType]?: { value?: string };
+    isPlaceholder: boolean;
+    data: { [attribute in BrandingInfoType]?: { value: string } };
   };
 }
 
@@ -227,13 +229,44 @@ export class RecipeWrapper {
       return;
     }
 
-    this.recipe.branding.logo.fileKey = brandingProfile.logos.primaryEntry;
+    if (brandingProfile.logos.primaryEntry) {
+      this.recipe.branding.logo.isPlaceholder = false;
+      this.recipe.branding.logo.data.fileKey =
+        brandingProfile.logos.primaryEntry;
+    }
 
-    Object.keys(this.recipe.branding.info).forEach((key: BrandingInfoType) => {
-      if (brandingProfile[key]) {
-        this.recipe.branding.info[key].value = brandingProfile[key];
-      } else {
-        delete this.recipe.branding.info[key];
+    const unavailableAttributes = [];
+    Object.keys(this.recipe.branding.info.data).forEach(
+      (att: BrandingInfoType) => {
+        if (brandingProfile[att]) {
+          this.recipe.branding.info.data[att].value = brandingProfile[att];
+          // Set it to false if there's atleast one available attribute
+          this.recipe.branding.info.isPlaceholder = false;
+        } else {
+          unavailableAttributes.push(att);
+        }
+      }
+    );
+    if (!this.recipe.branding.info.isPlaceholder) {
+      // Delete all placeholder values if there's atleast one available attribute
+      unavailableAttributes.forEach((att: BrandingInfoType) => {
+        delete this.recipe.branding.info.data[att];
+      });
+    }
+  }
+
+  removeBrandingPlaceholders(): void {
+    Object.keys(this.recipe.branding || {}).forEach((type: "info" | "logo") => {
+      if (this.recipe.branding[type]?.isPlaceholder) {
+        delete this.recipe.branding[type];
+        this.recipe.interactions = this.recipe.interactions.filter(
+          (i: Interaction) =>
+            i.metadata.$ !==
+            {
+              info: "BrandingInfoMetadata",
+              logo: "BrandingLogoMetadata",
+            }[type]
+        );
       }
     });
   }

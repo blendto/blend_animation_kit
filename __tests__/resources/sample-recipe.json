@@ -53,8 +53,24 @@
     }
   ],
   "branding": {
-    "logo": { "fileKey": "NG-e8G14/7UybDOVCtQKCApD-7djxi.jpeg" },
-    "info": { "brandName": {}, "whatsappNo": {}, "email": {} }
+    "logo": {
+      "isPlaceholder": true,
+      "data": { "fileKey": "default/logo-placeholder.webp" }
+    },
+    "info": {
+      "isPlaceholder": true,
+      "data": {
+        "brandName": {
+          "value": "Blendit Studios"
+        },
+        "whatsappNo": {
+          "value": "+91 98765 43210"
+        },
+        "email": {
+          "value": "care@blend.to"
+        }
+      }
+    }
   },
   "interactions": [
     {

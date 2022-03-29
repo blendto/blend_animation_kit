@@ -22,6 +22,8 @@ export enum BrandingStatus {
 }
 
 export enum BrandingUpdatePaths {
+  brandName = "/brandName",
+  upiHandle = "/upiHandle",
   email = "/email",
   contactNo = "/contactNo",
   whatsappNo = "/whatsappNo",

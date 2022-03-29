@@ -2,7 +2,7 @@ import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
-import { Recipe, StoredImage } from "server/base/models/recipe";
+import { Recipe, StoredImage, RecipeWrapper } from "server/base/models/recipe";
 import { BlendStatus, BlendVersion } from "server/base/models/blend";
 import {
   CURRENT_ENCODER_VERSION,
@@ -238,9 +238,7 @@ const submitBlend = async (
     texts,
     buttons,
     links,
-    interactions,
     metadata,
-    branding,
   } = recipe;
 
   if (!metadata) {
@@ -261,7 +259,10 @@ const submitBlend = async (
   ) {
     throw new UserError("Unsupported body.metadata.source.version");
   }
+
   await ensureBrandingEntitlement(recipe, req.uid);
+  new RecipeWrapper(recipe).removeBrandingPlaceholders();
+  const { interactions, branding } = recipe;
 
   // The mobile apps use "fileKey" attribute instead of uri
   // The "uri" that the server sends in chooseRecipe API is converted

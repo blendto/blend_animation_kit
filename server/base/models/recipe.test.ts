@@ -1,6 +1,8 @@
 import { readFileSync } from "fs";
+import { omit } from "lodash";
 import {
   BrandingEntity,
+  BrandingInfoType,
   BrandingLogoStatus,
   BrandingStatus,
 } from "server/repositories/branding";
@@ -108,17 +110,76 @@ describe("RecipeWrapper", () => {
       expect(recipeCopy).toMatchObject(recipeCopy2);
     });
 
-    it("replaces branding details otherwise", () => {
+    it("replaces info if available", () => {
+      const wrapper = new RecipeWrapper(recipeCopy);
+      wrapper.replaceBrandingInfo(
+        omit(brandingProfile, "logos.primaryEntry", "logos.entries.0")
+      );
+
+      expect(recipeCopy).not.toMatchObject(recipe);
+
+      expect(recipeCopy.branding.info.isPlaceholder).toBe(false);
+      expect(recipeCopy.branding.info.data.whatsappNo.value).toBe(whatsappNo);
+      expect(recipeCopy.branding.info.data.email.value).toBe(email);
+      expect(recipeCopy.branding.info.data).not.toHaveProperty("brandName");
+
+      expect(recipeCopy.branding.logo).toMatchObject(recipe.branding.logo);
+    });
+
+    it("replaces logo if available", () => {
+      const wrapper = new RecipeWrapper(recipeCopy);
+      wrapper.replaceBrandingInfo(
+        omit(
+          brandingProfile,
+          BrandingInfoType.WhatsappNo,
+          BrandingInfoType.Email
+        )
+      );
+
+      expect(recipeCopy).not.toMatchObject(recipe);
+
+      expect(recipeCopy.branding.info).toMatchObject(recipe.branding.info);
+
+      expect(recipeCopy.branding.logo.isPlaceholder).toBe(false);
+      expect(recipeCopy.branding.logo.data.fileKey).toBe(primaryEntry);
+    });
+
+    it("replaces both info and logo if available", () => {
       const wrapper = new RecipeWrapper(recipeCopy);
       wrapper.replaceBrandingInfo(brandingProfile);
 
       expect(recipeCopy).not.toMatchObject(recipe);
 
-      expect(recipeCopy.branding.info).not.toHaveProperty("brandName");
-      expect(recipeCopy.branding.info.whatsappNo.value).toBe(whatsappNo);
-      expect(recipeCopy.branding.info.email.value).toBe(email);
+      expect(recipeCopy.branding.info.isPlaceholder).toBe(false);
+      expect(recipeCopy.branding.info.data.whatsappNo.value).toBe(whatsappNo);
+      expect(recipeCopy.branding.info.data.email.value).toBe(email);
+      expect(recipeCopy.branding.info.data).not.toHaveProperty("brandName");
 
-      expect(recipeCopy.branding.logo.fileKey).toBe(primaryEntry);
+      expect(recipeCopy.branding.logo.isPlaceholder).toBe(false);
+      expect(recipeCopy.branding.logo.data.fileKey).toBe(primaryEntry);
+    });
+  });
+
+  describe("removeBrandingPlaceholders", () => {
+    it("Removes the placeholder branding attributes", () => {
+      const wrapper = new RecipeWrapper(recipeCopy);
+      wrapper.removeBrandingPlaceholders();
+
+      expect(recipeCopy).not.toMatchObject(recipe);
+      expect(recipeCopy.branding).toMatchObject({});
+      expect(recipeCopy.interactions.length).toBe(
+        recipe.interactions.length - 2
+      );
+      expect(
+        recipeCopy.interactions.find(
+          (i) => i.metadata.$ === "BrandingLogoMetadata"
+        )
+      ).toBe(undefined);
+      expect(
+        recipeCopy.interactions.find(
+          (i) => i.metadata.$ === "BrandingInfoMetadata"
+        )
+      ).toBe(undefined);
     });
   });
 });

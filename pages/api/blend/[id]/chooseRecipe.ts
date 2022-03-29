@@ -15,7 +15,7 @@ import { diContainer } from "inversify.config";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
-import { RecipeWrapper } from "server/base/models/recipe";
+import { Interaction, RecipeWrapper } from "server/base/models/recipe";
 import BrandingService from "server/service/branding";
 
 export default withReqHandler(
@@ -80,6 +80,13 @@ const useRecipeForBlend = async (
     await ensureBrandingEntitlement(recipe, req.uid);
     const brandingProfile = await brandingService.getOrCreate(req.uid);
     recipeWrapper.replaceBrandingInfo(brandingProfile);
+  }
+  if (encoderVersion < 3.0) {
+    // Older apps with lesser encoder version won't know how to handle branding
+    recipe.interactions = recipe.interactions.filter(
+      (i: Interaction) =>
+        !["BrandingInfoMetadata", "BrandingLogoMetadata"].includes(i.metadata.$)
+    );
   }
 
   const blendImages = recipe.images.map((image) => {
