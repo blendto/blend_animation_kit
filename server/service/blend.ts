@@ -86,11 +86,14 @@ export class BlendService implements IService {
     version: BlendVersion = BlendVersion.current,
     consistentRead = false
   ): Promise<Blend> {
-    let blend = await this.dataStore.getItem({
-      TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
-      Key: { id, version },
-      ConsistentRead: consistentRead,
-    });
+    let blend;
+
+    if (!consistentRead) {
+      blend = await this.dataStore.getItem({
+        TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
+        Key: { id, version },
+      });
+    }
 
     if (!blend) {
       // TODO: Remove this post migration. This is a HACK to fix consistency issues.
