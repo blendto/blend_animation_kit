@@ -141,7 +141,7 @@ describe("RecipeWrapper", () => {
       expect(recipeCopy.branding.info).toMatchObject(recipe.branding.info);
 
       expect(recipeCopy.branding.logo.isPlaceholder).toBe(false);
-      expect(recipeCopy.branding.logo.data.fileKey).toBe(primaryEntry);
+      expect(recipeCopy.branding.logo.data.uri).toBe(primaryEntry);
     });
 
     it("replaces both info and logo if available", () => {
@@ -156,7 +156,7 @@ describe("RecipeWrapper", () => {
       expect(recipeCopy.branding.info.data).not.toHaveProperty("brandName");
 
       expect(recipeCopy.branding.logo.isPlaceholder).toBe(false);
-      expect(recipeCopy.branding.logo.data.fileKey).toBe(primaryEntry);
+      expect(recipeCopy.branding.logo.data.uri).toBe(primaryEntry);
     });
   });
 

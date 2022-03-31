@@ -55,7 +55,7 @@
   "branding": {
     "logo": {
       "isPlaceholder": true,
-      "data": { "fileKey": "default/logo-placeholder.webp" }
+      "data": { "uri": "default/logo-placeholder.webp", "source": "BRANDING" }
     },
     "info": {
       "isPlaceholder": true,

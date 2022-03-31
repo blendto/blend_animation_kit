@@ -7,6 +7,7 @@ import { HeroImageFileKeys } from "./heroImage";
 export enum ElementSource {
   blend = "BLEND",
   recipe = "RECIPE",
+  branding = "BRANDING",
 }
 
 export interface StoredImage {
@@ -18,7 +19,7 @@ export interface StoredImage {
 export interface BrandingDetails {
   logo?: {
     isPlaceholder: boolean;
-    data: { fileKey: string };
+    data: { uri: string; source: ElementSource.branding };
   };
   info?: {
     isPlaceholder: boolean;
@@ -231,8 +232,7 @@ export class RecipeWrapper {
 
     if (brandingProfile.logos.primaryEntry) {
       this.recipe.branding.logo.isPlaceholder = false;
-      this.recipe.branding.logo.data.fileKey =
-        brandingProfile.logos.primaryEntry;
+      this.recipe.branding.logo.data.uri = brandingProfile.logos.primaryEntry;
     }
 
     const unavailableAttributes = [];
