@@ -91,7 +91,7 @@ export class UploadService implements IService {
       blendId,
       type: BatchTaskType.process_upload,
     });
-    await this.blendService.clearExpiry(blendId);
+    await this.blendService.clearExpiry([blendId]);
     await this.batchService.markUploadCompleted(blend.batchId, blendId);
   }
 }

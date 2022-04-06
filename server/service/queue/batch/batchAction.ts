@@ -32,15 +32,17 @@ export class BatchActionService implements IService {
   }
 
   async processTask(batchMessage: BatchTaskMessage) {
-    switch (batchMessage.type) {
-      case BatchTaskType.process_operations:
-      case BatchTaskType.process_export:
-        return await this.processOperations(batchMessage).catch(async (e) => {
-          await this.handleProcessingError(batchMessage, e);
-        });
-      case BatchTaskType.process_upload:
-        return await this.processUpload(batchMessage);
-      default:
+    try {
+      switch (batchMessage.type) {
+        case BatchTaskType.process_operations:
+        case BatchTaskType.process_export:
+          return await this.processOperations(batchMessage);
+        case BatchTaskType.process_upload:
+          return await this.processUpload(batchMessage);
+        default:
+      }
+    } catch (e) {
+      await this.handleProcessingError(batchMessage, e);
     }
   }
 
@@ -92,6 +94,9 @@ export class BatchActionService implements IService {
       message: { qMessage: message, error: e },
     });
     const { batchId, blendId } = message;
+    if (message.type === BatchTaskType.process_upload) {
+      await this.batchService.updatePreview(batchId, blendId, null, true);
+    }
     if (message.type === BatchTaskType.process_operations) {
       await this.batchService.updatePreview(batchId, blendId, null, true);
     }

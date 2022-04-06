@@ -213,13 +213,16 @@ export class BlendService implements IService {
     };
   }
 
-  async clearExpiry(blendId: string) {
-    await this.dataStore.updateItem({
-      UpdateExpression: "REMOVE expireAt",
-      Key: { id: blendId },
-      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      ReturnValues: "NONE",
-    });
+  async clearExpiry(blendIds: string[]) {
+    const clearOne = (blendId: string): Promise<unknown> =>
+      this.dataStore.updateItem({
+        UpdateExpression: "REMOVE expireAt",
+        Key: { id: blendId },
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+        ReturnValues: "NONE",
+      });
+
+    await Promise.all(blendIds.map(clearOne));
   }
 
   async getRecentBlends(uid: string) {

@@ -117,9 +117,12 @@ export class BatchService implements IService {
     await this.updateUploadRequests(batchId, uploadRequests);
 
     const blendsFromHeroImages = await Promise.all(newBlendIdPromises);
+    const blendIds = blendsFromHeroImages.map((e) => e.blendId);
+
+    await this.blendService.clearExpiry(blendIds);
     await BatchService.enqueueBatchTask(
       batchId,
-      blendsFromHeroImages.map((e) => e.blendId),
+      blendIds,
       BatchTaskType.process_operations
     );
 
