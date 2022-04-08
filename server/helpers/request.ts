@@ -45,6 +45,23 @@ export function withReqHandler(
       return await routingFunction(extendedReq, res);
     } catch (err) {
       if (err instanceof UserError) {
+        logger.debug({
+          op: "USER_ERROR",
+          details: {
+            req: pick(extendedReq, ["url", "method", "uid", "query", "body"]),
+            /* eslint-disable-next-line
+              @typescript-eslint/no-unsafe-assignment,
+              @typescript-eslint/no-unsafe-member-access,
+              @typescript-eslint/no-unsafe-call
+            */
+            desc: err.toString(),
+            /* eslint-disable-next-line
+              @typescript-eslint/no-unsafe-assignment,
+              @typescript-eslint/no-unsafe-member-access
+            */
+            trace: err.stack,
+          },
+        });
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         return res.status(400).send({ message: err.message, code: err.code });
       }
