@@ -290,7 +290,7 @@ const submitBlend = async (
     ExpressionAttributeValues: {
       ":s": "SUBMITTED",
       ":update": [{ status: "SUBMITTED", on: now }],
-      ":branding": branding || {},
+      ":branding": branding || null,
       ":inter": interactions,
       ":images": imageObjects,
       ":externalImages": externalImages,
