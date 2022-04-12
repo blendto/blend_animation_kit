@@ -25,7 +25,10 @@ import { customAlphabet } from "nanoid";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
-import { BatchOperation } from "server/base/models/batchOperations";
+import {
+  BatchOperation,
+  IndividualBlendEditOperation,
+} from "server/base/models/batchOperations";
 import { BatchTaskType } from "server/base/models/queue-messages";
 import { diContainer } from "inversify.config";
 import BatchRecipeProcessor from "server/service/queue/batch/batchRecipeProcessor";
@@ -432,6 +435,12 @@ export class BatchService implements IService {
     } as Blend;
 
     await this.blendService.updateBlend(modifiedBlend);
+
+    await this.applyOperation(
+      batchId,
+      uid,
+      new IndividualBlendEditOperation(blendId)
+    );
   }
 
   async exportBatch(batchId: string, uid: string) {
