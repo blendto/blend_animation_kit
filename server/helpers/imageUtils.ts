@@ -15,19 +15,14 @@ export const applyMask = async (
   mask: Buffer,
   trim = true
 ): Promise<SharpResolveObject> => {
-  const output = await sharp(image)
-    .rotate()
-    .joinChannel(mask)
-    .png()
-    .toBuffer({ resolveWithObject: true });
+  let output = sharp(image).rotate().joinChannel(mask);
 
   if (!trim) {
-    return output;
+    return output.toBuffer({ resolveWithObject: true });
   }
+  const img = await output.png({ compressionLevel: 0 }).toBuffer();
 
-  return await sharp(output.data)
-    .trim(TRIM_THRESHOLD)
-    .toBuffer({ resolveWithObject: true });
+  return sharp(img).trim(TRIM_THRESHOLD).toBuffer({ resolveWithObject: true });
 };
 
 // Keep default quality same as sharp, 80
