@@ -6,6 +6,8 @@ import { QueueConfig } from "server/external/queue";
 import { BatchActionService } from "server/service/queue/batch/batchAction";
 import { UploadService } from "server/service/queue/upload";
 import { ImageUploadEventQueue } from "server/external/queue/imageUploadQueue";
+import tracer from "dd-trace";
+import { BatchTaskMessage } from "server/base/models/queue-messages";
 
 const SIMULTANEOUS_QUEUE_COUNT = 10;
 
@@ -30,14 +32,20 @@ function logError(op: string, qMessage: object, e: unknown): Promise<void> {
 }
 
 for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
-  const consumer = batchTaskQueue.createQueueConsumer(async (message) => {
+  let onMessage = async (message: BatchTaskMessage) => {
     try {
       logMessage("PROCESSING_BATCH_TASK", message);
       await batchActionService.processTask(message);
     } catch (e) {
       return logError("BATCH_PROCESS_FAILURE", message, e);
     }
-  });
+  };
+  onMessage = tracer.wrap(
+    "sqs.message_received",
+    { resource: "batch_task_processor" },
+    onMessage
+  );
+  const consumer = batchTaskQueue.createQueueConsumer(onMessage);
   consumer.start();
 }
 
