@@ -11,7 +11,7 @@ import {
   UnauthorizedError,
   UserError,
 } from "server/base/errors";
-import firebase from "server/external/firebase";
+import Firebase from "server/external/firebase";
 import InterServiceAuth, {
   BlendMicroServices,
 } from "server/internal/inter-service-auth";
@@ -41,7 +41,8 @@ export function withReqHandler(
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     const extendedReq = req as NextApiRequestExtended;
     try {
-      extendedReq.uid = await firebase.extractUserIdFromRequest(req);
+      const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
+      extendedReq.uid = await firebaseService.extractUserIdFromRequest(req);
       return await routingFunction(extendedReq, res);
     } catch (err) {
       if (err instanceof UserError) {

@@ -6,6 +6,8 @@
   @typescript-eslint/no-unsafe-assignment,
   class-methods-use-this
 */
+import { ServiceAccount } from "firebase-admin";
+
 import { EnvironmentVarsSchema } from "./EnvironmentVarsSchema";
 
 class ConfigProvider {
@@ -19,77 +21,73 @@ class ConfigProvider {
     }
   }
 
-  private retrieveOrCrash(envVar: string): string {
-    const variable = process.env[envVar];
-    if (!variable || variable.trim().length === 0) {
-      throw new Error(`envVar ${envVar} not set!`);
-    }
-    return variable;
-  }
-
-  public get BATCH_DYNAMODB_TABLE() {
+  public get BATCH_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("BATCH_DYNAMODB_TABLE");
   }
 
-  public get CONFIG_DYNAMODB_TABLE() {
+  public get CONFIG_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("CONFIG_DYNAMODB_TABLE");
   }
 
-  public get BLEND_VERSIONED_DYNAMODB_TABLE() {
+  public get BLEND_VERSIONED_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("BLEND_VERSIONED_DYNAMODB_TABLE");
   }
 
-  public get BLEND_DYNAMODB_TABLE() {
+  public get BLEND_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("BLEND_DYNAMODB_TABLE");
   }
 
-  public get BLEND_GEN_QUEUE_URL() {
+  public get BLEND_GEN_QUEUE_URL(): string {
     return this.retrieveOrCrash("BLEND_GEN_QUEUE_URL");
   }
 
-  public get BLEND_INGREDIENTS_BUCKET() {
+  public get BLEND_INGREDIENTS_BUCKET(): string {
     return this.retrieveOrCrash("BLEND_INGREDIENTS_BUCKET");
   }
 
-  public get BLEND_OUTPUT_BUCKET() {
+  public get BLEND_OUTPUT_BUCKET(): string {
     return this.retrieveOrCrash("BLEND_OUTPUT_BUCKET");
   }
 
-  public get HERO_IMAGES_BUCKET() {
+  public get HERO_IMAGES_BUCKET(): string {
     return this.retrieveOrCrash("HERO_IMAGES_BUCKET");
   }
 
-  public get RECIPE_DYNAMODB_TABLE() {
+  public get RECIPE_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("RECIPE_DYNAMODB_TABLE");
   }
 
-  public get RECIPE_INGREDIENTS_BUCKET() {
+  public get USER_DYNAMODB_TABLE(): string {
+    return this.retrieveOrCrash("USER_DYNAMODB_TABLE");
+  }
+
+  public get RECIPE_INGREDIENTS_BUCKET(): string {
     return this.retrieveOrCrash("RECIPE_INGREDIENTS_BUCKET");
   }
 
-  public get WEB_USER_ASSETS_BUCKET() {
+  public get WEB_USER_ASSETS_BUCKET(): string {
     return this.retrieveOrCrash("WEB_USER_ASSETS_BUCKET");
   }
 
-  public get OUTPUT_BASE_PATH() {
+  public get OUTPUT_BASE_PATH(): string {
     // Can't use retrieveOrCrash fn. because variables starting with "NEXT_PUBLIC_" are removed
     // from process.env by nextjs during build, replacing their usages with the values instead.
     return process.env.NEXT_PUBLIC_OUTPUT_BASE_PATH;
   }
 
-  public get TOOLKIT_BASE_PATH() {
+  public get TOOLKIT_BASE_PATH(): string {
     return this.retrieveOrCrash("TOOLKIT_BASE_PATH");
   }
 
-  public get VES_API_BASE_PATH() {
+  public get VES_API_BASE_PATH(): string {
     return this.retrieveOrCrash("VES_API_BASE_PATH");
   }
 
-  public get RECO_API_BASE_PATH() {
+  public get RECO_API_BASE_PATH(): string {
     return this.retrieveOrCrash("RECO_ENGINE_BASE_URL");
   }
 
-  public get FIREBASE_SERVICE_KEY() {
+  public get FIREBASE_SERVICE_KEY(): ServiceAccount {
     let parsedKey = JSON.parse(this.retrieveOrCrash("FIREBASE_SERVICE_KEY"));
     parsedKey = {
       ...parsedKey,
@@ -98,39 +96,39 @@ class ConfigProvider {
     return parsedKey;
   }
 
-  public get FIREBASE_APP_CLIENT_CONFIG() {
+  public get FIREBASE_APP_CLIENT_CONFIG(): Record<string, unknown> {
     // Refer OUTPUT_BASE_PATH fn. to see why retrieveOrCrash fn. can't be used here
     return JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG);
   }
 
-  public get IPAPI_ACCESS_KEY() {
+  public get IPAPI_ACCESS_KEY(): string {
     return this.retrieveOrCrash("IPAPI_ACCESS_KEY");
   }
 
-  public get HERO_IMAGES_DYNAMODB_TABLE() {
+  public get HERO_IMAGES_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("HERO_IMAGES_DYNAMODB_TABLE");
   }
 
-  public get AWS_CLOUD_ACCESS_KEY_ID() {
+  public get AWS_CLOUD_ACCESS_KEY_ID(): string {
     // Optional, only needed in vercel, others will take the machine settings
     return process.env.AWS_CLOUD_ACCESS_KEY_ID;
   }
 
-  public get AWS_CLOUD_SECRET_ACCESS_KEY() {
+  public get AWS_CLOUD_SECRET_ACCESS_KEY(): string {
     // Optional, only needed in vercel, others will take the machine settings
     return process.env.AWS_CLOUD_SECRET_ACCESS_KEY;
   }
 
-  public get AWS_CLOUD_REGION() {
+  public get AWS_CLOUD_REGION(): string {
     // Optional, only needed in vercel, others will take the machine settings
     return process.env.AWS_CLOUD_REGION;
   }
 
-  public get BATCH_TASK_QUEUE_URL() {
+  public get BATCH_TASK_QUEUE_URL(): string {
     return process.env.BATCH_TASK_QUEUE_URL;
   }
 
-  public get UPLOADS_EVENT_QUEUE_URL() {
+  public get UPLOADS_EVENT_QUEUE_URL(): string {
     return process.env.BLEND_UPLOADS_EVENT_QUEUE_URL;
   }
 
@@ -146,15 +144,15 @@ class ConfigProvider {
     return process.env.BG_REMOVAL_LOG_TABLE_NAME;
   }
 
-  public get BRANDING_DYNAMODB_TABLE() {
+  public get BRANDING_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("BRANDING_DYNAMODB_TABLE");
   }
 
-  public get BRANDING_DYNAMODB_USER_ID_INDEX() {
+  public get BRANDING_DYNAMODB_USER_ID_INDEX(): string {
     return this.retrieveOrCrash("BRANDING_DYNAMODB_USER_ID_INDEX");
   }
 
-  public get BRANDING_BUCKET() {
+  public get BRANDING_BUCKET(): string {
     return this.retrieveOrCrash("BRANDING_BUCKET");
   }
 
@@ -162,12 +160,20 @@ class ConfigProvider {
     return process.env.SERVICE_API_KEYS_SECRET_ARN;
   }
 
-  public get REVENUECAT_API_BASE_PATH() {
+  public get REVENUECAT_API_BASE_PATH(): string {
     return this.retrieveOrCrash("REVENUECAT_API_BASE_PATH");
   }
 
-  public get REVENUECAT_API_KEY() {
+  public get REVENUECAT_API_KEY(): string {
     return this.retrieveOrCrash("REVENUECAT_API_KEY");
+  }
+
+  private retrieveOrCrash(envVar: string): string {
+    const variable = process.env[envVar];
+    if (!variable || variable.trim().length === 0) {
+      throw new Error(`envVar ${envVar} not set!`);
+    }
+    return variable;
   }
 }
 

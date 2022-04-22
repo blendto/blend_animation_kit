@@ -1,15 +1,20 @@
+import "reflect-metadata";
 import admin from "firebase-admin";
-import ConfigProvider from "server/base/ConfigProvider";
-import { UserError } from "server/base/errors";
+import UserError from "server/base/errors/UserError";
 import { nanoid } from "nanoid";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
+import { NextApiRequest } from "next";
+import { injectable } from "inversify";
+import ConfigProvider from "../base/ConfigProvider";
 
-const FIREBASE_PROJECT_ID = ConfigProvider.FIREBASE_APP_CLIENT_CONFIG.projectId;
+@injectable()
+export default class Firebase {
+  FIREBASE_PROJECT_ID = ConfigProvider.FIREBASE_APP_CLIENT_CONFIG
+    .projectId as string;
 
-class Firebase {
   constructor() {
-    if (admin.apps.length != 0) {
+    if (admin.apps.length !== 0) {
       // Already initialized, else causes problems during hot-reloading
       return;
     }
@@ -21,8 +26,8 @@ class Firebase {
 
   async verifyAndDecodeToken(idToken: string) {
     try {
-      let claims = await admin.auth().verifyIdToken(idToken);
-      if (claims.aud != FIREBASE_PROJECT_ID) {
+      const claims = await admin.auth().verifyIdToken(idToken);
+      if (claims.aud !== this.FIREBASE_PROJECT_ID) {
         throw new UserError("Invalid Token");
       }
       return claims;
@@ -31,23 +36,42 @@ class Firebase {
     }
   }
 
-  async createTemporaryUser(): Promise<any> {
+  async createTemporaryUser(): Promise<firebase.User> {
     const userRecord = await admin.auth().createUser({
       uid: nanoid(16),
     });
     const token: string = await admin.auth().createCustomToken(userRecord.uid);
     const userCredential = await firebase.auth().signInWithCustomToken(token);
-    return userCredential.user.toJSON();
+    return userCredential.user;
   }
 
-  async extractUserIdFromRequest(request): Promise<string> {
-    const authHeader = request.headers.authorization;
+  async loginFakeUser(): Promise<firebase.User> {
+    const userRecord = await admin
+      .auth()
+      .getUserByEmail("engineering+test-user@blend.to");
+    const token: string = await admin.auth().createCustomToken(userRecord.uid);
+    const userCredential = await firebase.auth().signInWithCustomToken(token);
+    return userCredential.user;
+  }
+
+  async extractUserIdFromRequest(request: NextApiRequest): Promise<string> {
+    const authHeader = request.headers?.authorization;
     if (!authHeader?.startsWith("Bearer")) {
       return null;
     }
     const claims = await this.verifyAndDecodeToken(authHeader.substring(7));
     return claims.uid;
   }
-}
 
-export default new Firebase();
+  async getUserById(id: string) {
+    try {
+      return await admin.auth().getUser(id);
+    } catch (e) {
+      const errCode = (e as Record<string, unknown>).code;
+      if (errCode === "auth/user-not-found") {
+        throw new UserError("User Not Found");
+      }
+      throw new UserError(`Something went wrong: ${errCode}`);
+    }
+  }
+}

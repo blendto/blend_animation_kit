@@ -22,6 +22,10 @@ import { RemoveBgService } from "server/internal/remove-bg-service";
 import BrandingService from "server/service/branding";
 import { RecipeService } from "server/service/recipe";
 import InterServiceAuth from "server/internal/inter-service-auth";
+import Firebase from "server/external/firebase";
+import { Repo } from "server/repositories/base";
+import { User } from "server/base/models/user";
+import { UserDynamooseRepo } from "server/repositories/user";
 
 const diContainer = new Container();
 
@@ -88,4 +92,8 @@ diContainer
   .bind<InterServiceAuth>(TYPES.InterServiceAuth)
   .to(InterServiceAuth)
   .inSingletonScope();
+diContainer.bind<Firebase>(TYPES.Firebase).to(Firebase).inSingletonScope();
+diContainer
+  .bind<Repo<User>>(TYPES.UserRepo)
+  .toDynamicValue(() => new UserDynamooseRepo());
 export { diContainer };

@@ -24,6 +24,7 @@ module.exports = {
       HERO_IMAGES_DYNAMODB_TABLE: Joi.string().required(),
       BATCH_DYNAMODB_TABLE: Joi.string().required(),
       NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG: Joi.string().required(),
+      USER_DYNAMODB_TABLE: Joi.string().required(),
       BATCH_TASK_QUEUE_URL: Joi.string().required(),
       BLEND_UPLOADS_EVENT_QUEUE_URL: Joi.string().required(),
       BG_REMOVER_BASE_PATH: Joi.string().required(),
