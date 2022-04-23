@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import FormData from "form-data";
-import axios, { AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { IncomingMessage } from "http";
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
@@ -14,6 +14,8 @@ import { getObject, uploadObject } from "server/external/s3";
 import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import logger from "server/base/Logger";
 import sharp from "sharp";
+import axiosRetry from "axios-retry";
+import { Stream } from "stream";
 
 export interface ToolkitErrorResponse {
   code?: string;
@@ -37,10 +39,15 @@ interface RemoveBGCommandMetadata {
 export class RemoveBgService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
-  httpClient = axios.create({
-    baseURL: ConfigProvider.BG_REMOVER_BASE_PATH,
-    headers: { "X-API-KEY": ConfigProvider.BG_REMOVER_API_KEY },
-  });
+  httpClient: AxiosInstance;
+
+  constructor() {
+    this.httpClient = axios.create({
+      baseURL: ConfigProvider.BG_REMOVER_BASE_PATH,
+      headers: { "X-API-KEY": ConfigProvider.BG_REMOVER_API_KEY },
+    });
+    axiosRetry(this.httpClient, { retries: 3 });
+  }
 
   static constructBgRemovedFileKey = (fileKey: string) => {
     const fileKeyParts = fileKey.split("/");
@@ -91,7 +98,7 @@ export class RemoveBgService implements IService {
     });
   };
 
-  _handleBgRemovalException = async (
+  private handleBgRemovalException = async (
     fn: () => Promise<void>,
     metadata: RemoveBGCommandMetadata
   ) => {
@@ -127,8 +134,8 @@ export class RemoveBgService implements IService {
   removeBg = async (
     fileBuffer: Buffer,
     fileName: string,
-    crop = false,
-    onlyMask = false,
+    crop: boolean,
+    onlyMask: boolean,
     metadata: RemoveBGCommandMetadata
   ): Promise<Buffer> => {
     const config = {
@@ -147,14 +154,17 @@ export class RemoveBgService implements IService {
     });
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     let response: AxiosResponse<IncomingMessage>;
-    await this._handleBgRemovalException(async () => {
+    await this.handleBgRemovalException(async () => {
       response = await this.httpClient.post("/removeBg", form, {
         headers: form.getHeaders(),
         responseType: "stream",
       });
     }, metadata);
 
-    const { data, headers } = response;
+    const { data, headers } = response as {
+      data: Stream;
+      headers: Record<string, string>;
+    };
     await this.logBgRemoval(
       headers["x-predicted-class"],
       headers["x-segmentation-provider"],
@@ -177,7 +187,7 @@ export class RemoveBgService implements IService {
   ): Promise<{ fileKeys: HeroImageFileKeys; updated: boolean }> {
     if (fileKeys.withoutBg) {
       return {
-        fileKeys: fileKeys,
+        fileKeys,
         updated: false,
       };
     }
@@ -201,7 +211,7 @@ export class RemoveBgService implements IService {
 
     const compressedImageMetadata = await sharp(webp).metadata();
     if (compressedImageMetadata.size > 1024 * 1024 * 10) {
-      console.info({
+      logger.info({
         op: "COMPRESSED_IMAGE_TOO_LARGE",
         message: "Compressed webp is larger than input image.",
       });
