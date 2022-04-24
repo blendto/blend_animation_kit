@@ -2,7 +2,7 @@ import DynamoDB from "server/external/dynamodb";
 import SQS from "server/external/sqs";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
-import { Recipe, StoredImage, RecipeWrapper } from "server/base/models/recipe";
+import { Recipe, RecipeWrapper, StoredImage } from "server/base/models/recipe";
 import { BlendStatus, BlendVersion } from "server/base/models/blend";
 import {
   CURRENT_ENCODER_VERSION,
@@ -49,15 +49,13 @@ const trimInteractions = (recipe: Recipe) => {
     return [];
   }
 
-  const interactionsToRender = interactions
+  return interactions
     .filter((interaction) => !!interaction.userInteraction)
     .map(({ assetType, metadata, userInteraction }) => ({
       assetType,
       metadata,
       userInteraction,
     }));
-
-  return interactionsToRender;
 };
 
 const deleteBlend = async (
@@ -131,10 +129,14 @@ const deleteBlend = async (
  */
 const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const {
-    query: { id, format, target },
+    query: { id, format, target, consistentRead },
   } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const blend = await blendService.getBlend(id as string, BlendVersion.current);
+  const blend = await blendService.getBlend(
+    id as string,
+    BlendVersion.current,
+    Boolean(consistentRead)
+  );
 
   if (!blend || blend?.status === BlendStatus.Deleted) {
     throw new ObjectNotFoundError("Blend not found");
@@ -271,6 +273,7 @@ const submitBlend = async (
   interface clientStoredImage extends StoredImage {
     fileKey: string;
   }
+
   const imageObjects = images.map((image: clientStoredImage) => ({
     uri: image.fileKey,
     uid: image.uid,
