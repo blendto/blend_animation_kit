@@ -18,10 +18,18 @@ import InterServiceAuth, {
 import { TYPES } from "server/types";
 import { Recipe } from "server/base/models/recipe";
 import { Entitlement, revenueCat } from "server/external/revenue-cat";
+import Cors from "cors";
+import { initMiddleware } from "server/helpers/middleware";
 
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
 };
+
+const cors = Cors({
+  methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
+});
+
+const corsMiddleware = initMiddleware(cors);
 
 type RoutingFunctionExtended = (
   req: NextApiRequestExtended,
@@ -39,6 +47,7 @@ export function withReqHandler(
   routingFunction: RoutingFunctionExtended
 ): RoutingFunction {
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
+    await corsMiddleware(req, res);
     const extendedReq = req as NextApiRequestExtended;
     try {
       const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
