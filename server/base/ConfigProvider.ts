@@ -168,6 +168,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("REVENUECAT_API_KEY");
   }
 
+  public get LOG_LEVEL(): string {
+    return process.env.LOG_LEVEL ?? "info";
+  }
+
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
     if (!variable || variable.trim().length === 0) {
