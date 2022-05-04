@@ -67,14 +67,14 @@ export class HeroImageIdBased extends FileKeysProcessingStrategy {
       heroImage
     );
 
-    const copyOriginalFile: Promise<any> = copyObject(
+    const copyOriginalFile: Promise<unknown> = copyObject(
       ConfigProvider.HERO_IMAGES_BUCKET,
       heroImage.original,
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       blendBucketFilekeys.original
     );
 
-    const copyBgRemovedFile: Promise<any> = copyObject(
+    const copyBgRemovedFile: Promise<unknown> = copyObject(
       ConfigProvider.HERO_IMAGES_BUCKET,
       heroImage.withoutBg,
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -147,7 +147,11 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     fireAndForget(() =>
-      heroImageService.createNewImage(this.blendId, this.userId, this.fileKeys)
+      heroImageService.createNewImage(
+        this.blendId,
+        this.userId,
+        updatedFilekeys
+      )
     );
     return updatedFilekeys;
   }
