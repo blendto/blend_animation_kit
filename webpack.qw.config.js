@@ -46,6 +46,10 @@ module.exports = {
     {
       sharp: "commonjs sharp",
     },
-    // nodeExternals(),
+    // Issue with dd-trace requirements. ref:  https://github.com/DataDog/dd-trace-js/issues/827
+    "graphql/language/visitor",
+    "graphql/language/printer",
+    "graphql/utilities",
+    // End of issue
   ],
 };
