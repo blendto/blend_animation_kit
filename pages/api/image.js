@@ -1,13 +1,15 @@
+/* eslint-disable import/no-unresolved */
 import { UserError } from "server/base/errors";
 import { createSignedUploadUrl } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
+import { withReqHandler } from "server/helpers/request";
 
 const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; //  20 MB
 
-export default async (req, res) => {
+export default withReqHandler(async (req, res) => {
   const { method } = req;
   switch (method) {
     case "POST":
@@ -16,24 +18,26 @@ export default async (req, res) => {
     default:
       res.status(405).end();
   }
-};
+});
 
 const uploadImage = async (req, res) => {
   try {
     const { body: uploadFileRequest } = req;
 
-    let { collabId, fileName } = uploadFileRequest;
+    const { collabId, blendId, fileName } = uploadFileRequest;
 
-    if (!collabId) {
+    if (!collabId && !blendId) {
       throw new UserError("No collabId found in the request");
     }
+
+    const id = blendId ?? collabId;
 
     const urlDetails = await createSignedUploadUrl(
       fileName,
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       VALID_EXTENSIONS,
       {
-        keyPrefix: collabId + "/",
+        keyPrefix: id + "/",
         maxSize: MAX_FILE_SIZE,
       }
     );
