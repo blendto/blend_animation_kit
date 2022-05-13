@@ -181,6 +181,13 @@ export class RecipeUtils {
   }
 }
 
+export class ChooseRecipeRequest {
+  recipeId: string;
+  variant?: string;
+  fileKeys: { original: string; withoutBg: string };
+  encoderVersion: number;
+}
+
 export class RecipeWrapper {
   private recipe: Recipe;
 

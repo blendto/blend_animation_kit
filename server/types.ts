@@ -15,4 +15,6 @@ export const TYPES = {
   InterServiceAuth: Symbol.for("InterServiceAuth"),
   Firebase: Symbol.for("Firebase"),
   UserRepo: Symbol.for("UserRepo"),
+  AnalyticsRepo: Symbol.for("AnalyticsRepo"),
+  AnalyticsService: Symbol.for("AnalyticsService"),
 };

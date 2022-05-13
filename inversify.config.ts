@@ -26,6 +26,9 @@ import Firebase from "server/external/firebase";
 import { Repo } from "server/repositories/base";
 import { User } from "server/base/models/user";
 import { UserDynamooseRepo } from "server/repositories/user";
+import { AnalyticsDynamooseRepo } from "server/repositories/analytics";
+import { Analytics } from "server/base/models/analytics";
+import { NewAnalyticsService } from "server/service/newAnalytics";
 
 const diContainer = new Container();
 
@@ -96,4 +99,11 @@ diContainer.bind<Firebase>(TYPES.Firebase).to(Firebase).inSingletonScope();
 diContainer
   .bind<Repo<User>>(TYPES.UserRepo)
   .toDynamicValue(() => new UserDynamooseRepo());
+diContainer
+  .bind<Repo<Analytics>>(TYPES.AnalyticsRepo)
+  .toDynamicValue(() => new AnalyticsDynamooseRepo());
+diContainer
+  .bind<NewAnalyticsService>(TYPES.AnalyticsService)
+  .to(NewAnalyticsService)
+  .inSingletonScope();
 export { diContainer };

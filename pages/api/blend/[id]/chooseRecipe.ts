@@ -15,7 +15,11 @@ import { diContainer } from "inversify.config";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
-import { Interaction, RecipeWrapper } from "server/base/models/recipe";
+import {
+  ChooseRecipeRequest,
+  Interaction,
+  RecipeWrapper,
+} from "server/base/models/recipe";
 import BrandingService from "server/service/branding";
 
 export default withReqHandler(
@@ -49,12 +53,7 @@ const useRecipeForBlend = async (
     req.body as object,
     requestComponentToValidate.body,
     CHOOSE_RECIPE_SCHEMA
-  ) as {
-    recipeId: string;
-    variant?: string;
-    fileKeys: { original: string; withoutBg: string };
-    encoderVersion: number;
-  };
+  ) as ChooseRecipeRequest;
   const { recipeId, variant, fileKeys, encoderVersion } = body;
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   const brandingService = diContainer.get<BrandingService>(

@@ -40,18 +40,18 @@ export default withReqHandler(
 interface RemoveBgRequest {
   fileKey: string;
   useMask: boolean;
+  forceSelf: boolean;
+  crop: boolean;
 }
 
 export const RemoveBgRequestSchema = Joi.object({
   fileKey: Joi.string().required(),
   useMask: Joi.bool().default(false),
+  crop: Joi.bool().default(true),
 });
 
 const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
-  const body = req.body as {
-    fileKey: string;
-    useMask?: boolean;
-  };
+  const body = req.body as RemoveBgRequest;
   const { id } = req.query;
 
   const blend: Blend = await diContainer
@@ -70,7 +70,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  const { fileKey, useMask = false } = body as RemoveBgRequest;
+  const { fileKey, useMask = false, crop = true } = body;
 
   let originalImage: Buffer;
   originalImage = await getObject(
@@ -113,7 +113,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     const bgRemoved = await removeBgService.removeBg(
       originalImage,
       fileNameWithExt,
-      true,
+      crop,
       useMask,
       {
         source: RemoveBGSource.BLEND,

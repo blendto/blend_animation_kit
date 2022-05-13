@@ -15,6 +15,9 @@ import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import UserError from "server/base/errors/UserError";
+import { ImageMetadata, Recipe } from "server/base/models/recipe";
+import { adjustSizeToFit } from "server/helpers/imageUtils";
+import { copyObject } from "server/external/s3";
 import { IService } from "./index";
 
 // Resolution to use when output object is not populated
@@ -396,5 +399,66 @@ export class BlendService implements IService {
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
+  }
+
+  async copyRecipeToBlend(
+    blendId: string,
+    heroImages: HeroImageFileKeys,
+    recipe: Recipe
+  ) {
+    const copyFilePromises = [];
+    let interactionUpdatePromise;
+
+    const blendImages = recipe.images.map((image) => {
+      if (image.uid === recipe.recipeDetails.elements.hero.uid) {
+        const interaction = recipe.interactions.find(
+          // eslint-disable-next-line eqeqeq
+          (_) => _.assetType == "IMAGE" && _.assetUid == image.uid
+        );
+        // Starting from 2.5, we only show the cropped area in the mobile_app
+        // instead of actually cropping the image and uploading it.
+        // The hero image should not have cropRect property in a recipe as it
+        // will get replaced.
+        (interaction.metadata as ImageMetadata).cropRect = null;
+        if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
+          interactionUpdatePromise = adjustSizeToFit(
+            interaction,
+            heroImages.withoutBg
+          );
+          return { ...image, uri: heroImages.withoutBg };
+        }
+        interactionUpdatePromise = adjustSizeToFit(
+          interaction,
+          heroImages.original
+        );
+        return { ...image, uri: heroImages.original };
+      }
+      const uriParts = image.uri.split("/");
+      uriParts[0] = blendId;
+      const targetUri = uriParts.join("/");
+      copyFilePromises.push(
+        copyObject(
+          ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
+          image.uri,
+          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+          targetUri
+        )
+      );
+      return { ...image, uri: targetUri };
+    });
+    await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
+
+    const modifiedBlend = {
+      ...recipe,
+      metadata: {
+        ...recipe.metadata,
+        sourceRecipeId: recipe.id,
+        sourceRecipe: { id: recipe.id, variant: recipe.variant },
+      },
+      id: blendId,
+      images: blendImages,
+    } as Blend;
+
+    await this.updateBlend(modifiedBlend);
   }
 }
