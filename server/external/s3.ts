@@ -8,6 +8,10 @@ import logger from "server/base/Logger";
 import { ObjectList } from "aws-sdk/clients/s3";
 
 const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
+const s3ClientWithAcceleration = new AWS.S3({
+  apiVersion: "2006-03-01",
+  useAccelerateEndpoint: true,
+});
 
 const FIFTEEN_MB = 15 * 1024 * 1024;
 
@@ -48,8 +52,13 @@ export const createSignedUploadUrl = async (
     keyPrefix = "",
     outFileKey = null,
     maxSize = FIFTEEN_MB,
-  }: { keyPrefix?: string; outFileKey?: string; maxSize?: number },
-  operation: GetSignedUrlOperation = GetSignedUrlOperation.postObject
+    operation = GetSignedUrlOperation.postObject,
+  }: {
+    keyPrefix?: string;
+    outFileKey?: string;
+    maxSize?: number;
+    operation?: GetSignedUrlOperation;
+  }
 ) => {
   if (!fileName) {
     throw new UserError("No filename found");
@@ -92,8 +101,9 @@ export const createSignedUploadUrl = async (
         Key: fileNameToStore,
         Expires: expireIn,
       };
-      s3.getSignedUrl(operation, params, (err, data) => {
+      s3ClientWithAcceleration.getSignedUrl(operation, params, (err, data) => {
         if (err) {
+          console.log(err);
           reject(err);
           return;
         }

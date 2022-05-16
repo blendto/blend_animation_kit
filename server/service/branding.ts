@@ -103,8 +103,7 @@ export default class BrandingService implements IService {
       fileName,
       ConfigProvider.BRANDING_BUCKET,
       this.validExtensions,
-      { outFileKey: fileKey },
-      GetSignedUrlOperation.putObject
+      { outFileKey: fileKey, operation: GetSignedUrlOperation.putObject }
     )) as string;
 
     await this.repo.update(

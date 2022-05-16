@@ -13,16 +13,23 @@ export enum BatchState {
   DELETED = "DELETED",
 }
 
+export enum UploadMethod {
+  PUT = "PUT",
+  POST = "POST",
+}
+
 export interface UploadRequestCreationConfig {
   fileNames: string[];
   heroImages: string[];
+  method?: UploadMethod;
 }
 
 export interface UploadRequest {
   fileName: string;
   blendId: string;
   fileKey: string;
-  presignedUploadRequest: PresignedPost;
+  presignedUploadRequest?: PresignedPost;
+  presignedUploadUrl?: string;
 }
 
 export type BlendFromHeroImage = {

@@ -396,8 +396,8 @@ describe("BrandingService", () => {
         {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           outFileKey: createDestinationFileKeySpy.mock.results[0].value,
+          operation: "putObject",
         },
-        "putObject",
       ]);
 
       expect(updateMock.mock.calls.length).toBe(1);
@@ -488,8 +488,8 @@ describe("BrandingService", () => {
         {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           outFileKey: createDestinationFileKeySpy.mock.results[0].value,
+          operation: "putObject",
         },
-        "putObject",
       ]);
 
       expect(updateMock.mock.calls.length).toBe(1);

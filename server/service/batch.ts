@@ -7,6 +7,7 @@ import {
   BatchModelValidators,
   BatchState,
   BatchWrapper,
+  UploadMethod,
   UploadRequest,
   UploadRequestCreationConfig,
   UploadRequests,
@@ -19,6 +20,7 @@ import { BatchLevelEditStatus, Blend } from "server/base/models/blend";
 import {
   createDestinationFileKey,
   createSignedUploadUrl,
+  GetSignedUrlOperation,
 } from "server/external/s3";
 import { customAlphabet } from "nanoid";
 import { inject, injectable } from "inversify";
@@ -105,7 +107,12 @@ export class BatchService implements IService {
     await this.initUploadValidations(batchId, uid, creationConfig);
 
     const promises = creationConfig.fileNames.map((fileName) =>
-      BatchService.buildUploadRequest(fileName, uid, batchId)
+      BatchService.buildUploadRequest(
+        fileName,
+        uid,
+        batchId,
+        creationConfig.method
+      )
     );
     const newBlendIdPromises = HeroImageService.createBatchBlends(
       creationConfig.heroImages,
@@ -132,7 +139,8 @@ export class BatchService implements IService {
   private static async buildUploadRequest(
     fileName: string,
     uid: string,
-    batchId: string
+    batchId: string,
+    method: UploadMethod
   ): Promise<UploadRequest> {
     const heroFileName = createDestinationFileKey(fileName, VALID_EXTENSIONS);
     const blend: Blend = await diContainer
@@ -140,6 +148,26 @@ export class BatchService implements IService {
       .initBlend(uid, { batchId, heroFileName });
 
     const fileKey = `${blend.id}/${heroFileName}`;
+    if (method === UploadMethod.PUT) {
+      const url = (await createSignedUploadUrl(
+        fileName,
+        ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+        VALID_EXTENSIONS,
+        {
+          outFileKey: fileKey,
+          maxSize: MAX_FILE_SIZE,
+          operation: GetSignedUrlOperation.putObject,
+        }
+      )) as string;
+
+      return {
+        fileName,
+        blendId: blend.id,
+        fileKey,
+        presignedUploadUrl: url,
+      };
+    }
+
     const urlDetails = (await createSignedUploadUrl(
       fileName,
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
@@ -147,6 +175,7 @@ export class BatchService implements IService {
       {
         outFileKey: fileKey,
         maxSize: MAX_FILE_SIZE,
+        operation: GetSignedUrlOperation.postObject,
       }
     )) as PresignedPost;
 
@@ -178,7 +207,8 @@ export class BatchService implements IService {
   ): UploadRequest[] {
     return uploadRequests.map((request) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { presignedUploadRequest, ...required } = request;
+      const { presignedUploadRequest, presignedUploadUrl, ...required } =
+        request;
       return required as UploadRequest;
     });
   }
