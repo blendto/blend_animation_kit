@@ -7,7 +7,10 @@ import { BatchActionService } from "server/service/queue/batch/batchAction";
 import { UploadService } from "server/service/queue/upload";
 import { ImageUploadEventQueue } from "server/external/queue/imageUploadQueue";
 import tracer from "dd-trace";
-import { BatchTaskMessage } from "server/base/models/queue-messages";
+import {
+  BatchTaskMessage,
+  ImageUploadMessage,
+} from "server/base/models/queue-messages";
 
 const SIMULTANEOUS_QUEUE_COUNT = 10;
 
@@ -50,14 +53,20 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
 }
 
 for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
-  const consumer = uploadEventQueue.createQueueConsumer(async (message) => {
+  let onMessage = async (message: ImageUploadMessage) => {
     try {
       logMessage("PROCESSING_IMAGE_UPLOAD_TRIGGER", message);
       await uploadService.processTrigger(message);
     } catch (e: unknown) {
       return logError("IMAGE_UPLOAD_TRIGGER_PROCESS_FAILURE", message, e);
     }
-  });
+  };
+  onMessage = tracer.wrap(
+    "sqs.message_received",
+    { resource: "upload_trigger_processor" },
+    onMessage
+  );
+  const consumer = uploadEventQueue.createQueueConsumer(onMessage);
   consumer.start();
 }
 
