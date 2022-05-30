@@ -13,15 +13,27 @@ import logger from "server/base/Logger";
 import { UserError } from "server/base/errors";
 import Firebase from "server/external/firebase";
 import { Repo } from "server/repositories/base";
+import { UserUpdatePaths } from "server/repositories/user";
+import { UpdateOperations } from "server/repositories";
+
+export type UserJSONUpdate = {
+  path: UserUpdatePaths;
+  op: UpdateOperations;
+  value?: unknown;
+};
 
 @injectable()
 export class UserService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
-  @inject(TYPES.UserRepo) userRepo: Repo<User>;
+  @inject(TYPES.UserRepo) repo: Repo<User>;
   ipApi = new IpApi();
 
-  async fetchUser(uid: string): Promise<User | void> {
-    return this.userRepo.get({ id: uid });
+  async fetch(id: string): Promise<User | void> {
+    return this.repo.get({ id });
+  }
+
+  async update(id: string, changes: UserJSONUpdate[]): Promise<User> {
+    return await this.repo.update({ id }, changes);
   }
 
   async populateUserFromFirebase(userId: string): Promise<User> {
@@ -46,7 +58,7 @@ export class UserService implements IService {
       updatedAt: Date.now(),
       favouriteRecipes: [],
     };
-    return await this.userRepo.create(newUser);
+    return await this.repo.create(newUser);
   }
 
   async migrateUserBlends(
@@ -63,18 +75,12 @@ export class UserService implements IService {
   }
 
   async updateFavouriteRecipes(
-    uid: string,
+    id: string,
     favourites: FavouriteRecipe[]
   ): Promise<User> {
-    const profile = await this.fetchUser(uid);
-    if (!profile) {
-      throw new UserError(`No user for id(${uid})`);
-    }
-    return await this.userRepo.update(
-      { id: uid },
-      [{ path: "/favouriteRecipes", op: "replace", value: favourites }],
-      profile
-    );
+    return await this.repo.update({ id }, [
+      { path: "/favouriteRecipes", op: "replace", value: favourites },
+    ]);
   }
 
   async getUserAgent(ip: string): Promise<UserAgentDetails | null> {

@@ -1,12 +1,12 @@
 import { UserError } from "server/base/errors";
 
 import { DynamooseRepo } from "./base";
+import { UpdateOperations } from ".";
 import {
   BrandingDynamooseRepo,
   BrandingEntity,
   BrandingLogoStatus,
   BrandingStatus,
-  BrandingUpdateOperations,
   BrandingUpdatePaths,
 } from "./branding";
 
@@ -142,16 +142,16 @@ describe("Repo", () => {
       const whatsappNo = "+91 999 888 7776";
       await brandingRepo.update({ id }, [
         {
-          op: BrandingUpdateOperations.remove,
+          op: UpdateOperations.remove,
           path: BrandingUpdatePaths.email,
         },
         {
-          op: BrandingUpdateOperations.add,
+          op: UpdateOperations.add,
           path: BrandingUpdatePaths.whatsappNo,
           value: whatsappNo,
         },
         {
-          op: BrandingUpdateOperations.replace,
+          op: UpdateOperations.replace,
           path: BrandingUpdatePaths.primaryLogo,
           value: otherLogoFileKey,
         },
@@ -184,15 +184,59 @@ describe("Repo", () => {
       ]);
     });
 
+    it("Doesn't fetch current data if there are no nested updates", async () => {
+      const id = "wNALVbEj";
+      const userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
+      const updatedAt = 1646906641;
+      const status = BrandingStatus.CREATED;
+      const branding: BrandingEntity = {
+        id,
+        userId,
+        logos: {
+          entries: [],
+        },
+        updatedAt,
+        status,
+      };
+      const modelGetSyp = jest.spyOn(brandingRepo, "get");
+      const modelUpdateSpy = jest
+        .spyOn(brandingRepo.model, "update")
+        .mockImplementation((keyObject, updateSet) =>
+          Promise.resolve(branding)
+        );
+
+      await brandingRepo.update({ id }, [
+        {
+          op: UpdateOperations.remove,
+          path: BrandingUpdatePaths.email,
+        },
+      ]);
+
+      expect(modelGetSyp.mock.calls.length).toBe(0);
+      expect(modelUpdateSpy.mock.calls.length).toBe(1);
+      expect(modelUpdateSpy.mock.calls[0]).toMatchObject([
+        { id },
+        {
+          $REMOVE: ["email"],
+        },
+      ]);
+    });
+
     it("Rejects request if the keyObject is invalid", async () => {
       const id = "wNALVbEj";
       const modelGetSyp = jest
         .spyOn(brandingRepo, "get")
         .mockImplementation(({ id }) => Promise.resolve());
 
-      await expect(brandingRepo.update({ id }, [])).rejects.toThrow(
-        new UserError("Invalid keyObject")
-      );
+      await expect(
+        brandingRepo.update({ id }, [
+          {
+            op: UpdateOperations.replace,
+            path: BrandingUpdatePaths.primaryLogo,
+            value: "FILE-KEY-2",
+          },
+        ])
+      ).rejects.toThrow(new UserError("Invalid keyObject"));
       expect(modelGetSyp.mock.calls.length).toBe(1);
       expect(modelGetSyp.mock.calls[0]).toMatchObject([{ id }]);
     });

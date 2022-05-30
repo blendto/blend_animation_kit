@@ -11,13 +11,13 @@ import {
   uploadObject,
 } from "server/external/s3";
 import { IService } from "server/service";
+import { UpdateOperations } from "server/repositories";
 import {
   BrandingEntity,
   BrandingLogoStatus,
   brandingRepo,
   MAX_LOGOS,
   BrandingUpdatePaths,
-  BrandingUpdateOperations,
 } from "server/repositories/branding";
 import { convertImageToWebp, rescaleImage } from "server/helpers/imageUtils";
 
@@ -49,7 +49,7 @@ export default class BrandingService implements IService {
     userId: string,
     changes: {
       path: BrandingUpdatePaths;
-      op: BrandingUpdateOperations;
+      op: UpdateOperations;
       value?: unknown;
     }[]
   ): Promise<BrandingEntity> {
@@ -58,10 +58,7 @@ export default class BrandingService implements IService {
     changes.forEach((change) => {
       if (change.path === BrandingUpdatePaths.primaryLogo) {
         if (
-          [
-            BrandingUpdateOperations.add,
-            BrandingUpdateOperations.replace,
-          ].includes(change.op)
+          [UpdateOperations.add, UpdateOperations.replace].includes(change.op)
         ) {
           const validLogoKeys = currentData.logos?.entries
             ?.filter((entry) => entry.status === BrandingLogoStatus.UPLOADED)
@@ -175,11 +172,9 @@ export default class BrandingService implements IService {
     }
     logoData.fileKey = webpFileKey;
     logoData.status = BrandingLogoStatus.UPLOADED;
-    await this.repo.update(
-      { id },
-      [{ path: "/logos", op: "replace", value: brandingProfile.logos }],
-      brandingProfile
-    );
+    await this.repo.update({ id }, [
+      { path: "/logos", op: "replace", value: brandingProfile.logos },
+    ]);
 
     await this.deleteObject(ConfigProvider.BRANDING_BUCKET, fileKey);
   }
@@ -204,16 +199,12 @@ export default class BrandingService implements IService {
     }
 
     await this.deleteObject(ConfigProvider.BRANDING_BUCKET, fileKey);
-    return await this.repo.update(
-      { id: currentData.id },
-      [
-        {
-          op: "replace",
-          path: "/logos",
-          value: logos,
-        },
-      ],
-      currentData
-    );
+    return await this.repo.update({ id: currentData.id }, [
+      {
+        op: "replace",
+        path: "/logos",
+        value: logos,
+      },
+    ]);
   }
 }

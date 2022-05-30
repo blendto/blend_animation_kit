@@ -3,10 +3,10 @@ import { diContainer } from "inversify.config";
 
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
+import { UpdateOperations } from "server/repositories";
 import {
   BrandingLogoStatus,
   BrandingStatus,
-  BrandingUpdateOperations,
   BrandingUpdatePaths,
   BrandingEntity,
 } from "server/repositories/branding";
@@ -79,7 +79,7 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: BrandingUpdateOperations.add,
+            op: UpdateOperations.add,
             path: BrandingUpdatePaths.primaryLogo,
             value: "SOME-KEY",
           },
@@ -117,7 +117,7 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: BrandingUpdateOperations.add,
+            op: UpdateOperations.add,
             path: BrandingUpdatePaths.primaryLogo,
             value: unUploadedKey,
           },
@@ -151,7 +151,7 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: BrandingUpdateOperations.add,
+            op: UpdateOperations.add,
             path: BrandingUpdatePaths.primaryLogo,
             value: nonExistentKey,
           },
@@ -207,7 +207,7 @@ describe("BrandingService", () => {
 
       const jsonPatch = [
         {
-          op: BrandingUpdateOperations.add,
+          op: UpdateOperations.add,
           path: BrandingUpdatePaths.primaryLogo,
           value: anotherValidKey,
         },
@@ -247,7 +247,7 @@ describe("BrandingService", () => {
       await expect(
         brandingService.update(userId, [
           {
-            op: BrandingUpdateOperations.remove,
+            op: UpdateOperations.remove,
             path: BrandingUpdatePaths.primaryLogo,
           },
         ])
@@ -274,11 +274,11 @@ describe("BrandingService", () => {
 
       const jsonPatch = [
         {
-          op: BrandingUpdateOperations.remove,
+          op: UpdateOperations.remove,
           path: BrandingUpdatePaths.email,
         },
         {
-          op: BrandingUpdateOperations.remove,
+          op: UpdateOperations.remove,
           path: BrandingUpdatePaths.whatsappNo,
         },
       ];
@@ -628,7 +628,6 @@ describe("BrandingService", () => {
             },
           },
         ],
-        currentData,
       ]);
     });
   });
@@ -719,7 +718,6 @@ describe("BrandingService", () => {
             },
           },
         ],
-        brandingDocWithLogos,
       ]);
     });
 
@@ -795,7 +793,6 @@ describe("BrandingService", () => {
             },
           },
         ],
-        brandingDocWithLogos,
       ]);
     });
   });

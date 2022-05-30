@@ -9,10 +9,17 @@ import {
 import ConfigProvider from "server/base/ConfigProvider";
 import { User } from "server/base/models/user";
 
+export enum UserUpdatePaths {
+  stripeCustomerId = "/stripeCustomerId",
+}
+
 const userDynamooseSchema = new DynamooseSchema({
   id: {
     type: String,
     hashKey: true,
+  },
+  stripeCustomerId: {
+    type: String,
   },
   name: String,
   email: String,

@@ -8,8 +8,8 @@ import {
   requestComponentToValidate,
   validate,
 } from "server/helpers/request";
+import { UpdateOperations } from "server/repositories";
 import {
-  BrandingUpdateOperations,
   BrandingUpdateOperationsOnPrimaryLogo,
   BrandingUpdatePaths,
 } from "server/repositories/branding";
@@ -53,7 +53,7 @@ const UPDATE_BODY_SCHEMA = Joi.object({
             then: Joi.valid(
               ...Object.values(BrandingUpdateOperationsOnPrimaryLogo)
             ),
-            otherwise: Joi.valid(...Object.values(BrandingUpdateOperations)),
+            otherwise: Joi.valid(...Object.values(UpdateOperations)),
           })
           .required(),
         value: Joi.any().when("op", {

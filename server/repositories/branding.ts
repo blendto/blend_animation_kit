@@ -38,12 +38,6 @@ export enum BrandingUpdateOperationsOnPrimaryLogo {
   replace = "replace",
 }
 
-export enum BrandingUpdateOperations {
-  add = "add",
-  replace = "replace",
-  remove = "remove",
-}
-
 export enum BrandingInfoType {
   BrandName = "brandName",
   UpiHandle = "upiHandle",

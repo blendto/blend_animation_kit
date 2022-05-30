@@ -86,7 +86,11 @@ export class DynamooseRepo<
     currentData?: ExtendedEntity
   ): Promise<ExtendedEntity> {
     const updateSet = { $SET: {}, $REMOVE: [] };
-    if (!currentData) {
+    if (
+      !currentData &&
+      // Fetch current data only if there is a nested update
+      jsonPatch.find((change) => change.path.slice(1).includes("/"))
+    ) {
       currentData = (await this.get(keyObject)) as ExtendedEntity;
       if (!currentData) {
         throw new UserError("Invalid keyObject");

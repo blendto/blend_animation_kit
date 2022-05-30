@@ -16,6 +16,7 @@ export interface FavouriteRecipe {
 
 export interface User extends Entity {
   id: string;
+  stripeCustomerId?: string;
   name?: string;
   email?: string;
   phone?: string;
