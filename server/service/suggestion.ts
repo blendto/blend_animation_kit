@@ -1,21 +1,28 @@
 import "reflect-metadata";
-import { RecipeList } from "server/base/models/recipeList";
+import {
+  RecipeList,
+  RecipeVariantId,
+  SavedRecipeSuggestions,
+} from "server/base/models/recipeList";
 import { BlendService } from "server/service/blend";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
 import RecoEngineApi from "server/internal/reco-engine";
-import { RecipeUtils } from "server/base/models/recipe";
+import { Recipe, RecipeUtils } from "server/base/models/recipe";
 import uniqWith from "lodash/uniqWith";
 import isEqual from "lodash/isEqual";
 import take from "lodash/take";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
+import ConfigProvider from "server/base/ConfigProvider";
+import { DaxDB } from "server/external/dax";
 
 @injectable()
 export class SuggestionService {
   @inject(TYPES.BlendService) blendService: BlendService;
   @inject(TYPES.UserService) userService: UserService;
+  @inject(TYPES.DaxDB) daxStore: DaxDB;
   recoEngineApi = new RecoEngineApi();
 
   async selectFileKeysFromBatchPreview(
@@ -69,12 +76,11 @@ export class SuggestionService {
     if (uid) {
       const recentBlends = await this.blendService.getRecentBlends(uid);
       let recentRecipes = recentBlends
-        .filter(({ metadata }) => {
-          return (
+        .filter(
+          ({ metadata }) =>
             !!metadata.sourceRecipe ||
             (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
-          );
-        })
+        )
         .map(
           ({ metadata }) =>
             metadata.sourceRecipe ?? {
@@ -82,6 +88,7 @@ export class SuggestionService {
               variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
             }
         );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       recentRecipes = uniqWith(recentRecipes, isEqual);
       if (recentRecipes.length > 0) {
         recipeLists.unshift({
@@ -98,6 +105,7 @@ export class SuggestionService {
     // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
     recipeLists.forEach((list) => {
       list.recipeIds = list.recipes
+        // eslint-disable-next-line eqeqeq
         .filter(({ variant }) => variant == "9:16")
         .map(({ id }) => id);
     });
@@ -108,6 +116,7 @@ export class SuggestionService {
       // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
       recipeLists.forEach((list) => {
         list.recipeIds = list.recipes
+          // eslint-disable-next-line eqeqeq
           .filter(({ variant }) => variant == "9:16")
           .map(({ id }) => id);
       });
@@ -121,6 +130,44 @@ export class SuggestionService {
       .sort(() => 0.5 - Math.random())
       .slice(0, 20);
 
-    return { recipeLists: recipeLists, randomTemplates: randomTemplates };
+    return { recipeLists, randomTemplates };
+  }
+
+  async suggestHomePageRecipes(): Promise<RecipeList[]> {
+    const { data: suggestions } = (await this.daxStore.getItem({
+      TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
+      Key: { key: "home_page_recipes", version: "1" },
+    })) as { data: SavedRecipeSuggestions };
+
+    const suggestionPromises = suggestions.common.map((list) =>
+      this.recipeListMapper(list)
+    );
+    suggestions.common = await Promise.all(suggestionPromises);
+
+    return suggestions.common;
+  }
+
+  private async recipeListMapper(list: RecipeList): Promise<RecipeList> {
+    const promises = list.recipes.map((recipe) =>
+      this.backfillRecipeDetails(recipe)
+    );
+    list.recipes = await Promise.all(promises);
+    return list;
+  }
+
+  private async backfillRecipeDetails(
+    recipeVariantId: RecipeVariantId
+  ): Promise<RecipeVariantId> {
+    const { id, variant } = recipeVariantId;
+
+    const recipe = (await this.daxStore.getItem({
+      TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
+      Key: { id, variant },
+    })) as Recipe;
+
+    const { title, thumbnail } = recipe;
+    recipeVariantId.extra = { title, thumbnail };
+
+    return recipeVariantId;
   }
 }

@@ -128,6 +128,10 @@ class ConfigProvider {
     return process.env.AWS_CLOUD_REGION;
   }
 
+  public get DAX_WEB_CLIENT_CACHE(): string {
+    return process.env.DAX_WEB_CLIENT_CACHE;
+  }
+
   public get BATCH_TASK_QUEUE_URL(): string {
     return process.env.BATCH_TASK_QUEUE_URL;
   }

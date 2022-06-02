@@ -10,4 +10,10 @@ export interface RecipeList {
 export interface RecipeVariantId {
   id: string;
   variant: string;
+  extra?: { title?: string; thumbnail?: string };
+}
+
+export interface SavedRecipeSuggestions {
+  countrySpecific: Record<string, RecipeList[]>;
+  common: RecipeList[];
 }

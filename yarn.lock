@@ -2152,6 +2152,14 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.2.tgz#423c77877d0569db20e1fc80885ac4118314010e"
   integrity sha512-eZxlbI8GZscaGS7kkc/trHTT5xgrjH3/1n2JDwusC9iahPKWMRvRjJSAN5mCXviuTGQ/lHnhvv8Q1YTpnfz9gA==
 
+"@types/amazon-dax-client@^1.2.3":
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@types/amazon-dax-client/-/amazon-dax-client-1.2.3.tgz#bd8daefc3ac022962126ea831b5845eb2d4c1c88"
+  integrity sha512-dOEBYeLXdJ3vtRJEEsVRZRq7URoMsSt4mlkVv7hTu8/AhD0BekPRJD1I1YweUwnaQpFTxGCebqDhI4DSrr7vaw==
+  dependencies:
+    "@types/node" "*"
+    aws-sdk "^2.814.0"
+
 "@types/aria-query@^4.2.0":
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/@types/aria-query/-/aria-query-4.2.2.tgz#ed4e0ad92306a704f9fb132a0cfcf77486dbe2bc"
@@ -2773,6 +2781,17 @@ align-text@^0.1.1, align-text@^0.1.3:
     longest "^1.0.1"
     repeat-string "^1.5.2"
 
+amazon-dax-client@^1.2.8:
+  version "1.2.8"
+  resolved "https://registry.yarnpkg.com/amazon-dax-client/-/amazon-dax-client-1.2.8.tgz#a70168b14ee503818d159101dbe3aed5330ca83d"
+  integrity sha512-JX18/GjfaKztuq0fSigbn4KfMIGNd8hNFSqPO33HgNfPZ4KJxm+oq9j5fSlF4NuyoO54CPG/IBYwLkh0b9oRbg==
+  dependencies:
+    antlr4 "4.8.x"
+    aws-sdk ">=2.365.0"
+    bignumber.js "^3.0.0"
+    jmespath "^0.15.0"
+    uuid "^3.3.2"
+
 ambi@^2.2.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/ambi/-/ambi-2.5.0.tgz#7c8e372be48891157e7cea01cb6f9143d1f74220"
@@ -2911,6 +2930,11 @@ antd@^4.6.6:
     rc-util "^5.1.0"
     scroll-into-view-if-needed "^2.2.25"
     warning "^4.0.3"
+
+antlr4@4.8.x:
+  version "4.8.0"
+  resolved "https://registry.yarnpkg.com/antlr4/-/antlr4-4.8.0.tgz#f938ec171be7fc2855cd3a533e87647185b32b6a"
+  integrity sha512-en/MxQ4OkPgGJQ3wD/muzj1uDnFSzdFIhc2+c6bHZokWkuBb6RRvFjpWhPxWLbgQvaEzldJZ0GSQpfSAaE3hqg==
 
 anymatch@^1.3.0:
   version "1.3.2"
@@ -3138,6 +3162,21 @@ available-typed-arrays@^1.0.5:
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.5.tgz#92f95616501069d07d10edb2fc37d3e1c65123b7"
   integrity sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==
 
+aws-sdk@>=2.365.0:
+  version "2.1143.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1143.0.tgz#a9180172b42c2041e70d689d8e1c8c9fca075f17"
+  integrity sha512-WSFpJomqDbsO9buVBL9O3R5/qM2uGzqSEBCyo2W9IiE81mOZ/LrX0fWa9vHhYwCVBYQ2HhS+C0rwJxhRvYEhjQ==
+  dependencies:
+    buffer "4.9.2"
+    events "1.1.1"
+    ieee754 "1.1.13"
+    jmespath "0.16.0"
+    querystring "0.2.0"
+    sax "1.2.1"
+    url "0.10.3"
+    uuid "3.3.2"
+    xml2js "0.4.19"
+
 aws-sdk@^2.814.0:
   version "2.814.0"
   resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.814.0.tgz#7a1c36006e0b5826f14bd2511b1d229ef6814bb0"
@@ -3307,6 +3346,11 @@ big.js@^5.2.2:
   version "5.2.2"
   resolved "https://registry.yarnpkg.com/big.js/-/big.js-5.2.2.tgz#65f0af382f578bcdc742bd9c281e9cb2d7768328"
   integrity sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==
+
+bignumber.js@^3.0.0:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-3.1.2.tgz#f3bdb99ad5268a15fc1f0bed2fb018e2693fe236"
+  integrity sha512-eI/GriEWjYdgkdhunjCwvzJY1JTxXreiy3Q+EbFfzYn9n/h4HiInmWf7OQDe/YLPBOQy3kZ4w+mw0UDf0UQYKw==
 
 bignumber.js@^9.0.0:
   version "9.0.1"
@@ -6895,7 +6939,7 @@ jest@^27.4.5:
     import-local "^3.0.2"
     jest-cli "^27.4.5"
 
-jmespath@0.15.0:
+jmespath@0.15.0, jmespath@^0.15.0:
   version "0.15.0"
   resolved "https://registry.yarnpkg.com/jmespath/-/jmespath-0.15.0.tgz#a3f222a9aae9f966f5d27c796510e28091764217"
   integrity sha1-o/Iiqarp+Wb10nx5ZRDigJF2Qhc=
@@ -10726,6 +10770,11 @@ uuid@3.3.2:
   version "3.3.2"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.3.2.tgz#1b4af4955eb3077c501c23872fc6513811587131"
   integrity sha512-yXJmeNaw3DnnKAOKJE51sL/ZaYfWJRl1pK9dr19YFCu0ObS231AB1/LbqTKRAQ5kw8A90rA6fr4riOUpTZvQZA==
+
+uuid@^3.3.2:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.4.0.tgz#b23e4358afa8a202fe7a100af1f5f883f02007ee"
+  integrity sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==
 
 uuid@^8.0.0, uuid@^8.3.2:
   version "8.3.2"

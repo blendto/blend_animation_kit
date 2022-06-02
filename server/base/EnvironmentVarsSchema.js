@@ -36,6 +36,7 @@ module.exports = {
       SERVICE_API_KEYS_SECRET_ARN: Joi.string().required(),
       REVENUECAT_API_BASE_PATH: Joi.string().required(),
       REVENUECAT_API_KEY: Joi.string().required(),
+      DAX_WEB_CLIENT_CACHE: Joi.string().required(),
     })
     .unknown(true),
 };

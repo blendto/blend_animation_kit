@@ -173,6 +173,7 @@ export interface Recipe {
   recipeDetails?: RecipeDetails;
   interactions?: Interaction[];
   metadata?: RecipeMetadata;
+  title?: string;
   thumbnail?: string;
 }
 

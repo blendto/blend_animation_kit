@@ -29,10 +29,12 @@ import { UserDynamooseRepo } from "server/repositories/user";
 import { AnalyticsDynamooseRepo } from "server/repositories/analytics";
 import { Analytics } from "server/base/models/analytics";
 import { NewAnalyticsService } from "server/service/newAnalytics";
+import { DaxDB } from "server/external/dax";
 
 const diContainer = new Container();
 
 diContainer.bind<DynamoDB>(TYPES.DynamoDB).to(DynamoDB).inSingletonScope();
+diContainer.bind<DaxDB>(TYPES.DaxDB).to(DaxDB).inSingletonScope();
 diContainer
   .bind<BatchService>(TYPES.BatchService)
   .to(BatchService)
