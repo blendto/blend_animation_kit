@@ -40,7 +40,7 @@ const CHOOSE_RECIPE_SCHEMA = Joi.object({
   fileKeys: Joi.object({
     original: Joi.string().required(),
     withoutBg: Joi.string().required(),
-  }).required(),
+  }),
   encoderVersion: Joi.number().required(),
 });
 
@@ -95,9 +95,11 @@ const useRecipeForBlend = async (
           interaction.assetType === "IMAGE" &&
           interaction.assetUid === image.uid
       );
-      recipeWrapper.replaceHero(fileKeys, image, interaction);
-      interactionUpdatePromise = adjustSizeToFit(interaction, image.uri);
-      return image;
+      if (fileKeys) {
+        recipeWrapper.replaceHero(fileKeys, image, interaction);
+        interactionUpdatePromise = adjustSizeToFit(interaction, image.uri);
+        return image;
+      }
     }
     const uriParts = image.uri.split("/");
     uriParts[0] = blendId as string;
