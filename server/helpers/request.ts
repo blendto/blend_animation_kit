@@ -23,6 +23,7 @@ import { initMiddleware } from "server/helpers/middleware";
 
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
+  buildVersion?: number;
 };
 
 const cors = Cors({
@@ -52,6 +53,8 @@ export function withReqHandler(
     try {
       const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
       extendedReq.uid = await firebaseService.extractUserIdFromRequest(req);
+      extendedReq.buildVersion = extractBuildVersion(req);
+
       return await routingFunction(extendedReq, res);
     } catch (err) {
       if (err instanceof UserError) {
@@ -173,4 +176,14 @@ export function validate(
     );
   }
   return validation.value as unknown;
+}
+
+function extractBuildVersion(req: NextApiRequest): number {
+  const versionStr = req.headers["x-client-version"] as unknown;
+  const version = parseInt(versionStr as string, 10);
+  // eslint-disable-next-line no-restricted-globals
+  if (isNaN(version)) {
+    return null;
+  }
+  return version;
 }

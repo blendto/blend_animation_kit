@@ -5,6 +5,7 @@ import { handleAxiosCall } from "server/helpers/network";
 export enum Entitlement {
   BRANDING = "BRANDING",
   BATCH_EDIT = "BATCH_EDIT",
+  HD_EXPORT = "HD_EXPORT",
 }
 
 export type Entitlements = {

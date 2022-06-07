@@ -1,6 +1,7 @@
 import { isEmpty } from "lodash";
 import { RecipeVariantId } from "server/base/models/recipeList";
 import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
+import { nanoid } from "nanoid";
 import { UserError } from "../errors";
 import { HeroImageFileKeys } from "./heroImage";
 
@@ -8,6 +9,7 @@ export enum ElementSource {
   blend = "BLEND",
   recipe = "RECIPE",
   branding = "BRANDING",
+  blend_assets = "BLEND_ASSETS",
 }
 
 export interface StoredImage {
@@ -282,5 +284,52 @@ export class RecipeWrapper {
 
   replaceId(id: string) {
     this.recipe.id = id;
+  }
+
+  addWatermark() {
+    const waterMark = {
+      source: ElementSource.blend_assets,
+      uri: "ext-services/blend/watermark.png",
+      size: { width: 504, height: 201 },
+    };
+    const blendMetadata = this.recipe.metadata as unknown as {
+      resolution: Size;
+    };
+    const { width, height } = blendMetadata.resolution;
+
+    const interactionWidth = width * 0.4;
+    const interactionHeight =
+      (interactionWidth / waterMark.size.width) * waterMark.size.height;
+    const dx = width - interactionWidth;
+    const dy = height - interactionHeight;
+
+    const assetUid = nanoid(20);
+    const watermarkInteraction = {
+      action: "DISPLAY_INLINE",
+      assetUid,
+      metadata: {
+        layerType: "IMAGE",
+        $: "ImageMetadata",
+        relativeSize: { width, height },
+        rotation: 0,
+        rotationOrigin: "CENTER",
+        rotationX: 0,
+        rotationY: 0,
+        size: { width: interactionWidth, height: interactionHeight },
+        hasBgRemoved: true,
+        position: { dx, dy },
+        zIndex: 999,
+      },
+      time: 0,
+      assetType: "IMAGE",
+    };
+
+    this.recipe.interactions.push(watermarkInteraction as Interaction);
+
+    this.recipe.images.push({
+      uri: waterMark.uri,
+      uid: assetUid,
+      source: waterMark.source,
+    });
   }
 }

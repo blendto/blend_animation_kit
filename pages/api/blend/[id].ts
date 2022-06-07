@@ -25,6 +25,9 @@ import {
   ObjectNotFoundError,
   UserError,
 } from "server/base/errors";
+import { Entitlement, revenueCat } from "server/external/revenue-cat";
+
+const WATERMARK_BUILD_VERSION = 181;
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -314,6 +317,13 @@ const submitBlend = async (
   const updatedRecipe = dbUpdateResponse.Attributes;
   // Add id
   updatedRecipe.id = id;
+
+  if (
+    req.buildVersion >= WATERMARK_BUILD_VERSION &&
+    !(await revenueCat.hasEntitlement(req.uid, Entitlement.HD_EXPORT))
+  ) {
+    new RecipeWrapper(updatedRecipe as Recipe).addWatermark();
+  }
 
   await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(updatedRecipe);
   res.send(updatedRecipe);
