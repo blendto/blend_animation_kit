@@ -27,8 +27,6 @@ import {
 } from "server/base/errors";
 import { Entitlement, revenueCat } from "server/external/revenue-cat";
 
-const WATERMARK_BUILD_VERSION = 181;
-
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
@@ -319,7 +317,7 @@ const submitBlend = async (
   updatedRecipe.id = id;
 
   if (
-    req.buildVersion >= WATERMARK_BUILD_VERSION &&
+    req.buildVersion >= ConfigProvider.WATERMARK_BUILD_VERSION &&
     !(await revenueCat.hasEntitlement(req.uid, Entitlement.HD_EXPORT))
   ) {
     new RecipeWrapper(updatedRecipe as Recipe).addWatermark();

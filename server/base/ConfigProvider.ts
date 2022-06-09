@@ -180,6 +180,16 @@ class ConfigProvider {
     return process.env.LOG_LEVEL ?? "info";
   }
 
+  public get WATERMARK_BUILD_VERSION(): number {
+    const versionStr = process.env.WATERMARK_BUILD_VERSION;
+    const version = parseInt(versionStr, 10);
+    // eslint-disable-next-line no-restricted-globals
+    if (isNaN(version)) {
+      return null;
+    }
+    return version;
+  }
+
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
     if (!variable || variable.trim().length === 0) {

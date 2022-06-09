@@ -37,6 +37,7 @@ module.exports = {
       REVENUECAT_API_BASE_PATH: Joi.string().required(),
       REVENUECAT_API_KEY: Joi.string().required(),
       DAX_WEB_CLIENT_CACHE: Joi.string().required(),
+      WATERMARK_BUILD_VERSION: Joi.string().required(),
     })
     .unknown(true),
 };
