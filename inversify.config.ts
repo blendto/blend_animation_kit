@@ -20,6 +20,7 @@ import {
 } from "server/external/queue/imageUploadQueue";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import BrandingService from "server/service/branding";
+import SubscriptionService from "server/service/subscription";
 import { RecipeService } from "server/service/recipe";
 import InterServiceAuth from "server/internal/inter-service-auth";
 import Firebase from "server/external/firebase";
@@ -88,6 +89,10 @@ diContainer
 diContainer
   .bind<BrandingService>(TYPES.BrandingService)
   .to(BrandingService)
+  .inSingletonScope();
+diContainer
+  .bind<SubscriptionService>(TYPES.SubscriptionService)
+  .to(SubscriptionService)
   .inSingletonScope();
 diContainer
   .bind<RecipeService>(TYPES.RecipeService)

@@ -12,6 +12,7 @@ export const TYPES = {
   ImageUploadEventQueue: Symbol.for("ImageUploadEventQueue"),
   RemoveBgService: Symbol.for("RemoveBgService"),
   BrandingService: Symbol.for("BrandingService"),
+  SubscriptionService: Symbol.for("SubscriptionService"),
   RecipeService: Symbol.for("RecipeService"),
   InterServiceAuth: Symbol.for("InterServiceAuth"),
   Firebase: Symbol.for("Firebase"),

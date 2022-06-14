@@ -176,6 +176,18 @@ class ConfigProvider {
     return this.retrieveOrCrash("REVENUECAT_API_KEY");
   }
 
+  public get CREDIT_SERVICE_BASE_PATH(): string {
+    return this.retrieveOrCrash("CREDIT_SERVICE_BASE_PATH");
+  }
+
+  public get CREDIT_SERVICE_API_KEY(): string {
+    return this.retrieveOrCrash("CREDIT_SERVICE_API_KEY");
+  }
+
+  public get CREDIT_SERVICE_PLAN_ID(): string {
+    return this.retrieveOrCrash("CREDIT_SERVICE_PLAN_ID");
+  }
+
   public get LOG_LEVEL(): string {
     return process.env.LOG_LEVEL ?? "info";
   }

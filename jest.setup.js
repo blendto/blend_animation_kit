@@ -31,6 +31,9 @@
   "BRANDING_BUCKET",
   "REVENUECAT_API_BASE_PATH",
   "REVENUECAT_API_KEY",
+  "CREDIT_SERVICE_BASE_PATH",
+  "CREDIT_SERVICE_API_KEY",
+  "CREDIT_SERVICE_PLAN_ID",
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });
