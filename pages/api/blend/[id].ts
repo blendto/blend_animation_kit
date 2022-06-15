@@ -3,7 +3,11 @@ import SQS from "server/external/sqs";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
 import { Recipe, RecipeWrapper, StoredImage } from "server/base/models/recipe";
-import { BlendStatus, BlendVersion } from "server/base/models/blend";
+import {
+  BlendStatus,
+  BlendStatusUpdate,
+  BlendVersion,
+} from "server/base/models/blend";
 import {
   CURRENT_ENCODER_VERSION,
   MIN_SUPPORTED_ENCODER_VERSION,
@@ -26,6 +30,10 @@ import {
   UserError,
 } from "server/base/errors";
 import { Entitlement, revenueCat } from "server/external/revenue-cat";
+import SubscriptionService, {
+  NoWatermarkReason,
+} from "server/service/subscription";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -215,16 +223,18 @@ const submitBlend = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const { id } = req.query;
+  const { id } = req.query as { id: string };
   const recipe = req.body as Recipe;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  let existingBlend = await blendService.getBlend(id as string);
+  const subscriptionService = diContainer.get<SubscriptionService>(
+    TYPES.SubscriptionService
+  );
 
+  let existingBlend = await blendService.getBlend(id);
   if (!existingBlend) {
     // Blend might have expired, recreate it
-    existingBlend = await blendService.addBlendToDB(id as string, req.uid);
+    existingBlend = await blendService.addBlendToDB(id, req.uid);
   }
-
   if (existingBlend.createdBy !== req.uid) {
     logger.error(
       `A user is trying to access another user's blend. Blend id: ${id}. ` +
@@ -280,7 +290,24 @@ const submitBlend = async (
     uid: image.uid,
   }));
 
+  const {
+    can: userCanDoWatermarkFreeExport,
+    noWatermarkReason,
+    creditServiceActivityLogId,
+  } = await subscriptionService.canDoWatermarkFreeExport(
+    req.buildVersion,
+    req.uid,
+    id
+  );
+
   const now = Date.now();
+  const update: BlendStatusUpdate = {
+    status: BlendStatus.Submitted,
+    on: now,
+  };
+  if (noWatermarkReason === NoWatermarkReason.USER_HAS_CREDITS) {
+    update.creditServiceActivityLogId = creditServiceActivityLogId;
+  }
   const updatedOn = DateTime.utc().toISODate();
   const params = {
     UpdateExpression:
@@ -293,7 +320,7 @@ const submitBlend = async (
     },
     ExpressionAttributeValues: {
       ":s": "SUBMITTED",
-      ":update": [{ status: "SUBMITTED", on: now }],
+      ":update": [update],
       ":branding": branding || null,
       ":inter": interactions,
       ":images": imageObjects,
@@ -310,19 +337,31 @@ const submitBlend = async (
     TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
     ReturnValues: "ALL_NEW",
   };
-
-  const dbUpdateResponse = await DynamoDB._().updateItem(params);
+  let dbUpdateResponse: DocumentClient.UpdateItemOutput;
+  try {
+    dbUpdateResponse = await DynamoDB._().updateItem(params);
+  } catch (err) {
+    if (noWatermarkReason === NoWatermarkReason.USER_HAS_CREDITS) {
+      await subscriptionService.reverseCreditUsage(creditServiceActivityLogId);
+    }
+    throw err;
+  }
   const updatedRecipe = dbUpdateResponse.Attributes;
   // Add id
   updatedRecipe.id = id;
 
-  if (
-    req.buildVersion >= ConfigProvider.WATERMARK_BUILD_VERSION &&
-    !(await revenueCat.hasEntitlement(req.uid, Entitlement.HD_EXPORT))
-  ) {
+  if (!userCanDoWatermarkFreeExport) {
     new RecipeWrapper(updatedRecipe as Recipe).addWatermark();
   }
-
-  await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(updatedRecipe);
+  try {
+    await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(
+      updatedRecipe
+    );
+  } catch (err) {
+    if (noWatermarkReason === NoWatermarkReason.USER_HAS_CREDITS) {
+      await subscriptionService.reverseCreditUsage(creditServiceActivityLogId);
+    }
+    throw err;
+  }
   res.send(updatedRecipe);
 };

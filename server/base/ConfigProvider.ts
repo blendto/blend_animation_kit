@@ -188,6 +188,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("CREDIT_SERVICE_PLAN_ID");
   }
 
+  public get CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID(): string {
+    return this.retrieveOrCrash("CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID");
+  }
+
   public get LOG_LEVEL(): string {
     return process.env.LOG_LEVEL ?? "info";
   }

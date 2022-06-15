@@ -34,6 +34,7 @@
   "CREDIT_SERVICE_BASE_PATH",
   "CREDIT_SERVICE_API_KEY",
   "CREDIT_SERVICE_PLAN_ID",
+  "CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID",
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });

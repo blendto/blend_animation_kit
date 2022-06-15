@@ -2,15 +2,29 @@ import axios from "axios";
 import { injectable } from "inversify";
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
+import { Entitlement, revenueCat } from "server/external/revenue-cat";
 import { handleAxiosCall } from "server/helpers/network";
 import { IService } from "server/service";
 
-export interface SubscriptionEntity {
+interface SubscriptionEntity {
   adhocCredits: number;
   planCredits: number;
   expiry: number;
   updatedAt: number;
 }
+
+export enum NoWatermarkReason {
+  VERSION_IS_OLD = "VERSION_IS_OLD",
+  USER_IS_PRO = "USER_IS_PRO",
+  USER_HAS_CREDITS = "USER_HAS_CREDITS",
+}
+
+interface CanDoWatermarkFreeExportResponse {
+  can: boolean;
+  noWatermarkReason?: NoWatermarkReason;
+  creditServiceActivityLogId?: string;
+}
+
 @injectable()
 export default class SubscriptionService implements IService {
   httpClient = axios.create({
@@ -60,6 +74,7 @@ export default class SubscriptionService implements IService {
     } catch (error) {
       if (
         error instanceof UserError &&
+        // TODO: Add error codes to credit service and user it to verify
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         JSON.parse(error.message).message === "Subscription not found"
       ) {
@@ -69,5 +84,68 @@ export default class SubscriptionService implements IService {
       }
     }
     return this.transform(subscription);
+  }
+
+  getWaterMarkBuildVersion(): number {
+    return ConfigProvider.WATERMARK_BUILD_VERSION;
+  }
+
+  async hasRevenueCatHDExportEntitlement(userId: string): Promise<boolean> {
+    return await revenueCat.hasEntitlement(userId, Entitlement.HD_EXPORT);
+  }
+
+  async canDoWatermarkFreeExport(
+    buildVersion: number,
+    userId: string,
+    blendId: string
+  ): Promise<CanDoWatermarkFreeExportResponse> {
+    const res: CanDoWatermarkFreeExportResponse = {
+      can: false,
+    };
+    if (buildVersion < this.getWaterMarkBuildVersion()) {
+      res.can = true;
+      res.noWatermarkReason = NoWatermarkReason.VERSION_IS_OLD;
+    } else if (await this.hasRevenueCatHDExportEntitlement(userId)) {
+      res.can = true;
+      res.noWatermarkReason = NoWatermarkReason.USER_IS_PRO;
+    } else {
+      try {
+        const axiosRes = await handleAxiosCall<{
+          creditServiceActivityLogId: string;
+        }>(
+          async () =>
+            await this.httpClient.post(`/v1/transactions`, {
+              source: "firebase",
+              subject: userId,
+              transactionTypeId:
+                ConfigProvider.CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID,
+              metadata: { blendId },
+            })
+        );
+        res.can = true;
+        res.noWatermarkReason = NoWatermarkReason.USER_HAS_CREDITS;
+        res.creditServiceActivityLogId =
+          axiosRes.data.creditServiceActivityLogId;
+      } catch (err) {
+        if (
+          !(err instanceof UserError) ||
+          // TODO: Add error codes to credit service and user it to verify
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          !(JSON.parse(err.message).message === "Expired/Insufficient credits")
+        ) {
+          throw err;
+        }
+      }
+    }
+    return res;
+  }
+
+  async reverseCreditUsage(creditServiceActivityLogId: string): Promise<void> {
+    await handleAxiosCall<{ creditServiceActivityLogId: string }>(
+      async () =>
+        await this.httpClient.post(`/v1/transactions/reverse`, {
+          creditServiceActivityLogId,
+        })
+    );
   }
 }

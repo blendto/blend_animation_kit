@@ -33,14 +33,15 @@ export interface Blend extends Recipe {
   updatedAt: number;
   updatedOn: string;
   heroImages?: HeroImageFileKeys;
-  statusUpdates: StatusUpdate[];
+  statusUpdates: BlendStatusUpdate[];
   expireAt?: number;
   batchLevelEditStatus?: BatchLevelEditStatus;
 }
 
-export interface StatusUpdate {
+export interface BlendStatusUpdate {
   status: BlendStatus;
   on: number;
+  creditServiceActivityLogId?: string;
 }
 
 export interface BlendOutput {

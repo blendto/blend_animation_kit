@@ -36,6 +36,10 @@ module.exports = {
       SERVICE_API_KEYS_SECRET_ARN: Joi.string().required(),
       REVENUECAT_API_BASE_PATH: Joi.string().required(),
       REVENUECAT_API_KEY: Joi.string().required(),
+      CREDIT_SERVICE_BASE_PATH: Joi.string().required(),
+      CREDIT_SERVICE_API_KEY: Joi.string().required(),
+      CREDIT_SERVICE_PLAN_ID: Joi.string().required(),
+      CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID: Joi.string().required(),
       DAX_WEB_CLIENT_CACHE: Joi.string().required(),
       WATERMARK_BUILD_VERSION: Joi.string().required(),
     })
