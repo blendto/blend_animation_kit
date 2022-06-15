@@ -130,8 +130,13 @@ export default class SubscriptionService implements IService {
         if (
           !(err instanceof UserError) ||
           // TODO: Add error codes to credit service and user it to verify
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          !(JSON.parse(err.message).message === "Expired/Insufficient credits")
+          !["Expired/Insufficient credits", "Subscription not found"].includes(
+            /* eslint-disable-next-line
+                @typescript-eslint/no-unsafe-argument,
+                @typescript-eslint/no-unsafe-member-access
+            */
+            JSON.parse(err.message).message
+          )
         ) {
           throw err;
         }
