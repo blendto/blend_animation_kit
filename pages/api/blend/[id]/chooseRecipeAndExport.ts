@@ -18,7 +18,7 @@ export default withReqHandler(
 
     switch (method) {
       case "POST":
-        await ensureAuth(exportBlendSync, req, res);
+        await ensureAuth(chooseRecipeAndExportSync, req, res);
         break;
       default:
         res.status(400).json({ code: 400, message: "Invalid request" });
@@ -26,7 +26,7 @@ export default withReqHandler(
   }
 );
 
-const exportBlendSync = async (
+const chooseRecipeAndExportSync = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
