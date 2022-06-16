@@ -36,6 +36,7 @@ export interface Blend extends Recipe {
   statusUpdates: BlendStatusUpdate[];
   expireAt?: number;
   batchLevelEditStatus?: BatchLevelEditStatus;
+  isWatermarked?: boolean;
 }
 
 export interface BlendStatusUpdate {

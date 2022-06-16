@@ -29,7 +29,6 @@ import {
   ObjectNotFoundError,
   UserError,
 } from "server/base/errors";
-import { Entitlement, revenueCat } from "server/external/revenue-cat";
 import SubscriptionService, {
   NoWatermarkReason,
 } from "server/service/subscription";
@@ -165,6 +164,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     output,
     filePath,
     imagePath,
+    isWatermarked,
   } = blend;
 
   if (
@@ -212,6 +212,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     filePath,
     imagePath,
     output,
+    isWatermarked,
     interactions: trimInteractions(blend),
     isStatic: gifsOrStickers?.length <= 0 ?? true,
   };
@@ -314,9 +315,10 @@ const submitBlend = async (
       "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), branding = :branding," +
       "interactions = :inter, images = :images, externalImages = :externalImages," +
       "gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-      "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn REMOVE expireAt",
+      "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #isWatermarked = :isWatermarked REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
+      "#isWatermarked": "isWatermarked",
     },
     ExpressionAttributeValues: {
       ":s": "SUBMITTED",
@@ -332,6 +334,7 @@ const submitBlend = async (
       ":metadata": metadata,
       ":updatedAt": now,
       ":updatedOn": updatedOn,
+      ":isWatermarked": !userCanDoWatermarkFreeExport,
     },
     Key: { id },
     TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,

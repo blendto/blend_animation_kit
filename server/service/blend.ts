@@ -265,6 +265,7 @@ export class BlendService implements IService {
       links,
       interactions,
       metadata,
+      isWatermarked,
     } = blend;
 
     const now = Date.now();
@@ -274,10 +275,11 @@ export class BlendService implements IService {
         "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
         "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
         "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-        "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #batchSt = :batchSt REMOVE expireAt",
+        "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #batchSt = :batchSt, #isWatermarked = :isWatermarked REMOVE expireAt",
       ExpressionAttributeNames: {
         "#st": "status",
         "#batchSt": "batchLevelEditStatus",
+        "#isWatermarked": "isWatermarked",
       },
       ExpressionAttributeValues: {
         ":s": "SUBMITTED",
@@ -297,6 +299,7 @@ export class BlendService implements IService {
         ":updatedAt": now,
         ":updatedOn": updatedOn,
         ":batchSt": BatchLevelEditStatus.INDIVIDUALLY_EDITED,
+        ":isWatermarked": isWatermarked,
       },
       Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,

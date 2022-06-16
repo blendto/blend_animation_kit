@@ -33,6 +33,7 @@ const reTriggerExport = async (
   const service = diContainer.get<BlendService>(TYPES.BlendService);
   const blend = await service.getBlend(id, BlendVersion.current, true);
   blend.status = BlendStatus.Submitted;
+  blend.isWatermarked = false;
   await service.updateBlend(blend);
 
   // TODO: integrate credit service
