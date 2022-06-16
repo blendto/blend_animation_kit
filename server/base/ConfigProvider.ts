@@ -192,6 +192,14 @@ class ConfigProvider {
     return this.retrieveOrCrash("CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID");
   }
 
+  public get REVENUECAT_CREDIT_OFFERINGS(): Record<string, number> {
+    return JSON.parse(this.retrieveOrCrash("REVENUECAT_CREDIT_OFFERINGS"));
+  }
+
+  public get FAILED_WEBHOOK_CALLS_TABLE(): string {
+    return this.retrieveOrCrash("FAILED_WEBHOOK_CALLS_TABLE");
+  }
+
   public get LOG_LEVEL(): string {
     return process.env.LOG_LEVEL ?? "info";
   }

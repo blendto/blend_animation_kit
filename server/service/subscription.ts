@@ -153,4 +153,20 @@ export default class SubscriptionService implements IService {
         })
     );
   }
+
+  async addCredits(
+    userId: string,
+    count: number
+  ): Promise<Record<string, unknown>> {
+    return (
+      await handleAxiosCall<Record<string, unknown>>(
+        async () =>
+          await this.httpClient.post(`/v1/subscriptions/credits`, {
+            source: "firebase",
+            subject: userId,
+            creditsToAdd: count,
+          })
+      )
+    ).data;
+  }
 }

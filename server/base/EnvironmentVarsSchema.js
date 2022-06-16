@@ -42,6 +42,8 @@ module.exports = {
       CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID: Joi.string().required(),
       DAX_WEB_CLIENT_CACHE: Joi.string().required(),
       WATERMARK_BUILD_VERSION: Joi.string().required(),
+      REVENUECAT_CREDIT_OFFERINGS: Joi.string().required(),
+      FAILED_WEBHOOK_CALLS_TABLE: Joi.string().required(),
     })
     .unknown(true),
 };

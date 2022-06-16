@@ -44,17 +44,24 @@ type RoutingFunction = (
 
 type controller = RoutingFunctionExtended;
 
+export enum AuthType {
+  USER = "USER",
+  SERVICE = "SERVICE",
+}
+
 export function withReqHandler(
-  routingFunction: RoutingFunctionExtended
+  routingFunction: RoutingFunctionExtended,
+  authType = AuthType.USER
 ): RoutingFunction {
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     await corsMiddleware(req, res);
     const extendedReq = req as NextApiRequestExtended;
     try {
-      const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
-      extendedReq.uid = await firebaseService.extractUserIdFromRequest(req);
-      extendedReq.buildVersion = extractBuildVersion(req);
-
+      if (authType === AuthType.USER) {
+        const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
+        extendedReq.uid = await firebaseService.extractUserIdFromRequest(req);
+        extendedReq.buildVersion = extractBuildVersion(req);
+      }
       return await routingFunction(extendedReq, res);
     } catch (err) {
       if (err instanceof UserError) {
@@ -129,13 +136,18 @@ export async function ensureServiceAuth(
   req: NextApiRequestExtended,
   res: NextApiResponse
 ): Promise<void> {
-  const authHeader = req.headers["x-api-token"];
+  let authHeader: string;
+  if (req.headers["x-api-token"]) {
+    authHeader = req.headers["x-api-token"] as string;
+  } else {
+    authHeader = (req.headers.authorization || "Bearer ").split(" ")[1];
+  }
 
   const interServiceAuth = diContainer.get<InterServiceAuth>(
     TYPES.InterServiceAuth
   );
 
-  await interServiceAuth.validate(serviceType, authHeader as string);
+  await interServiceAuth.validate(serviceType, authHeader);
 
   return await controller(req, res);
 }
@@ -164,12 +176,13 @@ export function validate(
   obj: object,
   type: requestComponentToValidate,
   schema: ObjectSchema,
-  required = true
+  required = true,
+  allowUnknown = false
 ) {
   if (!obj && required) {
     throw new UserError(`${type} is missing`);
   }
-  const validation = schema.validate(obj);
+  const validation = schema.validate(obj, { allowUnknown });
   if (validation.error) {
     throw new UserError(
       `Error in ${type.toLowerCase()}. ${validation.error.message}.`

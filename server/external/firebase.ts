@@ -8,6 +8,10 @@ import { NextApiRequest } from "next";
 import { injectable } from "inversify";
 import ConfigProvider from "../base/ConfigProvider";
 
+export enum FirebaseErrCode {
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+}
+
 @injectable()
 export default class Firebase {
   FIREBASE_PROJECT_ID = ConfigProvider.FIREBASE_APP_CLIENT_CONFIG
@@ -69,9 +73,9 @@ export default class Firebase {
     } catch (e) {
       const errCode = (e as Record<string, unknown>).code;
       if (errCode === "auth/user-not-found") {
-        throw new UserError("User Not Found");
+        throw new UserError("User Not Found", FirebaseErrCode.USER_NOT_FOUND);
       }
-      throw new UserError(`Something went wrong: ${errCode}`);
+      throw new Error(`Something went wrong: ${errCode}`);
     }
   }
 }
