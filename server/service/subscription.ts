@@ -13,6 +13,11 @@ interface SubscriptionEntity {
   updatedAt: number;
 }
 
+interface TransactionEntity {
+  doneAt: number;
+  blendId: string;
+}
+
 export enum NoWatermarkReason {
   VERSION_IS_OLD = "VERSION_IS_OLD",
   USER_IS_PRO = "USER_IS_PRO",
@@ -23,6 +28,15 @@ interface CanDoWatermarkFreeExportResponse {
   can: boolean;
   noWatermarkReason?: NoWatermarkReason;
   creditServiceActivityLogId?: string;
+}
+
+interface GetTransactionResponse {
+  items: TransactionEntity[];
+  nextPageToken?: string;
+}
+
+enum Source {
+  FIREBASE = "firebase",
 }
 
 @injectable()
@@ -39,7 +53,7 @@ export default class SubscriptionService implements IService {
       await handleAxiosCall<Record<string, unknown>>(
         async () =>
           await this.httpClient.get(
-            `/v1/subscriptions?source=firebase&subject=${userId}`
+            `/v1/subscriptions?source=${Source.FIREBASE}&subject=${userId}`
           )
       )
     ).data;
@@ -50,7 +64,7 @@ export default class SubscriptionService implements IService {
       await handleAxiosCall<Record<string, unknown>>(
         async () =>
           await this.httpClient.post(`/v1/subscriptions`, {
-            source: "firebase",
+            source: Source.FIREBASE,
             subject: userId,
             planId: ConfigProvider.CREDIT_SERVICE_PLAN_ID,
           })
@@ -64,6 +78,15 @@ export default class SubscriptionService implements IService {
       planCredits: original.planCredits as number,
       expiry: original.expiry as number,
       updatedAt: original.updatedAt as number,
+    };
+  }
+
+  private transformTransaction(
+    original: Record<string, unknown>
+  ): TransactionEntity {
+    return {
+      doneAt: original.doneAt as number,
+      blendId: (original.metadata as { blendId: string }).blendId,
     };
   }
 
@@ -115,7 +138,7 @@ export default class SubscriptionService implements IService {
         }>(
           async () =>
             await this.httpClient.post(`/v1/transactions`, {
-              source: "firebase",
+              source: Source.FIREBASE,
               subject: userId,
               transactionTypeId:
                 ConfigProvider.CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID,
@@ -162,11 +185,48 @@ export default class SubscriptionService implements IService {
       await handleAxiosCall<Record<string, unknown>>(
         async () =>
           await this.httpClient.post(`/v1/subscriptions/credits`, {
-            source: "firebase",
+            source: Source.FIREBASE,
             subject: userId,
             creditsToAdd: count,
           })
       )
     ).data;
+  }
+
+  async getTransactions(
+    userId: string,
+    nextPageToken?: string
+  ): Promise<GetTransactionResponse> {
+    let url = `/v1/transactions?source=${Source.FIREBASE}&subject=${userId}`;
+    if (nextPageToken) {
+      const { lastItemId, lastItemDoneAt } = JSON.parse(
+        atob(nextPageToken)
+      ) as {
+        lastItemId: string;
+        lastItemDoneAt: number;
+      };
+      url = `${url}&lastItemId=${lastItemId}&lastItemDoneAt=${lastItemDoneAt}`;
+    }
+    const res = (
+      await handleAxiosCall<Record<string, unknown>>(
+        async () => await this.httpClient.get(url)
+      )
+    ).data as {
+      items: Record<string, number>[];
+      lastItemId?: string;
+      lastItemDoneAt?: number;
+    };
+    const transformedRes: GetTransactionResponse = {
+      items: res.items.map((t) => this.transformTransaction(t)),
+    };
+    if (res.lastItemId) {
+      transformedRes.nextPageToken = btoa(
+        JSON.stringify({
+          lastItemId: res.lastItemId,
+          lastItemDoneAt: res.lastItemDoneAt,
+        })
+      );
+    }
+    return transformedRes;
   }
 }
