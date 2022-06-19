@@ -89,7 +89,7 @@ const useRecipeForBlend = async (
   }
 
   const blendImages = recipe.images.map((image) => {
-    if (image.uid === recipe.recipeDetails.elements.hero.uid) {
+    if (image.uid === recipe.recipeDetails.elements.hero?.uid) {
       const interaction = recipe.interactions.find(
         (interaction) =>
           interaction.assetType === "IMAGE" &&

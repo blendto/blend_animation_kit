@@ -35,7 +35,7 @@ export interface ElementRef {
 }
 
 export interface Elements {
-  hero: ElementRef;
+  hero?: ElementRef;
   background: ElementRef;
   title: ElementRef;
 }

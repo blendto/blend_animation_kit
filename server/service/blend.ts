@@ -413,7 +413,7 @@ export class BlendService implements IService {
     let interactionUpdatePromise;
 
     const blendImages = recipe.images.map((image) => {
-      if (image.uid === recipe.recipeDetails.elements.hero.uid) {
+      if (image.uid === recipe.recipeDetails.elements.hero?.uid) {
         const interaction = recipe.interactions.find(
           // eslint-disable-next-line eqeqeq
           (_) => _.assetType == "IMAGE" && _.assetUid == image.uid
