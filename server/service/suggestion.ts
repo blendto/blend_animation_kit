@@ -147,7 +147,7 @@ export class SuggestionService {
     return suggestions.common;
   }
 
-  private async recipeListMapper(list: RecipeList): Promise<RecipeList> {
+  async recipeListMapper(list: RecipeList): Promise<RecipeList> {
     const promises = list.recipes.map((recipe) =>
       this.backfillRecipeDetails(recipe)
     );
@@ -155,7 +155,7 @@ export class SuggestionService {
     return list;
   }
 
-  private async backfillRecipeDetails(
+  async backfillRecipeDetails(
     recipeVariantId: RecipeVariantId
   ): Promise<RecipeVariantId> {
     const { id, variant } = recipeVariantId;
@@ -166,7 +166,11 @@ export class SuggestionService {
     })) as Recipe;
 
     const { title, thumbnail } = recipe;
-    recipeVariantId.extra = { title, thumbnail };
+    recipeVariantId.extra = {
+      title,
+      thumbnail,
+      isPremium: recipe.recipeDetails.isPremium,
+    };
 
     return recipeVariantId;
   }

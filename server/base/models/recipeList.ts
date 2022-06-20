@@ -10,7 +10,7 @@ export interface RecipeList {
 export interface RecipeVariantId {
   id: string;
   variant: string;
-  extra?: { title?: string; thumbnail?: string };
+  extra?: { title?: string; thumbnail?: string; isPremium?: boolean };
 }
 
 export interface SavedRecipeSuggestions {

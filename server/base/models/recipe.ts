@@ -42,6 +42,7 @@ export interface Elements {
 
 export interface RecipeDetails {
   elements: Elements;
+  isPremium?: boolean;
 }
 
 export type InteractionAction = "DISPLAY_INLINE" | "STOP_DISPLAY";
@@ -332,4 +333,9 @@ export class RecipeWrapper {
       source: waterMark.source,
     });
   }
+}
+
+export interface SearchRecipeResponse {
+  nextPageKey?: number;
+  suggestedRecipes: Array<RecipeVariantId>;
 }

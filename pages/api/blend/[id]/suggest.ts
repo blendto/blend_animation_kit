@@ -32,11 +32,10 @@ const suggestRecipes = async (
 ) => {
   const {
     query: { id },
-    body,
   } = req;
 
   const { fileKeys, multipleAspectRatios, heroImageId } =
-    body as SuggestRecipesRequestBody;
+    req.body as SuggestRecipesRequestBody;
 
   const blend: Blend = await diContainer
     .get<BlendService>(TYPES.BlendService)
@@ -49,7 +48,7 @@ const suggestRecipes = async (
 
   if (
     !heroImageId &&
-    (!fileKeys || typeof fileKeys != "object" || !fileKeys.original)
+    (!fileKeys || typeof fileKeys !== "object" || !fileKeys.original)
   ) {
     res.status(400).send({ message: "Invalid filekeys / heroImageId" });
     return;
@@ -78,9 +77,19 @@ const suggestRecipes = async (
       multipleAspectRatios
     );
 
+  const suggestionService = diContainer.get<SuggestionService>(
+    TYPES.SuggestionService
+  );
+
+  const promises = suggestions.recipeLists.map((recipeList) =>
+    suggestionService.recipeListMapper(recipeList)
+  );
+
+  const recipeLists = await Promise.all(promises);
+
   return res.send({
     fileKeys: finalisedFileKeys,
-    suggestedRecipes: suggestions.randomTemplates,
+    suggestedRecipes: recipeLists,
     otherRecipes: suggestions.recipeLists,
   });
 };

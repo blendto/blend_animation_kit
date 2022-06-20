@@ -62,8 +62,10 @@ export default class RecoEngineApi {
   };
 
   async searchRecipes(query: unknown, body: unknown): Promise<unknown> {
-    return await handleAxiosCall(
-      async () => await this.httpClient.post(`/searchRecipes`, body)
-    );
+    return (
+      await handleAxiosCall(
+        async () => await this.httpClient.post(`/searchRecipes`, body)
+      )
+    ).data;
   }
 }
