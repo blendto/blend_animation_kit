@@ -89,7 +89,7 @@ const suggestRecipes = async (
 
   return res.send({
     fileKeys: finalisedFileKeys,
-    suggestedRecipes: recipeLists,
-    otherRecipes: suggestions.recipeLists,
+    suggestedRecipes: suggestions.randomTemplates,
+    otherRecipes: recipeLists,
   });
 };
