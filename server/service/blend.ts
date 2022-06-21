@@ -299,7 +299,7 @@ export class BlendService implements IService {
         ":updatedAt": now,
         ":updatedOn": updatedOn,
         ":batchSt": BatchLevelEditStatus.INDIVIDUALLY_EDITED,
-        ":isWatermarked": isWatermarked,
+        ":isWatermarked": isWatermarked ?? false,
       },
       Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
