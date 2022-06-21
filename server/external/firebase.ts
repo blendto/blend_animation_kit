@@ -10,6 +10,7 @@ import ConfigProvider from "../base/ConfigProvider";
 
 export enum FirebaseErrCode {
   USER_NOT_FOUND = "USER_NOT_FOUND",
+  INVALID_USER_ID = "INVALID_USER_ID",
 }
 
 @injectable()
@@ -74,6 +75,8 @@ export default class Firebase {
       const errCode = (e as Record<string, unknown>).code;
       if (errCode === "auth/user-not-found") {
         throw new UserError("User Not Found", FirebaseErrCode.USER_NOT_FOUND);
+      } else if (errCode === "auth/invalid-uid") {
+        throw new UserError("Invalid User Id", FirebaseErrCode.INVALID_USER_ID);
       }
       throw new Error(`Something went wrong: ${errCode}`);
     }

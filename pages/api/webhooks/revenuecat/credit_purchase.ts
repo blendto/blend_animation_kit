@@ -4,7 +4,7 @@ import { NextApiResponse } from "next";
 import ConfigProvider from "server/base/ConfigProvider";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
 import DynamoDB from "server/external/dynamodb";
-import Firebase, { FirebaseErrCode } from "server/external/firebase";
+import Firebase from "server/external/firebase";
 import {
   AuthType,
   ensureServiceAuth,
@@ -69,10 +69,7 @@ const registerCreditPurchase = async (
   try {
     await firebaseService.getUserById(event.app_user_id);
   } catch (err) {
-    if (
-      err instanceof UserError &&
-      err.code === FirebaseErrCode.USER_NOT_FOUND
-    ) {
+    if (err instanceof UserError) {
       await logFailure(reqBody, ErrorCode.INVALID_USER_ID);
       throw new Error(
         `Received invalid user id: ${event.app_user_id}. Anonymous user?`
