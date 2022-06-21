@@ -18,7 +18,7 @@ export default withReqHandler(
     const { method } = req;
     switch (method) {
       case "POST":
-        return createBatch(req, res, DynamoDB._());
+        return ensureAuth(createBatch, req, res);
       case "GET":
         return ensureAuth(getAllBatches, req, res);
       default:
@@ -29,8 +29,7 @@ export default withReqHandler(
 
 const createBatch = async (
   req: NextApiRequestExtended,
-  res: NextApiResponse,
-  dataStore: DynamoDB
+  res: NextApiResponse
 ) => {
   const now = Date.now();
   const newBatch = {
@@ -44,6 +43,8 @@ const createBatch = async (
     previews: {},
     outputs: {},
   } as Batch;
+
+  const dataStore = diContainer.get<DynamoDB>(TYPES.DynamoDB);
   await dataStore.putItem({
     TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
     Item: newBatch,
