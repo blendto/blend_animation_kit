@@ -1,9 +1,10 @@
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 
 import ConfigProvider from "server/base/ConfigProvider";
 import { Recipe } from "server/base/models/recipe";
 import { handleAxiosCall } from "server/helpers/network";
+import axiosRetry from "axios-retry";
 
 const VES_SERVICE_BASE_URL = ConfigProvider.VES_API_BASE_PATH;
 
@@ -41,9 +42,15 @@ export interface SaveThumbnailRequest {
 }
 
 export default class VesApi {
-  httpClient = axios.create({
-    baseURL: VES_SERVICE_BASE_URL,
-  });
+  httpClient: AxiosInstance;
+
+  constructor() {
+    this.httpClient = axios.create({
+      baseURL: VES_SERVICE_BASE_URL,
+    });
+
+    axiosRetry(this.httpClient, { retries: 3 });
+  }
 
   preview = async (params: PreviewRequestParams) =>
     (
