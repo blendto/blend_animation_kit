@@ -10,8 +10,6 @@ describe("UserService", () => {
   const userService = diContainer.get<UserService>(TYPES.UserService);
   const id = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
   const stripeCustomerId = "cus_4QE4bx4C5BVSrC";
-  const recipeId = "zxDJ2pQfNePtfOO1dH5AhHKQka11";
-  const recipeVariant = "1*1";
   const createdAt = 1646906641;
   const updatedAt = 1646906641;
   const userDoc: User = {
@@ -24,12 +22,7 @@ describe("UserService", () => {
       posts: 0,
       shoutoutsReceived: 0,
     },
-    favouriteRecipes: [
-      {
-        recipeId,
-        recipeVariant,
-      },
-    ],
+    favouriteRecipes: [],
   };
 
   afterEach(() => {

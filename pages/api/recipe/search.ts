@@ -5,7 +5,7 @@ import { MethodNotAllowedError } from "server/base/errors";
 import { diContainer } from "inversify.config";
 import { SuggestionService } from "server/service/suggestion";
 import { TYPES } from "server/types";
-import { SearchRecipeResponse } from "server/base/models/recipe";
+import { getUserAgentDetails } from "pages/api/whoami";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -23,10 +23,12 @@ const searchRecipes = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const searchResponse = (await new RecoEngineApi().searchRecipes(
-    req.query,
-    req.body
-  )) as SearchRecipeResponse;
+  const userAgentDetails = await getUserAgentDetails(req);
+
+  const searchResponse = await new RecoEngineApi().searchRecipes(req.query, {
+    ...req.body,
+    userAgentDetails,
+  });
 
   const suggestionService = diContainer.get<SuggestionService>(
     TYPES.SuggestionService

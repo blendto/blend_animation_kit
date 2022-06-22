@@ -3,6 +3,7 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
 import { UserAgentDetails } from "../base/models/userAgentDetails";
+import { SearchRecipeResponse } from "../base/models/recipe";
 
 export interface RecipeListSuggestions {
   suggestedRecipeCategories: RecipeList[];
@@ -61,11 +62,14 @@ export default class RecoEngineApi {
     ).data;
   };
 
-  async searchRecipes(query: unknown, body: unknown): Promise<unknown> {
+  async searchRecipes(
+    query: unknown,
+    body: unknown
+  ): Promise<SearchRecipeResponse> {
     return (
       await handleAxiosCall(
         async () => await this.httpClient.post(`/searchRecipes`, body)
       )
-    ).data;
+    ).data as SearchRecipeResponse;
   }
 }

@@ -15,6 +15,7 @@ import Firebase from "server/external/firebase";
 import { Repo } from "server/repositories/base";
 import { UserUpdatePaths } from "server/repositories/user";
 import { UpdateOperations } from "server/repositories";
+import { SuggestionService } from "server/service/suggestion";
 
 export type UserJSONUpdate = {
   path: UserUpdatePaths;
@@ -29,11 +30,21 @@ export class UserService implements IService {
   ipApi = new IpApi();
 
   async fetch(id: string): Promise<User | void> {
-    return this.repo.get({ id });
+    const profile = await this.repo.get({ id });
+
+    if (!profile) return null;
+    profile.favouriteRecipes = await this.fetchDetailedFavourites(
+      profile.favouriteRecipes
+    );
+    return profile;
   }
 
   async update(id: string, changes: UserJSONUpdate[]): Promise<User> {
-    return await this.repo.update({ id }, changes);
+    const profile = await this.repo.update({ id }, changes);
+    profile.favouriteRecipes = await this.fetchDetailedFavourites(
+      profile.favouriteRecipes
+    );
+    return profile;
   }
 
   async populateUserFromFirebase(userId: string): Promise<User> {
@@ -78,9 +89,13 @@ export class UserService implements IService {
     id: string,
     favourites: FavouriteRecipe[]
   ): Promise<User> {
-    return await this.repo.update({ id }, [
+    const profile = await this.repo.update({ id }, [
       { path: "/favouriteRecipes", op: "replace", value: favourites },
     ]);
+    profile.favouriteRecipes = await this.fetchDetailedFavourites(
+      profile.favouriteRecipes
+    );
+    return profile;
   }
 
   async getUserAgent(ip: string): Promise<UserAgentDetails | null> {
@@ -98,6 +113,23 @@ export class UserService implements IService {
       logger.error(err);
       return null;
     }
+  }
+
+  private async fetchDetailedFavourites(
+    favouriteRecipes: FavouriteRecipe[]
+  ): Promise<FavouriteRecipe[]> {
+    const suggestionService = diContainer.get<SuggestionService>(
+      TYPES.SuggestionService
+    );
+    const promises = favouriteRecipes.map(async (favourite) => {
+      const { recipeId: id, recipeVariant: variant } = favourite;
+      const fullRecipe = await suggestionService.backfillRecipeDetails({
+        id,
+        variant,
+      });
+      return { ...favourite, fullRecipe };
+    });
+    return Promise.all(promises);
   }
 
   private async updateBlendOwner(blendId: string, newUid: string) {

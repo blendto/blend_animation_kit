@@ -1,6 +1,6 @@
 import Joi from "joi";
 import type { NextApiResponse } from "next";
-import { UserService, UserJSONUpdate } from "server/service/user";
+import { UserJSONUpdate, UserService } from "server/service/user";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { UserUpdatePaths } from "server/repositories/user";
