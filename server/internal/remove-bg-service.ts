@@ -158,6 +158,11 @@ export class RemoveBgService implements IService {
       response = await this.httpClient.post("/removeBg", form, {
         headers: form.getHeaders(),
         responseType: "stream",
+        // Infinite maxContentLength and maxBodyLength fixes
+        // "Request body larger than maxBodyLength limit" issue
+        // ref: https://stackoverflow.com/questions/56868023/error-request-body-larger-than-maxbodylength-limit-when-sending-base64-post-req
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       });
     }, metadata);
 
