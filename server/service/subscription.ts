@@ -1,3 +1,5 @@
+// noinspection JSMethodCanBeStatic
+
 import axios from "axios";
 import { injectable } from "inversify";
 import ConfigProvider from "server/base/ConfigProvider";
@@ -5,6 +7,14 @@ import { UserError } from "server/base/errors";
 import { Entitlement, revenueCat } from "server/external/revenue-cat";
 import { handleAxiosCall } from "server/helpers/network";
 import { IService } from "server/service";
+import { diContainer } from "inversify.config";
+import { BlendService } from "server/service/blend";
+import { TYPES } from "server/types";
+import { MinimalBlend } from "server/base/models/blend";
+import { EncodedPageKey } from "server/helpers/paginationUtils";
+import CreditServiceApi, {
+  FetchTransactionResponse,
+} from "server/internal/creditServiceApi";
 
 interface SubscriptionEntity {
   adhocCredits: number;
@@ -15,7 +25,7 @@ interface SubscriptionEntity {
 
 interface TransactionEntity {
   doneAt: number;
-  blendId: string;
+  blend: MinimalBlend;
 }
 
 export enum NoWatermarkReason {
@@ -41,12 +51,14 @@ enum Source {
 
 @injectable()
 export default class SubscriptionService implements IService {
+  // TODO: move all usages of this to creditServiceApi.ts
   httpClient = axios.create({
     baseURL: ConfigProvider.CREDIT_SERVICE_BASE_PATH,
     headers: {
       "x-api-key": ConfigProvider.CREDIT_SERVICE_API_KEY,
     },
   });
+  creditServiceApi = new CreditServiceApi();
 
   private async get(userId: string): Promise<Record<string, unknown>> {
     return (
@@ -81,13 +93,14 @@ export default class SubscriptionService implements IService {
     };
   }
 
-  private transformTransaction(
-    original: Record<string, unknown>
+  private createTxnEntity(
+    transaction: Record<string, unknown>,
+    blendMap: Record<string, MinimalBlend>
   ): TransactionEntity {
-    return {
-      doneAt: original.doneAt as number,
-      blendId: (original.metadata as { blendId: string }).blendId,
-    };
+    const { blendId } = transaction.metadata as { blendId: string };
+    const doneAt = transaction.doneAt as number;
+    const blend = blendMap[blendId];
+    return { doneAt, blend };
   }
 
   async getOrCreate(userId: string): Promise<SubscriptionEntity> {
@@ -195,38 +208,44 @@ export default class SubscriptionService implements IService {
 
   async getTransactions(
     userId: string,
-    nextPageToken?: string
+    pageToken?: string
   ): Promise<GetTransactionResponse> {
-    let url = `/v1/transactions?source=${Source.FIREBASE}&subject=${userId}`;
-    if (nextPageToken) {
-      const { lastItemId, lastItemDoneAt } = JSON.parse(
-        atob(nextPageToken)
-      ) as {
-        lastItemId: string;
-        lastItemDoneAt: number;
-      };
-      url = `${url}&lastItemId=${lastItemId}&lastItemDoneAt=${lastItemDoneAt}`;
-    }
-    const res = (
-      await handleAxiosCall<Record<string, unknown>>(
-        async () => await this.httpClient.get(url)
+    const transactions = await this.creditServiceApi.fetchTransactions(
+      userId,
+      pageToken
+    );
+
+    const blendIds = new Set(
+      transactions.items.map(
+        (original) => (original.metadata as { blendId: string }).blendId
       )
-    ).data as {
-      items: Record<string, number>[];
-      lastItemId?: string;
-      lastItemDoneAt?: number;
-    };
-    const transformedRes: GetTransactionResponse = {
-      items: res.items.map((t) => this.transformTransaction(t)),
-    };
-    if (res.lastItemId) {
-      transformedRes.nextPageToken = btoa(
-        JSON.stringify({
-          lastItemId: res.lastItemId,
-          lastItemDoneAt: res.lastItemDoneAt,
-        })
-      );
+    );
+
+    const service = diContainer.get<BlendService>(TYPES.BlendService);
+    const minimalBlends = await service.getMinimalBlends(Array.from(blendIds));
+    const items = this.createTxnEntities(transactions, minimalBlends);
+
+    const { lastItemId, lastItemDoneAt } = transactions;
+    if (!lastItemId) {
+      return { items };
     }
-    return transformedRes;
+
+    const nextPageToken = EncodedPageKey.fromObject({
+      lastItemId,
+      lastItemDoneAt,
+    })?.key;
+    return { items, nextPageToken };
+  }
+
+  private createTxnEntities(
+    transactions: FetchTransactionResponse,
+    minimalBlends: MinimalBlend[]
+  ): TransactionEntity[] {
+    const blendMap: Record<string, MinimalBlend> = {};
+    minimalBlends.forEach((blend) => {
+      blendMap[blend.id] = blend;
+    });
+
+    return transactions.items.map((t) => this.createTxnEntity(t, blendMap));
   }
 }

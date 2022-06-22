@@ -9,6 +9,7 @@ import {
   Blend,
   BlendStatus,
   BlendVersion,
+  MinimalBlend,
 } from "server/base/models/blend";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
@@ -114,6 +115,26 @@ export class BlendService implements IService {
     }
 
     return this.backfillBlendOutput(<Blend>blend);
+  }
+
+  async getMinimalBlends(blendIds: string[]): Promise<MinimalBlend[]> {
+    const Keys = blendIds.map((id) => ({ id }));
+    const AttributesToGet = [
+      "id",
+      "filePath",
+      "imagePath",
+      "thumbnail",
+      "output",
+      "createdAt",
+      "updatedAt",
+      "status",
+    ];
+    const responseMap = await this.dataStore.batchGetItems({
+      RequestItems: {
+        [ConfigProvider.BLEND_DYNAMODB_TABLE]: { Keys, AttributesToGet },
+      },
+    });
+    return responseMap[ConfigProvider.BLEND_DYNAMODB_TABLE] as MinimalBlend[];
   }
 
   async initBlend(

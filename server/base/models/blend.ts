@@ -39,6 +39,17 @@ export interface Blend extends Recipe {
   isWatermarked?: boolean;
 }
 
+export interface MinimalBlend {
+  id: string;
+  filePath?: string;
+  imagePath?: string;
+  thumbnail?: string;
+  output?: BlendOutput;
+  status: BlendStatus;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface BlendStatusUpdate {
   status: BlendStatus;
   on: number;
