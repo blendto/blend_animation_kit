@@ -50,6 +50,17 @@ export const RemoveBgRequestSchema = Joi.object({
   crop: Joi.bool().default(true),
 });
 
+const readImageMetadata = async (image: Buffer) => {
+  try {
+    return await sharp(image).metadata();
+  } catch (ex: unknown) {
+    logger.warn({
+      error: ex instanceof Error ? ex.toString() : "Unable to process image",
+    });
+    throw new UserError("Unable to process image", "unprocessable-image");
+  }
+};
+
 const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   const body = req.body as RemoveBgRequest;
   const { id } = req.query;
@@ -89,7 +100,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   );
 
   if (!bgRemovedElementExists) {
-    const metadata = await sharp(originalImage).metadata();
+    const metadata = await readImageMetadata(originalImage);
 
     if (
       !["jpeg", "jpg"].includes(metadata.format) ||
@@ -125,7 +136,8 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     if (useMask) {
-      const { width, height } = await sharp(originalImage).metadata();
+      const { width, height } = metadata;
+
       const rescaledMask = await rescaleImage(bgRemoved, { width, height });
       const bgRemovedImageUsingMask = await applyMask(
         originalImage,

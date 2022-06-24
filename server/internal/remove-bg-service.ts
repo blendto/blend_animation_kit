@@ -54,7 +54,9 @@ export class RemoveBgService implements IService {
 
     const [fileNameWithExt] = fileKeyParts.slice(-1);
 
-    const fileNameWithoutExt = fileNameWithExt.split(".").slice(0, -1).join("");
+    const fileNameWithoutExt = fileNameWithExt.includes(".")
+      ? fileNameWithExt.split(".").slice(0, -1).join(".")
+      : fileNameWithExt;
 
     const bgRemovedFileName = `${fileNameWithoutExt}-bg-removed.png`;
 

@@ -23,7 +23,9 @@ export function createDestinationFileKey(
   const fileNameParts = fileName.split(".");
 
   if (fileNameParts.length <= 1) {
-    throw new UserError("Invalid filename");
+    // If there is no file extension, still go ahead and give it a random name without extension
+    // Other parts of the system will read the file and handle it
+    return `${keyPrefix}${nanoid()}`;
   }
 
   const extension = fileNameParts[fileNameParts.length - 1].toLowerCase();
@@ -103,7 +105,6 @@ export const createSignedUploadUrl = async (
       };
       s3ClientWithAcceleration.getSignedUrl(operation, params, (err, data) => {
         if (err) {
-          console.log(err);
           reject(err);
           return;
         }
@@ -222,7 +223,7 @@ export const deleteObject = async (
       Bucket: bucketName,
       Key: fileKey,
     };
-    s3.deleteObject(params, (err, data) => {
+    s3.deleteObject(params, (err) => {
       if (err) {
         if (["NoSuchKey", "Forbidden"].includes(err.code)) {
           // Assume this to be part of a retry of a bulk delete operation where this object
