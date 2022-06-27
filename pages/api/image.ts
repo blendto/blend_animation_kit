@@ -11,8 +11,7 @@ import { TYPES } from "server/types";
 import { withReqHandler } from "server/helpers/request";
 import { NextApiRequest, NextApiResponse } from "next";
 import { BlendVersion } from "server/base/models/blend";
-
-const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //  20 MB
 
@@ -57,7 +56,7 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
-  // Need consistent read coz blend might have just been created and not propogated yet
+  // Need consistent read coz blend might have just been created and not propagated yet
   const blend = await blendService.getBlend(id, BlendVersion.current, true);
 
   if (!blend) {
@@ -67,7 +66,7 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   const urlDetails = await createSignedUploadUrl(
     fileName,
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-    VALID_EXTENSIONS,
+    VALID_UPLOAD_IMAGE_EXTENSIONS,
     {
       keyPrefix: id + "/",
       maxSize: MAX_FILE_SIZE,

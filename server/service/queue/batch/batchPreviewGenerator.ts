@@ -17,8 +17,8 @@ import { Blend } from "server/base/models/blend";
 import { Batch, BatchWrapper } from "server/base/models/batch";
 import { diContainer } from "inversify.config";
 import logger from "server/base/Logger";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 
-const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 export class BatchPreviewGenerator {
@@ -84,7 +84,7 @@ export class BatchPreviewGenerator {
     return (await createSignedUploadUrl(
       fileName,
       ConfigProvider.BLEND_OUTPUT_BUCKET,
-      VALID_EXTENSIONS,
+      VALID_UPLOAD_IMAGE_EXTENSIONS,
       {
         outFileKey: previewFileKey,
         maxSize: MAX_FILE_SIZE,

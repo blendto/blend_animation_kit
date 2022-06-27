@@ -39,9 +39,9 @@ import HeroImageService from "server/service/heroImage";
 import { ExpressionAttributeNameMap } from "aws-sdk/clients/dynamodb";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { fireAndForget } from "server/helpers/async-runner";
-import { IService } from "./index";
+import { IService } from "server/service/index";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 
-const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 type UpdateRequest = {
@@ -142,7 +142,10 @@ export class BatchService implements IService {
     batchId: string,
     method: UploadMethod
   ): Promise<UploadRequest> {
-    const heroFileName = createDestinationFileKey(fileName, VALID_EXTENSIONS);
+    const heroFileName = createDestinationFileKey(
+      fileName,
+      VALID_UPLOAD_IMAGE_EXTENSIONS
+    );
     const blend: Blend = await diContainer
       .get<BlendService>(TYPES.BlendService)
       .initBlend(uid, { batchId, heroFileName });
@@ -152,7 +155,7 @@ export class BatchService implements IService {
       const url = (await createSignedUploadUrl(
         fileName,
         ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-        VALID_EXTENSIONS,
+        VALID_UPLOAD_IMAGE_EXTENSIONS,
         {
           outFileKey: fileKey,
           maxSize: MAX_FILE_SIZE,
@@ -171,7 +174,7 @@ export class BatchService implements IService {
     const urlDetails = (await createSignedUploadUrl(
       fileName,
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-      VALID_EXTENSIONS,
+      VALID_UPLOAD_IMAGE_EXTENSIONS,
       {
         outFileKey: fileKey,
         maxSize: MAX_FILE_SIZE,

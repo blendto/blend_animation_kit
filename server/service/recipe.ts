@@ -10,8 +10,8 @@ import { UserError } from "server/base/errors";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import { createSignedUploadUrl } from "server/external/s3";
 import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 
-const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 @injectable()
@@ -40,7 +40,7 @@ export class RecipeService implements IService {
     const uploadDetails = (await createSignedUploadUrl(
       fileName,
       ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
-      VALID_EXTENSIONS,
+      VALID_UPLOAD_IMAGE_EXTENSIONS,
       {
         outFileKey: fileKey,
         maxSize: MAX_FILE_SIZE,

@@ -1,19 +1,18 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import ConfigProvider from "server/base/ConfigProvider";
-import { UserError } from "../../server/base/errors";
-import { createSignedUploadUrl } from "../../server/external/s3";
+import { UserError } from "server/base/errors";
+import { createSignedUploadUrl } from "server/external/s3";
 import { initMiddleware } from "server/helpers/middleware";
 import Cors from "cors";
 import logger from "server/base/Logger";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 
 // Initializing the cors middleware
 const cors = Cors({
   methods: ["POST", "OPTIONS"],
 });
 
-const VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp"];
-
-const MAX_FILE_SIZE = 20 * 1024 * 1024; //20 MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 const corsmiddleware = initMiddleware(cors);
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -34,12 +33,12 @@ interface UploadFileRequest {
 
 const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    let { fileName } = req.body as UploadFileRequest;
+    const { fileName } = req.body as UploadFileRequest;
 
     const urlDetails = await createSignedUploadUrl(
       fileName,
       ConfigProvider.WEB_USER_ASSETS_BUCKET,
-      VALID_EXTENSIONS,
+      VALID_UPLOAD_IMAGE_EXTENSIONS,
       {
         maxSize: MAX_FILE_SIZE,
       }
