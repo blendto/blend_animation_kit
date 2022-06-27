@@ -25,10 +25,6 @@ const uploadEventQueue = diContainer.get<ImageUploadEventQueue<QueueConfig>>(
   TYPES.ImageUploadEventQueue
 );
 
-function logMessage(op: string, qMessage: object) {
-  logger.info({ op, message: { qMessage } });
-}
-
 function logError(op: string, qMessage: object, e: unknown): Promise<void> {
   logger.error({ op, message: { qMessage, error: e as object } });
   return Promise.reject(e);
@@ -37,7 +33,6 @@ function logError(op: string, qMessage: object, e: unknown): Promise<void> {
 for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
   let onMessage = async (message: BatchTaskMessage) => {
     try {
-      logMessage("PROCESSING_BATCH_TASK", message);
       await batchActionService.processTask(message);
     } catch (e) {
       return logError("BATCH_PROCESS_FAILURE", message, e);
@@ -55,7 +50,6 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
 for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
   let onMessage = async (message: ImageUploadMessage) => {
     try {
-      logMessage("PROCESSING_IMAGE_UPLOAD_TRIGGER", message);
       await uploadService.processTrigger(message);
     } catch (e: unknown) {
       return logError("IMAGE_UPLOAD_TRIGGER_PROCESS_FAILURE", message, e);
