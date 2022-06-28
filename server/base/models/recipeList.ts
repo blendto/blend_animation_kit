@@ -5,6 +5,12 @@ export interface RecipeList {
   recipeIds: string[];
   recipes: RecipeVariantId[];
   sortOrder?: number;
+  uiConfig?: RecipeListUIConfig;
+}
+
+export interface RecipeListUIConfig {
+  showRecipeTitles: boolean;
+  showCategoryTitle: boolean;
 }
 
 export interface RecipeVariantId {
