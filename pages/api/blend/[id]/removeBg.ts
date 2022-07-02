@@ -16,12 +16,12 @@ import {
   rescaleImage,
 } from "server/helpers/imageUtils";
 import { bufferToStream } from "server/helpers/bufferUtils";
-import sharp from "sharp";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import logger from "server/base/Logger";
 import { withReqHandler } from "server/helpers/request";
+import { sharpInstance } from "server/helpers/sharpUtils";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
@@ -52,7 +52,8 @@ export const RemoveBgRequestSchema = Joi.object({
 
 const readImageMetadata = async (image: Buffer) => {
   try {
-    return await sharp(image).metadata();
+    const sharpInst = await sharpInstance(image);
+    return sharpInst.metadata();
   } catch (ex: unknown) {
     logger.warn({
       error: ex instanceof Error ? ex.toString() : "Unable to process image",
@@ -84,10 +85,11 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   const { fileKey, useMask = false, crop = true } = body;
 
   let originalImage: Buffer;
-  originalImage = await getObject(
+  const fetchedBuffer = await getObject(
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
     fileKey
   );
+  originalImage = await (await sharpInstance(fetchedBuffer)).toBuffer();
 
   const { bgRemovedFileKey, bgMaskFileKey, fileNameWithExt } =
     RemoveBgService.constructBgRemovedFileKey(fileKey);
@@ -107,7 +109,8 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       metadata.size > 1024 * 1024 * 10
     ) {
       originalImage = await convertImageToWebp(originalImage, 90);
-      const compressedImageMetadata = await sharp(originalImage).metadata();
+      const sharpInst = await sharpInstance(originalImage);
+      const compressedImageMetadata = await sharpInst.metadata();
       logger.info({
         op: "RESIZE_IMAGE",
         originalImageSize: metadata.size,

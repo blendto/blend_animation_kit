@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { readFileSync } from "fs";
 import { RemoveBgService } from "./remove-bg-service";
 
@@ -11,6 +14,12 @@ describe("validating image format", () => {
 
   it("does not throw an exception when valid image buffer is passed", async () => {
     const validImageBuffer = readFileSync("__tests__/assets/small-png.png");
+    const validation = RemoveBgService.validateImage(validImageBuffer);
+    await expect(validation).resolves.toBe(undefined);
+  });
+
+  it("does not throw an exception when valid heic image buffer is passed", async () => {
+    const validImageBuffer = readFileSync("__tests__/assets/sample-heic.heic");
     const validation = RemoveBgService.validateImage(validImageBuffer);
     await expect(validation).resolves.toBe(undefined);
   });

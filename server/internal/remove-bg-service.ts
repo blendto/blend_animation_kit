@@ -13,9 +13,9 @@ import { HeroImageFileKeys } from "server/base/models/heroImage";
 import { getObject, uploadObject } from "server/external/s3";
 import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import logger from "server/base/Logger";
-import sharp from "sharp";
 import axiosRetry from "axios-retry";
 import { Stream } from "stream";
+import { sharpInstance } from "server/helpers/sharpUtils";
 
 export interface ToolkitErrorResponse {
   code?: string;
@@ -186,7 +186,7 @@ export class RemoveBgService implements IService {
   };
 
   static validateImage = async (buffer: Buffer) => {
-    await sharp(buffer, {}).metadata();
+    await (await sharpInstance(buffer, {})).metadata();
   };
 
   async removeBgAndStore(
@@ -208,15 +208,16 @@ export class RemoveBgService implements IService {
       fileKey
     );
 
-    const webp = await sharp(originalImage, {
+    const sharpInst = await sharpInstance(originalImage, {
       failOnError: false,
-    })
-      .toFormat("webp", { quality: 90 })
-      .toBuffer();
+    });
+    const webp = await sharpInst.toFormat("webp", { quality: 90 }).toBuffer();
 
     let imageToUse = webp;
 
-    const compressedImageMetadata = await sharp(webp).metadata();
+    const compressedImageMetadata = await (
+      await sharpInstance(webp)
+    ).metadata();
     if (compressedImageMetadata.size > 1024 * 1024 * 10) {
       logger.info({
         op: "COMPRESSED_IMAGE_TOO_LARGE",

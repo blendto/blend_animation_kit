@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { ImageMetadata, Interaction } from "server/base/models/recipe";
 import { getObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
+import { sharpInstance } from "server/helpers/sharpUtils";
 
 const TRIM_THRESHOLD = 10;
 
@@ -15,24 +16,26 @@ export const applyMask = async (
   mask: Buffer,
   trim = true
 ): Promise<SharpResolveObject> => {
-  let output = sharp(image).rotate().joinChannel(mask);
+  const output = (await sharpInstance(image)).rotate().joinChannel(mask);
 
   if (!trim) {
     return output.toBuffer({ resolveWithObject: true });
   }
   const img = await output.png({ compressionLevel: 0 }).toBuffer();
 
-  return sharp(img).trim(TRIM_THRESHOLD).toBuffer({ resolveWithObject: true });
+  return (await sharpInstance(img))
+    .trim(TRIM_THRESHOLD)
+    .toBuffer({ resolveWithObject: true });
 };
 
 // Keep default quality same as sharp, 80
-export const convertImageToWebp = async (image: Buffer, quality = 80) =>
+export const convertImageToWebp = async (image: Buffer, quality = 80) => {
   // failOnError: false helps blow past errors like
   // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
   // https://github.com/lovell/sharp/issues/1578
-  await sharp(image, { failOnError: false })
-    .toFormat("webp", { quality })
-    .toBuffer();
+  const sharpInst = await sharpInstance(image, { failOnError: false });
+  return await sharpInst.toFormat("webp", { quality }).toBuffer();
+};
 
 export const rescaleImage = async (
   image: Buffer,
@@ -41,7 +44,7 @@ export const rescaleImage = async (
     height?: number;
     withoutEnlargement?: boolean;
   }
-) => await sharp(image).resize(options).toBuffer();
+) => await (await sharpInstance(image)).resize(options).toBuffer();
 
 /**
  *
@@ -61,7 +64,7 @@ export const adjustSizeToFit = async (
     fileKey
   );
 
-  const imageFileMetadata = await sharp(imageFile).metadata();
+  const imageFileMetadata = await (await sharpInstance(imageFile)).metadata();
 
   let { width, height } = imageFileMetadata;
 

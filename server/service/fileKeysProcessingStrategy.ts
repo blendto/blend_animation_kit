@@ -19,9 +19,9 @@ import {
   RemoveBGSource,
 } from "server/internal/remove-bg-service";
 import logger from "server/base/Logger";
-import sharp from "sharp";
 import axios from "axios";
 import HeroImageService from "server/service/heroImage";
+import { sharpInstance } from "server/helpers/sharpUtils";
 
 export abstract class FileKeysProcessingStrategy {
   static choose(
@@ -167,7 +167,7 @@ async function createBgRemovedImage(
     fileNameWithExt,
     fileKeys,
   });
-  const metadata = await sharp(originalImage).metadata();
+  const metadata = await (await sharpInstance(originalImage)).metadata();
 
   if (
     !["jpeg", "jpg"].includes(metadata.format) ||
@@ -178,7 +178,10 @@ async function createBgRemovedImage(
     // failOnError: false helps blow past errors like
     // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
     // https://github.com/lovell/sharp/issues/1578
-    originalImage = await sharp(originalImage, { failOnError: false })
+    const sharpInst = await sharpInstance(originalImage, {
+      failOnError: false,
+    });
+    originalImage = await sharpInst
       .resize({
         width: 3840,
         height: 3840,
@@ -187,7 +190,9 @@ async function createBgRemovedImage(
       })
       .toFormat("jpeg")
       .toBuffer();
-    const resizedImageMetadata = await sharp(originalImage).metadata();
+    const resizedImageMetadata = await (
+      await sharpInstance(originalImage)
+    ).metadata();
     logger.info({
       op: "BlendSuggest.ResizeImage",
       sourceSize: metadata.size,
