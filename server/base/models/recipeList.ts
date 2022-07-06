@@ -23,3 +23,9 @@ export interface SavedRecipeSuggestions {
   countrySpecific: Record<string, RecipeList[]>;
   common: RecipeList[];
 }
+
+type IdVariant = { id: string; variant?: string };
+
+export function recipeIdStr(idVariant: IdVariant): string {
+  return `${idVariant.id}/${idVariant.variant}`;
+}

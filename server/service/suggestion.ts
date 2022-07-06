@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import {
+  recipeIdStr,
   RecipeList,
   RecipeVariantId,
   SavedRecipeSuggestions,
@@ -17,6 +18,8 @@ import { HeroImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
+
+type RecipeVariantHeroCheckMap = Record<string, boolean>;
 
 @injectable()
 export class SuggestionService {
@@ -90,6 +93,9 @@ export class SuggestionService {
         );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       recentRecipes = uniqWith(recentRecipes, isEqual);
+      const heroCheckMap = await this.heroCheckMapForRecipes(recentRecipes);
+      recentRecipes = recentRecipes.filter((r) => heroCheckMap[recipeIdStr(r)]);
+
       if (recentRecipes.length > 0) {
         recipeLists.unshift({
           id: "recents",
@@ -131,6 +137,29 @@ export class SuggestionService {
       .slice(0, 20);
 
     return { recipeLists, randomTemplates };
+  }
+
+  private async heroCheckMapForRecipes(
+    recipesIds: RecipeVariantId[]
+  ): Promise<RecipeVariantHeroCheckMap> {
+    const Keys = recipesIds.map(({ id, variant }) => ({ id, variant }));
+    const AttributesToGet = ["id", "recipeDetails", "variant"];
+
+    const responseMap = await this.daxStore.batchGetItems({
+      RequestItems: {
+        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, AttributesToGet },
+      },
+    });
+    const recipes = responseMap[
+      ConfigProvider.RECIPE_DYNAMODB_TABLE
+    ] as Recipe[];
+
+    const idVariantToHeroMap: RecipeVariantHeroCheckMap = {};
+    recipes.forEach((recipe) => {
+      idVariantToHeroMap[recipeIdStr(recipe)] =
+        !!recipe.recipeDetails.elements.hero;
+    });
+    return idVariantToHeroMap;
   }
 
   async suggestHomePageRecipes(): Promise<RecipeList[]> {
