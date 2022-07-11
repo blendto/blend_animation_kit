@@ -177,8 +177,11 @@ export interface Recipe {
   interactions?: Interaction[];
   metadata?: RecipeMetadata;
   title?: string;
+  background?: BackgroundInfo;
   thumbnail?: string;
 }
+
+export interface BackgroundInfo {}
 
 export class RecipeUtils {
   static aspectRatioToVariant(aspectRatio: Size) {
@@ -332,6 +335,14 @@ export class RecipeWrapper {
       uid: assetUid,
       source: waterMark.source,
     });
+  }
+
+  getBackground(encoderVersion: number): BackgroundInfo {
+    const { background } = this.recipe;
+    if (!background && encoderVersion >= 2.6) {
+      return { $: "ColoredBackgroundInfo", color: "#ffffffff", opacity: 0 };
+    }
+    return background || null;
   }
 }
 

@@ -165,6 +165,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     filePath,
     imagePath,
     isWatermarked,
+    background,
   } = blend;
 
   if (
@@ -189,6 +190,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       links,
       interactions,
       metadata,
+      background,
     };
 
     if (metadata.source.version >= 2.0 && target == null) {
@@ -275,7 +277,8 @@ const submitBlend = async (
   }
 
   await ensureBrandingEntitlement(recipe, req.uid);
-  new RecipeWrapper(recipe).removeBrandingPlaceholders();
+  const recipeWrapper = new RecipeWrapper(recipe);
+  recipeWrapper.removeBrandingPlaceholders();
   const { interactions, branding } = recipe;
 
   // The mobile apps use "fileKey" attribute instead of uri
@@ -315,10 +318,12 @@ const submitBlend = async (
       "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), branding = :branding," +
       "interactions = :inter, images = :images, externalImages = :externalImages," +
       "gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-      "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #isWatermarked = :isWatermarked REMOVE expireAt",
+      "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, " +
+      "#isWatermarked = :isWatermarked, #background = :background REMOVE expireAt",
     ExpressionAttributeNames: {
       "#st": "status",
       "#isWatermarked": "isWatermarked",
+      "#background": "background",
     },
     ExpressionAttributeValues: {
       ":s": "SUBMITTED",
@@ -335,6 +340,7 @@ const submitBlend = async (
       ":updatedAt": now,
       ":updatedOn": updatedOn,
       ":isWatermarked": !userCanDoWatermarkFreeExport,
+      ":background": recipeWrapper.getBackground(version),
     },
     Key: { id },
     TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
