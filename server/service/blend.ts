@@ -119,6 +119,9 @@ export class BlendService implements IService {
 
   async getMinimalBlends(blendIds: string[]): Promise<MinimalBlend[]> {
     const Keys = blendIds.map((id) => ({ id }));
+    if (Keys.length === 0) {
+      return [];
+    }
     const AttributesToGet = [
       "id",
       "filePath",
