@@ -19,4 +19,5 @@ export const TYPES = {
   UserRepo: Symbol.for("UserRepo"),
   AnalyticsRepo: Symbol.for("AnalyticsRepo"),
   AnalyticsService: Symbol.for("AnalyticsService"),
+  FileKeysService: Symbol.for("FileKeysService"),
 };

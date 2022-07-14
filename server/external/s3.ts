@@ -114,7 +114,10 @@ export const createSignedUploadUrl = async (
   });
 };
 
-export const doesObjectExist = async (bucketName: string, fileKey: string) =>
+export const doesObjectExist = async (
+  bucketName: string,
+  fileKey: string
+): Promise<boolean> =>
   new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,

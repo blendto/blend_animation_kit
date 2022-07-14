@@ -13,6 +13,7 @@ import {
 import {
   applyMask,
   convertImageToWebp,
+  readImageMetadata,
   rescaleImage,
 } from "server/helpers/imageUtils";
 import { bufferToStream } from "server/helpers/bufferUtils";
@@ -22,6 +23,8 @@ import { BlendService } from "server/service/blend";
 import logger from "server/base/Logger";
 import { withReqHandler } from "server/helpers/request";
 import { sharpInstance } from "server/helpers/sharpUtils";
+import { HeroImageFileKeys } from "server/base/models/heroImage";
+import FileKeysService from "../../../../server/service/fileKeys";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
@@ -50,25 +53,13 @@ export const RemoveBgRequestSchema = Joi.object({
   crop: Joi.bool().default(true),
 });
 
-const readImageMetadata = async (image: Buffer) => {
-  try {
-    const sharpInst = await sharpInstance(image);
-    return sharpInst.metadata();
-  } catch (ex: unknown) {
-    logger.warn({
-      error: ex instanceof Error ? ex.toString() : "Unable to process image",
-    });
-    throw new UserError("Unable to process image", "unprocessable-image");
-  }
-};
-
 const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
   const body = req.body as RemoveBgRequest;
   const { id } = req.query;
 
-  const blend: Blend = await diContainer
-    .get<BlendService>(TYPES.BlendService)
-    .getBlend(id as string);
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+
+  const blend: Blend = await blendService.getBlend(id as string);
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });
@@ -166,6 +157,23 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
         height: trimHeight,
       } = bgRemovedImageUsingMask.info;
       trimLTWH = [trimOffsetLeft, trimOffsetTop, trimWidth, trimHeight];
+
+      const imageFileKeysItem = {
+        withoutBg: bgRemovedFileKey,
+        original: fileKey,
+        mask: bgMaskFileKey,
+      } as HeroImageFileKeys;
+
+      const fileKeysService = diContainer.get<FileKeysService>(
+        TYPES.FileKeysService
+      );
+
+      const updatedFileKeys = fileKeysService.constructUpdatedFileKeysFromBlend(
+        blend,
+        imageFileKeysItem
+      );
+
+      await blendService.updateImageFileKeys(blend.id, updatedFileKeys);
     } else {
       await uploadObject(
         ConfigProvider.BLEND_INGREDIENTS_BUCKET,

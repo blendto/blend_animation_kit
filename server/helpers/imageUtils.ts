@@ -2,6 +2,8 @@ import sharp from "sharp";
 import { ImageMetadata, Interaction } from "server/base/models/recipe";
 import { getObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
+import logger from "server/base/Logger";
+import { UserError } from "server/base/errors";
 import { sharpInstance } from "server/helpers/sharpUtils";
 
 const TRIM_THRESHOLD = 10;
@@ -11,12 +13,47 @@ interface SharpResolveObject {
   info: sharp.OutputInfo;
 }
 
+interface BlankImageGenerateArgs {
+  height: number;
+  width: number;
+  backgroundColor: string;
+}
+
+export const generateBlankImage = async (
+  options: BlankImageGenerateArgs
+): Promise<Buffer> =>
+  await sharp({
+    create: {
+      channels: 3,
+      height: options.height,
+      width: options.width,
+      background: options.backgroundColor,
+    },
+  })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+
+export const extractAlphaMaskFromImage = async (
+  image: Buffer
+): Promise<Buffer> =>
+  (await sharpInstance(image))
+    .extractChannel("alpha")
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+
 export const applyMask = async (
   image: Buffer,
   mask: Buffer,
   trim = true
 ): Promise<SharpResolveObject> => {
-  const output = (await sharpInstance(image)).rotate().joinChannel(mask);
+  let sharpInst = await sharpInstance(image);
+  const metadata = await sharpInst.metadata();
+
+  if (metadata.hasAlpha) {
+    sharpInst = sharp(await sharpInst.removeAlpha().toBuffer());
+  }
+
+  const output = sharpInst.rotate().joinChannel(mask);
 
   if (!trim) {
     return output.toBuffer({ resolveWithObject: true });
@@ -91,4 +128,15 @@ export const adjustSizeToFit = async (
     dy: metadata.position.dy + heightDiff / 2,
   };
   metadata.size = targetSize;
+};
+
+export const readImageMetadata = async (image: Buffer) => {
+  try {
+    return await sharp(image).metadata();
+  } catch (ex: unknown) {
+    logger.warn({
+      error: ex instanceof Error ? ex.toString() : "Unable to process image",
+    });
+    throw new UserError("Unable to process image", "unprocessable-image");
+  }
 };

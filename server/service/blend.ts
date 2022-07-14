@@ -68,6 +68,23 @@ export class BlendService implements IService {
     });
   }
 
+  async updateImageFileKeys(
+    blendId: string,
+    imageFileKeys: HeroImageFileKeys[]
+  ) {
+    await this.dataStore.updateItem({
+      UpdateExpression:
+        "SET updatedAt = :updatedAt, imageFileKeys = :imageFileKeys",
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":imageFileKeys": imageFileKeys,
+      },
+      Key: { id: blendId },
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
   async getBlendIdsForUser(uid: string): Promise<string[]> {
     const data = await this.dataStore.queryItems({
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,

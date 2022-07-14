@@ -16,6 +16,12 @@ import logger from "server/base/Logger";
 import axiosRetry from "axios-retry";
 import { Stream } from "stream";
 import { sharpInstance } from "server/helpers/sharpUtils";
+import {
+  applyMask,
+  readImageMetadata,
+  rescaleImage,
+} from "server/helpers/imageUtils";
+import { addSuffixToFileKey } from "server/helpers/fileKeyUtils";
 
 export interface ToolkitErrorResponse {
   code?: string;
@@ -35,6 +41,7 @@ interface RemoveBGCommandMetadata {
   source: RemoveBGSource;
   fileKeys: ImageFileKeys;
 }
+
 @injectable()
 export class RemoveBgService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
@@ -77,6 +84,10 @@ export class RemoveBgService implements IService {
     return { bgRemovedFileKey, bgMaskFileKey, fileNameWithExt };
   };
 
+  static validateImage = async (buffer: Buffer) => {
+    await (await sharpInstance(buffer, {})).metadata();
+  };
+
   logBgRemoval = async (
     predictedClass: string,
     segmentationProvider: string,
@@ -98,39 +109,6 @@ export class RemoveBgService implements IService {
       TableName: ConfigProvider.BG_REMOVAL_LOG_TABLE_NAME,
       Item: entry,
     });
-  };
-
-  private handleBgRemovalException = async (
-    fn: () => Promise<void>,
-    metadata: RemoveBGCommandMetadata
-  ) => {
-    try {
-      await fn.call(this);
-    } catch (ex) {
-      if (axios.isAxiosError(ex)) {
-        logger.error({
-          code: "RemoveBgService.RemoveBGFailed",
-          key: metadata.fileKeys.original,
-          message: ex.message,
-        });
-        let data = "";
-        // eslint-disable-next-line no-restricted-syntax
-        for await (const chunk of ex.response.data) {
-          data += chunk;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const error: ToolkitErrorResponse = JSON.parse(data);
-
-        let errorMessage = error.message;
-
-        if (error.code === "unknown_foreground") {
-          errorMessage = "Unable to remove background";
-        }
-
-        throw new UserError(errorMessage, error.code);
-      }
-      throw ex;
-    }
   };
 
   removeBg = async (
@@ -183,10 +161,6 @@ export class RemoveBgService implements IService {
     await RemoveBgService.validateImage(buffer);
 
     return buffer;
-  };
-
-  static validateImage = async (buffer: Buffer) => {
-    await (await sharpInstance(buffer, {})).metadata();
   };
 
   async removeBgAndStore(
@@ -253,4 +227,70 @@ export class RemoveBgService implements IService {
       updated: true,
     };
   }
+
+  async applyMaskAndUpload(
+    originalFileKey: string,
+    maskFileKey: string
+  ): Promise<string> {
+    const originalImage = await getObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      originalFileKey
+    );
+    const maskImage = await getObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      maskFileKey
+    );
+
+    const metadata = await readImageMetadata(originalImage);
+    const { width, height } = metadata;
+    const rescaledMask = await rescaleImage(maskImage, { width, height });
+
+    const bgRemovedImageUsingMask = await applyMask(
+      originalImage,
+      rescaledMask
+    );
+    const bgRemovedImageFileKey = addSuffixToFileKey(
+      maskFileKey,
+      "-bg-removed"
+    );
+    await uploadObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      bgRemovedImageFileKey,
+      bufferToStream(bgRemovedImageUsingMask.data)
+    );
+    return bgRemovedImageFileKey;
+  }
+
+  private handleBgRemovalException = async (
+    fn: () => Promise<void>,
+    metadata: RemoveBGCommandMetadata
+  ) => {
+    try {
+      await fn.call(this);
+    } catch (ex) {
+      if (axios.isAxiosError(ex)) {
+        logger.error({
+          code: "RemoveBgService.RemoveBGFailed",
+          key: metadata.fileKeys.original,
+          message: ex.message,
+        });
+        let data = "";
+        // eslint-disable-next-line no-restricted-syntax
+        for await (const chunk of ex.response.data) {
+          data += chunk;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const error: ToolkitErrorResponse = JSON.parse(data);
+
+        let errorMessage = error.message;
+
+        if (error.code === "unknown_foreground") {
+          errorMessage = "Unable to remove background";
+        }
+
+        throw new UserError(errorMessage, error.code);
+      }
+      throw ex;
+    }
+  };
 }

@@ -179,6 +179,7 @@ export interface Recipe {
   title?: string;
   background?: BackgroundInfo;
   thumbnail?: string;
+  imageFileKeys?: HeroImageFileKeys[];
 }
 
 export interface BackgroundInfo {}

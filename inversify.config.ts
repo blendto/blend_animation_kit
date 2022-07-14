@@ -31,6 +31,7 @@ import { AnalyticsDynamooseRepo } from "server/repositories/analytics";
 import { Analytics } from "server/base/models/analytics";
 import { NewAnalyticsService } from "server/service/newAnalytics";
 import { DaxDB } from "server/external/dax";
+import FileKeysService from "./server/service/fileKeys";
 
 const diContainer = new Container();
 
@@ -112,5 +113,9 @@ diContainer
 diContainer
   .bind<NewAnalyticsService>(TYPES.AnalyticsService)
   .to(NewAnalyticsService)
+  .inSingletonScope();
+diContainer
+  .bind<FileKeysService>(TYPES.FileKeysService)
+  .to(FileKeysService)
   .inSingletonScope();
 export { diContainer };

@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { extractExtensionFromFileKey } from "server/helpers/fileKeyUtils";
 
 export enum HeroImageStatus {
   CREATED = "CREATED",
@@ -34,12 +35,8 @@ export interface ExtendedHeroImageFileKeys extends HeroImageFileKeys {
   thumbnail?: string;
 }
 
-const extractExtensionFromFileKey = (fileKey: String): String => {
-  return fileKey.split(".").pop();
-};
-
 export const createBlendBucketFileKeys = (
-  blendId: String,
+  blendId: string,
   heroImage: HeroImage
 ): HeroImageFileKeys => {
   const randomId = nanoid(16);
@@ -52,7 +49,7 @@ export const createBlendBucketFileKeys = (
 };
 
 export const createHeroBucketFileKeys = (
-  heroImageId: String,
+  heroImageId: string,
   blendBucketFileKeys: HeroImageFileKeys
 ): ExtendedHeroImageFileKeys => {
   const originalFileExt = extractExtensionFromFileKey(
