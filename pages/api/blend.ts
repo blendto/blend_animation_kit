@@ -45,14 +45,5 @@ const getAllBlends = async (
   } = req;
   const response: { data: Blend[]; nextPageKey: string } =
     await blendService.getAllBlendsForUser(req.uid, pageKey as string);
-
-  const op = "getAllBlends_API_CALL";
-  const blendsCount = response?.data?.length;
-  const { nextPageKey } = response;
-  logger.info({
-    op,
-    message: { uid: req.uid, response: { blendsCount, nextPageKey } },
-  });
-
   res.send(response);
 };
