@@ -4,8 +4,8 @@ import FileKeysService from "server/service/fileKeys";
 import ConfigProvider from "server/base/ConfigProvider";
 import sharp from "sharp";
 import { Stream } from "stream";
-import { Blend } from "../base/models/blend";
-import { HeroImageFileKeys } from "../base/models/heroImage";
+import { Blend } from "server/base/models/blend";
+import { HeroImageFileKeys } from "server/base/models/heroImage";
 
 describe("FileKeys Service", () => {
   const fileKeysService = diContainer.get<FileKeysService>(
@@ -26,6 +26,11 @@ describe("FileKeys Service", () => {
       imageFileKeys: JSON.parse(
         JSON.stringify(imageFileKeys)
       ) as HeroImageFileKeys[],
+      heroImages: {
+        withoutBg: "Bnyldj7K/hero-bg-removed.png",
+        original: "Bnyldj7K/hero.png",
+        mask: "Bnyldj7K/hero-mask.png",
+      },
     } as Blend);
 
   afterEach(() => {
@@ -118,6 +123,16 @@ describe("FileKeys Service", () => {
         "some-non-existing-filekey.png"
       );
       expect(fileKeyItem).toBe(undefined);
+    });
+
+    it("Return heroImage if filekey is heroImage", () => {
+      const blend = generateFakeBlend();
+      const fileKeyItem = fileKeysService.retrieveFileKeyItemFromBlend(
+        blend,
+        "Bnyldj7K/hero.png"
+      );
+      expect(fileKeyItem).not.toBeFalsy();
+      expect(blend.heroImages).toMatchObject(fileKeyItem);
     });
   });
 });

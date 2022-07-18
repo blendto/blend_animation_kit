@@ -174,7 +174,7 @@ export class RemoveBgService implements IService {
     }
 
     const fileKey = fileKeys.original;
-    const { bgRemovedFileKey, fileNameWithExt } =
+    const { bgRemovedFileKey, fileNameWithExt, bgMaskFileKey } =
       RemoveBgService.constructBgRemovedFileKey(fileKey);
 
     const originalImage = await getObject(
@@ -185,6 +185,8 @@ export class RemoveBgService implements IService {
     const sharpInst = await sharpInstance(originalImage, {
       failOnError: false,
     });
+
+    const { width, height } = await sharpInst.metadata();
     const webp = await sharpInst.toFormat("webp", { quality: 90 }).toBuffer();
 
     let imageToUse = webp;
@@ -199,11 +201,11 @@ export class RemoveBgService implements IService {
       });
       imageToUse = originalImage;
     }
-    const bgRemoved = await this.removeBg(
+    const bgMask = await this.removeBg(
       imageToUse,
       fileNameWithExt,
       true,
-      false,
+      true,
       {
         source: RemoveBGSource.BLEND,
         fileKeys: {
@@ -213,16 +215,29 @@ export class RemoveBgService implements IService {
       }
     );
 
+    const rescaledMask = await rescaleImage(bgMask, { width, height });
+    const bgRemovedImageUsingMask = await applyMask(
+      originalImage,
+      rescaledMask
+    );
+
     await uploadObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       bgRemovedFileKey,
-      bufferToStream(bgRemoved)
+      bufferToStream(bgRemovedImageUsingMask.data)
+    );
+
+    await uploadObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      bgMaskFileKey,
+      bufferToStream(rescaledMask)
     );
 
     return {
       fileKeys: {
         original: fileKey,
         withoutBg: bgRemovedFileKey,
+        mask: bgMaskFileKey,
       },
       updated: true,
     };

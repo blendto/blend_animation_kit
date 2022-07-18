@@ -107,6 +107,16 @@ export default class DynamoDB implements IDataStore {
     params: AWS.DynamoDB.DocumentClient.BatchGetItemInput
   ): Promise<AWS.DynamoDB.DocumentClient.BatchGetResponseMap> {
     return new Promise((resolve, reject) => {
+      const requestItems = Object.entries(params.RequestItems);
+      if (requestItems.some(([key, value]) => value.Keys.length === 0)) {
+        resolve(
+          requestItems.reduce(
+            (obj, [key, value]) => ({ ...obj, [key]: [] }),
+            {}
+          )
+        );
+        return;
+      }
       this.getClient().batchGet(params, (err, data) => {
         if (err) {
           return reject(err);

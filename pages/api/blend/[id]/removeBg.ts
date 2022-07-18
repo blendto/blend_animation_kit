@@ -24,7 +24,6 @@ import logger from "server/base/Logger";
 import { withReqHandler } from "server/helpers/request";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
-import FileKeysService from "../../../../server/service/fileKeys";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
@@ -164,16 +163,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
         mask: bgMaskFileKey,
       } as HeroImageFileKeys;
 
-      const fileKeysService = diContainer.get<FileKeysService>(
-        TYPES.FileKeysService
-      );
-
-      const updatedFileKeys = fileKeysService.constructUpdatedFileKeysFromBlend(
-        blend,
-        imageFileKeysItem
-      );
-
-      await blendService.updateImageFileKeys(blend.id, updatedFileKeys);
+      await blendService.addOrUpdateImageFileKeys(blend, imageFileKeysItem);
     } else {
       await uploadObject(
         ConfigProvider.BLEND_INGREDIENTS_BUCKET,

@@ -5,17 +5,17 @@ import AWS from "server/external/aws";
 import DynamoDB from "server/external/dynamodb";
 import {
   copyObject,
+  deleteObject,
   getObject,
   uploadObject,
-  deleteObject,
 } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import {
   createHeroBucketFileKeys,
   HeroImage,
+  HeroImageFileKeys,
   HeroImageStatus,
   HeroImageStatusUpdate,
-  HeroImageFileKeys,
 } from "server/base/models/heroImage";
 import { rescaleImage } from "server/helpers/imageUtils";
 import { bufferToStream } from "server/helpers/bufferUtils";
@@ -42,6 +42,24 @@ export default class HeroImageService implements IService {
   // //
 
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
+
+  public static createBatchBlends(
+    heroImageIds: string[],
+    uid: string,
+    batchId: string
+  ): Promise<BlendFromHeroImage>[] {
+    const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+    return heroImageIds.map(async (id) => {
+      const blend = await blendService.initBlend(uid, {
+        batchId,
+      });
+      const fileKeys = await new HeroImageIdBased(id, blend.id, uid).process();
+      await blendService.addOrUpdateImageFileKeys(blend, fileKeys, {
+        isHeroImage: true,
+      });
+      return { blendId: blend.id, heroImageId: id };
+    });
+  }
 
   async getImagesForUser(
     pageKeyObject: AWS.DynamoDB.DocumentClient.Key,
@@ -170,22 +188,6 @@ export default class HeroImageService implements IService {
     return heroImage;
   }
 
-  private async createAndSaveThumbnail(
-    inputFileKey: string,
-    thumbnailFileKey: string
-  ) {
-    const bgRemoved: Buffer = await this.getObject(
-      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-      inputFileKey
-    );
-    const thumbnail = await this.rescaleImage(bgRemoved, { width: 240 });
-    await this.uploadObject(
-      ConfigProvider.HERO_IMAGES_BUCKET,
-      thumbnailFileKey,
-      this.bufferToStream(thumbnail)
-    );
-  }
-
   async deleteImage(id: string, uid: string): Promise<void> {
     const heroImage = await this.getImage(id, uid, true);
     await this.deleteObject(
@@ -217,19 +219,19 @@ export default class HeroImageService implements IService {
     });
   }
 
-  public static createBatchBlends(
-    heroImageIds: string[],
-    uid: string,
-    batchId: string
-  ): Promise<BlendFromHeroImage>[] {
-    const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-    return heroImageIds.map(async (id) => {
-      const blend = await blendService.initBlend(uid, {
-        batchId,
-      });
-      const fileKeys = await new HeroImageIdBased(id, blend.id, uid).process();
-      await blendService.addHeroKeysToBlend(blend.id, fileKeys);
-      return { blendId: blend.id, heroImageId: id };
-    });
+  private async createAndSaveThumbnail(
+    inputFileKey: string,
+    thumbnailFileKey: string
+  ) {
+    const bgRemoved: Buffer = await this.getObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      inputFileKey
+    );
+    const thumbnail = await this.rescaleImage(bgRemoved, { width: 240 });
+    await this.uploadObject(
+      ConfigProvider.HERO_IMAGES_BUCKET,
+      thumbnailFileKey,
+      this.bufferToStream(thumbnail)
+    );
   }
 }

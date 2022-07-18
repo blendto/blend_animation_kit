@@ -67,7 +67,9 @@ const suggestRecipes = async (
     await fileKeysProcessor.process();
 
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  await blendService.addHeroKeysToBlend(blend.id, finalisedFileKeys);
+  await blendService.addOrUpdateImageFileKeys(blend, finalisedFileKeys, {
+    isHeroImage: true,
+  });
   const suggestions = await diContainer
     .get<SuggestionService>(TYPES.SuggestionService)
     .suggestRecipes(

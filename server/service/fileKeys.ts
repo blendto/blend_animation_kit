@@ -1,8 +1,5 @@
 import { IService } from "server/service";
-import { inject, injectable } from "inversify";
-import { TYPES } from "server/types";
-import DynamoDB from "server/external/dynamodb";
-import { BlendService } from "server/service/blend";
+import { injectable } from "inversify";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import { Blend } from "server/base/models/blend";
 import { getObject, uploadObject } from "server/external/s3";
@@ -13,9 +10,6 @@ import { bufferToStream } from "server/helpers/bufferUtils";
 
 @injectable()
 export default class FileKeysService implements IService {
-  @inject(TYPES.DynamoDB) dataStore: DynamoDB;
-  @inject(TYPES.BlendService) blendService: BlendService;
-
   // Required as class attributes for mocking
   uploadObject = uploadObject;
   getObject = getObject;
@@ -57,7 +51,14 @@ export default class FileKeysService implements IService {
     blend: Blend,
     fileKey: string
   ): HeroImageFileKeys | undefined {
-    const { imageFileKeys } = blend;
+    const { imageFileKeys, heroImages } = blend;
+
+    if (
+      heroImages &&
+      [heroImages.withoutBg, heroImages.original].includes(fileKey)
+    ) {
+      return heroImages;
+    }
 
     return imageFileKeys?.find((fileKeysItem) =>
       [fileKeysItem.withoutBg, fileKeysItem.original].includes(fileKey)

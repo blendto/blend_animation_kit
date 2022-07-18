@@ -73,15 +73,9 @@ const updateMask = async (
     withoutBg: bgRemovedImageFileKey,
   } as HeroImageFileKeys;
 
-  const newFileKeys = fileKeysService.constructUpdatedFileKeysFromBlend(
-    blend,
-    fileKeyItem
-  );
-
-  await blendService.updateImageFileKeys(id, newFileKeys);
-  if (blend.heroImages.original === originalFileKey) {
-    await blendService.addHeroKeysToBlend(id, fileKeyItem);
-  }
+  await blendService.addOrUpdateImageFileKeys(blend, fileKeyItem, {
+    isHeroImage: blend.heroImages.original === originalFileKey,
+  });
 
   return res.send(fileKeyItem);
 };
@@ -105,7 +99,7 @@ const getMask = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     fileKey
   );
 
-  if (!imageFileKeyItem) {
+  if (!imageFileKeyItem || !imageFileKeyItem?.mask) {
     const bgMaskFileKey = await fileKeysService.extractBgMaskAndUpload(fileKey);
     const imageFileKeyItem = {
       original: fileKey,
@@ -113,11 +107,7 @@ const getMask = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       mask: bgMaskFileKey,
     } as HeroImageFileKeys;
 
-    const updatedFileKeys = fileKeysService.constructUpdatedFileKeysFromBlend(
-      blend,
-      imageFileKeyItem
-    );
-    await blendService.updateImageFileKeys(id, updatedFileKeys);
+    await blendService.addOrUpdateImageFileKeys(blend, imageFileKeyItem);
     return res.send(imageFileKeyItem);
   }
 

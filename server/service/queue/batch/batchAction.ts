@@ -16,6 +16,7 @@ import { RecipeService } from "server/service/recipe";
 import BatchRecipeProcessor from "server/service/queue/batch/batchRecipeProcessor";
 import logger from "server/base/Logger";
 import { BlendVersion } from "server/base/models/blend";
+import FileKeysService from "server/service/fileKeys";
 
 @injectable()
 export class BatchActionService implements IService {
@@ -24,6 +25,7 @@ export class BatchActionService implements IService {
   @inject(TYPES.BatchService) batchService: BatchService;
   @inject(TYPES.RemoveBgService) removeBgService: RemoveBgService;
   @inject(TYPES.RecipeService) recipeService: RecipeService;
+  @inject(TYPES.FileKeysService) fileKeysService: FileKeysService;
 
   async queueBatchProcessingTask(
     batchMessage: BatchTaskMessage
@@ -52,9 +54,10 @@ export class BatchActionService implements IService {
       blend.heroImages
     );
     if (updatedHeroImages.updated) {
-      await this.blendService.addHeroKeysToBlend(
-        blend.id,
-        updatedHeroImages.fileKeys
+      await this.blendService.addOrUpdateImageFileKeys(
+        blend,
+        updatedHeroImages.fileKeys,
+        { isHeroImage: true }
       );
     }
     await this.queueBatchProcessingTask({

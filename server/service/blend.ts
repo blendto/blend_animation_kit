@@ -19,7 +19,8 @@ import UserError from "server/base/errors/UserError";
 import { ImageMetadata, Recipe } from "server/base/models/recipe";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
 import { copyObject } from "server/external/s3";
-import { IService } from "./index";
+import { IService } from "server/service";
+import FileKeysService from "server/service/fileKeys";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -31,6 +32,7 @@ const PAGE_SIZE = 15;
 @injectable()
 export class BlendService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
+  @inject(TYPES.FileKeysService) fileKeysService: FileKeysService;
 
   async getBlendIdsForBatch(batchId: string): Promise<string[]> {
     const data = await this.dataStore.queryItems({
@@ -52,34 +54,35 @@ export class BlendService implements IService {
     return data.Items.map((entry) => entry.id as string);
   }
 
-  async addHeroKeysToBlend(
-    blendId: string,
-    heroImageFileKeys: HeroImageFileKeys
+  async addOrUpdateImageFileKeys(
+    blend: Blend,
+    fileKeyItem: HeroImageFileKeys,
+    options = { isHeroImage: false as boolean }
   ) {
-    await this.dataStore.updateItem({
-      UpdateExpression: "SET updatedAt = :updatedAt, heroImages = :heroImages",
-      ExpressionAttributeValues: {
-        ":updatedAt": Date.now(),
-        ":heroImages": heroImageFileKeys,
-      },
-      Key: { id: blendId },
-      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      ReturnValues: "NONE",
-    });
-  }
+    const newFileKeys = this.fileKeysService.constructUpdatedFileKeysFromBlend(
+      blend,
+      fileKeyItem
+    );
 
-  async updateImageFileKeys(
-    blendId: string,
-    imageFileKeys: HeroImageFileKeys[]
-  ) {
+    let updateQuery =
+      "SET updatedAt = :updatedAt, imageFileKeys = :imageFileKeys";
+    const expressionAttributes = {
+      ":updatedAt": Date.now(),
+      ":imageFileKeys": newFileKeys,
+    };
+    if (
+      options.isHeroImage ||
+      blend.heroImages.original === fileKeyItem.original
+    ) {
+      updateQuery = `${updateQuery}, heroImages = :heroImages`;
+      expressionAttributes[":heroImages"] = fileKeyItem;
+      blend.heroImages = fileKeyItem;
+    }
+
     await this.dataStore.updateItem({
-      UpdateExpression:
-        "SET updatedAt = :updatedAt, imageFileKeys = :imageFileKeys",
-      ExpressionAttributeValues: {
-        ":updatedAt": Date.now(),
-        ":imageFileKeys": imageFileKeys,
-      },
-      Key: { id: blendId },
+      UpdateExpression: updateQuery,
+      ExpressionAttributeValues: expressionAttributes,
+      Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
@@ -370,50 +373,6 @@ export class BlendService implements IService {
     });
   }
 
-  private async getBlendPage(
-    uid: string,
-    pageKey?: string
-  ): Promise<BlendsPage> {
-    const encodedPageKey = new EncodedPageKey(pageKey);
-    if (encodedPageKey.exists() && !encodedPageKey.isValid()) {
-      throw new UserError("pageKey should be a string");
-    }
-    const pageKeyObject = encodedPageKey.decode();
-
-    const data = await this.dataStore.queryItems({
-      TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
-      KeyConditionExpression: "#createdBy = :createdBy",
-      IndexName: "createdBy-updatedAt-idx",
-      ExpressionAttributeNames: {
-        "#createdBy": "createdBy",
-        "#status": "status",
-        "#output": "output",
-        "#version": "version",
-        "#batchId": "batchId",
-      },
-      ExpressionAttributeValues: {
-        ":createdBy": uid,
-        ":generated": "GENERATED",
-        ":submitted": "SUBMITTED",
-        ":currentVersion": "CURRENT",
-      },
-      ProjectionExpression:
-        "id, filePath, imagePath, thumbnail, #output, createdAt, updatedAt, #status",
-      FilterExpression:
-        "(#version = :currentVersion) AND (#status = :generated OR #status = :submitted) AND attribute_not_exists(#batchId)",
-      ScanIndexForward: false,
-      ExclusiveStartKey: pageKeyObject as Record<string, unknown>,
-      Limit: PAGE_SIZE,
-    });
-
-    const blends = data.Items.map((item) =>
-      this.backfillBlendOutput(<Blend>item)
-    );
-    const nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
-
-    return { blends, nextPageKey };
-  }
-
   async getAllBlendsForUser(
     uid: string,
     pageKey: string
@@ -504,5 +463,49 @@ export class BlendService implements IService {
     } as Blend;
 
     await this.updateBlend(modifiedBlend);
+  }
+
+  private async getBlendPage(
+    uid: string,
+    pageKey?: string
+  ): Promise<BlendsPage> {
+    const encodedPageKey = new EncodedPageKey(pageKey);
+    if (encodedPageKey.exists() && !encodedPageKey.isValid()) {
+      throw new UserError("pageKey should be a string");
+    }
+    const pageKeyObject = encodedPageKey.decode();
+
+    const data = await this.dataStore.queryItems({
+      TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
+      KeyConditionExpression: "#createdBy = :createdBy",
+      IndexName: "createdBy-updatedAt-idx",
+      ExpressionAttributeNames: {
+        "#createdBy": "createdBy",
+        "#status": "status",
+        "#output": "output",
+        "#version": "version",
+        "#batchId": "batchId",
+      },
+      ExpressionAttributeValues: {
+        ":createdBy": uid,
+        ":generated": "GENERATED",
+        ":submitted": "SUBMITTED",
+        ":currentVersion": "CURRENT",
+      },
+      ProjectionExpression:
+        "id, filePath, imagePath, thumbnail, #output, createdAt, updatedAt, #status",
+      FilterExpression:
+        "(#version = :currentVersion) AND (#status = :generated OR #status = :submitted) AND attribute_not_exists(#batchId)",
+      ScanIndexForward: false,
+      ExclusiveStartKey: pageKeyObject as Record<string, unknown>,
+      Limit: PAGE_SIZE,
+    });
+
+    const blends = data.Items.map((item) =>
+      this.backfillBlendOutput(<Blend>item)
+    );
+    const nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
+
+    return { blends, nextPageKey };
   }
 }
