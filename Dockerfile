@@ -11,7 +11,7 @@ ENV ENV_VARS ${ENV_VARS}
 WORKDIR /app
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
-RUN yarn build && yarn install --production --ignore-scripts --prefer-offline
+RUN yarn build
 
 # Production image, copy all the files and run next
 FROM public.ecr.aws/bitnami/node:16-prod AS runner

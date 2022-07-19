@@ -11,7 +11,8 @@
     "start:qw": "node -r dotenv/config -r dd-trace/init build/queue-workers.ts/index.js",
     "flow": "flow",
     "test": "jest",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@ant-design/icons": "^4.2.2",
@@ -40,7 +41,7 @@
     "lodash": "^4.17.21",
     "luxon": "^1.25.0",
     "nanoid": "^3.1.31",
-    "next": "12",
+    "next": "^12.2.2",
     "nextjs-redirect": "^5.0.2",
     "node-cache": "^5.1.2",
     "qs": "^6.10.5",
@@ -77,6 +78,7 @@
     "husky": "^7.0.4",
     "jest": "^27.4.5",
     "lint-staged": "^12.3.4",
+    "patch-package": "^6.4.7",
     "prettier": "^2.5.1",
     "ts-loader": "^9.2.6",
     "typescript": "^4.4.3",
