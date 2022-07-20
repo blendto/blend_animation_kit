@@ -1,5 +1,5 @@
 diff --git a/node_modules/next/dist/server/lib/start-server.js b/node_modules/next/dist/server/lib/start-server.js
-index bec14c4..cc79cf1 100755
+index bec14c4..c48cf41 100755
 --- a/node_modules/next/dist/server/lib/start-server.js
 +++ b/node_modules/next/dist/server/lib/start-server.js
 @@ -46,6 +46,14 @@ function startServer(opts) {
@@ -12,8 +12,8 @@ index bec14c4..cc79cf1 100755
 +        // by setting this a few seconds higher than the ALB idle timeout
 +        // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#connection-idle-timeout
 +        // Hint: the alb is pre-opening connections behind the scene
-+        server.keepAliveTimeout = 61000;
-+        server.headersTimeout = 62000;
++        server.keepAliveTimeout = 65000;
++        server.headersTimeout = 70000;
      });
  }
  
