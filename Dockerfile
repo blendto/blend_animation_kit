@@ -2,6 +2,7 @@
 FROM public.ecr.aws/bitnami/node:16-prod AS deps
 WORKDIR /app
 COPY package.json yarn.lock ./
+ADD patches patches/
 RUN yarn install --frozen-lockfile
 
 # Rebuild the source code only when needed
