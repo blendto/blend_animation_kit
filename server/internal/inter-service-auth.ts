@@ -13,6 +13,7 @@ import { getCredentials } from "server/external/aws";
 export enum BlendMicroServices {
   AWSTriggerHandlers = "AWSTriggerHandlers",
   RevenueCatWebHook = "RevenueCatWebHook",
+  CleverTap = "CleverTap",
 }
 
 @injectable()

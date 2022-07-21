@@ -27,6 +27,18 @@ export default class CreditServiceApi {
     },
   });
 
+  async renew(
+    userId: string,
+    metadata: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    const data = { source: Source.FIREBASE, subject: userId, metadata };
+    return (
+      await handleAxiosCall<Record<string, unknown>>(
+        async () => await this.httpClient.post(`/v1/subscriptions/renew`, data)
+      )
+    ).data;
+  }
+
   async fetchTransactions(
     userId: string,
     pageToken: string

@@ -34,6 +34,10 @@ export enum NoWatermarkReason {
   USER_HAS_CREDITS = "USER_HAS_CREDITS",
 }
 
+export enum RenewReason {
+  ENTICE_INACTIVE_USER = "ENTICE_INACTIVE_USER",
+}
+
 interface CanDoWatermarkFreeExportResponse {
   can: boolean;
   noWatermarkReason?: NoWatermarkReason;
@@ -187,6 +191,15 @@ export default class SubscriptionService implements IService {
         await this.httpClient.post(`/v1/transactions/reverse`, {
           creditServiceActivityLogId,
         })
+    );
+  }
+
+  async renew(
+    userId: string,
+    reason: RenewReason
+  ): Promise<SubscriptionEntity> {
+    return this.transform(
+      await this.creditServiceApi.renew(userId, { reason })
     );
   }
 
