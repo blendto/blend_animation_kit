@@ -11,6 +11,7 @@ export interface RecipeList {
 export interface RecipeListUIConfig {
   showRecipeTitles: boolean;
   showCategoryTitle: boolean;
+  showRecipeVariants?: boolean;
 }
 
 export interface RecipeVariantId {
