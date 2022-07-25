@@ -11,9 +11,6 @@ export async function handleAxiosCall<ResponseDataType>(
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (error.isAxiosError) {
-      logger.warn(
-        `Axios called failed with message: ${(error as AxiosError).message}`
-      );
       const { status } = (error as AxiosError).response;
       if (status >= 400 && status < 500) {
         let errMessage: unknown = (error as AxiosError).response.data;
@@ -22,6 +19,9 @@ export async function handleAxiosCall<ResponseDataType>(
         }
         throw new UserError(errMessage as string);
       }
+      logger.error(
+        `Axios call failed with message: ${(error as AxiosError).message}`
+      );
       throw error;
     }
     logger.error(error);
@@ -37,6 +37,7 @@ export async function handleInternalAxiosCall<ResponseDataType>(
   } catch (error) {
     // Internal call failures should always be a 500
     if (error instanceof UserError) {
+      logger.error(`Axios call failed with message: ${error.message}`);
       throw new Error(error.message);
     }
     throw error;
