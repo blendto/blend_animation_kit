@@ -35,12 +35,7 @@ const getProfile = async (
   res: NextApiResponse
 ) => {
   const userService = diContainer.get<UserService>(TYPES.UserService);
-  let profile = await userService.fetch(req.uid);
-  if (profile) {
-    return res.json(profile);
-  }
-  profile = await userService.populateUserFromFirebase(req.uid);
-  return res.json(profile);
+  return res.json(await userService.getOrCreate(req.uid));
 };
 
 const UPDATE_BODY_SCHEMA = Joi.object({

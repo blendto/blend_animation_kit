@@ -105,6 +105,11 @@ class ConfigProvider {
     return JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG);
   }
 
+  public get SELF_BASE_PATH(): string {
+    // Refer OUTPUT_BASE_PATH fn. to see why retrieveOrCrash fn. can't be used here
+    return process.env.NEXT_PUBLIC_SELF_BASE_PATH;
+  }
+
   public get IPAPI_ACCESS_KEY(): string {
     return this.retrieveOrCrash("IPAPI_ACCESS_KEY");
   }

@@ -30,4 +30,6 @@ export interface User extends Entity {
   profilePicture?: string;
   activitySummary: ActivitySummary;
   favouriteRecipes: FavouriteRecipe[];
+  referralId?: string;
+  referralLink?: string;
 }

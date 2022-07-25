@@ -1,6 +1,8 @@
 import { FavouriteRecipe, User } from "server/base/models/user";
 import DynamoDB from "server/external/dynamodb";
 import "reflect-metadata";
+import referralCodeGenerator from "referral-code-generator";
+import randomName from "node-random-name";
 import ConfigProvider from "server/base/ConfigProvider";
 import { BlendService } from "server/service/blend";
 import { IService } from "server/service";
@@ -29,14 +31,26 @@ export class UserService implements IService {
   @inject(TYPES.UserRepo) repo: Repo<User>;
   ipApi = new IpApi();
 
-  async fetch(id: string): Promise<User | void> {
-    const profile = await this.repo.get({ id });
-
-    if (!profile) return null;
+  async getOrCreate(id: string): Promise<User> {
+    let profile = await this.repo.get({ id });
+    if (!profile) {
+      profile = await this.populateUserFromFirebase(id);
+    }
+    if (!profile.referralId) {
+      profile = await this.addReferralIdAndLink(profile);
+    }
     profile.favouriteRecipes = await this.fetchDetailedFavourites(
       profile.favouriteRecipes
     );
     return profile;
+  }
+
+  async getWithReferralId(referralId: string): Promise<User | null> {
+    const profiles = await this.repo.query({ referralId });
+    if (profiles.length > 0) {
+      return profiles[0];
+    }
+    return null;
   }
 
   async update(id: string, changes: UserJSONUpdate[]): Promise<User> {
@@ -47,9 +61,50 @@ export class UserService implements IService {
     return profile;
   }
 
+  generateReferralId(profile: User): string {
+    // Ensure referral id has a relatable prefix by using the email id if available.
+    // If not, generate a random real-world name.
+    let username = profile.email;
+    if (!username) {
+      /* eslint-disable-next-line
+        @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+      username = randomName() as string;
+    }
+    /* eslint-disable-next-line
+      @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+    return referralCodeGenerator.custom("lowercase", 4, 4, username) as string;
+  }
+
+  async generateReferralLink(referralId: string): Promise<string> {
+    return await diContainer
+      .get<Firebase>(TYPES.Firebase)
+      .createDynamicLink(
+        `${ConfigProvider.SELF_BASE_PATH}/signup?referralId=${referralId}`
+      );
+  }
+
+  async addReferralIdAndLink(profile: User): Promise<User> {
+    const referralId = this.generateReferralId(profile);
+    if (await this.getWithReferralId(referralId)) {
+      return await this.addReferralIdAndLink(profile);
+    }
+    const referralLink = await this.generateReferralLink(referralId);
+    return await this.repo.update({ id: profile.id }, [
+      {
+        op: "add",
+        path: "/referralId",
+        value: referralId,
+      },
+      {
+        op: "add",
+        path: "/referralLink",
+        value: referralLink,
+      },
+    ]);
+  }
+
   async populateUserFromFirebase(userId: string): Promise<User> {
     const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
-
     const userRecord = await firebaseService.getUserById(userId);
     const { email, displayName, phoneNumber, uid, photoURL } = userRecord;
 

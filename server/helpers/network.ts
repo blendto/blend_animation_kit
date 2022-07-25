@@ -3,7 +3,7 @@ import { AxiosError, AxiosResponse } from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
 import logger from "server/base/Logger";
 
-export const handleAxiosCall = async function <ResponseDataType>(
+export async function handleAxiosCall<ResponseDataType>(
   axiosCall: () => Promise<AxiosResponse<ResponseDataType>>
 ) {
   try {
@@ -11,6 +11,9 @@ export const handleAxiosCall = async function <ResponseDataType>(
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (error.isAxiosError) {
+      logger.warn(
+        `Axios called failed with message: ${(error as AxiosError).message}`
+      );
       const { status } = (error as AxiosError).response;
       if (status >= 400 && status < 500) {
         let errMessage: unknown = (error as AxiosError).response.data;
@@ -19,19 +22,30 @@ export const handleAxiosCall = async function <ResponseDataType>(
         }
         throw new UserError(errMessage as string);
       }
-      logger.info(
-        `Axios called failed with message: ${(error as AxiosError).message}`
-      );
       throw error;
     }
     logger.error(error);
     throw error;
   }
-};
+}
+
+export async function handleInternalAxiosCall<ResponseDataType>(
+  axiosCall: () => Promise<AxiosResponse<ResponseDataType>>
+) {
+  try {
+    return await handleAxiosCall<ResponseDataType>(axiosCall);
+  } catch (error) {
+    // Internal call failures should always be a 500
+    if (error instanceof UserError) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+}
 
 type PassThroughableFn = (query: any, body: any) => Promise<any>;
 
-export const passthrough = async function (
+export async function passthrough(
   req: NextApiRequest,
   res: NextApiResponse,
   fn: PassThroughableFn
@@ -49,4 +63,4 @@ export const passthrough = async function (
     logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
-};
+}

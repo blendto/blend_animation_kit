@@ -21,6 +21,14 @@ const userDynamooseSchema = new DynamooseSchema({
   stripeCustomerId: {
     type: String,
   },
+  referralId: {
+    type: String,
+    index: {
+      name: "referralId-index",
+      global: true,
+    },
+  },
+  referralLink: String,
   name: String,
   email: String,
   phone: String,

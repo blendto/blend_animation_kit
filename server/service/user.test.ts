@@ -29,7 +29,7 @@ describe("UserService", () => {
     jest.restoreAllMocks();
   });
 
-  describe("Update", () => {
+  describe("update", () => {
     it("Supports updating stripe customer id", async () => {
       const modelUpdateMock = jest
         .spyOn(userService.repo, "update")
@@ -46,6 +46,55 @@ describe("UserService", () => {
 
       expect(modelUpdateMock.mock.calls.length).toBe(1);
       expect(modelUpdateMock.mock.calls[0]).toMatchObject([{ id }, jsonPatch]);
+    });
+  });
+
+  describe("addReferralIdAndLink", () => {
+    const referralId = "mark7211";
+    const referralLink = "https://links.foo.bar/CM9E";
+    it("Generates and adds a unique id and corresponding link to profile", async () => {
+      const updatedDoc = {
+        ...userDoc,
+        referralId,
+        referralLink,
+      };
+
+      jest
+        .spyOn(userService, "generateReferralId")
+        .mockReturnValueOnce(referralId);
+      jest.spyOn(userService, "getWithReferralId").mockResolvedValueOnce(null);
+      jest
+        .spyOn(userService, "generateReferralLink")
+        .mockResolvedValueOnce(referralLink);
+      jest.spyOn(userService.repo, "update").mockResolvedValueOnce(updatedDoc);
+
+      const updatedUserDoc = await userService.addReferralIdAndLink(userDoc);
+      expect(updatedUserDoc).toMatchObject(updatedDoc);
+    });
+
+    it("Generates different ids until it's not a duplicate", async () => {
+      const updatedDoc = {
+        ...userDoc,
+        referralId,
+        referralLink,
+      };
+
+      const generateReferralIdMock = jest
+        .spyOn(userService, "generateReferralId")
+        .mockReturnValue(referralId);
+      jest
+        .spyOn(userService, "getWithReferralId")
+        .mockResolvedValueOnce(userDoc)
+        .mockResolvedValueOnce(userDoc)
+        .mockResolvedValueOnce(null);
+      jest
+        .spyOn(userService, "generateReferralLink")
+        .mockResolvedValueOnce(referralLink);
+      jest.spyOn(userService.repo, "update").mockResolvedValueOnce(updatedDoc);
+
+      const updatedUserDoc = await userService.addReferralIdAndLink(userDoc);
+      expect(updatedUserDoc).toMatchObject(updatedDoc);
+      expect(generateReferralIdMock.mock.calls.length).toEqual(3);
     });
   });
 });

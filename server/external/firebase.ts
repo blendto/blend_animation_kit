@@ -1,11 +1,13 @@
 import "reflect-metadata";
+import axios from "axios";
 import admin from "firebase-admin";
-import UserError from "server/base/errors/UserError";
 import { nanoid } from "nanoid";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import { NextApiRequest } from "next";
 import { injectable } from "inversify";
+import { handleInternalAxiosCall } from "server/helpers/network";
+import UserError from "server/base/errors/UserError";
 import ConfigProvider from "../base/ConfigProvider";
 
 export enum FirebaseErrCode {
@@ -13,10 +15,21 @@ export enum FirebaseErrCode {
   INVALID_USER_ID = "INVALID_USER_ID",
 }
 
+export enum FirebaseDynamicLinkSuffixType {
+  SHORT = "SHORT",
+  UNGUESSABLE = "UNGUESSABLE",
+}
+
 @injectable()
 export default class Firebase {
   FIREBASE_PROJECT_ID = ConfigProvider.FIREBASE_APP_CLIENT_CONFIG
     .projectId as string;
+  FIREBASE_DYNAMIC_LINKS = {
+    url: `https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=${ConfigProvider.FIREBASE_APP_CLIENT_CONFIG.apiKey}`,
+    domainURIPrefix: "https://links.blend.to",
+    androidPackageName: "to.blend.mobile_app",
+    iosBundleId: "to.blend.mobile-app",
+  };
 
   constructor() {
     if (admin.apps.length !== 0) {
@@ -80,5 +93,31 @@ export default class Firebase {
       }
       throw new Error(`Something went wrong: ${errCode}`);
     }
+  }
+
+  async createDynamicLink(
+    link: string,
+    suffixOption = FirebaseDynamicLinkSuffixType.SHORT
+  ): Promise<string> {
+    const data = {
+      dynamicLinkInfo: {
+        domainUriPrefix: this.FIREBASE_DYNAMIC_LINKS.domainURIPrefix,
+        link,
+        androidInfo: {
+          androidPackageName: this.FIREBASE_DYNAMIC_LINKS.androidPackageName,
+        },
+        iosInfo: {
+          iosBundleId: this.FIREBASE_DYNAMIC_LINKS.iosBundleId,
+        },
+      },
+      suffix: {
+        option: suffixOption,
+      },
+    };
+    return (
+      await handleInternalAxiosCall<Record<string, unknown>>(
+        async () => await axios.post(this.FIREBASE_DYNAMIC_LINKS.url, data)
+      )
+    ).data.shortLink as string;
   }
 }
