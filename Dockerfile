@@ -16,6 +16,16 @@ RUN yarn build
 
 # Production image, copy all the files and run next
 FROM public.ecr.aws/bitnami/node:16-prod AS runner
+
+# Install and use libjemalloc to prevent sharp memory leaks
+# ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
+RUN apt-get update && apt-get install --force-yes -yy \
+  libjemalloc2 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Change memory allocator to avoid leaks
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.1
+
 WORKDIR /app
 
 ENV NODE_ENV production
