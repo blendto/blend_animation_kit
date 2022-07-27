@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install --force-yes -yy \
   && rm -rf /var/lib/apt/lists/*
 
 # Change memory allocator to avoid leaks
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.1
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
 WORKDIR /app
 
