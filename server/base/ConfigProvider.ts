@@ -61,6 +61,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("USER_DYNAMODB_TABLE");
   }
 
+  public get REFERRAL_DYNAMODB_TABLE(): string {
+    return this.retrieveOrCrash("REFERRAL_DYNAMODB_TABLE");
+  }
+
   public get ANALYTICS_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("ANALYTICS_DYNAMODB_TABLE");
   }

@@ -16,7 +16,7 @@ import CreditServiceApi, {
   FetchTransactionResponse,
 } from "server/internal/creditServiceApi";
 
-interface SubscriptionEntity {
+export interface SubscriptionEntity {
   adhocCredits: number;
   planCredits: number;
   expiry: number;
@@ -36,6 +36,12 @@ export enum NoWatermarkReason {
 
 export enum RenewReason {
   ENTICE_INACTIVE_USER = "ENTICE_INACTIVE_USER",
+}
+
+export enum CreditAdditionReason {
+  PURCHASE = "PURCHASE",
+  REFERRER_REWARD = "REFERRER_REWARD",
+  REFEREE_REWARD = "REFEREE_REWARD",
 }
 
 interface CanDoWatermarkFreeExportResponse {
@@ -205,18 +211,12 @@ export default class SubscriptionService implements IService {
 
   async addCredits(
     userId: string,
-    count: number
-  ): Promise<Record<string, unknown>> {
-    return (
-      await handleAxiosCall<Record<string, unknown>>(
-        async () =>
-          await this.httpClient.post(`/v1/subscriptions/credits`, {
-            source: Source.FIREBASE,
-            subject: userId,
-            creditsToAdd: count,
-          })
-      )
-    ).data;
+    count: number,
+    reason = CreditAdditionReason.PURCHASE
+  ): Promise<SubscriptionEntity> {
+    return this.transform(
+      await this.creditServiceApi.addCredits(userId, count, { reason })
+    );
   }
 
   async getTransactions(

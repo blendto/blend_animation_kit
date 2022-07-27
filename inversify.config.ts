@@ -20,6 +20,7 @@ import {
 } from "server/external/queue/imageUploadQueue";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import BrandingService from "server/service/branding";
+import ReferralService from "server/service/referral";
 import SubscriptionService from "server/service/subscription";
 import { RecipeService } from "server/service/recipe";
 import InterServiceAuth from "server/internal/inter-service-auth";
@@ -27,11 +28,15 @@ import Firebase from "server/external/firebase";
 import { Repo } from "server/repositories/base";
 import { User } from "server/base/models/user";
 import { UserDynamooseRepo } from "server/repositories/user";
+import {
+  ReferralDynamooseRepo,
+  ReferralEntity,
+} from "server/repositories/referral";
 import { AnalyticsDynamooseRepo } from "server/repositories/analytics";
 import { Analytics } from "server/base/models/analytics";
 import { NewAnalyticsService } from "server/service/newAnalytics";
 import { DaxDB } from "server/external/dax";
-import FileKeysService from "./server/service/fileKeys";
+import FileKeysService from "server/service/fileKeys";
 
 const diContainer = new Container();
 
@@ -92,6 +97,10 @@ diContainer
   .to(BrandingService)
   .inSingletonScope();
 diContainer
+  .bind<ReferralService>(TYPES.ReferralService)
+  .to(ReferralService)
+  .inSingletonScope();
+diContainer
   .bind<SubscriptionService>(TYPES.SubscriptionService)
   .to(SubscriptionService)
   .inSingletonScope();
@@ -107,6 +116,9 @@ diContainer.bind<Firebase>(TYPES.Firebase).to(Firebase).inSingletonScope();
 diContainer
   .bind<Repo<User>>(TYPES.UserRepo)
   .toDynamicValue(() => new UserDynamooseRepo());
+diContainer
+  .bind<Repo<ReferralEntity>>(TYPES.ReferralRepo)
+  .toDynamicValue(() => new ReferralDynamooseRepo());
 diContainer
   .bind<Repo<Analytics>>(TYPES.AnalyticsRepo)
   .toDynamicValue(() => new AnalyticsDynamooseRepo());

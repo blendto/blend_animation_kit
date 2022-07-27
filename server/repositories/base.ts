@@ -33,6 +33,9 @@ export interface Entity {}
 
 export abstract class Repo<ExtendedEntity extends Entity> {
   abstract create?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity>;
+  abstract createWithoutSurrogateKey?(
+    params: Partial<ExtendedEntity>
+  ): Promise<ExtendedEntity>;
   abstract get?(keyObject: KeyObject): Promise<ExtendedEntity | void>;
   abstract query?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity[]>;
   abstract update?(
@@ -68,6 +71,14 @@ export class DynamooseRepo<
       }
       throw err;
     }
+  }
+
+  async createWithoutSurrogateKey(
+    params: Partial<ExtendedEntity>
+  ): Promise<ExtendedEntity> {
+    return (await this.model.create(
+      params as unknown as Partial<DynamooseExtendedEntity>
+    )) as unknown as ExtendedEntity;
   }
 
   async get(keyObject: KeyObject): Promise<ExtendedEntity | void> {
