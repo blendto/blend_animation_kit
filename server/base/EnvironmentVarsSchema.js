@@ -44,6 +44,8 @@ module.exports = {
       WATERMARK_BUILD_VERSION: Joi.string().required(),
       REVENUECAT_CREDIT_OFFERINGS: Joi.string().required(),
       FAILED_WEBHOOK_CALLS_TABLE: Joi.string().required(),
+      CLEVERTAP_ACCOUNT_ID: Joi.string().required(),
+      CLEVERTAP_PASSCODE: Joi.string().required(),
     })
     .unknown(true),
 };

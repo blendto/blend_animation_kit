@@ -37,6 +37,7 @@ import { Analytics } from "server/base/models/analytics";
 import { NewAnalyticsService } from "server/service/newAnalytics";
 import { DaxDB } from "server/external/dax";
 import FileKeysService from "server/service/fileKeys";
+import CleverTapService from "server/external/clevertap";
 
 const diContainer = new Container();
 
@@ -122,6 +123,9 @@ diContainer
 diContainer
   .bind<Repo<Analytics>>(TYPES.AnalyticsRepo)
   .toDynamicValue(() => new AnalyticsDynamooseRepo());
+diContainer
+  .bind<CleverTapService>(TYPES.CleverTapService)
+  .toDynamicValue(() => new CleverTapService());
 diContainer
   .bind<NewAnalyticsService>(TYPES.AnalyticsService)
   .to(NewAnalyticsService)

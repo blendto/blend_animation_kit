@@ -20,6 +20,7 @@ export const TYPES = {
   UserRepo: Symbol.for("UserRepo"),
   ReferralRepo: Symbol.for("ReferralRepo"),
   AnalyticsRepo: Symbol.for("AnalyticsRepo"),
+  CleverTapService: Symbol.for("CleverTapService"),
   AnalyticsService: Symbol.for("AnalyticsService"),
   FileKeysService: Symbol.for("FileKeysService"),
 };

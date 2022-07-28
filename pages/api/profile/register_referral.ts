@@ -51,7 +51,7 @@ async function registerReferral(
   );
 
   const referrer = await referralService.getReferrerOrFail(body.referralId);
-  if (query.dryRun.toLowerCase() === "true") {
+  if (query.dryRun?.toLowerCase() === "true") {
     return res.send({
       reward: {
         type: REWARD_TYPE.CREDITS,

@@ -213,6 +213,14 @@ class ConfigProvider {
     return process.env.LOG_LEVEL ?? "info";
   }
 
+  public get CLEVERTAP_ACCOUNT_ID(): string {
+    return this.retrieveOrCrash("CLEVERTAP_ACCOUNT_ID");
+  }
+
+  public get CLEVERTAP_PASSCODE(): string {
+    return this.retrieveOrCrash("CLEVERTAP_PASSCODE");
+  }
+
   public get WATERMARK_BUILD_VERSION(): number {
     const versionStr = process.env.WATERMARK_BUILD_VERSION;
     const version = parseInt(versionStr, 10);

@@ -111,6 +111,9 @@ describe("ReferralService", () => {
         .spyOn(referralService.subscriptionService, "addCredits")
         .mockResolvedValueOnce(updatedReferrerSubscription)
         .mockResolvedValueOnce(updatedRefereeSubscription);
+      jest
+        .spyOn(referralService.cleverTapService, "registerEvent")
+        .mockResolvedValueOnce();
       jest.spyOn(referralService.repo, "update").mockResolvedValueOnce({
         ...referral,
         reward: {
