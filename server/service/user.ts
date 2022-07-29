@@ -137,6 +137,8 @@ export class UserService implements IService {
       await this.updateBlendOwner(blendId, targetUid);
       return blendId;
     });
+
+    logger.info({ op: "MIGRATE_BLENDS", sourceUid, targetUid, blendIds });
     return await Promise.all(updates);
   }
 
