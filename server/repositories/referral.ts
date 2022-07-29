@@ -9,19 +9,19 @@ import {
   Repo,
 } from "./base";
 
-export enum REWARD_TYPE {
+export enum RewardType {
   CREDITS = "CREDITS",
 }
 
-export enum REWARD_STATUS {
+export enum RewardStatus {
   INITIATED = "INITIATED",
   REWARDED = "REWARDED",
 }
 
 type REWARD = {
-  type: REWARD_TYPE;
+  type: RewardType;
   quantity: number;
-  status: REWARD_STATUS;
+  status: RewardStatus;
 };
 
 export interface ReferralEntity extends Entity {
@@ -38,10 +38,10 @@ export interface ReferralEntity extends Entity {
 const rewardDynamooseSchema = new DynamooseSchema({
   type: {
     type: String,
-    enum: Object.values(REWARD_TYPE),
+    enum: Object.values(RewardType),
   },
   quantity: Number,
-  status: { type: String, enum: Object.values(REWARD_STATUS) },
+  status: { type: String, enum: Object.values(RewardStatus) },
 });
 
 const referralDynamooseSchema = new DynamooseSchema(
@@ -50,7 +50,14 @@ const referralDynamooseSchema = new DynamooseSchema(
       type: String,
       hashKey: true,
     },
-    referrerUserId: String,
+    referrerUserId: {
+      type: String,
+      index: {
+        name: "referrerUserId-refereeUserId-index",
+        global: true,
+        rangeKey: "refereeUserId",
+      },
+    },
     reward: {
       type: Object,
       schema: {

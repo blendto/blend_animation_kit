@@ -9,7 +9,7 @@ import {
   validate,
   withReqHandler,
 } from "server/helpers/request";
-import { REWARD_TYPE } from "server/repositories/referral";
+import { RewardType } from "server/repositories/referral";
 import ReferralService, {
   REFEREE_CREDITS_REWARD_QUANTITY,
 } from "server/service/referral";
@@ -20,7 +20,7 @@ export default withReqHandler(
     const { method } = req;
     switch (method) {
       case "POST":
-        return await ensureAuth(registerReferral, req, res);
+        return await ensureAuth(register, req, res);
       default:
         throw new MethodNotAllowedError();
     }
@@ -34,7 +34,7 @@ const REGISTER_QUERY_SCHEMA = Joi.object({
   dryRun: Joi.bool(),
 });
 
-async function registerReferral(
+async function register(
   req: NextApiRequestExtended,
   res: NextApiResponse
 ): Promise<void> {
@@ -54,10 +54,10 @@ async function registerReferral(
   if (query.dryRun?.toLowerCase() === "true") {
     return res.send({
       reward: {
-        type: REWARD_TYPE.CREDITS,
+        type: RewardType.CREDITS,
         quantity: REFEREE_CREDITS_REWARD_QUANTITY,
       },
     });
   }
-  res.send(await referralService.registerReferral(req.uid, referrer.id));
+  res.send(await referralService.register(req.uid, referrer.id));
 }

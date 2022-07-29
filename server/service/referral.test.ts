@@ -1,6 +1,6 @@
 import { diContainer } from "inversify.config";
 import { UserError } from "server/base/errors";
-import { REWARD_STATUS, REWARD_TYPE } from "server/repositories/referral";
+import { RewardStatus, RewardType } from "server/repositories/referral";
 import { TYPES } from "server/types";
 import ReferralService, {
   REFEREE_CREDITS_REWARD_QUANTITY,
@@ -12,7 +12,8 @@ describe("ReferralService", () => {
   const referralService = diContainer.get<ReferralService>(
     TYPES.ReferralService
   );
-  const refereeUserId = "TEST_REFEREE_USER_ID";
+  const refereeUserId = "1_TEST_REFEREE_USER_ID";
+  const refereeUserId2 = "2_TEST_REFEREE_USER_ID";
   const referralId = "TEST_REFERRAL_ID";
   const referrerUserId = "TEST_REFERRER_USER_ID";
   const createdAt = Date.now();
@@ -57,13 +58,13 @@ describe("ReferralService", () => {
     });
   });
 
-  describe("registerReferral", () => {
+  describe("register", () => {
     it("Fails if referral is duplicate", async () => {
       jest
         .spyOn(referralService.repo, "createWithoutSurrogateKey")
         .mockRejectedValueOnce({ code: "ConditionalCheckFailedException" });
       await expect(
-        referralService.registerReferral(refereeUserId, referrerUserId)
+        referralService.register(refereeUserId, referrerUserId)
       ).rejects.toThrow(
         new UserError(
           "This user's referral is already registerd",
@@ -78,14 +79,14 @@ describe("ReferralService", () => {
         referrerUserId,
         reward: {
           referee: {
-            type: REWARD_TYPE.CREDITS,
+            type: RewardType.CREDITS,
             quantity: REFEREE_CREDITS_REWARD_QUANTITY,
-            status: REWARD_STATUS.INITIATED,
+            status: RewardStatus.INITIATED,
           },
           referrer: {
-            type: REWARD_TYPE.CREDITS,
+            type: RewardType.CREDITS,
             quantity: REFERRER_CREDITS_REWARD_QUANTITY,
-            status: REWARD_STATUS.INITIATED,
+            status: RewardStatus.INITIATED,
           },
         },
         createdAt,
@@ -119,23 +120,94 @@ describe("ReferralService", () => {
         reward: {
           referee: {
             ...referral.reward.referee,
-            status: REWARD_STATUS.REWARDED,
+            status: RewardStatus.REWARDED,
           },
           referrer: {
             ...referral.reward.referrer,
-            status: REWARD_STATUS.REWARDED,
+            status: RewardStatus.REWARDED,
           },
         },
       });
 
       expect(
-        await referralService.registerReferral(refereeUserId, referrerUserId)
+        await referralService.register(refereeUserId, referrerUserId)
       ).toMatchObject({
         reward: {
           type: referral.reward.referee.type,
           quantity: referral.reward.referee.quantity,
         },
         updatedSubscription: updatedRefereeSubscription,
+      });
+    });
+  });
+
+  describe("getSummary", () => {
+    it("returns all referrals of a user and it's summary", async () => {
+      jest.spyOn(referralService, "listReferrals").mockResolvedValueOnce([
+        {
+          referrerUserId,
+          createdAt: 1658988589733,
+          reward: {
+            referee: {
+              type: RewardType.CREDITS,
+              quantity: 5,
+              status: RewardStatus.REWARDED,
+            },
+            referrer: {
+              type: RewardType.CREDITS,
+              quantity: 10,
+              status: RewardStatus.REWARDED,
+            },
+          },
+          updatedAt: 1658988592878,
+          refereeUserId,
+        },
+        {
+          referrerUserId,
+          createdAt: 1659003363774,
+          reward: {
+            referee: {
+              type: RewardType.CREDITS,
+              quantity: 5,
+              status: RewardStatus.REWARDED,
+            },
+            referrer: {
+              type: RewardType.CREDITS,
+              quantity: 10,
+              status: RewardStatus.REWARDED,
+            },
+          },
+          updatedAt: 1659003366227,
+          refereeUserId: refereeUserId2,
+        },
+      ]);
+
+      expect(await referralService.getSummary(referrerUserId)).toMatchObject({
+        referrals: [
+          {
+            refereeId: "1_TE",
+            referredAt: 1658988589733,
+            rewardGained: {
+              type: RewardType.CREDITS,
+              quantity: 10,
+            },
+          },
+          {
+            refereeId: "2_TE",
+            referredAt: 1659003363774,
+            rewardGained: {
+              type: RewardType.CREDITS,
+              quantity: 10,
+            },
+          },
+        ],
+        count: 2,
+        rewardSummary: [
+          {
+            type: RewardType.CREDITS,
+            quantity: 20,
+          },
+        ],
       });
     });
   });

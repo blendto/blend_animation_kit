@@ -1,4 +1,5 @@
 import { inject, injectable } from "inversify";
+import { sum } from "lodash";
 import { UserError } from "server/base/errors";
 import { User } from "server/base/models/user";
 import CleverTapService, {
@@ -7,8 +8,8 @@ import CleverTapService, {
 import { JSONPatch, Repo } from "server/repositories/base";
 import {
   ReferralEntity,
-  REWARD_STATUS,
-  REWARD_TYPE,
+  RewardStatus,
+  RewardType,
 } from "server/repositories/referral";
 import { TYPES } from "server/types";
 import { IService } from ".";
@@ -25,6 +26,12 @@ export enum USER_ERROR {
   INVALID_REFERRAL_ID = "INVALID_REFERRAL_ID",
   DUPLICATE_REFERRAL = "DUPLICATE_REFERRAL",
 }
+
+export type ReferralDashboardItem = {
+  refereeId: string;
+  referredAt: number;
+  rewardGained: { type: string; quantity: number };
+};
 
 @injectable()
 export default class ReferralService implements IService {
@@ -44,12 +51,12 @@ export default class ReferralService implements IService {
     return referrer;
   }
 
-  async registerReferral(
+  async register(
     refereeUserId: string,
     referrerUserId: string
   ): Promise<{
     reward: {
-      type: REWARD_TYPE;
+      type: RewardType;
       quantity: number;
     };
     updatedSubscription: SubscriptionEntity;
@@ -100,14 +107,14 @@ export default class ReferralService implements IService {
       referrerUserId,
       reward: {
         referee: {
-          type: REWARD_TYPE.CREDITS,
+          type: RewardType.CREDITS,
           quantity: REFEREE_CREDITS_REWARD_QUANTITY,
-          status: REWARD_STATUS.INITIATED,
+          status: RewardStatus.INITIATED,
         },
         referrer: {
-          type: REWARD_TYPE.CREDITS,
+          type: RewardType.CREDITS,
           quantity: REFERRER_CREDITS_REWARD_QUANTITY,
-          status: REWARD_STATUS.INITIATED,
+          status: RewardStatus.INITIATED,
         },
       },
     };
@@ -137,17 +144,55 @@ export default class ReferralService implements IService {
         path: "/reward",
         value: {
           referee: {
-            type: REWARD_TYPE.CREDITS,
+            type: RewardType.CREDITS,
             quantity: REFEREE_CREDITS_REWARD_QUANTITY,
-            status: REWARD_STATUS.REWARDED,
+            status: RewardStatus.REWARDED,
           },
           referrer: {
-            type: REWARD_TYPE.CREDITS,
+            type: RewardType.CREDITS,
             quantity: REFERRER_CREDITS_REWARD_QUANTITY,
-            status: REWARD_STATUS.REWARDED,
+            status: RewardStatus.REWARDED,
           },
         },
       },
     ];
+  }
+
+  async getSummary(referrerUserId: string): Promise<{
+    referrals: ReferralDashboardItem[];
+    count: number;
+    rewardSummary: { type: RewardType; quantity: number }[];
+  }> {
+    const referrals = this.generateReferralDashboardItems(
+      await this.listReferrals(referrerUserId)
+    );
+    return {
+      referrals,
+      count: referrals.length,
+      rewardSummary: [
+        {
+          type: RewardType.CREDITS,
+          quantity: sum(referrals.map((r) => r.rewardGained.quantity)),
+        },
+      ],
+    };
+  }
+
+  async listReferrals(referrerUserId: string): Promise<ReferralEntity[]> {
+    return await this.repo.query({ referrerUserId });
+  }
+
+  generateReferralDashboardItems(
+    referrals: ReferralEntity[]
+  ): ReferralDashboardItem[] {
+    return referrals.map((r) => ({
+      // Don't show the full ids of other users
+      refereeId: r.refereeUserId.slice(0, 4),
+      referredAt: r.createdAt,
+      rewardGained: {
+        type: r.reward.referrer.type,
+        quantity: r.reward.referrer.quantity,
+      },
+    }));
   }
 }
