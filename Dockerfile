@@ -24,7 +24,14 @@ RUN apt-get update && apt-get install --force-yes -yy \
   && rm -rf /var/lib/apt/lists/*
 
 # Change memory allocator to avoid leaks
+# ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
+# ref: https://github.com/Unitech/pm2/issues/4375#issuecomment-1003566720
+# ref: https://github.com/nodejs/help/issues/1518#issuecomment-997221787
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+RUN ls -la /usr/lib/x86_64-linux-gnu/
+RUN echo "LD_PRELOAD=/usr/local/lib/libjemalloc.so.2" >> /etc/environment
+RUN echo "/usr/lib/x86_64-linux-gnu/libjemalloc.so" >> /etc/ld.so.preload
+
 
 WORKDIR /app
 
