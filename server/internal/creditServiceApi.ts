@@ -6,12 +6,12 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import qs from "qs";
 
-export interface TransactionPageIdentifier {
+export interface ListingPageIdentifier {
   lastItemId?: string;
   lastItemDoneAt?: number;
 }
 
-export interface FetchTransactionResponse extends TransactionPageIdentifier {
+export interface ListingResponse extends ListingPageIdentifier {
   items: Record<string, unknown>[];
 }
 
@@ -61,24 +61,34 @@ export default class CreditServiceApi {
   async fetchTransactions(
     userId: string,
     pageToken: string
-  ): Promise<FetchTransactionResponse> {
-    const url = this.transactionsURL(userId, pageToken);
+  ): Promise<ListingResponse> {
+    const url = this.listingURL("/v1/transactions", userId, pageToken);
     return (
       await handleInternalAxiosCall(async () => await this.httpClient.get(url))
-    ).data as FetchTransactionResponse;
+    ).data as ListingResponse;
   }
 
-  private transactionsURL(userId: string, pageToken: string) {
+  async fetchActivityLogs(
+    userId: string,
+    pageToken: string
+  ): Promise<ListingResponse> {
+    const url = this.listingURL("/v1/activity_logs", userId, pageToken);
+    return (
+      await handleInternalAxiosCall(async () => await this.httpClient.get(url))
+    ).data as ListingResponse;
+  }
+
+  private listingURL(path: string, userId: string, pageToken: string) {
     const pageKey = new EncodedPageKey(pageToken);
 
     const params = { source: Source.FIREBASE, subject: userId };
 
-    const url = `/v1/transactions`;
+    const url = path;
     if (!pageKey.exists()) {
       return `${url}?${qs.stringify(params)}`;
     }
     const { lastItemId, lastItemDoneAt } =
-      pageKey.decode() as TransactionPageIdentifier;
+      pageKey.decode() as ListingPageIdentifier;
     const updatedParams = { lastItemId, lastItemDoneAt, ...params };
     return `${url}?${qs.stringify(updatedParams)}`;
   }

@@ -13,8 +13,9 @@ import { TYPES } from "server/types";
 import { MinimalBlend } from "server/base/models/blend";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import CreditServiceApi, {
-  FetchTransactionResponse,
+  ListingResponse,
 } from "server/internal/creditServiceApi";
+import { sum } from "lodash";
 
 export interface SubscriptionEntity {
   adhocCredits: number;
@@ -26,6 +27,22 @@ export interface SubscriptionEntity {
 interface TransactionEntity {
   doneAt: number;
   blend: MinimalBlend;
+}
+
+enum LedgerActivity {
+  WELCOME_REWARD = "WELCOME_REWARD",
+  REFEREE_REWARD = "REFEREE_REWARD",
+  WATERMARK_FREE_EXPORT = "WATERMARK_FREE_EXPORT",
+  PURCHASE = "PURCHASE",
+  REFERRER_REWARD = "REFERRER_REWARD",
+  INACTIVE_USER_REWARD = "INACTIVE_USER_REWARD",
+}
+
+interface LedgerItem {
+  activity: LedgerActivity;
+  doneAt: number;
+  blend?: MinimalBlend;
+  coinsCount: number;
 }
 
 export enum NoWatermarkReason {
@@ -42,6 +59,7 @@ export enum CreditAdditionReason {
   PURCHASE = "PURCHASE",
   REFERRER_REWARD = "REFERRER_REWARD",
   REFEREE_REWARD = "REFEREE_REWARD",
+  INACTIVE_USER_REWARD = "INACTIVE_USER_REWARD",
 }
 
 interface CanDoWatermarkFreeExportResponse {
@@ -50,8 +68,13 @@ interface CanDoWatermarkFreeExportResponse {
   creditServiceActivityLogId?: string;
 }
 
-interface GetTransactionResponse {
+interface GetTransactionsResponse {
   items: TransactionEntity[];
+  nextPageToken?: string;
+}
+
+interface GetLedgerResponse {
+  items: LedgerItem[];
   nextPageToken?: string;
 }
 
@@ -222,7 +245,7 @@ export default class SubscriptionService implements IService {
   async getTransactions(
     userId: string,
     pageToken?: string
-  ): Promise<GetTransactionResponse> {
+  ): Promise<GetTransactionsResponse> {
     const transactions = await this.creditServiceApi.fetchTransactions(
       userId,
       pageToken
@@ -250,8 +273,38 @@ export default class SubscriptionService implements IService {
     return { items, nextPageToken };
   }
 
+  async getLedger(
+    userId: string,
+    pageToken?: string
+  ): Promise<GetLedgerResponse> {
+    const creditServiceRes = await this.creditServiceApi.fetchActivityLogs(
+      userId,
+      pageToken
+    );
+
+    const blendIds = new Set(
+      creditServiceRes.items
+        .filter((original) => original.activity === "TRANSACT")
+        .map((original) => (original.metadata as { blendId: string }).blendId)
+    );
+    const minimalBlends = await diContainer
+      .get<BlendService>(TYPES.BlendService)
+      .getMinimalBlends(Array.from(blendIds));
+
+    const items = this.generateLedgerItems(creditServiceRes, minimalBlends);
+    const { lastItemId, lastItemDoneAt } = creditServiceRes;
+    if (!lastItemId) {
+      return { items };
+    }
+    const nextPageToken = EncodedPageKey.fromObject({
+      lastItemId,
+      lastItemDoneAt,
+    })?.key;
+    return { items, nextPageToken };
+  }
+
   private createTxnEntities(
-    transactions: FetchTransactionResponse,
+    transactions: ListingResponse,
     minimalBlends: MinimalBlend[]
   ): TransactionEntity[] {
     const blendMap: Record<string, MinimalBlend> = {};
@@ -260,5 +313,111 @@ export default class SubscriptionService implements IService {
     });
 
     return transactions.items.map((t) => this.createTxnEntity(t, blendMap));
+  }
+
+  private generateLedgerItems(
+    logs: ListingResponse,
+    minimalBlends: MinimalBlend[]
+  ): LedgerItem[] {
+    const blendMap: Record<string, MinimalBlend> = {};
+    minimalBlends.forEach((blend) => {
+      blendMap[blend.id] = blend;
+    });
+
+    return logs.items.map((i) => {
+      let transformedItem: LedgerItem;
+      switch (i.activity) {
+        case "SUBSCRIBE":
+          transformedItem = this.generateWelcomeRewardItem(i);
+          break;
+        case "ADD_CREDITS":
+          transformedItem = this.generateCreditAdditionBasedItem(i);
+          break;
+        case "TRANSACT":
+          transformedItem = this.generateExportItem(i, blendMap);
+          break;
+        default:
+          throw new Error(
+            `UNKNOWN_CREDIT_SERVICE_ACTIVITY. Activity: ${i.activity}`
+          );
+      }
+      return transformedItem;
+    });
+  }
+
+  private generateWelcomeRewardItem(log: Record<string, unknown>): LedgerItem {
+    const coinsCount = (
+      log.postStateOfSubscription as {
+        planCredits: number;
+      }
+    ).planCredits;
+    return {
+      activity: LedgerActivity.WELCOME_REWARD,
+      doneAt: log.doneAt as number,
+      coinsCount,
+    };
+  }
+
+  private generateCreditAdditionBasedItem(
+    log: Record<string, unknown>
+  ): LedgerItem {
+    const { reason } = (log.metadata || {}) as { reason: CreditAdditionReason };
+    let activity: LedgerActivity;
+    switch (reason) {
+      case CreditAdditionReason.PURCHASE:
+      case undefined:
+        // Older purchases will have metadata as empty
+        activity = LedgerActivity.PURCHASE;
+        break;
+      case CreditAdditionReason.REFEREE_REWARD:
+        activity = LedgerActivity.REFEREE_REWARD;
+        break;
+      case CreditAdditionReason.REFERRER_REWARD:
+        activity = LedgerActivity.REFEREE_REWARD;
+        break;
+      case CreditAdditionReason.INACTIVE_USER_REWARD:
+        activity = LedgerActivity.INACTIVE_USER_REWARD;
+        break;
+      default:
+        throw new Error(`UNKNOWN_CREDIT_ADDITION_REASON. Reason: ${reason}`);
+    }
+
+    const coinsCount = (
+      log.updateExpression as {
+        key: string;
+        kind: string;
+        value: number;
+      }[]
+    ).filter((e) => e.key === "adhocCredits")[0].value;
+
+    return {
+      activity,
+      doneAt: log.doneAt as number,
+      coinsCount,
+    };
+  }
+
+  private generateExportItem(
+    log: Record<string, unknown>,
+    blendMap: Record<string, MinimalBlend>
+  ): LedgerItem {
+    const { blendId } = log.metadata as { blendId: string };
+    const coinsCount = sum(
+      (
+        log.updateExpression as {
+          key: string;
+          kind: string;
+          value: number;
+        }[]
+      )
+        .filter((e) => e.key === "adhocCredits" || e.key === "planCredits")
+        .map((e) => e.value)
+    );
+    return {
+      activity: LedgerActivity.WATERMARK_FREE_EXPORT,
+      doneAt: log.doneAt as number,
+      blend: blendMap[blendId],
+      coinsCount,
+    };
   }
 }
