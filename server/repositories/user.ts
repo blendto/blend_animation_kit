@@ -11,6 +11,7 @@ import { User } from "server/base/models/user";
 
 export enum UserUpdatePaths {
   stripeCustomerId = "/stripeCustomerId",
+  favouriteRecipes = "/favouriteRecipes",
 }
 
 const userDynamooseSchema = new DynamooseSchema({
