@@ -14,6 +14,7 @@ export enum BlendMicroServices {
   AWSTriggerHandlers = "AWSTriggerHandlers",
   RevenueCatWebHook = "RevenueCatWebHook",
   CleverTap = "CleverTap",
+  Retool = "Retool",
 }
 
 @injectable()

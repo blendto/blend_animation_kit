@@ -95,6 +95,26 @@ export default class Firebase {
     }
   }
 
+  async getUserByIds(ids: string[]) {
+    return await admin.auth().getUsers(ids.map((id) => ({ uid: id })));
+  }
+
+  async getUserByIdsOrFail(ids: string[]) {
+    const { users, notFound } = await this.getUserByIds(ids);
+    if (notFound.length > 0) {
+      throw new UserError(
+        `Following Users Not Found: ${notFound
+          .map(
+            (userIdentifier) =>
+              (userIdentifier as unknown as { uid: string }).uid
+          )
+          .join(", ")}`,
+        FirebaseErrCode.USER_NOT_FOUND
+      );
+    }
+    return users;
+  }
+
   async createDynamicLink(
     link: string,
     suffixOption = FirebaseDynamicLinkSuffixType.SHORT
