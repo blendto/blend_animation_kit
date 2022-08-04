@@ -29,22 +29,6 @@ interface TransactionEntity {
   blend: MinimalBlend;
 }
 
-enum LedgerActivity {
-  WELCOME_REWARD = "WELCOME_REWARD",
-  REFEREE_REWARD = "REFEREE_REWARD",
-  WATERMARK_FREE_EXPORT = "WATERMARK_FREE_EXPORT",
-  PURCHASE = "PURCHASE",
-  REFERRER_REWARD = "REFERRER_REWARD",
-  INACTIVE_USER_REWARD = "INACTIVE_USER_REWARD",
-}
-
-interface LedgerItem {
-  activity: LedgerActivity;
-  doneAt: number;
-  blend?: MinimalBlend;
-  coinsCount: number;
-}
-
 export enum NoWatermarkReason {
   VERSION_IS_OLD = "VERSION_IS_OLD",
   USER_IS_PRO = "USER_IS_PRO",
@@ -56,6 +40,7 @@ export enum RenewReason {
 }
 
 export enum CreditAdditionReason {
+  WELCOME_REWARD = "WELCOME_REWARD",
   PURCHASE = "PURCHASE",
   REFERRER_REWARD = "REFERRER_REWARD",
   REFEREE_REWARD = "REFEREE_REWARD",
@@ -64,6 +49,17 @@ export enum CreditAdditionReason {
   SURVEY_FILLER_REWARD = "SURVEY_FILLER_REWARD",
   CONTEST_WINNER_REWARD = "CONTEST_WINNER_REWARD",
   SUPER_BLEND_CREATOR_REWARD = "SUPER_BLEND_CREATOR_REWARD",
+}
+
+enum NonCreditAdditionLedgerActivity {
+  WATERMARK_FREE_EXPORT = "WATERMARK_FREE_EXPORT",
+}
+
+interface LedgerItem {
+  activity: NonCreditAdditionLedgerActivity | CreditAdditionReason;
+  doneAt: number;
+  blend?: MinimalBlend;
+  coinsCount: number;
 }
 
 interface CanDoWatermarkFreeExportResponse {
@@ -365,7 +361,7 @@ export default class SubscriptionService implements IService {
       }
     ).planCredits;
     return {
-      activity: LedgerActivity.WELCOME_REWARD,
+      activity: CreditAdditionReason.WELCOME_REWARD,
       doneAt: log.doneAt as number,
       coinsCount,
     };
@@ -375,24 +371,12 @@ export default class SubscriptionService implements IService {
     log: Record<string, unknown>
   ): LedgerItem {
     const { reason } = (log.metadata || {}) as { reason: CreditAdditionReason };
-    let activity: LedgerActivity;
-    switch (reason) {
-      case CreditAdditionReason.PURCHASE:
-      case undefined:
-        // Older purchases will have metadata as empty
-        activity = LedgerActivity.PURCHASE;
-        break;
-      case CreditAdditionReason.REFEREE_REWARD:
-        activity = LedgerActivity.REFEREE_REWARD;
-        break;
-      case CreditAdditionReason.REFERRER_REWARD:
-        activity = LedgerActivity.REFEREE_REWARD;
-        break;
-      case CreditAdditionReason.INACTIVE_USER_REWARD:
-        activity = LedgerActivity.INACTIVE_USER_REWARD;
-        break;
-      default:
-        throw new Error(`UNKNOWN_CREDIT_ADDITION_REASON. Reason: ${reason}`);
+    let activity: CreditAdditionReason;
+    if (reason === undefined) {
+      // Initially purchases was the only reason and metadata was an empty object.
+      activity = CreditAdditionReason.PURCHASE;
+    } else {
+      activity = reason;
     }
 
     const coinsCount = (
@@ -427,7 +411,7 @@ export default class SubscriptionService implements IService {
         .map((e) => e.value)
     );
     return {
-      activity: LedgerActivity.WATERMARK_FREE_EXPORT,
+      activity: NonCreditAdditionLedgerActivity.WATERMARK_FREE_EXPORT,
       doneAt: log.doneAt as number,
       blend: blendMap[blendId],
       coinsCount,
