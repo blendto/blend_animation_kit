@@ -49,10 +49,15 @@ const registerCreditPurchase = async (
       type: string;
       app_user_id: string;
       product_id: string;
+      entitlement_ids?: string[];
     };
   };
 
-  if (event.type !== "NON_RENEWING_PURCHASE") {
+  if (
+    event.type !== "NON_RENEWING_PURCHASE" ||
+    // Promotional entitlements come under "NON_RENEWING_PURCHASE"s
+    event.entitlement_ids !== null
+  ) {
     return res.send({});
   }
 
