@@ -55,6 +55,7 @@ export default class ReferralService implements IService {
     refereeUserId: string,
     referrerUserId: string
   ): Promise<{
+    referrerId: string;
     reward: {
       type: RewardType;
       quantity: number;
@@ -90,6 +91,7 @@ export default class ReferralService implements IService {
       }
     );
     return {
+      referrerId: referrerUserId,
       reward: {
         type: referral.reward.referee.type,
         quantity: referral.reward.referee.quantity,
