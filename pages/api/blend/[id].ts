@@ -29,10 +29,7 @@ import {
   ObjectNotFoundError,
   UserError,
 } from "server/base/errors";
-import SubscriptionService, {
-  NoWatermarkReason,
-} from "server/service/subscription";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { CreditsService } from "server/service/credits";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -229,9 +226,6 @@ const submitBlend = async (
   const { id } = req.query as { id: string };
   const recipe = req.body as Recipe;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const subscriptionService = diContainer.get<SubscriptionService>(
-    TYPES.SubscriptionService
-  );
 
   let existingBlend = await blendService.getBlend(id);
   if (!existingBlend) {
@@ -294,83 +288,65 @@ const submitBlend = async (
     uid: image.uid,
   }));
 
-  const {
-    can: userCanDoWatermarkFreeExport,
-    noWatermarkReason,
-    creditServiceActivityLogId,
-  } = await subscriptionService.canDoWatermarkFreeExport(
-    req.buildVersion,
-    req.uid,
-    id
-  );
-
   const now = Date.now();
-  const update: BlendStatusUpdate = {
-    status: BlendStatus.Submitted,
-    on: now,
-  };
-  if (noWatermarkReason === NoWatermarkReason.USER_HAS_CREDITS) {
-    update.creditServiceActivityLogId = creditServiceActivityLogId;
-  }
-  const updatedOn = DateTime.utc().toISODate();
-  const params = {
-    UpdateExpression:
-      "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), branding = :branding," +
-      "interactions = :inter, images = :images, externalImages = :externalImages," +
-      "gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-      "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, " +
-      "#isWatermarked = :isWatermarked, #background = :background REMOVE expireAt",
-    ExpressionAttributeNames: {
-      "#st": "status",
-      "#isWatermarked": "isWatermarked",
-      "#background": "background",
-    },
-    ExpressionAttributeValues: {
-      ":s": "SUBMITTED",
-      ":update": [update],
-      ":branding": branding || null,
-      ":inter": interactions,
-      ":images": imageObjects,
-      ":externalImages": externalImages,
-      ":gifsOrStickers": gifsOrStickers,
-      ":texts": texts,
-      ":buttons": buttons || [],
-      ":links": links || [],
-      ":metadata": metadata,
-      ":updatedAt": now,
-      ":updatedOn": updatedOn,
-      ":isWatermarked": !userCanDoWatermarkFreeExport,
-      ":background": recipeWrapper.getBackground(version),
-    },
-    Key: { id },
-    TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-    ReturnValues: "ALL_NEW",
-  };
-  let dbUpdateResponse: DocumentClient.UpdateItemOutput;
-  try {
-    dbUpdateResponse = await DynamoDB._().updateItem(params);
-  } catch (err) {
-    if (noWatermarkReason === NoWatermarkReason.USER_HAS_CREDITS) {
-      await subscriptionService.reverseCreditUsage(creditServiceActivityLogId);
-    }
-    throw err;
-  }
-  const updatedRecipe = dbUpdateResponse.Attributes;
-  // Add id
-  updatedRecipe.id = id;
+  const creditsService = diContainer.get<CreditsService>(TYPES.CreditsService);
+  await creditsService.runWithCreditAndWatermarkCheck(
+    req.uid,
+    id,
+    req.buildVersion,
+    req.clientType,
+    async (shouldWatermark: boolean, creditServiceActivityLogId: string) => {
+      const update: BlendStatusUpdate = {
+        status: BlendStatus.Submitted,
+        on: now,
+        creditServiceActivityLogId,
+      };
+      const updatedOn = DateTime.utc().toISODate();
+      const params = {
+        UpdateExpression:
+          "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), branding = :branding," +
+          "interactions = :inter, images = :images, externalImages = :externalImages," +
+          "gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
+          "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, " +
+          "#isWatermarked = :isWatermarked, #background = :background REMOVE expireAt",
+        ExpressionAttributeNames: {
+          "#st": "status",
+          "#isWatermarked": "isWatermarked",
+          "#background": "background",
+        },
+        ExpressionAttributeValues: {
+          ":s": "SUBMITTED",
+          ":update": [update],
+          ":branding": branding || null,
+          ":inter": interactions,
+          ":images": imageObjects,
+          ":externalImages": externalImages,
+          ":gifsOrStickers": gifsOrStickers,
+          ":texts": texts,
+          ":buttons": buttons || [],
+          ":links": links || [],
+          ":metadata": metadata,
+          ":updatedAt": now,
+          ":updatedOn": updatedOn,
+          ":isWatermarked": shouldWatermark || false,
+          ":background": recipeWrapper.getBackground(version),
+        },
+        Key: { id },
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+        ReturnValues: "ALL_NEW",
+      };
+      const dbUpdateResponse = await DynamoDB._().updateItem(params);
+      const updatedRecipe = dbUpdateResponse.Attributes;
+      // Add id
+      updatedRecipe.id = id;
 
-  if (!userCanDoWatermarkFreeExport) {
-    new RecipeWrapper(updatedRecipe as Recipe).addWatermark();
-  }
-  try {
-    await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(
-      updatedRecipe
-    );
-  } catch (err) {
-    if (noWatermarkReason === NoWatermarkReason.USER_HAS_CREDITS) {
-      await subscriptionService.reverseCreditUsage(creditServiceActivityLogId);
+      if (shouldWatermark) {
+        new RecipeWrapper(updatedRecipe as Recipe).addWatermark();
+      }
+      await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(
+        updatedRecipe
+      );
+      res.send(updatedRecipe);
     }
-    throw err;
-  }
-  res.send(updatedRecipe);
+  );
 };

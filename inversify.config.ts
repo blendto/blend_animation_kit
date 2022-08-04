@@ -38,6 +38,7 @@ import { NewAnalyticsService } from "server/service/newAnalytics";
 import { DaxDB } from "server/external/dax";
 import FileKeysService from "server/service/fileKeys";
 import CleverTapService from "server/external/clevertap";
+import { CreditsService } from "server/service/credits";
 
 const diContainer = new Container();
 
@@ -133,5 +134,9 @@ diContainer
 diContainer
   .bind<FileKeysService>(TYPES.FileKeysService)
   .to(FileKeysService)
+  .inSingletonScope();
+diContainer
+  .bind<CreditsService>(TYPES.CreditsService)
+  .to(CreditsService)
   .inSingletonScope();
 export { diContainer };

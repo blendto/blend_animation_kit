@@ -407,7 +407,8 @@ export class BlendService implements IService {
   async copyRecipeToBlend(
     blendId: string,
     heroImages: HeroImageFileKeys,
-    recipe: Recipe
+    recipe: Recipe,
+    isWatermarked?: boolean
   ) {
     const copyFilePromises = [];
     let interactionUpdatePromise;
@@ -460,6 +461,7 @@ export class BlendService implements IService {
       },
       id: blendId,
       images: blendImages,
+      isWatermarked: isWatermarked || false,
     } as Blend;
 
     await this.updateBlend(modifiedBlend);

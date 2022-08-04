@@ -170,52 +170,61 @@ export default class SubscriptionService implements IService {
   async canDoWatermarkFreeExport(
     buildVersion: number,
     userId: string,
-    blendId: string
+    blendId: string,
+    clientType: string
   ): Promise<CanDoWatermarkFreeExportResponse> {
-    const res: CanDoWatermarkFreeExportResponse = {
-      can: false,
-    };
     if (buildVersion < this.getWaterMarkBuildVersion()) {
-      res.can = true;
-      res.noWatermarkReason = NoWatermarkReason.VERSION_IS_OLD;
-    } else if (await this.hasRevenueCatHDExportEntitlement(userId)) {
-      res.can = true;
-      res.noWatermarkReason = NoWatermarkReason.USER_IS_PRO;
-    } else {
-      try {
-        const axiosRes = await handleAxiosCall<{
-          creditServiceActivityLogId: string;
-        }>(
-          async () =>
-            await this.httpClient.post(`/v1/transactions`, {
-              source: Source.FIREBASE,
-              subject: userId,
-              transactionTypeId:
-                ConfigProvider.CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID,
-              metadata: { blendId },
-            })
-        );
-        res.can = true;
-        res.noWatermarkReason = NoWatermarkReason.USER_HAS_CREDITS;
-        res.creditServiceActivityLogId =
-          axiosRes.data.creditServiceActivityLogId;
-      } catch (err) {
-        if (
-          !(err instanceof UserError) ||
-          // TODO: Add error codes to credit service and user it to verify
-          !["Expired/Insufficient credits", "Subscription not found"].includes(
-            /* eslint-disable-next-line
+      const noWatermarkReason = NoWatermarkReason.VERSION_IS_OLD;
+      return { can: true, noWatermarkReason };
+    }
+
+    const isUserEntitled = await this.hasRevenueCatHDExportEntitlement(userId);
+    if (isUserEntitled) {
+      const noWatermarkReason = NoWatermarkReason.USER_IS_PRO;
+      return { can: true, noWatermarkReason };
+    }
+
+    if (!isUserEntitled && clientType === "WEB") {
+      return { can: false };
+    }
+
+    try {
+      const res = await this.useCredit(userId, blendId);
+      const noWatermarkReason = NoWatermarkReason.USER_HAS_CREDITS;
+      const { creditServiceActivityLogId } = res.data;
+      return { can: true, noWatermarkReason, creditServiceActivityLogId };
+    } catch (err) {
+      if (
+        !(err instanceof UserError) ||
+        // TODO: Add error codes to credit service and user it to verify
+        !["Expired/Insufficient credits", "Subscription not found"].includes(
+          /* eslint-disable-next-line
                 @typescript-eslint/no-unsafe-argument,
                 @typescript-eslint/no-unsafe-member-access
             */
-            JSON.parse(err.message).message
-          )
-        ) {
-          throw err;
-        }
+          JSON.parse(err.message).message
+        )
+      ) {
+        throw err;
       }
     }
-    return res;
+
+    return { can: false };
+  }
+
+  private async useCredit(userId: string, blendId: string) {
+    return await handleAxiosCall<{
+      creditServiceActivityLogId: string;
+    }>(
+      async () =>
+        await this.httpClient.post(`/v1/transactions`, {
+          source: Source.FIREBASE,
+          subject: userId,
+          transactionTypeId:
+            ConfigProvider.CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID,
+          metadata: { blendId },
+        })
+    );
   }
 
   async reverseCreditUsage(creditServiceActivityLogId: string): Promise<void> {

@@ -295,17 +295,17 @@ export class RecipeWrapper {
     const waterMark = {
       source: ElementSource.blend_assets,
       uri: "ext-services/blend/watermark.png",
-      size: { width: 504, height: 201 },
+      size: { width: 616, height: 172 },
     };
     const blendMetadata = this.recipe.metadata as unknown as {
       resolution: Size;
     };
     const { width, height } = blendMetadata.resolution;
 
-    const interactionWidth = width * 0.4;
+    const interactionWidth = width * 0.5;
     const interactionHeight =
       (interactionWidth / waterMark.size.width) * waterMark.size.height;
-    const dx = width - interactionWidth;
+    const dx = 0;
     const dy = height - interactionHeight;
 
     const assetUid = nanoid(20);

@@ -23,4 +23,5 @@ export const TYPES = {
   CleverTapService: Symbol.for("CleverTapService"),
   AnalyticsService: Symbol.for("AnalyticsService"),
   FileKeysService: Symbol.for("FileKeysService"),
+  CreditsService: Symbol.for("CreditsService"),
 };

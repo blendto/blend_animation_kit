@@ -24,6 +24,7 @@ import { initMiddleware } from "server/helpers/middleware";
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
   buildVersion?: number;
+  clientType?: string;
 };
 
 const cors = Cors({
@@ -61,6 +62,7 @@ export function withReqHandler(
         const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
         extendedReq.uid = await firebaseService.extractUserIdFromRequest(req);
         extendedReq.buildVersion = extractBuildVersion(req);
+        extendedReq.clientType = req.headers["x-client-type"] as string;
       }
       return await routingFunction(extendedReq, res);
     } catch (err) {
@@ -127,7 +129,7 @@ export async function ensureAuth(
   if (!req.uid) {
     throw new UnauthorizedError();
   }
-  return await controller(req, res);
+  await controller(req, res);
 }
 
 export async function ensureServiceAuth(
@@ -149,7 +151,7 @@ export async function ensureServiceAuth(
 
   await interServiceAuth.validate(serviceType, authHeader);
 
-  return await controller(req, res);
+  await controller(req, res);
 }
 
 async function ensureEntitlement(userId: string, entitlement: Entitlement) {

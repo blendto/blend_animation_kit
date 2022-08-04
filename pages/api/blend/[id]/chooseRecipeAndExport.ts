@@ -5,12 +5,13 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
-import { ChooseRecipeRequest } from "server/base/models/recipe";
+import { ChooseRecipeRequest, RecipeWrapper } from "server/base/models/recipe";
 import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
 import { RecipeService } from "server/service/recipe";
 import { BlendVersion } from "server/base/models/blend";
+import { CreditsService } from "server/service/credits";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -36,14 +37,26 @@ const chooseRecipeAndExportSync = async (
   const service = diContainer.get<BlendService>(TYPES.BlendService);
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   const recipe = await recipeService.getRecipe(recipeId, variant);
-  await service.copyRecipeToBlend(id, fileKeys, recipe);
 
   const body = await service.getBlend(id, BlendVersion.current, true);
+  const creditsService = diContainer.get<CreditsService>(TYPES.CreditsService);
+  await creditsService.runWithCreditAndWatermarkCheck(
+    req.uid,
+    id,
+    req.buildVersion,
+    req.clientType,
+    async (shouldWatermark) => {
+      await service.copyRecipeToBlend(id, fileKeys, recipe, shouldWatermark);
+      if (shouldWatermark) {
+        new RecipeWrapper(body).addWatermark();
+      }
 
-  const output = await new VesApi().saveExport({
-    body,
-    schema: ExportRequestSchema.Blend,
-  });
+      const output = await new VesApi().saveExport({
+        body,
+        schema: ExportRequestSchema.Blend,
+      });
 
-  return res.send(output);
+      return res.send(output);
+    }
+  );
 };
