@@ -7,6 +7,9 @@ export async function sharpInstance(
   input?: Buffer,
   options?: sharp.SharpOptions
 ): Promise<sharp.Sharp> {
+  if (!input) {
+    return sharp(options);
+  }
   const converted = await convertToValidFormat(input);
   return sharp(converted, options);
 }

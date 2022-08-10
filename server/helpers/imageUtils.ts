@@ -41,6 +41,25 @@ export const extractAlphaMaskFromImage = async (
     .png({ compressionLevel: 9 })
     .toBuffer();
 
+export async function trimmedImageBuffer(
+  sharpInstance: sharp.Sharp
+): Promise<{ data: Buffer; info: sharp.OutputInfo }> {
+  try {
+    return await sharpInstance
+      .clone()
+      .trim(TRIM_THRESHOLD)
+      .toBuffer({ resolveWithObject: true });
+  } catch (e) {
+    if (
+      (e as Error).message ===
+      "Unexpected error while trimming. Try to lower the tolerance"
+    ) {
+      return await sharpInstance.toBuffer({ resolveWithObject: true });
+    }
+    throw e;
+  }
+}
+
 export const applyMask = async (
   image: Buffer,
   mask: Buffer,
@@ -59,10 +78,7 @@ export const applyMask = async (
     return output.toBuffer({ resolveWithObject: true });
   }
   const img = await output.png({ compressionLevel: 0 }).toBuffer();
-
-  return (await sharpInstance(img))
-    .trim(TRIM_THRESHOLD)
-    .toBuffer({ resolveWithObject: true });
+  return await trimmedImageBuffer(await sharpInstance(img));
 };
 
 // Keep default quality same as sharp, 80
@@ -107,9 +123,7 @@ export const adjustSizeToFit = async (
 
   if ([5, 6, 7, 8].includes(imageFileMetadata.orientation)) {
     // 5, 6, 7, 8 orientation represents 90 or 270 degree rotated
-    const temp = width;
-    width = height;
-    height = temp;
+    [width, height] = [height, width];
   }
 
   const metadata = interaction.metadata as ImageMetadata;
