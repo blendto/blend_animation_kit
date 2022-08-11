@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install --force-yes -yy \
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 RUN ls -la /usr/lib/x86_64-linux-gnu/
 RUN echo "LD_PRELOAD=/usr/local/lib/libjemalloc.so.2" >> /etc/environment
-RUN echo "/usr/lib/x86_64-linux-gnu/libjemalloc.so" >> /etc/ld.so.preload
+RUN echo "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2" >> /etc/ld.so.preload
 
 
 WORKDIR /app
