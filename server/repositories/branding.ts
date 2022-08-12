@@ -135,6 +135,7 @@ export class BrandingDynamooseRepo
     brandingDynamooseSchema,
     {
       create: false,
+      waitForActive: false,
     }
   );
 }

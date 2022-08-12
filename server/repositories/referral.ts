@@ -85,6 +85,7 @@ export class ReferralDynamooseRepo
     referralDynamooseSchema,
     {
       create: false,
+      waitForActive: false,
     }
   );
 }

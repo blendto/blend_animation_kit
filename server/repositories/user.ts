@@ -76,6 +76,7 @@ export class UserDynamooseRepo
     userDynamooseSchema,
     {
       create: false,
+      waitForActive: false,
     }
   );
 }

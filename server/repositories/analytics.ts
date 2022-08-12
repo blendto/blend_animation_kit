@@ -30,6 +30,7 @@ export class AnalyticsDynamooseRepo
     analyticsDynamooseSchema,
     {
       create: false,
+      waitForActive: false,
     }
   );
 }
