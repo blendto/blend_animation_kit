@@ -1,11 +1,11 @@
 # Install dependencies only when needed
-FROM public.ecr.aws/bitnami/node:16-prod AS deps
+FROM public.ecr.aws/docker/library/node:16-alpine3.16 AS deps
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 # Rebuild the source code only when needed
-FROM public.ecr.aws/bitnami/node:16-prod AS builder
+FROM public.ecr.aws/docker/library/node:16-alpine3.16 AS builder
 ARG ENV_VARS
 ENV ENV_VARS ${ENV_VARS}
 WORKDIR /app
@@ -15,23 +15,7 @@ RUN yarn run build-functions
 RUN yarn install --production --ignore-scripts --prefer-offline
 
 # Production image, copy all the files and run next
-FROM public.ecr.aws/bitnami/node:16-prod AS runner
-
-# Install and use libjemalloc to prevent sharp memory leaks
-# ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
-RUN apt-get update && apt-get install --force-yes -yy \
-  libjemalloc2 \
-  && rm -rf /var/lib/apt/lists/*
-
-# Change memory allocator to avoid leaks
-# ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
-# ref: https://github.com/Unitech/pm2/issues/4375#issuecomment-1003566720
-# ref: https://github.com/nodejs/help/issues/1518#issuecomment-997221787
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
-RUN ls -la /usr/lib/x86_64-linux-gnu/
-RUN echo "LD_PRELOAD=/usr/local/lib/libjemalloc.so.2" >> /etc/environment
-RUN echo "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2" >> /etc/ld.so.preload
-
+FROM public.ecr.aws/docker/library/node:16-alpine3.16 AS runner
 
 WORKDIR /app
 
@@ -51,9 +35,9 @@ COPY --from=builder /app/.env ./.env
 ARG BRANCH_NAME 
 ENV DD_VERSION ${BRANCH_NAME}
 
-USER nextjs
-
 RUN npm install pm2 dotenv -g
+
+USER nextjs
 
 EXPOSE 3000
 
