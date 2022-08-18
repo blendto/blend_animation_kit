@@ -1,5 +1,4 @@
 import DynamoDB from "server/external/dynamodb";
-import SQS from "server/external/sqs";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
 import { Recipe, RecipeWrapper, StoredImage } from "server/base/models/recipe";
@@ -30,6 +29,7 @@ import {
   UserError,
 } from "server/base/errors";
 import { CreditsService } from "server/service/credits";
+import VesApi, { ExportRequestSchema } from "server/internal/ves";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -340,12 +340,15 @@ const submitBlend = async (
       // Add id
       updatedRecipe.id = id;
 
+      const body = updatedRecipe as Recipe;
       if (shouldWatermark) {
-        new RecipeWrapper(updatedRecipe as Recipe).addWatermark();
+        new RecipeWrapper(body).addWatermark();
       }
-      await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(
-        updatedRecipe
-      );
+
+      await new VesApi().saveExport({
+        body,
+        schema: ExportRequestSchema.Blend,
+      });
       res.send(updatedRecipe);
     }
   );
