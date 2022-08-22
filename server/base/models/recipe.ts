@@ -42,6 +42,7 @@ export interface Elements {
 
 export interface RecipeDetails {
   elements: Elements;
+  assets?: { images?: { zipURL?: string; withoutHeroZipURL?: string } };
   isPremium?: boolean;
 }
 
