@@ -189,7 +189,7 @@ export default class SubscriptionService implements IService {
     try {
       const res = await this.useCredit(userId, blendId);
       const noWatermarkReason = NoWatermarkReason.USER_HAS_CREDITS;
-      const { creditServiceActivityLogId } = res.data;
+      const { activityLogId: creditServiceActivityLogId } = res.data;
       return { can: true, noWatermarkReason, creditServiceActivityLogId };
     } catch (err) {
       if (
@@ -212,7 +212,7 @@ export default class SubscriptionService implements IService {
 
   private async useCredit(userId: string, blendId: string) {
     return await handleAxiosCall<{
-      creditServiceActivityLogId: string;
+      activityLogId: string;
     }>(
       async () =>
         await this.httpClient.post(`/v1/transactions`, {
@@ -229,7 +229,7 @@ export default class SubscriptionService implements IService {
     await handleAxiosCall<{ creditServiceActivityLogId: string }>(
       async () =>
         await this.httpClient.post(`/v1/transactions/reverse`, {
-          creditServiceActivityLogId,
+          activityLogId: creditServiceActivityLogId,
         })
     );
   }

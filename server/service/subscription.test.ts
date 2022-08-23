@@ -120,7 +120,7 @@ describe("SubscriptionService", () => {
         .spyOn(subscriptionService, "hasRevenueCatHDExportEntitlement")
         .mockResolvedValueOnce(false);
       jest.spyOn(subscriptionService.httpClient, "post").mockResolvedValueOnce({
-        data: { creditServiceActivityLogId },
+        data: { activityLogId: creditServiceActivityLogId },
         status: 200,
       });
 
