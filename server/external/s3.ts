@@ -7,11 +7,33 @@ import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
 import { ObjectList } from "aws-sdk/clients/s3";
 
-const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
-const s3ClientWithAcceleration = new AWS.S3({
-  apiVersion: "2006-03-01",
-  useAccelerateEndpoint: true,
-});
+class S3 {
+  private s3: AWS.S3;
+  private s3WithAcceleration: AWS.S3;
+
+  getS3 = async () => {
+    if (!this.s3) {
+      this.s3 = new AWS.S3({ apiVersion: "2006-03-01" });
+      await this.s3.config.credentialProvider.resolvePromise();
+      logger.info("AWS creds loaded");
+    }
+    return this.s3;
+  };
+
+  getS3WithAcceleration = async () => {
+    if (!this.s3WithAcceleration) {
+      this.s3WithAcceleration = new AWS.S3({
+        apiVersion: "2006-03-01",
+        useAccelerateEndpoint: true,
+      });
+      await this.s3WithAcceleration.config.credentialProvider.resolvePromise();
+      logger.info("AWS creds loaded");
+    }
+    return this.s3WithAcceleration;
+  };
+}
+
+const { getS3, getS3WithAcceleration } = new S3();
 
 const FIFTEEN_MB = 15 * 1024 * 1024;
 
@@ -72,6 +94,8 @@ export const createSignedUploadUrl = async (
 
   const expireIn = 60 * 10; // 10 min
 
+  const s3 = await getS3();
+  const s3WithAcceleration = await getS3WithAcceleration();
   return await new Promise((resolve, reject) => {
     if (operation === GetSignedUrlOperation.postObject) {
       const params = {
@@ -103,7 +127,7 @@ export const createSignedUploadUrl = async (
         Key: fileNameToStore,
         Expires: expireIn,
       };
-      s3ClientWithAcceleration.getSignedUrl(operation, params, (err, data) => {
+      s3WithAcceleration.getSignedUrl(operation, params, (err, data) => {
         if (err) {
           reject(err);
           return;
@@ -117,8 +141,9 @@ export const createSignedUploadUrl = async (
 export const doesObjectExist = async (
   bucketName: string,
   fileKey: string
-): Promise<boolean> =>
-  new Promise((resolve, reject) => {
+): Promise<boolean> => {
+  const s3 = await getS3();
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -141,12 +166,14 @@ export const doesObjectExist = async (
       return resolve(false);
     });
   });
+};
 
 export const getObject = async (
   bucketName: string,
   fileKey: string
-): Promise<Buffer> =>
-  new Promise((resolve, reject) => {
+): Promise<Buffer> => {
+  const s3 = await getS3();
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -169,13 +196,15 @@ export const getObject = async (
       return resolve(data.Body as Buffer);
     });
   });
+};
 
 export const uploadObject = async (
   bucketName: string,
   fileKey: string,
   readableObject: Stream | Buffer
-) =>
-  new Promise((resolve, reject) => {
+) => {
+  const s3 = await getS3();
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -192,14 +221,16 @@ export const uploadObject = async (
       return resolve(data);
     });
   });
+};
 
 export const copyObject = async (
   sourceBucket: string,
   sourceKey: string,
   destBucket: string,
   destKey: string
-) =>
-  new Promise((resolve, reject) => {
+) => {
+  const s3 = await getS3();
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: destBucket,
       CopySource: `/${sourceBucket}/${sourceKey}`,
@@ -216,12 +247,14 @@ export const copyObject = async (
       return resolve(data);
     });
   });
+};
 
 export const deleteObject = async (
   bucketName: string,
   fileKey: string
-): Promise<void> =>
-  new Promise((resolve, reject) => {
+): Promise<void> => {
+  const s3 = await getS3();
+  return new Promise((resolve, reject) => {
     const params = {
       Bucket: bucketName,
       Key: fileKey,
@@ -244,13 +277,16 @@ export const deleteObject = async (
       return resolve();
     });
   });
+};
 
 export const listObjectsInFolder = async (
   bucketName: string,
   folderPrefix: string
 ): Promise<ObjectList> =>
   (
-    await s3
+    await (
+      await getS3()
+    )
       .listObjectsV2({
         Bucket: bucketName,
         Prefix: folderPrefix,
