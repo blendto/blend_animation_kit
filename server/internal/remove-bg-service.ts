@@ -22,25 +22,11 @@ import {
   rescaleImage,
 } from "server/helpers/imageUtils";
 import { addSuffixToFileKey } from "server/helpers/fileKeyUtils";
-
-export interface ToolkitErrorResponse {
-  code?: string;
-  message: string;
-}
-
-export interface ImageFileKeys {
-  original: string;
-  withoutBg: string;
-}
-
-export enum RemoveBGSource {
-  BLEND = "BLEND",
-}
-
-interface RemoveBGCommandMetadata {
-  source: RemoveBGSource;
-  fileKeys: ImageFileKeys;
-}
+import {
+  RemoveBGCommandMetadata,
+  RemoveBGSource,
+  ToolkitErrorResponse,
+} from "server/base/models/removeBg";
 
 @injectable()
 export class RemoveBgService implements IService {

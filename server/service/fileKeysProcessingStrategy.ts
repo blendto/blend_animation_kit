@@ -14,14 +14,12 @@ import {
 } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import { fireAndForget } from "server/helpers/async-runner";
-import {
-  RemoveBgService,
-  RemoveBGSource,
-} from "server/internal/remove-bg-service";
+import { RemoveBgService } from "server/internal/remove-bg-service";
 import logger from "server/base/Logger";
 import axios from "axios";
 import HeroImageService from "server/service/heroImage";
 import { sharpInstance } from "server/helpers/sharpUtils";
+import { RemoveBGSource } from "server/base/models/removeBg";
 
 export abstract class FileKeysProcessingStrategy {
   static choose(

@@ -6,10 +6,7 @@ import { Blend } from "server/base/models/blend";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
-import {
-  RemoveBgService,
-  RemoveBGSource,
-} from "server/internal/remove-bg-service";
+import { RemoveBgService } from "server/internal/remove-bg-service";
 import {
   applyMask,
   convertImageToWebp,
@@ -24,6 +21,7 @@ import logger from "server/base/Logger";
 import { withReqHandler } from "server/helpers/request";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { RemoveBGSource } from "server/base/models/removeBg";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 

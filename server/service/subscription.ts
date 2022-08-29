@@ -169,7 +169,7 @@ export default class SubscriptionService implements IService {
     buildVersion: number,
     userId: string,
     blendId: string,
-    clientType: string
+    clientType?: string
   ): Promise<CanDoWatermarkFreeExportResponse> {
     if (buildVersion < this.getWaterMarkBuildVersion()) {
       const noWatermarkReason = NoWatermarkReason.VERSION_IS_OLD;
