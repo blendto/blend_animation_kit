@@ -7,45 +7,64 @@ const { default: axios } = require("axios");
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const tableName = process.env.RECIPE_DYNAMODB_TABLE;
 
-(async () => {
-  const recipes = await getAllRecipes();
-  console.log(`Fetched ${recipes.length} recipes in total`);
-  const httpClient = axios.create({
-    baseURL: "REPLACE-WITH-BASE-PATH",
-    headers: {
-      "X-API-Token": "REPLACE-WITH-THE-TOKEN",
-    },
-  });
-  const failedOnes = [];
-  recipes.forEach(async (r, index) => {
-    try {
-      const res = await httpClient.post(`api/recipe/${r.id}/optimize`, {
-        variant: r.variant,
-      });
-      console.log(`Optimized ${r.id}/${r.variant}. res: `, res.data);
-    } catch (err) {
-      failedOnes.push({ id: r.id, variant: r.variant });
-      // Don't break
-    }
-    if (index === recipes.length - 1) {
-      console.log("Done");
-      console.log("Failed ones: ", failedOnes);
-    }
-  });
-})();
+const httpClient = axios.create({
+  baseURL: "https://blend.to/",
+  headers: {
+    "X-API-Token": "REPLACE-WITH-THE-TOKEN",
+  },
+});
+optimize();
 
-async function getAllRecipes(recipes = [], exclusiveStartKey = undefined) {
+async function optimize(exclusiveStartKey = undefined) {
   const params = {
     TableName: tableName,
   };
   if (exclusiveStartKey) {
     params.ExclusiveStartKey = exclusiveStartKey;
   }
-  const res = await dynamodb.scan(params).promise();
-  recipes = recipes.concat(res.Items);
-  console.log(`Fetched ${res.Count} recipes`);
-  if (res.LastEvaluatedKey) {
-    return await getAllRecipes(recipes, res.LastEvaluatedKey);
+  const {
+    Items: recipes,
+    LastEvaluatedKey,
+    Count,
+  } = await dynamodb.scan(params).promise();
+  console.log(`Fetched ${Count} recipes`);
+  console.log(`lastEvaluatedKey: ${JSON.stringify(LastEvaluatedKey, null, 2)}`);
+
+  const promiseSets = [[]];
+  const failedOnes = [];
+  // eslint-disable-next-line no-restricted-syntax
+  recipes.forEach((r) => {
+    if (promiseSets[promiseSets.length - 1] >= 5) {
+      promiseSets.push([]);
+    }
+    promiseSets[promiseSets.length - 1].push(
+      httpClient
+        .post(`api/recipe/${r.id}/optimize`, {
+          variant: r.variant,
+        })
+        .catch((err) => {
+          const details = {
+            message: err.message,
+            status: err.response?.status,
+            data: err.response?.data,
+          };
+          failedOnes.push({ id: r.id, variant: r.variant, details });
+          // Don't break
+        })
+        .finally(() => {
+          console.log(`Processed recipe ${r.id}/${r.variant}`);
+        })
+    );
+  });
+  // eslint-disable-next-line no-restricted-syntax
+  for (const p of promiseSets) {
+    // eslint-disable-next-line no-await-in-loop
+    await Promise.all(p);
   }
-  return recipes;
+  console.log(`Failed ones: ${JSON.stringify(failedOnes, null, 2)}`);
+
+  if (LastEvaluatedKey) {
+    return await optimize(LastEvaluatedKey);
+  }
+  console.log("Done");
 }
