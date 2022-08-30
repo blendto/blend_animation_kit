@@ -29,6 +29,7 @@ export interface ReferralEntity extends Entity {
   referrerUserId: string;
   createdAt: number;
   updatedAt: number;
+  deviceId: string;
   reward: {
     referee: REWARD;
     referrer: REWARD;
@@ -56,6 +57,13 @@ const referralDynamooseSchema = new DynamooseSchema(
         name: "referrerUserId-refereeUserId-index",
         global: true,
         rangeKey: "refereeUserId",
+      },
+    },
+    deviceId: {
+      type: String,
+      index: {
+        name: "deviceId-index",
+        global: true,
       },
     },
     reward: {

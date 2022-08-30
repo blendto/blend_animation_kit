@@ -27,7 +27,6 @@ describe("UserService", () => {
     favouriteRecipes: [],
   };
   const referralId = "mark7211";
-  const referralLink = "https://links.foo.bar/CM9E";
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -56,19 +55,16 @@ describe("UserService", () => {
     });
   });
 
-  describe("generateReferralIdAndLink", () => {
-    it("Generates a unique id and corresponding link to profile", async () => {
+  describe("generateUniqueReferralId", () => {
+    it("Generates a unique id for the profile", async () => {
       jest
         .spyOn(userService, "generateReferralId")
         .mockReturnValueOnce(referralId);
       jest.spyOn(userService, "getWithReferralId").mockResolvedValueOnce(null);
-      jest
-        .spyOn(userService, "generateReferralLink")
-        .mockResolvedValueOnce(referralLink);
 
-      expect(
-        await userService.generateReferralIdAndLink(userDoc)
-      ).toMatchObject({ referralId, referralLink });
+      expect(await userService.generateUniqueReferralId(userDoc)).toEqual(
+        referralId
+      );
     });
 
     it("Generates different ids until it's not a duplicate", async () => {
@@ -80,13 +76,10 @@ describe("UserService", () => {
         .mockResolvedValueOnce(userDoc)
         .mockResolvedValueOnce(userDoc)
         .mockResolvedValueOnce(null);
-      jest
-        .spyOn(userService, "generateReferralLink")
-        .mockResolvedValueOnce(referralLink);
 
-      expect(
-        await userService.generateReferralIdAndLink(userDoc)
-      ).toMatchObject({ referralId, referralLink });
+      expect(await userService.generateUniqueReferralId(userDoc)).toEqual(
+        referralId
+      );
       expect(generateReferralIdMock.mock.calls.length).toEqual(3);
     });
 
@@ -95,14 +88,11 @@ describe("UserService", () => {
         .spyOn(userService, "generateReferralId")
         .mockReturnValueOnce(referralId);
       jest.spyOn(userService, "getWithReferralId").mockResolvedValueOnce(null);
-      jest
-        .spyOn(userService, "generateReferralLink")
-        .mockResolvedValueOnce(referralLink);
 
       let email: string;
       expect(
-        await userService.generateReferralIdAndLink({ ...userDoc, email })
-      ).toMatchObject({ referralId: undefined, referralLink: undefined });
+        await userService.generateUniqueReferralId({ ...userDoc, email })
+      ).toEqual(undefined);
     });
   });
 
@@ -205,30 +195,22 @@ describe("UserService", () => {
     });
   });
 
-  describe("generateReferralDataChanges", () => {
+  describe("generateReferralIdChange", () => {
     it("Generates JSON patch with id and corresponding link", async () => {
       jest
-        .spyOn(userService, "generateReferralId")
-        .mockReturnValueOnce(referralId);
+        .spyOn(userService, "generateUniqueReferralId")
+        .mockResolvedValueOnce(referralId);
       jest.spyOn(userService, "getWithReferralId").mockResolvedValueOnce(null);
-      jest
-        .spyOn(userService, "generateReferralLink")
-        .mockResolvedValueOnce(referralLink);
 
-      expect(
-        await userService.generateReferralDataChanges(userDoc)
-      ).toMatchObject([
-        {
-          op: "add",
-          path: `/referralId`,
-          value: referralId,
-        },
-        {
-          op: "add",
-          path: `/referralLink`,
-          value: referralLink,
-        },
-      ]);
+      expect(await userService.generateReferralIdChange(userDoc)).toMatchObject(
+        [
+          {
+            op: "add",
+            path: `/referralId`,
+            value: referralId,
+          },
+        ]
+      );
     });
   });
 });

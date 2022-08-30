@@ -85,18 +85,12 @@ export class UserService implements IService {
     return changes;
   }
 
-  async generateReferralDataChanges(profile: User): Promise<JSONPatch> {
-    const referralData = await this.generateReferralIdAndLink(profile);
+  async generateReferralIdChange(profile: User): Promise<JSONPatch> {
     return [
       {
         op: "add",
         path: `/referralId`,
-        value: referralData.referralId,
-      },
-      {
-        op: "add",
-        path: `/referralLink`,
-        value: referralData.referralLink,
+        value: await this.generateUniqueReferralId(profile),
       },
     ];
   }
@@ -113,7 +107,7 @@ export class UserService implements IService {
     if (!profile.referralId && !this.isAnonymous(profile)) {
       profile = await this.repo.update(
         { id: profile.id },
-        await this.generateReferralDataChanges(profile)
+        await this.generateReferralIdChange(profile)
       );
     }
     // In cases of both sign up and referral data missing, it's easy to think that we could
@@ -176,37 +170,25 @@ export class UserService implements IService {
     return referralCodeGenerator.custom("lowercase", 4, 4, username) as string;
   }
 
-  async generateReferralLink(referralId: string): Promise<string> {
-    return await diContainer
-      .get<Firebase>(TYPES.Firebase)
-      .createDynamicLink(
-        `${ConfigProvider.SELF_BASE_PATH}/signup?referralId=${referralId}`
-      );
-  }
-
-  async generateReferralIdAndLink(
-    profile: User
-  ): Promise<{ referralId: string; referralLink: string }> {
+  async generateUniqueReferralId(profile: User): Promise<string> {
     let referralId: string;
-    let referralLink: string;
     if (this.isAnonymous(profile)) {
       // Don't generate referral id before sign up. If the user signs up with email later,
       // we'd want to use the first 4 character from his email as the referral id prefix.
-      return { referralId, referralLink };
+      return referralId;
     }
     referralId = this.generateReferralId(profile);
     if (await this.getWithReferralId(referralId)) {
-      return await this.generateReferralIdAndLink(profile);
+      return await this.generateUniqueReferralId(profile);
     }
-    referralLink = await this.generateReferralLink(referralId);
-    return { referralId, referralLink };
+    return referralId;
   }
 
   async create(userId: string): Promise<User> {
     let profile = await this.generateBaseData(userId);
     profile = {
       ...profile,
-      ...(await this.generateReferralIdAndLink(profile)),
+      referralId: await this.generateUniqueReferralId(profile),
     };
     return await this.repo.create(profile);
   }

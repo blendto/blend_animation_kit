@@ -22,9 +22,10 @@ import { UserService } from "./user";
 export const REFEREE_CREDITS_REWARD_QUANTITY = 5;
 export const REFERRER_CREDITS_REWARD_QUANTITY = 10;
 
-export enum USER_ERROR {
+export enum REFERRAL_USER_ERROR {
   INVALID_REFERRAL_ID = "INVALID_REFERRAL_ID",
   DUPLICATE_REFERRAL = "DUPLICATE_REFERRAL",
+  DUPLICATE_DEVICE_ID = "DUPLICATE_DEVICE_ID",
 }
 
 export type ReferralDashboardItem = {
@@ -40,12 +41,22 @@ export default class ReferralService implements IService {
   @inject(TYPES.SubscriptionService) subscriptionService: SubscriptionService;
   @inject(TYPES.CleverTapService) cleverTapService: CleverTapService;
 
+  async ensureDeviceIdIsOriginal(deviceId: string): Promise<void> {
+    const referrals = await this.repo.query({ deviceId });
+    if (referrals.length > 0) {
+      throw new UserError(
+        "Duplicate device id",
+        REFERRAL_USER_ERROR.DUPLICATE_DEVICE_ID
+      );
+    }
+  }
+
   async getReferrerOrFail(referralId: string): Promise<User> {
     const referrer = await this.userService.getWithReferralId(referralId);
     if (!referrer) {
       throw new UserError(
         "Invalid referral id",
-        USER_ERROR.INVALID_REFERRAL_ID
+        REFERRAL_USER_ERROR.INVALID_REFERRAL_ID
       );
     }
     return referrer;
@@ -53,7 +64,8 @@ export default class ReferralService implements IService {
 
   async register(
     refereeUserId: string,
-    referrerUserId: string
+    referrerUserId: string,
+    deviceId: string
   ): Promise<{
     referrerId: string;
     reward: {
@@ -63,7 +75,7 @@ export default class ReferralService implements IService {
     updatedSubscription: SubscriptionEntity;
   }> {
     const referral = await this.createReferralEntity(
-      this.generateReferralEntity(refereeUserId, referrerUserId)
+      this.generateReferralEntity(refereeUserId, referrerUserId, deviceId)
     );
 
     await this.subscriptionService.addCredits(
@@ -102,11 +114,13 @@ export default class ReferralService implements IService {
 
   private generateReferralEntity(
     refereeUserId: string,
-    referrerUserId: string
+    referrerUserId: string,
+    deviceId: string
   ): Partial<ReferralEntity> {
     return {
       refereeUserId,
       referrerUserId,
+      deviceId,
       reward: {
         referee: {
           type: RewardType.CREDITS,
@@ -132,7 +146,7 @@ export default class ReferralService implements IService {
       if (err.code === "ConditionalCheckFailedException") {
         throw new UserError(
           "This user's referral is already registerd",
-          USER_ERROR.DUPLICATE_REFERRAL
+          REFERRAL_USER_ERROR.DUPLICATE_REFERRAL
         );
       }
       throw err;

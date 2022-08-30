@@ -5,7 +5,7 @@ import { TYPES } from "server/types";
 import ReferralService, {
   REFEREE_CREDITS_REWARD_QUANTITY,
   REFERRER_CREDITS_REWARD_QUANTITY,
-  USER_ERROR,
+  REFERRAL_USER_ERROR,
 } from "./referral";
 
 describe("ReferralService", () => {
@@ -16,6 +16,8 @@ describe("ReferralService", () => {
   const refereeUserId2 = "2_TEST_REFEREE_USER_ID";
   const referralId = "TEST_REFERRAL_ID";
   const referrerUserId = "TEST_REFERRER_USER_ID";
+  const deviceId = "TEST_DEVICE_ID";
+  const deviceId2 = "TEST_DEVICE_ID_2";
   const createdAt = Date.now();
   const updatedAt = createdAt;
 
@@ -31,7 +33,10 @@ describe("ReferralService", () => {
       await expect(
         referralService.getReferrerOrFail(referralId)
       ).rejects.toThrow(
-        new UserError("Invalid referral id", USER_ERROR.INVALID_REFERRAL_ID)
+        new UserError(
+          "Invalid referral id",
+          REFERRAL_USER_ERROR.INVALID_REFERRAL_ID
+        )
       );
     });
 
@@ -68,7 +73,7 @@ describe("ReferralService", () => {
       ).rejects.toThrow(
         new UserError(
           "This user's referral is already registerd",
-          USER_ERROR.DUPLICATE_REFERRAL
+          REFERRAL_USER_ERROR.DUPLICATE_REFERRAL
         )
       );
     });
@@ -77,6 +82,7 @@ describe("ReferralService", () => {
       const referral = {
         refereeUserId,
         referrerUserId,
+        deviceId,
         reward: {
           referee: {
             type: RewardType.CREDITS,
@@ -146,6 +152,7 @@ describe("ReferralService", () => {
       jest.spyOn(referralService, "listReferrals").mockResolvedValueOnce([
         {
           referrerUserId,
+          deviceId,
           createdAt: 1658988589733,
           reward: {
             referee: {
@@ -164,6 +171,7 @@ describe("ReferralService", () => {
         },
         {
           referrerUserId,
+          deviceId: deviceId2,
           createdAt: 1659003363774,
           reward: {
             referee: {

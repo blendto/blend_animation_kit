@@ -29,8 +29,7 @@ export default withReqHandler(
 
 const REGISTER_BODY_SCHEMA = Joi.object({
   referralId: Joi.string().required(),
-});
-const REGISTER_QUERY_SCHEMA = Joi.object({
+  deviceId: Joi.string().required(),
   dryRun: Joi.bool(),
 });
 
@@ -40,18 +39,17 @@ async function register(
 ): Promise<void> {
   const body = req.body as {
     referralId: string;
+    deviceId: string;
+    dryRun: boolean;
   };
   validate(body, requestComponentToValidate.body, REGISTER_BODY_SCHEMA);
-  const query = req.query as {
-    dryRun: string;
-  };
-  validate(query, requestComponentToValidate.query, REGISTER_QUERY_SCHEMA);
+
   const referralService = diContainer.get<ReferralService>(
     TYPES.ReferralService
   );
-
+  await referralService.ensureDeviceIdIsOriginal(body.deviceId);
   const referrer = await referralService.getReferrerOrFail(body.referralId);
-  if (query.dryRun?.toLowerCase() === "true") {
+  if (body.dryRun) {
     return res.send({
       referrerId: referrer.id,
       reward: {
@@ -60,5 +58,5 @@ async function register(
       },
     });
   }
-  res.send(await referralService.register(req.uid, referrer.id));
+  res.send(await referralService.register(req.uid, referrer.id, body.deviceId));
 }

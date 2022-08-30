@@ -114,30 +114,4 @@ export default class Firebase {
     }
     return users;
   }
-
-  async createDynamicLink(
-    link: string,
-    suffixOption = FirebaseDynamicLinkSuffixType.SHORT
-  ): Promise<string> {
-    const data = {
-      dynamicLinkInfo: {
-        domainUriPrefix: this.FIREBASE_DYNAMIC_LINKS.domainURIPrefix,
-        link,
-        androidInfo: {
-          androidPackageName: this.FIREBASE_DYNAMIC_LINKS.androidPackageName,
-        },
-        iosInfo: {
-          iosBundleId: this.FIREBASE_DYNAMIC_LINKS.iosBundleId,
-        },
-      },
-      suffix: {
-        option: suffixOption,
-      },
-    };
-    return (
-      await handleInternalAxiosCall<Record<string, unknown>>(
-        async () => await axios.post(this.FIREBASE_DYNAMIC_LINKS.url, data)
-      )
-    ).data.shortLink as string;
-  }
 }
