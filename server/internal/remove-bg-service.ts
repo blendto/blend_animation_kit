@@ -76,6 +76,7 @@ export class RemoveBgService implements IService {
 
   logBgRemoval = async (
     predictedClass: string,
+    primaryClass: string,
     segmentationProvider: string,
     metadata: RemoveBGCommandMetadata
   ) => {
@@ -86,6 +87,7 @@ export class RemoveBgService implements IService {
       createdOn: currentDate,
       createdAt: currentTime.toMillis(),
       detectedItem: predictedClass,
+      detectedObjectClass: primaryClass,
       providerUsed: segmentationProvider,
       source: metadata.source,
       fileKeys: metadata.fileKeys,
@@ -138,6 +140,7 @@ export class RemoveBgService implements IService {
     };
     await this.logBgRemoval(
       headers["x-predicted-class"],
+      headers["x-primary-Class"],
       headers["x-segmentation-provider"],
       metadata
     );
