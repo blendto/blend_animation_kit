@@ -10,7 +10,6 @@ import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
 import { RecipeService } from "server/service/recipe";
-import { BlendVersion } from "server/base/models/blend";
 import { CreditsService } from "server/service/credits";
 
 export default withReqHandler(
@@ -38,7 +37,6 @@ const chooseRecipeAndExportSync = async (
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   const recipe = await recipeService.getRecipe(recipeId, variant);
 
-  const body = await service.getBlend(id, BlendVersion.current, true);
   const creditsService = diContainer.get<CreditsService>(TYPES.CreditsService);
   await creditsService.runWithCreditAndWatermarkCheck(
     req.uid,
@@ -46,7 +44,12 @@ const chooseRecipeAndExportSync = async (
     req.buildVersion,
     req.clientType,
     async (shouldWatermark) => {
-      await service.copyRecipeToBlend(id, fileKeys, recipe, shouldWatermark);
+      const body = await service.copyRecipeToBlend(
+        id,
+        fileKeys,
+        recipe,
+        shouldWatermark
+      );
       if (shouldWatermark) {
         new RecipeWrapper(body).addWatermark();
       }

@@ -299,7 +299,7 @@ export class BlendService implements IService {
   }
 
   // TODO: Explore possibilities to reuse this inside submitBlend() in blend/[id].ts
-  async updateBlend(blend: Blend) {
+  async updateBlend(blend: Blend): Promise<Blend> {
     const {
       images,
       externalImages,
@@ -347,10 +347,11 @@ export class BlendService implements IService {
       },
       Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      ReturnValues: "NONE",
+      ReturnValues: "ALL_NEW",
     };
 
-    await this.dataStore.updateItem(params);
+    const dbUpdateResponse = await this.dataStore.updateItem(params);
+    return dbUpdateResponse.Attributes as Blend;
   }
 
   async reInitialise(blendId: string): Promise<void> {
@@ -409,7 +410,7 @@ export class BlendService implements IService {
     heroImages: HeroImageFileKeys,
     recipe: Recipe,
     isWatermarked?: boolean
-  ) {
+  ): Promise<Blend> {
     const copyFilePromises = [];
     let interactionUpdatePromise;
 
@@ -464,7 +465,7 @@ export class BlendService implements IService {
       isWatermarked: isWatermarked || false,
     } as Blend;
 
-    await this.updateBlend(modifiedBlend);
+    return await this.updateBlend(modifiedBlend);
   }
 
   private async getBlendPage(
