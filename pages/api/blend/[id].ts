@@ -349,7 +349,8 @@ const submitBlend = async (
         body,
         schema: ExportRequestSchema.Blend,
       });
-      res.send(updatedRecipe);
+      const generatedBlend = await blendService.getBlend(id, null, true);
+      res.send(generatedBlend);
     }
   );
 };
