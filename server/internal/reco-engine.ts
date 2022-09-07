@@ -9,6 +9,11 @@ export interface RecipeListSuggestions {
   suggestedRecipeCategories: RecipeList[];
 }
 
+export interface PaginatedRecipeListSuggestions {
+  suggestedRecipeCategories: RecipeList[];
+  nextPageKey?: number;
+}
+
 export default class RecoEngineApi {
   httpClient = axios.create({
     baseURL: ConfigProvider.RECO_API_BASE_PATH,
@@ -23,6 +28,23 @@ export default class RecoEngineApi {
         async () =>
           await this.httpClient.post("/suggestRecipeCategories", {
             fileKeys: { hero: heroImageKey },
+            userAgentDetails: await userAgentPromise,
+          })
+      )
+    ).data;
+  }
+
+  async suggestRecipeListsPaginated(
+    heroImageKey: string,
+    userAgentPromise: Promise<UserAgentDetails | null>,
+    pageKey?: number
+  ): Promise<PaginatedRecipeListSuggestions> {
+    return (
+      await handleAxiosCall<PaginatedRecipeListSuggestions>(
+        async () =>
+          await this.httpClient.post("/suggestRecipeCategoriesv2", {
+            fileKeys: { hero: heroImageKey },
+            pageKey,
             userAgentDetails: await userAgentPromise,
           })
       )

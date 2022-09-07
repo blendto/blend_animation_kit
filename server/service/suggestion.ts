@@ -57,6 +57,9 @@ export class SuggestionService {
       .recipeLists;
   }
 
+  /**
+   * @deprecated Use `suggestRecipesPaginated`
+   */
   async suggestRecipes(
     uid: string,
     fileKey: string,
@@ -130,36 +133,65 @@ export class SuggestionService {
       recipeLists = recipeLists.filter((list) => list.recipeIds.length > 0);
     }
 
-    const randomTemplates = recipeLists
-      .map((list) => list.recipeIds)
-      .flat()
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 20);
+    // For Backwards compatibility
+    const randomTemplates = [];
 
     return { recipeLists, randomTemplates };
   }
 
-  private async heroCheckMapForRecipes(
-    recipesIds: RecipeVariantId[]
-  ): Promise<RecipeVariantHeroCheckMap> {
-    const Keys = recipesIds.map(({ id, variant }) => ({ id, variant }));
-    const AttributesToGet = ["id", "recipeDetails", "variant"];
+  async suggestRecipesPaginated(
+    uid: string,
+    fileKey: string,
+    ip: string,
+    pageKey?: number
+  ): Promise<{ recipeLists: RecipeList[]; nextPageKey?: number }> {
+    const suggestions = await this.recoEngineApi.suggestRecipeListsPaginated(
+      fileKey,
+      this.userService.getUserAgent(ip),
+      pageKey
+    );
 
-    const responseMap = await this.daxStore.batchGetItems({
-      RequestItems: {
-        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, AttributesToGet },
-      },
-    });
-    const recipes = responseMap[
-      ConfigProvider.RECIPE_DYNAMODB_TABLE
-    ] as Recipe[];
+    const recipeLists = suggestions.suggestedRecipeCategories;
 
-    const idVariantToHeroMap: RecipeVariantHeroCheckMap = {};
-    recipes.forEach((recipe) => {
-      idVariantToHeroMap[recipeIdStr(recipe)] =
-        !!recipe.recipeDetails.elements.hero;
-    });
-    return idVariantToHeroMap;
+    recipeLists.sort(
+      (a, b) =>
+        (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
+        (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
+    );
+
+    if (!pageKey) {
+      const recentBlends = await this.blendService.getRecentBlends(uid);
+      let recentRecipes = recentBlends
+        .filter(
+          ({ metadata }) =>
+            !!metadata.sourceRecipe ||
+            (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
+        )
+        .map(
+          ({ metadata }) =>
+            metadata.sourceRecipe ?? {
+              id: metadata.sourceRecipeId,
+              variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
+            }
+        );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      recentRecipes = uniqWith(recentRecipes, isEqual);
+      const heroCheckMap = await this.heroCheckMapForRecipes(recentRecipes);
+      recentRecipes = recentRecipes.filter((r) => heroCheckMap[recipeIdStr(r)]);
+
+      if (recentRecipes.length > 0) {
+        recipeLists.unshift({
+          id: "recents",
+          isEnabled: true,
+          title: "⏰ Recently Used",
+          recipeIds: [],
+          recipes: take(recentRecipes, 5),
+          sortOrder: 0,
+        });
+      }
+    }
+
+    return { recipeLists, nextPageKey: suggestions.nextPageKey };
   }
 
   async suggestHomePageRecipes(): Promise<RecipeList[]> {
@@ -202,5 +234,28 @@ export class SuggestionService {
     };
 
     return recipeVariantId;
+  }
+
+  private async heroCheckMapForRecipes(
+    recipesIds: RecipeVariantId[]
+  ): Promise<RecipeVariantHeroCheckMap> {
+    const Keys = recipesIds.map(({ id, variant }) => ({ id, variant }));
+    const AttributesToGet = ["id", "recipeDetails", "variant"];
+
+    const responseMap = await this.daxStore.batchGetItems({
+      RequestItems: {
+        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, AttributesToGet },
+      },
+    });
+    const recipes = responseMap[
+      ConfigProvider.RECIPE_DYNAMODB_TABLE
+    ] as Recipe[];
+
+    const idVariantToHeroMap: RecipeVariantHeroCheckMap = {};
+    recipes.forEach((recipe) => {
+      idVariantToHeroMap[recipeIdStr(recipe)] =
+        !!recipe.recipeDetails.elements.hero;
+    });
+    return idVariantToHeroMap;
   }
 }

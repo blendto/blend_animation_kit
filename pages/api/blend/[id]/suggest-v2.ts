@@ -5,31 +5,29 @@ import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import { SuggestionService } from "server/service/suggestion";
-import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
-import { FileKeysProcessingStrategy } from "server/service/fileKeysProcessingStrategy";
+import { SuggestRecipesPaginatedRequestBody } from "server/base/models/recipe";
 
-/**
- * @deprecated Should be removed soon
- */
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
+import { FileKeysProcessingStrategy } from "server/service/fileKeysProcessingStrategy";
+import { MethodNotAllowedError } from "server/base/errors";
+
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
-        return suggestRecipes(req, res);
+        return ensureAuth(suggestRecipesV2, req, res);
       default:
-        res.status(405).end();
+        throw new MethodNotAllowedError();
     }
   }
 );
 
-interface SuggestRecipesRequestBody {
-  fileKeys: HeroImageFileKeys;
-  multipleAspectRatios?: boolean;
-  heroImageId?: string;
-}
-
-const suggestRecipes = async (
+const suggestRecipesV2 = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
@@ -37,8 +35,8 @@ const suggestRecipes = async (
     query: { id },
   } = req;
 
-  const { fileKeys, multipleAspectRatios, heroImageId } =
-    req.body as SuggestRecipesRequestBody;
+  const { fileKeys, pageKey, heroImageId } =
+    req.body as SuggestRecipesPaginatedRequestBody;
 
   const blend: Blend = await diContainer
     .get<BlendService>(TYPES.BlendService)
@@ -78,11 +76,11 @@ const suggestRecipes = async (
     TYPES.SuggestionService
   );
 
-  const suggestions = await suggestionService.suggestRecipes(
+  const suggestions = await suggestionService.suggestRecipesPaginated(
     req.uid,
     finalisedFileKeys.withoutBg,
     ip,
-    multipleAspectRatios
+    pageKey
   );
 
   const promises = suggestions.recipeLists.map((recipeList) =>
@@ -93,7 +91,7 @@ const suggestRecipes = async (
 
   return res.send({
     fileKeys: finalisedFileKeys,
-    suggestedRecipes: suggestions.randomTemplates,
-    otherRecipes: recipeLists,
+    suggestedRecipes: recipeLists,
+    nextPageKey: suggestions.nextPageKey,
   });
 };

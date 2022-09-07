@@ -353,3 +353,10 @@ export interface SearchRecipeResponse {
   nextPageKey?: number;
   suggestedRecipes: Array<RecipeVariantId>;
 }
+
+export interface SuggestRecipesPaginatedRequestBody {
+  fileKeys: HeroImageFileKeys;
+  pageKey: number;
+  multipleAspectRatios?: boolean;
+  heroImageId?: string;
+}
