@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
 import { Recipe, RecipeWrapper, StoredImage } from "server/base/models/recipe";
 import {
+  Blend,
   BlendStatus,
   BlendStatusUpdate,
   BlendVersion,
@@ -127,6 +128,29 @@ const deleteBlend = async (
   res.send({ status: "Success" });
 };
 
+function trim(blend: Blend) {
+  const {
+    id,
+    status,
+    filePath,
+    imagePath,
+    output,
+    isWatermarked,
+    gifsOrStickers,
+  } = blend;
+
+  return {
+    id,
+    status,
+    filePath,
+    imagePath,
+    output,
+    isWatermarked,
+    interactions: trimInteractions(blend),
+    isStatic: gifsOrStickers?.length <= 0 ?? true,
+  };
+}
+
 /**
  * Returns the blend with id passed in request query.
  * Retrieves the generated version by default, unless specified otherwise in the version
@@ -148,8 +172,6 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   }
 
   const {
-    id: blendId,
-    status,
     images,
     externalImages,
     gifsOrStickers,
@@ -158,10 +180,6 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     links,
     interactions,
     metadata,
-    output,
-    filePath,
-    imagePath,
-    isWatermarked,
     background,
   } = blend;
 
@@ -204,18 +222,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
 
     return res.send(recipe);
   }
-
-  const trimmedBlend = {
-    id: blendId,
-    status,
-    filePath,
-    imagePath,
-    output,
-    isWatermarked,
-    interactions: trimInteractions(blend),
-    isStatic: gifsOrStickers?.length <= 0 ?? true,
-  };
-
+  const trimmedBlend = trim(blend);
   res.send(trimmedBlend);
 };
 
@@ -350,7 +357,7 @@ const submitBlend = async (
         schema: ExportRequestSchema.Blend,
       });
       const generatedBlend = await blendService.getBlend(id, null, true);
-      res.send(generatedBlend);
+      res.send(trim(generatedBlend));
     }
   );
 };
