@@ -1,7 +1,7 @@
 import { diContainer } from "inversify.config";
 import Joi from "joi";
 import { NextApiResponse } from "next";
-import { MethodNotAllowedError } from "server/base/errors";
+import { MethodNotAllowedError, UserError } from "server/base/errors";
 import {
   ensureAuth,
   NextApiRequestExtended,
@@ -50,6 +50,11 @@ async function register(
   // TODO: Put this back
   // await referralService.ensureDeviceIdIsOriginal(body.deviceId);
   const referrer = await referralService.getReferrerOrFail(body.referralId);
+  if (req.uid === referrer.id) {
+    throw new UserError(
+      `User found to be trying to self refer! Id: ${referrer.id}`
+    );
+  }
   if (body.dryRun) {
     return res.send({
       referrerId: referrer.id,
