@@ -15,7 +15,7 @@ export default withReqHandler(
     const { method } = req;
     switch (method) {
       case "GET":
-        return ensureAuth(getAllBlends, req, res);
+        return ensureAuth(getUserBlends, req, res);
       case "POST":
         return ensureAuth(initBlend, req, res);
       default:
@@ -35,7 +35,7 @@ const initBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   }
 };
 
-const getAllBlends = async (
+const getUserBlends = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
@@ -44,6 +44,6 @@ const getAllBlends = async (
     query: { pageKey },
   } = req;
   const response: { data: Blend[]; nextPageKey: string } =
-    await blendService.getAllBlendsForUser(req.uid, pageKey as string);
+    await blendService.getUserBlends(req.uid, pageKey as string);
   res.send(response);
 };

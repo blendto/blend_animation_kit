@@ -5,8 +5,10 @@ import AWS from "server/external/aws";
 import DynamoDB from "server/external/dynamodb";
 import {
   copyObject,
+  deleteMultipleObjects,
   deleteObject,
   getObject,
+  listObjectsInFolder,
   uploadObject,
 } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
@@ -232,6 +234,56 @@ export default class HeroImageService implements IService {
       ConfigProvider.HERO_IMAGES_BUCKET,
       thumbnailFileKey,
       this.bufferToStream(thumbnail)
+    );
+  }
+
+  async getAllUserImages(uid: string): Promise<Partial<HeroImage>[]> {
+    let images: Partial<HeroImage>[] = [];
+    let pageKeyObject: Record<string, unknown>;
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      const data = await this.dataStore.queryItems({
+        TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
+        KeyConditionExpression: "#userId = :userId",
+        IndexName: "userId-lastUsedAt-index",
+        ExpressionAttributeNames: {
+          "#userId": "userId",
+        },
+        ExpressionAttributeValues: {
+          ":userId": uid,
+        },
+        ProjectionExpression: "id",
+        ExclusiveStartKey: pageKeyObject,
+      });
+      images = images.concat(data.Items);
+      pageKeyObject = data.LastEvaluatedKey;
+    } while (pageKeyObject);
+
+    return images;
+  }
+
+  async cleanupUserImages(uid: string): Promise<void> {
+    const images = await this.getAllUserImages(uid);
+    const deleteS3ObjectsPromises: Promise<void>[] = images.map(
+      (i) =>
+        new Promise((resolve, reject) => {
+          listObjectsInFolder(ConfigProvider.HERO_IMAGES_BUCKET, i.id)
+            .then((heroObjects) => {
+              if (heroObjects.length) {
+                return deleteMultipleObjects(
+                  ConfigProvider.HERO_IMAGES_BUCKET,
+                  heroObjects.map((o) => o.Key)
+                );
+              }
+            })
+            .then(() => resolve())
+            .catch((err) => reject(err));
+        })
+    );
+    await Promise.all(deleteS3ObjectsPromises);
+    await this.dataStore.batchDeleteItems(
+      ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
+      images
     );
   }
 }

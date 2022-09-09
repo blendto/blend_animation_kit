@@ -125,4 +125,30 @@ export default class DynamoDB implements IDataStore {
       });
     });
   }
+
+  async batchDeleteItems(
+    tableName: string,
+    keys: Record<string, unknown>[]
+  ): Promise<void> {
+    do {
+      const keysBatch = keys.splice(0, 25);
+      if (keysBatch.length > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        const res = await this.getClient()
+          .batchWrite({
+            RequestItems: {
+              [tableName]: keysBatch.map((k) => ({
+                DeleteRequest: { Key: k },
+              })),
+            },
+          })
+          .promise();
+        if (res.UnprocessedItems[tableName]) {
+          keys = keys.concat(
+            res.UnprocessedItems[tableName].map((wR) => wR.DeleteRequest.Key)
+          );
+        }
+      }
+    } while (keys.length > 0);
+  }
 }

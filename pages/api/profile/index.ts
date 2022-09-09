@@ -12,6 +12,15 @@ import {
   validate,
   withReqHandler,
 } from "server/helpers/request";
+import { BlendService } from "server/service/blend";
+import HeroImageService from "server/service/heroImage";
+import { BatchService } from "server/service/batch";
+import SubscriptionService from "server/service/subscription";
+import Firebase from "server/external/firebase";
+import AppleService from "server/external/apple";
+import { QueueConfig } from "server/external/queue";
+import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
+import { UserAccountActionType } from "server/base/models/queue-messages";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -24,6 +33,9 @@ export default withReqHandler(
       case "PATCH":
         await ensureAuth(updateProfile, req, res);
         break;
+      case "DELETE":
+        await ensureAuth(deleteProfile, req, res);
+        break;
       default:
         res.status(400).json({ code: 400, message: "Invalid request" });
     }
@@ -35,7 +47,9 @@ const getProfile = async (
   res: NextApiResponse
 ) => {
   const userService = diContainer.get<UserService>(TYPES.UserService);
-  return res.json(await userService.getOrCreate(req.uid));
+  const profile = await userService.getOrCreate(req.uid);
+  delete profile.appleOfflineToken;
+  return res.json(profile);
 };
 
 const UPDATE_BODY_SCHEMA = Joi.object({
@@ -70,10 +84,24 @@ const updateProfile = async (
   );
 
   const userService = diContainer.get<UserService>(TYPES.UserService);
-  res.send(
-    await userService.update(
-      req.uid,
-      (req.body as { changes: UserJSONUpdate[] }).changes
-    )
+  const profile = await userService.update(
+    req.uid,
+    (req.body as { changes: UserJSONUpdate[] }).changes
   );
+  delete profile.appleOfflineToken;
+  res.send(profile);
+};
+
+const deleteProfile = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
+  const userAccountActionQueue = diContainer.get<
+    UserAccountActionQueue<QueueConfig>
+  >(TYPES.UserAccountActionQueue);
+  await userAccountActionQueue.writeMessage({
+    action: UserAccountActionType.DELETE,
+    userId: req.uid,
+  });
+  res.status(202).end();
 };

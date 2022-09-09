@@ -21,6 +21,22 @@ class ConfigProvider {
     }
   }
 
+  public get APPLE_TEAM_ID(): string {
+    return this.retrieveOrCrash("APPLE_TEAM_ID");
+  }
+
+  public get APPLE_APP_ID(): string {
+    return this.retrieveOrCrash("APPLE_APP_ID");
+  }
+
+  public get APPLE_KEY_ID(): string {
+    return this.retrieveOrCrash("APPLE_KEY_ID");
+  }
+
+  public get APPLE_AUTH_KEY(): string {
+    return this.retrieveOrCrash("APPLE_AUTH_KEY");
+  }
+
   public get BATCH_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("BATCH_DYNAMODB_TABLE");
   }
@@ -143,6 +159,10 @@ class ConfigProvider {
 
   public get BATCH_TASK_QUEUE_URL(): string {
     return process.env.BATCH_TASK_QUEUE_URL;
+  }
+
+  public get USER_ACCOUNT_ACTION_QUEUE_URL(): string {
+    return this.retrieveOrCrash("USER_ACCOUNT_ACTION_QUEUE_URL");
   }
 
   public get UPLOADS_EVENT_QUEUE_URL(): string {

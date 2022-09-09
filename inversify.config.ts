@@ -39,6 +39,11 @@ import { DaxDB } from "server/external/dax";
 import FileKeysService from "server/service/fileKeys";
 import CleverTapService from "server/external/clevertap";
 import { CreditsService } from "server/service/credits";
+import AppleService from "server/external/apple";
+import {
+  UserAccountActionQueue,
+  UserAccountActionSqsConfig,
+} from "server/external/queue/userAccountActionQueue";
 
 const diContainer = new Container();
 
@@ -71,6 +76,15 @@ diContainer
       new BatchTaskQueue<BatchTaskSqsConfig>(
         new SqsProvider(),
         new BatchTaskSqsConfig()
+      )
+  );
+diContainer
+  .bind<UserAccountActionQueue<QueueConfig>>(TYPES.UserAccountActionQueue)
+  .toDynamicValue(
+    () =>
+      new UserAccountActionQueue<UserAccountActionSqsConfig>(
+        new SqsProvider(),
+        new UserAccountActionSqsConfig()
       )
   );
 diContainer
@@ -124,6 +138,9 @@ diContainer
 diContainer
   .bind<Repo<Analytics>>(TYPES.AnalyticsRepo)
   .toDynamicValue(() => new AnalyticsDynamooseRepo());
+diContainer
+  .bind<AppleService>(TYPES.AppleService)
+  .toDynamicValue(() => new AppleService());
 diContainer
   .bind<CleverTapService>(TYPES.CleverTapService)
   .toDynamicValue(() => new CleverTapService());

@@ -20,7 +20,7 @@ export default withReqHandler(
       case "POST":
         return ensureAuth(createBatch, req, res);
       case "GET":
-        return ensureAuth(getAllBatches, req, res);
+        return ensureAuth(getUserBatches, req, res);
       default:
         res.status(405).end();
     }
@@ -53,7 +53,7 @@ const createBatch = async (
   res.status(200).json(newBatch);
 };
 
-async function getAllBatches(
+async function getUserBatches(
   req: NextApiRequestExtended,
   res: NextApiResponse
 ): Promise<void> {
@@ -61,6 +61,6 @@ async function getAllBatches(
   const {
     query: { pageKey },
   } = req;
-  const batches = await batchService.getAllBatches(req.uid, pageKey as string);
+  const batches = await batchService.getUserBatches(req.uid, pageKey as string);
   res.status(200).send(batches);
 }

@@ -119,6 +119,10 @@ export default class SubscriptionService implements IService {
     ).data;
   }
 
+  async delete(userId: string): Promise<void> {
+    await this.creditServiceApi.delete(userId);
+  }
+
   private transform(original: Record<string, unknown>): SubscriptionEntity {
     return {
       adhocCredits: original.adhocCredits as number,

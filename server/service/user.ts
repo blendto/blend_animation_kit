@@ -17,6 +17,11 @@ import { JSONPatch, Repo } from "server/repositories/base";
 import { UserUpdatePaths } from "server/repositories/user";
 import { UpdateOperations } from "server/repositories";
 import { SuggestionService } from "server/service/suggestion";
+import AppleService from "server/external/apple";
+import { UserAccountActionMessage } from "server/base/models/queue-messages";
+import HeroImageService from "./heroImage";
+import { BatchService } from "./batch";
+import SubscriptionService from "./subscription";
 
 export type UserJSONUpdate = {
   path: UserUpdatePaths;
@@ -190,7 +195,7 @@ export class UserService implements IService {
       ...profile,
       referralId: await this.generateUniqueReferralId(profile),
     };
-    return await this.repo.create(profile);
+    return await this.repo.createWithoutSurrogateKey(profile);
   }
 
   async migrateUserBlends(
@@ -270,5 +275,33 @@ export class UserService implements IService {
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.repo.delete({ id });
+  }
+
+  async deleteAccount(id: string): Promise<void> {
+    const appleService = diContainer.get<AppleService>(TYPES.AppleService);
+    const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
+    const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+    const heroImageService = diContainer.get<HeroImageService>(
+      TYPES.HeroImageService
+    );
+    const batchService = diContainer.get<BatchService>(TYPES.BatchService);
+    const subscriptionService = diContainer.get<SubscriptionService>(
+      TYPES.SubscriptionService
+    );
+
+    const user = await this.getOrCreate(id);
+    if (user.appleOfflineToken) {
+      await appleService.revokeToken(user.appleOfflineToken);
+    }
+    await this.delete(id);
+    await firebaseService.deleteUser(id);
+    await blendService.cleanupUserBlends(id);
+    await heroImageService.cleanupUserImages(id);
+    await batchService.cleanupUserBatches(id);
+    await subscriptionService.delete(id);
   }
 }

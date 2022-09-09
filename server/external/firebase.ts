@@ -95,6 +95,10 @@ export default class Firebase {
     }
   }
 
+  async deleteUser(id: string) {
+    return await admin.auth().deleteUser(id);
+  }
+
   async getUserByIds(ids: string[]) {
     return await admin.auth().getUsers(ids.map((id) => ({ uid: id })));
   }

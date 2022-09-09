@@ -39,6 +39,15 @@ export default class CreditServiceApi {
     ).data;
   }
 
+  async delete(userId: string): Promise<void> {
+    await handleInternalAxiosCall<Record<string, unknown>>(
+      async () =>
+        await this.httpClient.delete(
+          `/v1/subscriptions?source=${Source.FIREBASE}&subject=${userId}`
+        )
+    );
+  }
+
   async addCredits(
     userId: string,
     count: number,

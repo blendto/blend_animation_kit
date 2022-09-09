@@ -8,9 +8,13 @@ import { UploadService } from "server/service/queue/upload";
 import { ImageUploadEventQueue } from "server/external/queue/imageUploadQueue";
 import tracer from "dd-trace";
 import {
+  UserAccountActionMessage,
   BatchTaskMessage,
   ImageUploadMessage,
+  UserAccountActionType,
 } from "server/base/models/queue-messages";
+import { UserService } from "server/service/user";
+import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
 
 const SIMULTANEOUS_QUEUE_COUNT = 10;
 
@@ -24,6 +28,10 @@ const uploadService = diContainer.get<UploadService>(TYPES.UploadService);
 const uploadEventQueue = diContainer.get<ImageUploadEventQueue<QueueConfig>>(
   TYPES.ImageUploadEventQueue
 );
+const userService = diContainer.get<UserService>(TYPES.UserService);
+const userAccountActionQueue = diContainer.get<
+  UserAccountActionQueue<QueueConfig>
+>(TYPES.UserAccountActionQueue);
 
 function logError(op: string, qMessage: object, e: unknown): Promise<void> {
   logger.error({ op, message: { qMessage, error: e as object } });
@@ -44,6 +52,32 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
     onMessage
   );
   const consumer = batchTaskQueue.createQueueConsumer(onMessage);
+  consumer.start();
+}
+
+for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
+  let onMessage = async (message: UserAccountActionMessage) => {
+    try {
+      switch (message.action) {
+        case UserAccountActionType.DELETE:
+          await userService.deleteAccount(message.userId);
+          break;
+        default:
+          logger.error({
+            op: "INVALID_USER_ACCOUNT_ACTION",
+            message,
+          });
+      }
+    } catch (e: unknown) {
+      return logError("USER_ACCOUNT_ACTION_FAILURE", message, e);
+    }
+  };
+  onMessage = tracer.wrap(
+    "sqs.message_received",
+    { resource: "user_account_action_processor" },
+    onMessage
+  );
+  const consumer = userAccountActionQueue.createQueueConsumer(onMessage);
   consumer.start();
 }
 

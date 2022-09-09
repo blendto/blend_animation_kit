@@ -18,9 +18,14 @@ import { EncodedPageKey } from "server/helpers/paginationUtils";
 import UserError from "server/base/errors/UserError";
 import { ImageMetadata, Recipe } from "server/base/models/recipe";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
-import { copyObject } from "server/external/s3";
+import {
+  copyObject,
+  deleteMultipleObjects,
+  listObjectsInFolder,
+} from "server/external/s3";
 import { IService } from "server/service";
 import FileKeysService from "server/service/fileKeys";
+import { ObjectList } from "aws-sdk/clients/s3";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -374,7 +379,7 @@ export class BlendService implements IService {
     });
   }
 
-  async getAllBlendsForUser(
+  async getUserBlends(
     uid: string,
     pageKey: string
   ): Promise<{ data: Blend[]; nextPageKey: string }> {
@@ -403,6 +408,67 @@ export class BlendService implements IService {
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
+  }
+
+  async getAllUserBlends(uid: string): Promise<Partial<Blend>[]> {
+    let blends: Partial<Blend>[] = [];
+    let pageKeyObject: Record<string, unknown>;
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      const data = await this.dataStore.queryItems({
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+        KeyConditionExpression: "#createdBy = :createdBy",
+        IndexName: "createdBy-updatedAt-idx",
+        ExpressionAttributeNames: {
+          "#createdBy": "createdBy",
+        },
+        ExpressionAttributeValues: {
+          ":createdBy": uid,
+        },
+        ProjectionExpression: "id",
+        ExclusiveStartKey: pageKeyObject,
+      });
+      blends = blends.concat(data.Items);
+      pageKeyObject = data.LastEvaluatedKey;
+    } while (pageKeyObject);
+
+    return blends;
+  }
+
+  async cleanupUserBlends(uid: string): Promise<void> {
+    const blends = await this.getAllUserBlends(uid);
+    const deleteS3ObjectsPromises: Promise<void>[] = blends.map(
+      (b) =>
+        new Promise((resolve, reject) => {
+          listObjectsInFolder(ConfigProvider.BLEND_INGREDIENTS_BUCKET, b.id)
+            .then((ingredientObjects) => {
+              if (ingredientObjects.length) {
+                return deleteMultipleObjects(
+                  ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+                  ingredientObjects.map((o) => o.Key)
+                );
+              }
+            })
+            .then(() =>
+              listObjectsInFolder(ConfigProvider.BLEND_OUTPUT_BUCKET, b.id)
+            )
+            .then((outputObjects) => {
+              if (outputObjects.length) {
+                return deleteMultipleObjects(
+                  ConfigProvider.BLEND_OUTPUT_BUCKET,
+                  outputObjects.map((o) => o.Key)
+                );
+              }
+            })
+            .then(() => resolve())
+            .catch((err) => reject(err));
+        })
+    );
+    await Promise.all(deleteS3ObjectsPromises);
+    await this.dataStore.batchDeleteItems(
+      ConfigProvider.BLEND_DYNAMODB_TABLE,
+      blends
+    );
   }
 
   async copyRecipeToBlend(

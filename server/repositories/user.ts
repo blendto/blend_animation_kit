@@ -12,6 +12,7 @@ import { User } from "server/base/models/user";
 export enum UserUpdatePaths {
   stripeCustomerId = "/stripeCustomerId",
   favouriteRecipes = "/favouriteRecipes",
+  appleOfflineToken = "/appleOfflineToken",
 }
 
 const userDynamooseSchema = new DynamooseSchema({
@@ -20,6 +21,9 @@ const userDynamooseSchema = new DynamooseSchema({
     hashKey: true,
   },
   stripeCustomerId: {
+    type: String,
+  },
+  appleOfflineToken: {
     type: String,
   },
   referralId: {

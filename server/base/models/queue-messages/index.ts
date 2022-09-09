@@ -24,3 +24,12 @@ export interface ImageUploadMessage extends QueueMessage {
     };
   }[];
 }
+
+export enum UserAccountActionType {
+  DELETE = "DELETE",
+}
+
+export interface UserAccountActionMessage extends QueueMessage {
+  action: UserAccountActionType;
+  userId: string;
+}

@@ -43,6 +43,7 @@ export abstract class Repo<ExtendedEntity extends Entity> {
     jsonPatch: JSONPatch,
     currentData?: ExtendedEntity
   ): Promise<ExtendedEntity>;
+  abstract delete?(keyObject: KeyObject): Promise<void>;
 }
 
 export class DynamooseRepo<
@@ -135,6 +136,10 @@ export class DynamooseRepo<
       keyObject,
       updateSet as unknown as Partial<DynamooseExtendedEntity>
     )) as unknown as ExtendedEntity;
+  }
+
+  async delete(keyObject: KeyObject): Promise<void> {
+    await this.model.delete(keyObject);
   }
 }
 

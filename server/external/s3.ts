@@ -279,6 +279,31 @@ export const deleteObject = async (
   });
 };
 
+export const deleteMultipleObjects = async (
+  bucketName: string,
+  fileKeys: string[]
+): Promise<void> => {
+  const s3 = await getS3();
+  const params = {
+    Bucket: bucketName,
+    Delete: {
+      Objects: fileKeys.map((f) => ({ Key: f })),
+    },
+  };
+  return new Promise((resolve, reject) => {
+    s3.deleteObjects(params, (err) => {
+      if (err) {
+        logger.error({
+          op: err.code,
+          message: err.message,
+        });
+        return reject(err);
+      }
+      return resolve();
+    });
+  });
+};
+
 export const listObjectsInFolder = async (
   bucketName: string,
   folderPrefix: string
