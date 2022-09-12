@@ -21,20 +21,18 @@ class ConfigProvider {
     }
   }
 
-  public get APPLE_TEAM_ID(): string {
-    return this.retrieveOrCrash("APPLE_TEAM_ID");
-  }
-
-  public get APPLE_APP_ID(): string {
-    return this.retrieveOrCrash("APPLE_APP_ID");
-  }
-
-  public get APPLE_KEY_ID(): string {
-    return this.retrieveOrCrash("APPLE_KEY_ID");
-  }
-
-  public get APPLE_AUTH_KEY(): string {
-    return this.retrieveOrCrash("APPLE_AUTH_KEY");
+  public get APPLE_CONF(): {
+    teamId: string;
+    appId: string;
+    authKey: string;
+    keyId: string;
+  } {
+    let parsedJSON = JSON.parse(this.retrieveOrCrash("APPLE_CONF"));
+    parsedJSON = {
+      ...parsedJSON,
+      authKey: parsedJSON["authKey"].replace(/\\n/g, "\n"),
+    };
+    return parsedJSON;
   }
 
   public get BATCH_DYNAMODB_TABLE(): string {

@@ -10,18 +10,18 @@ export default class AppleService {
   private generateJWT() {
     return Jwt.sign(
       {
-        iss: ConfigProvider.APPLE_TEAM_ID,
+        iss: ConfigProvider.APPLE_CONF.teamId,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 120,
         aud: "https://appleid.apple.com",
-        sub: ConfigProvider.APPLE_APP_ID,
+        sub: ConfigProvider.APPLE_CONF.appId,
       },
-      ConfigProvider.APPLE_AUTH_KEY,
+      ConfigProvider.APPLE_CONF.authKey,
       {
         algorithm: "ES256",
         header: {
           alg: "ES256",
-          kid: ConfigProvider.APPLE_KEY_ID,
+          kid: ConfigProvider.APPLE_CONF.keyId,
         },
       }
     );
@@ -30,7 +30,7 @@ export default class AppleService {
   async getOfflineToken(authCode: string) {
     const data = {
       code: authCode,
-      client_id: ConfigProvider.APPLE_APP_ID,
+      client_id: ConfigProvider.APPLE_CONF.appId,
       client_secret: this.generateJWT(),
       grant_type: "authorization_code",
     };
@@ -55,7 +55,7 @@ export default class AppleService {
   async revokeToken(offlineToken: string) {
     const data = {
       token: offlineToken,
-      client_id: ConfigProvider.APPLE_APP_ID,
+      client_id: ConfigProvider.APPLE_CONF.appId,
       client_secret: this.generateJWT(),
       token_type_hint: "refresh_token",
     };

@@ -3,10 +3,7 @@ const Joi = require("joi");
 module.exports = {
   EnvironmentVarsSchema: Joi.object()
     .keys({
-      APPLE_TEAM_ID: Joi.string().required(),
-      APPLE_APP_ID: Joi.string().required(),
-      APPLE_KEY_ID: Joi.string().required(),
-      APPLE_AUTH_KEY: Joi.string().required(),
+      APPLE_CONF: Joi.string().required(),
       NEXT_PUBLIC_SELF_BASE_PATH: Joi.string().required(),
       RECIPE_DYNAMODB_TABLE: Joi.string().required(),
       RECIPE_LISTS_DYNAMODB_TABLE: Joi.string().required(),
