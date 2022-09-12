@@ -19,9 +19,6 @@ export async function handleAxiosCall<ResponseDataType>(
         }
         throw new UserError(errMessage as string);
       }
-      logger.error(
-        `Axios call failed with message: ${(error as AxiosError).message}`
-      );
       throw error;
     }
     logger.error(error);
