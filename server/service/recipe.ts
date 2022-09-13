@@ -178,8 +178,9 @@ export class RecipeService implements IService {
     await zipper.finalize();
     await zipperWithoutHero.finalize();
 
-    const zipURL = `${recipe.id}/${recipe.variant}/zip/image-assets.zip`;
-    const zipWithoutHeroURL = `${recipe.id}/${recipe.variant}/zip/image-assets-without-hero.zip`;
+    const now = Date.now();
+    const zipURL = `${recipe.id}/${recipe.variant}/zip/image-assets-${now}.zip`;
+    const zipWithoutHeroURL = `${recipe.id}/${recipe.variant}/zip/image-assets-without-hero-${now}.zip`;
     uploadPromises.push(
       uploadObject(ConfigProvider.RECIPE_INGREDIENTS_BUCKET, zipURL, buff)
     );
