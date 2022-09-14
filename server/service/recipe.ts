@@ -95,7 +95,7 @@ export class RecipeService implements IService {
 
   async optimize(
     recipe: Recipe
-  ): Promise<{ zipURL: string; zipWithoutHeroURL: string }> {
+  ): Promise<{ zipURL?: string; zipWithoutHeroURL?: string }> {
     const zipper = this.initImagesZipper();
     const zip = this.initImagesZip();
     zipper.pipe(zip);
@@ -128,6 +128,7 @@ export class RecipeService implements IService {
 
     const uploadPromises = [];
 
+    let optimized = false;
     await Promise.all(
       recipe.images.map(async (imageData, index) => {
         let image: Buffer;
@@ -141,7 +142,6 @@ export class RecipeService implements IService {
             `Image download failed. Recipe is possibly corrupted. Id: ${recipe.id}. Variant: ${recipe.variant}. Image URI: ${imageData.uri}`
           );
         }
-
         if (!imageData.uri.endsWith("-optimized.webp")) {
           const compressedImageOutput = await this.compressImage(image);
           if (compressedImageOutput.data.byteLength < image.byteLength) {
@@ -158,6 +158,7 @@ export class RecipeService implements IService {
             images[index].uri = optimizedFileURI;
 
             image = compressedImageOutput.data;
+            optimized = true;
           }
         }
 
@@ -168,9 +169,13 @@ export class RecipeService implements IService {
         }
       })
     );
+
+    if (!optimized) {
+      return {};
+    }
+
     await zipper.finalize();
     await zipperWithoutHero.finalize();
-
     const now = Date.now();
     const zipURL = `${recipe.id}/${recipe.variant}/zip/image-assets-${now}.zip`;
     const zipWithoutHeroURL = `${recipe.id}/${recipe.variant}/zip/image-assets-without-hero-${now}.zip`;
