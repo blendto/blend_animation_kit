@@ -19,7 +19,6 @@ import {
 } from "server/external/s3";
 import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import logger from "server/base/Logger";
-import { bufferToStream } from "server/helpers/bufferUtils";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -98,15 +97,11 @@ export class RecipeService implements IService {
     recipe: Recipe
   ): Promise<{ zipURL: string; zipWithoutHeroURL: string }> {
     const zipper = this.initImagesZipper();
-    const zip = this.initImagesZip(
-      `Images zipped. Zip file size: ${zipper.pointer()}`
-    );
+    const zip = this.initImagesZip();
     zipper.pipe(zip);
 
     const zipperWithoutHero = this.initImagesZipper();
-    const zipWithoutHero = this.initImagesZip(
-      `Images (without hero) zipped. Zip file size: ${zipperWithoutHero.pointer()}`
-    );
+    const zipWithoutHero = this.initImagesZip();
     zipperWithoutHero.pipe(zipWithoutHero);
 
     // Pipe the zip (with hero image) to a buffer to monitor for large sizes
@@ -148,7 +143,6 @@ export class RecipeService implements IService {
         }
 
         if (!imageData.uri.endsWith("-optimized.webp")) {
-          logger.debug(`Optimize ${imageData.uri}`);
           const compressedImageOutput = await this.compressImage(image);
           if (compressedImageOutput.data.byteLength < image.byteLength) {
             const optimizedFileURI =
@@ -167,7 +161,6 @@ export class RecipeService implements IService {
           }
         }
 
-        logger.debug(`Zip ${imageData.uri}`);
         const name = imageData.uri.split(`${recipe.id}/`)[1];
         zipper.append(image, { name });
         if (recipe.recipeDetails.elements.hero?.uid !== imageData.uid) {
@@ -219,6 +212,15 @@ export class RecipeService implements IService {
       ReturnValues: "NONE",
     });
 
+    logger.info({
+      op: "OPTIMIZE_RECIPE",
+      id: recipe.id,
+      variant: recipe.variant,
+      sizeInBytes: {
+        withHero: zipper.pointer(),
+        withoutHero: zipperWithoutHero.pointer(),
+      },
+    });
     return { zipURL, zipWithoutHeroURL };
   }
 
@@ -235,13 +237,10 @@ export class RecipeService implements IService {
     return zipper;
   }
 
-  private initImagesZip(onCloseMessage: string) {
+  private initImagesZip() {
     const zip = new MemoryStream();
     zip.on("error", (err) => {
       throw err;
-    });
-    zip.on("close", () => {
-      logger.info(onCloseMessage);
     });
     return zip;
   }
