@@ -1,12 +1,10 @@
 import "reflect-metadata";
-import axios from "axios";
 import admin from "firebase-admin";
 import { nanoid } from "nanoid";
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import { NextApiRequest } from "next";
 import { injectable } from "inversify";
-import { handleInternalAxiosCall } from "server/helpers/network";
 import UserError from "server/base/errors/UserError";
 import ConfigProvider from "../base/ConfigProvider";
 
@@ -81,9 +79,9 @@ export default class Firebase {
     return claims.uid;
   }
 
-  async getUserById(id: string) {
+  async withUserErrorHandler(res: Promise<admin.auth.UserRecord | void>) {
     try {
-      return await admin.auth().getUser(id);
+      return await res;
     } catch (e) {
       const errCode = (e as Record<string, unknown>).code;
       if (errCode === "auth/user-not-found") {
@@ -95,8 +93,14 @@ export default class Firebase {
     }
   }
 
+  async getUserById(id: string) {
+    return (await this.withUserErrorHandler(
+      admin.auth().getUser(id)
+    )) as admin.auth.UserRecord;
+  }
+
   async deleteUser(id: string) {
-    return await admin.auth().deleteUser(id);
+    return await this.withUserErrorHandler(admin.auth().deleteUser(id));
   }
 
   async getUserByIds(ids: string[]) {

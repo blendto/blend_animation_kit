@@ -12,13 +12,13 @@ import { inject, injectable } from "inversify";
 import IpApi from "server/external/ipapi";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import logger from "server/base/Logger";
-import Firebase from "server/external/firebase";
+import Firebase, { FirebaseErrCode } from "server/external/firebase";
 import { JSONPatch, Repo } from "server/repositories/base";
 import { UserUpdatePaths } from "server/repositories/user";
 import { UpdateOperations } from "server/repositories";
 import { SuggestionService } from "server/service/suggestion";
 import AppleService from "server/external/apple";
-import { UserAccountActionMessage } from "server/base/models/queue-messages";
+import { UserError } from "server/base/errors";
 import HeroImageService from "./heroImage";
 import { BatchService } from "./batch";
 import SubscriptionService from "./subscription";
@@ -121,8 +121,12 @@ export class UserService implements IService {
     return profile;
   }
 
+  async get(id: string): Promise<void | User> {
+    return await this.repo.get({ id });
+  }
+
   async getOrCreate(id: string): Promise<User> {
-    let profile = await this.repo.get({ id });
+    let profile = await this.get(id);
     if (!profile) {
       profile = await this.create(id);
     }
@@ -293,15 +297,38 @@ export class UserService implements IService {
       TYPES.SubscriptionService
     );
 
-    const user = await this.getOrCreate(id);
-    if (user.appleOfflineToken) {
+    const user = (await this.get(id)) as User;
+    if (user?.appleOfflineToken) {
       await appleService.revokeToken(user.appleOfflineToken);
     }
     await this.delete(id);
-    await firebaseService.deleteUser(id);
+    try {
+      await firebaseService.deleteUser(id);
+    } catch (e) {
+      if (
+        !(e instanceof UserError && e.code === FirebaseErrCode.USER_NOT_FOUND)
+      ) {
+        throw e;
+      }
+      // This must be a retry where the firebase account deletion was successful in a previous try.
+      // Move on.
+    }
     await blendService.cleanupUserBlends(id);
     await heroImageService.cleanupUserImages(id);
     await batchService.cleanupUserBatches(id);
-    await subscriptionService.delete(id);
+    try {
+      await subscriptionService.delete(id);
+    } catch (e) {
+      if (
+        // TODO: Add error codes to credit service and user it to verify
+        /* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,
+        @typescript-eslint/no-unsafe-argument */
+        !(JSON.parse(e.message || "{}").message === "Subscription not found")
+      ) {
+        throw e;
+      }
+      // This must be a retry where the credit service account deletion was
+      // successful in a previous try. Move on.
+    }
   }
 }

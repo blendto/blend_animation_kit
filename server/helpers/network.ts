@@ -19,9 +19,7 @@ export async function handleAxiosCall<ResponseDataType>(
         }
         throw new UserError(errMessage as string);
       }
-      throw error;
     }
-    logger.error(error);
     throw error;
   }
 }
@@ -34,7 +32,7 @@ export async function handleInternalAxiosCall<ResponseDataType>(
   } catch (error) {
     // Internal call failures should always be a 500
     if (error instanceof UserError) {
-      logger.error(`Axios call failed with message: ${error.message}`);
+      logger.warn({ op: "AXIOS_CALL_FAILED", message: error.message });
       throw new Error(error.message);
     }
     throw error;
