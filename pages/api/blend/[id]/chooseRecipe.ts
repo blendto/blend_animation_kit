@@ -21,6 +21,7 @@ import {
   RecipeWrapper,
 } from "server/base/models/recipe";
 import BrandingService from "server/service/branding";
+import { SuggestionService } from "../../../../server/service/suggestion";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -117,14 +118,19 @@ const useRecipeForBlend = async (
 
   await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
 
+  const recipeVariantId = await diContainer
+    .get<SuggestionService>(TYPES.SuggestionService)
+    .backfillRecipeDetails({ id: recipe.id, variant: recipe.variant });
+
   return res.send({
     ...recipe,
     metadata: {
       ...recipe.metadata,
       sourceRecipeId: recipe.id,
-      sourceRecipe: { id: recipe.id, variant: recipe.variant },
+      sourceRecipe: recipeVariantId,
     },
     id: blendId,
     images: blendImages,
+    heroImages: fileKeys,
   });
 };

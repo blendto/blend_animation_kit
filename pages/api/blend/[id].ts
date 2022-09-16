@@ -181,6 +181,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     interactions,
     metadata,
     background,
+    heroImages,
   } = blend;
 
   if (
@@ -206,6 +207,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       interactions,
       metadata,
       background,
+      heroImages,
     };
 
     if (metadata.source.version >= 2.0 && target == null) {
