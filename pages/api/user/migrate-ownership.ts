@@ -36,9 +36,12 @@ const migrateOwnership = async (
     ownerMigrationRequest.sourceUserAccessToken
   );
   const sourceUid = decodedIdToken.uid;
-  const migratedBlends = await userService.migrateUserBlends(
-    sourceUid,
-    req.uid
-  );
-  return res.status(200).json({ migratedBlends });
+  const blendsPromise = userService.migrateUserBlends(sourceUid, req.uid);
+  const batchesPromise = userService.migrateUserBatches(sourceUid, req.uid);
+
+  const [migratedBlends, migratedBatches] = await Promise.all([
+    blendsPromise,
+    batchesPromise,
+  ]);
+  return res.status(200).json({ migratedBlends, migratedBatches });
 };

@@ -217,6 +217,21 @@ export class UserService implements IService {
     return await Promise.all(updates);
   }
 
+  async migrateUserBatches(
+    sourceUid: string,
+    targetUid: string
+  ): Promise<string[]> {
+    const batchService = diContainer.get<BatchService>(TYPES.BatchService);
+    const batchIds = await batchService.getAllUserBatches(sourceUid);
+    const updates = batchIds.map(async (batch) => {
+      await this.updateBatchOwner(batch.id, targetUid);
+      return batch.id;
+    });
+
+    logger.info({ op: "MIGRATE_BATCHES", sourceUid, targetUid, batchIds });
+    return await Promise.all(updates);
+  }
+
   async updateFavouriteRecipes(
     id: string,
     favourites: FavouriteRecipe[]
@@ -277,6 +292,23 @@ export class UserService implements IService {
       },
       Key: { id: blendId },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
+    });
+  }
+
+  private async updateBatchOwner(batchId: string, newUid: string) {
+    await this.dataStore.updateItem({
+      UpdateExpression: "SET #updatedAt = :updatedAt, #createdBy = :createdBy",
+      ExpressionAttributeNames: {
+        "#updatedAt": "updatedAt",
+        "#createdBy": "createdBy",
+      },
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":createdBy": newUid,
+      },
+      Key: { id: batchId },
+      TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
   }
