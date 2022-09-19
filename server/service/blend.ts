@@ -16,7 +16,7 @@ import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import UserError from "server/base/errors/UserError";
-import { ImageMetadata, Recipe } from "server/base/models/recipe";
+import { ImageMetadata, Recipe, RecipeUtils } from "server/base/models/recipe";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
 import {
   copyObject,
@@ -25,7 +25,14 @@ import {
 } from "server/external/s3";
 import { IService } from "server/service";
 import FileKeysService from "server/service/fileKeys";
-import { ObjectList } from "aws-sdk/clients/s3";
+import take from "lodash/take";
+import uniqWith from "lodash/uniqWith";
+import {
+  recipeIdStr,
+  RecipeList,
+  RecipeVariantId,
+} from "server/base/models/recipeList";
+import { DaxDB } from "server/external/dax";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -34,9 +41,12 @@ const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
 type BlendsPage = { blends: Blend[]; nextPageKey: string };
 const PAGE_SIZE = 15;
 
+type RecipeVariantHeroCheckMap = Record<string, boolean>;
+
 @injectable()
 export class BlendService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
+  @inject(TYPES.DaxDB) daxStore: DaxDB;
   @inject(TYPES.FileKeysService) fileKeysService: FileKeysService;
 
   async getBlendIdsForBatch(batchId: string): Promise<string[]> {
@@ -275,6 +285,68 @@ export class BlendService implements IService {
       });
 
     await Promise.all(blendIds.map(clearOne));
+  }
+
+  private async heroCheckMapForRecipes(
+    recipesIds: RecipeVariantId[]
+  ): Promise<RecipeVariantHeroCheckMap> {
+    recipesIds = uniqWith(
+      recipesIds,
+      (value: RecipeVariantId, other: RecipeVariantId) =>
+        value.id === other.id && value.variant === other.variant
+    );
+    const Keys = recipesIds.map(({ id, variant }) => ({ id, variant }));
+    const AttributesToGet = ["id", "recipeDetails", "variant"];
+
+    const responseMap = await this.daxStore.batchGetItems({
+      RequestItems: {
+        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, AttributesToGet },
+      },
+    });
+    const recipes = responseMap[
+      ConfigProvider.RECIPE_DYNAMODB_TABLE
+    ] as Recipe[];
+
+    const idVariantToHeroMap: RecipeVariantHeroCheckMap = {};
+    recipes.forEach((recipe) => {
+      idVariantToHeroMap[recipeIdStr(recipe)] =
+        !!recipe.recipeDetails.elements.hero;
+    });
+    return idVariantToHeroMap;
+  }
+
+  async addRecentsToRecipeLists(
+    uid: string,
+    recipeLists: RecipeList[]
+  ): Promise<RecipeList[]> {
+    const recentBlends = await this.getRecentBlends(uid);
+    let recentRecipes = recentBlends
+      .filter(
+        ({ metadata }) =>
+          !!metadata.sourceRecipe ||
+          (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
+      )
+      .map(
+        ({ metadata }) =>
+          metadata.sourceRecipe ?? {
+            id: metadata.sourceRecipeId,
+            variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
+          }
+      );
+    const heroCheckMap = await this.heroCheckMapForRecipes(recentRecipes);
+    recentRecipes = recentRecipes.filter((r) => heroCheckMap[recipeIdStr(r)]);
+
+    if (recentRecipes.length > 0) {
+      recipeLists.unshift({
+        id: "recents",
+        isEnabled: true,
+        title: "⏰ Recently Used",
+        recipeIds: [],
+        recipes: take(recentRecipes, 5),
+        sortOrder: 0,
+      });
+    }
+    return recipeLists;
   }
 
   async getRecentBlends(uid: string) {

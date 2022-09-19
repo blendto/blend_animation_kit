@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import {
-  recipeIdStr,
   RecipeList,
   RecipeVariantId,
   SavedRecipeSuggestions,
@@ -10,16 +9,11 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
 import RecoEngineApi from "server/internal/reco-engine";
-import { Recipe, RecipeUtils } from "server/base/models/recipe";
-import uniqWith from "lodash/uniqWith";
-import isEqual from "lodash/isEqual";
-import take from "lodash/take";
+import { Recipe } from "server/base/models/recipe";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
-
-type RecipeVariantHeroCheckMap = Record<string, boolean>;
 
 @injectable()
 export class SuggestionService {
@@ -80,35 +74,10 @@ export class SuggestionService {
     );
 
     if (uid) {
-      const recentBlends = await this.blendService.getRecentBlends(uid);
-      let recentRecipes = recentBlends
-        .filter(
-          ({ metadata }) =>
-            !!metadata.sourceRecipe ||
-            (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
-        )
-        .map(
-          ({ metadata }) =>
-            metadata.sourceRecipe ?? {
-              id: metadata.sourceRecipeId,
-              variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
-            }
-        );
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      recentRecipes = uniqWith(recentRecipes, isEqual);
-      const heroCheckMap = await this.heroCheckMapForRecipes(recentRecipes);
-      recentRecipes = recentRecipes.filter((r) => heroCheckMap[recipeIdStr(r)]);
-
-      if (recentRecipes.length > 0) {
-        recipeLists.unshift({
-          id: "recents",
-          isEnabled: true,
-          title: "⏰ Recently Used",
-          recipeIds: [],
-          recipes: take(recentRecipes, 5),
-          sortOrder: 0,
-        });
-      }
+      recipeLists = await this.blendService.addRecentsToRecipeLists(
+        uid,
+        recipeLists
+      );
     }
 
     // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
@@ -151,7 +120,7 @@ export class SuggestionService {
       pageKey
     );
 
-    const recipeLists = suggestions.suggestedRecipeCategories;
+    let recipeLists = suggestions.suggestedRecipeCategories;
 
     recipeLists.sort(
       (a, b) =>
@@ -160,35 +129,10 @@ export class SuggestionService {
     );
 
     if (!pageKey) {
-      const recentBlends = await this.blendService.getRecentBlends(uid);
-      let recentRecipes = recentBlends
-        .filter(
-          ({ metadata }) =>
-            !!metadata.sourceRecipe ||
-            (!!metadata.aspectRatio && !!metadata.sourceRecipeId)
-        )
-        .map(
-          ({ metadata }) =>
-            metadata.sourceRecipe ?? {
-              id: metadata.sourceRecipeId,
-              variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
-            }
-        );
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      recentRecipes = uniqWith(recentRecipes, isEqual);
-      const heroCheckMap = await this.heroCheckMapForRecipes(recentRecipes);
-      recentRecipes = recentRecipes.filter((r) => heroCheckMap[recipeIdStr(r)]);
-
-      if (recentRecipes.length > 0) {
-        recipeLists.unshift({
-          id: "recents",
-          isEnabled: true,
-          title: "⏰ Recently Used",
-          recipeIds: [],
-          recipes: take(recentRecipes, 5),
-          sortOrder: 0,
-        });
-      }
+      recipeLists = await this.blendService.addRecentsToRecipeLists(
+        uid,
+        recipeLists
+      );
     }
 
     return { recipeLists, nextPageKey: suggestions.nextPageKey };
@@ -234,28 +178,5 @@ export class SuggestionService {
     };
 
     return recipeVariantId;
-  }
-
-  private async heroCheckMapForRecipes(
-    recipesIds: RecipeVariantId[]
-  ): Promise<RecipeVariantHeroCheckMap> {
-    const Keys = recipesIds.map(({ id, variant }) => ({ id, variant }));
-    const AttributesToGet = ["id", "recipeDetails", "variant"];
-
-    const responseMap = await this.daxStore.batchGetItems({
-      RequestItems: {
-        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, AttributesToGet },
-      },
-    });
-    const recipes = responseMap[
-      ConfigProvider.RECIPE_DYNAMODB_TABLE
-    ] as Recipe[];
-
-    const idVariantToHeroMap: RecipeVariantHeroCheckMap = {};
-    recipes.forEach((recipe) => {
-      idVariantToHeroMap[recipeIdStr(recipe)] =
-        !!recipe.recipeDetails.elements.hero;
-    });
-    return idVariantToHeroMap;
   }
 }
