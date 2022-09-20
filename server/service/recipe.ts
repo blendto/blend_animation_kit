@@ -93,9 +93,17 @@ export class RecipeService implements IService {
     return { fileName, fileKey };
   }
 
-  async optimize(
-    recipe: Recipe
-  ): Promise<{ zipURL?: string; zipWithoutHeroURL?: string }> {
+  async optimize(recipe: Recipe): Promise<{
+    optimized: boolean;
+    zipURL?: string;
+    zipWithoutHeroURL?: string;
+  }> {
+    const log: Record<string, unknown> = {
+      op: "OPTIMIZE_RECIPE",
+      id: recipe.id,
+      variant: recipe.variant,
+    };
+
     const zipper = this.initImagesZipper();
     const zip = this.initImagesZip();
     zipper.pipe(zip);
@@ -128,7 +136,14 @@ export class RecipeService implements IService {
 
     const uploadPromises = [];
 
-    let optimized = false;
+    const optimizedImages: {
+      name: string;
+      sizeInBytes: {
+        before: number;
+        after: number;
+      };
+      sizeDecreaseInPercentage: number;
+    }[] = [];
     await Promise.all(
       recipe.images.map(async (imageData, index) => {
         let image: Buffer;
@@ -158,7 +173,17 @@ export class RecipeService implements IService {
             images[index].uri = optimizedFileURI;
 
             image = compressedImageOutput.data;
-            optimized = true;
+            optimizedImages.push({
+              name: images[index].uri,
+              sizeInBytes: {
+                before: image.byteLength,
+                after: compressedImageOutput.data.byteLength,
+              },
+              sizeDecreaseInPercentage:
+                ((image.byteLength - compressedImageOutput.data.byteLength) /
+                  image.byteLength) *
+                100,
+            });
           }
         }
 
@@ -170,12 +195,18 @@ export class RecipeService implements IService {
       })
     );
 
-    if (!optimized) {
-      return {};
+    if (optimizedImages.length < 1) {
+      return { optimized: false };
     }
 
     await zipper.finalize();
     await zipperWithoutHero.finalize();
+    log.optimizedImages = optimizedImages;
+    log.sizeInBytes = {
+      withHero: zipper.pointer(),
+      withoutHero: zipperWithoutHero.pointer(),
+    };
+
     const now = Date.now();
     const zipURL = `${recipe.id}/${recipe.variant}/zip/image-assets-${now}.zip`;
     const zipWithoutHeroURL = `${recipe.id}/${recipe.variant}/zip/image-assets-without-hero-${now}.zip`;
@@ -217,16 +248,8 @@ export class RecipeService implements IService {
       ReturnValues: "NONE",
     });
 
-    logger.info({
-      op: "OPTIMIZE_RECIPE",
-      id: recipe.id,
-      variant: recipe.variant,
-      sizeInBytes: {
-        withHero: zipper.pointer(),
-        withoutHero: zipperWithoutHero.pointer(),
-      },
-    });
-    return { zipURL, zipWithoutHeroURL };
+    logger.info(log);
+    return { optimized: true, zipURL, zipWithoutHeroURL };
   }
 
   private initImagesZipper() {

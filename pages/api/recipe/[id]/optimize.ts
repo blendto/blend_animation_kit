@@ -48,5 +48,5 @@ const optimize = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   const recipe = await recipeService.getRecipeOrFail(id, variant);
 
-  res.send({ images: await recipeService.optimize(recipe) });
+  res.send(await recipeService.optimize(recipe));
 };
