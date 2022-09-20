@@ -337,9 +337,7 @@ export class UserService implements IService {
     try {
       await firebaseService.deleteUser(id);
     } catch (e) {
-      if (
-        !(e instanceof UserError && e.code === FirebaseErrCode.USER_NOT_FOUND)
-      ) {
+      if ((e as UserError).code !== FirebaseErrCode.USER_NOT_FOUND) {
         throw e;
       }
       // This must be a retry where the firebase account deletion was successful in a previous try.
