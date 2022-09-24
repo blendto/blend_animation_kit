@@ -210,6 +210,10 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       heroImages,
     };
 
+    if (blend.status === BlendStatus.Initialized) {
+      throw new UserError("This blend cannot be retrieved as a recipe.");
+    }
+
     if (metadata.source.version >= 2.0 && target == null) {
       throw new UserError(
         "This recipe cannot be remixed on this app version. Please upgrade the app."
