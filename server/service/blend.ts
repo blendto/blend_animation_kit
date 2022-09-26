@@ -194,16 +194,16 @@ export class BlendService implements IService {
       }
     } while (true);
 
-    let fileKey = null;
+    let heroImages = null as HeroImageFileKeys | null;
     if (options?.heroFileName) {
-      fileKey = `${blendRequestId}/${options.heroFileName}`;
+      heroImages = {
+        original: `${blendRequestId}/${options.heroFileName}`,
+      };
     }
 
     return await this.addBlendToDB(blendRequestId, uid, {
       batchId: options?.batchId,
-      heroImages: {
-        original: fileKey as string,
-      },
+      heroImages,
     });
   }
 
