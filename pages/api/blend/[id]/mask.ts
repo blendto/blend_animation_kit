@@ -74,7 +74,7 @@ const updateMask = async (
   } as HeroImageFileKeys;
 
   await blendService.addOrUpdateImageFileKeys(blend, fileKeyItem, {
-    isHeroImage: blend.heroImages.original === originalFileKey,
+    isHeroImage: blend.heroImages?.original === originalFileKey,
   });
 
   return res.send(fileKeyItem);

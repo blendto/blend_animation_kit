@@ -161,7 +161,9 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
         mask: bgMaskFileKey,
       } as HeroImageFileKeys;
 
-      await blendService.addOrUpdateImageFileKeys(blend, imageFileKeysItem);
+      await blendService.addOrUpdateImageFileKeys(blend, imageFileKeysItem, {
+        isHeroImage: blend.heroImages?.original === fileKey,
+      });
     } else {
       await uploadObject(
         ConfigProvider.BLEND_INGREDIENTS_BUCKET,

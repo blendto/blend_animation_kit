@@ -85,10 +85,7 @@ export class BlendService implements IService {
       ":updatedAt": Date.now(),
       ":imageFileKeys": newFileKeys,
     };
-    if (
-      options.isHeroImage ||
-      blend.heroImages.original === fileKeyItem.original
-    ) {
+    if (options.isHeroImage) {
       updateQuery = `${updateQuery}, heroImages = :heroImages`;
       expressionAttributes[":heroImages"] = fileKeyItem;
       blend.heroImages = fileKeyItem;
