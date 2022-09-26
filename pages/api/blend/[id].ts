@@ -137,6 +137,7 @@ function trim(blend: Blend) {
     output,
     isWatermarked,
     gifsOrStickers,
+    heroImages,
   } = blend;
 
   return {
@@ -146,6 +147,7 @@ function trim(blend: Blend) {
     imagePath,
     output,
     isWatermarked,
+    heroImages,
     interactions: trimInteractions(blend),
     isStatic: gifsOrStickers?.length <= 0 ?? true,
   };

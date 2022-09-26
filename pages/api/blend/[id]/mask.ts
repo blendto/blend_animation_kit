@@ -56,9 +56,6 @@ const updateMask = async (
   const removeBgService = diContainer.get<RemoveBgService>(
     TYPES.RemoveBgService
   );
-  const fileKeysService = diContainer.get<FileKeysService>(
-    TYPES.FileKeysService
-  );
 
   const blend = await blendService.getBlend(id, null, true);
 

@@ -42,12 +42,14 @@ interface RemoveBgRequest {
   useMask: boolean;
   forceSelf: boolean;
   crop: boolean;
+  isHeroImage: boolean;
 }
 
 export const RemoveBgRequestSchema = Joi.object({
   fileKey: Joi.string().required(),
   useMask: Joi.bool().default(false),
   crop: Joi.bool().default(true),
+  isHeroImage: Joi.bool().default(false),
 });
 
 const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -70,7 +72,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  const { fileKey, useMask = false, crop = true } = body;
+  const { fileKey, useMask = false, crop = true, isHeroImage = false } = body;
 
   let originalImage: Buffer;
   const fetchedBuffer = await getObject(
@@ -162,7 +164,7 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       } as HeroImageFileKeys;
 
       await blendService.addOrUpdateImageFileKeys(blend, imageFileKeysItem, {
-        isHeroImage: blend.heroImages?.original === fileKey,
+        isHeroImage: isHeroImage || blend.heroImages?.original === fileKey,
       });
     } else {
       await uploadObject(
