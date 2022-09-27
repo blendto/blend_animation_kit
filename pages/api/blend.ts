@@ -5,7 +5,9 @@ import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
 import {
+  composeMiddlewares,
   ensureAuth,
+  ensureSupportedClient,
   NextApiRequestExtended,
   withReqHandler,
 } from "server/helpers/request";
@@ -17,7 +19,13 @@ export default withReqHandler(
       case "GET":
         return ensureAuth(getUserBlends, req, res);
       case "POST":
-        return ensureAuth(initBlend, req, res);
+        return composeMiddlewares(
+          initBlend,
+          req,
+          res,
+          ensureSupportedClient,
+          ensureAuth
+        );
       default:
         res.status(405).end();
     }

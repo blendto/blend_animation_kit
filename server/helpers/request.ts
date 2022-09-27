@@ -121,6 +121,47 @@ export function withReqHandler(
   };
 }
 
+type CustomMiddleware = (
+  controller: controller,
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => Promise<void>;
+
+export async function composeMiddlewares(
+  controller: controller,
+  req: NextApiRequestExtended,
+  res: NextApiResponse,
+  ...middlewares: CustomMiddleware[]
+) {
+  let currentReq = req;
+  let currentRes = res;
+  const lastMiddleware = middlewares.pop();
+  /* eslint-disable no-await-in-loop */
+  for (let i = 0; i < middlewares.length; i++) {
+    await middlewares[i](
+      /* eslint-disable no-loop-func */
+      (req, res) => {
+        currentReq = req;
+        currentRes = res;
+      },
+      currentReq,
+      currentRes
+    );
+  }
+  await lastMiddleware(controller, currentReq, currentRes);
+}
+
+export const ensureSupportedClient: CustomMiddleware = async function (
+  controller: controller,
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+): Promise<void> {
+  if (!req.headers["x-client-version"]) {
+    throw new ForbiddenError("Unsupported Client");
+  }
+  await controller(req, res);
+};
+
 export async function ensureAuth(
   controller: controller,
   req: NextApiRequestExtended,
