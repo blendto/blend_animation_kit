@@ -372,8 +372,11 @@ export class BlendService implements IService {
     ).Items;
   }
 
-  // TODO: Explore possibilities to reuse this inside submitBlend() in blend/[id].ts
-  async updateBlend(blend: Blend): Promise<Blend> {
+  async updateBlend(
+    blend: Blend,
+    creditServiceActivityLogId?: string,
+    isBatchedBlend = true
+  ): Promise<Blend> {
     const {
       images,
       externalImages,
@@ -388,20 +391,30 @@ export class BlendService implements IService {
 
     const now = Date.now();
     const updatedOn = DateTime.utc().toISODate();
+    const batchLevelEditStatus = isBatchedBlend
+      ? BatchLevelEditStatus.INDIVIDUALLY_EDITED
+      : null;
+    const statusUpdate = {
+      status: "SUBMITTED",
+      on: now,
+      creditServiceActivityLogId,
+    };
     const params = {
       UpdateExpression:
         "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +
         "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
         "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-        "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #batchSt = :batchSt, #isWatermarked = :isWatermarked REMOVE expireAt",
+        "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #batchSt = :batchSt, #isWatermarked = :isWatermarked," +
+        "#background = :background REMOVE expireAt",
       ExpressionAttributeNames: {
         "#st": "status",
         "#batchSt": "batchLevelEditStatus",
         "#isWatermarked": "isWatermarked",
+        "#background": "background",
       },
       ExpressionAttributeValues: {
         ":s": "SUBMITTED",
-        ":update": [{ status: "SUBMITTED", on: now }],
+        ":update": [statusUpdate],
         ":title": null,
         ":inter": interactions,
         ":images": images,
@@ -416,8 +429,9 @@ export class BlendService implements IService {
         ":metadata": metadata,
         ":updatedAt": now,
         ":updatedOn": updatedOn,
-        ":batchSt": BatchLevelEditStatus.INDIVIDUALLY_EDITED,
+        ":batchSt": batchLevelEditStatus,
         ":isWatermarked": isWatermarked ?? false,
+        ":background": blend.background ?? null,
       },
       Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,

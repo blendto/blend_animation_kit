@@ -1,17 +1,8 @@
 import DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
-import { Recipe, RecipeWrapper, StoredImage } from "server/base/models/recipe";
-import {
-  Blend,
-  BlendStatus,
-  BlendStatusUpdate,
-  BlendVersion,
-} from "server/base/models/blend";
-import {
-  CURRENT_ENCODER_VERSION,
-  MIN_SUPPORTED_ENCODER_VERSION,
-} from "server/constants";
+import { Recipe } from "server/base/models/recipe";
+import { Blend, BlendStatus, BlendVersion } from "server/base/models/blend";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
@@ -31,6 +22,8 @@ import {
 } from "server/base/errors";
 import { CreditsService } from "server/service/credits";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
+import { BlendUpdater } from "server/engine/blend/updater";
+import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -247,63 +240,23 @@ const submitBlend = async (
     // Blend might have expired, recreate it
     existingBlend = await blendService.addBlendToDB(id, req.uid);
   }
-  if (existingBlend.createdBy !== req.uid) {
-    logger.error(
-      `A user is trying to access another user's blend. Blend id: ${id}. ` +
-        `Owner id: ${existingBlend.createdBy}. Requesting user id: ${req.uid}`
-    );
-    // Don't let the possible attacker know that this is a valid blend id.
-    throw new ObjectNotFoundError("Blend not found");
-  }
 
-  const {
-    images,
-    externalImages,
-    gifsOrStickers,
-    texts,
-    buttons,
-    links,
-    metadata,
-  } = recipe;
-
-  if (!metadata) {
-    throw new UserError("body.metadata is missing ");
-  }
-  const { source } = metadata;
-  if (!source) {
-    throw new UserError("body.metadata.source is missing");
-  }
-  const { type, version } = source;
-  if (!["WEB", "MOBILE"].includes(type)) {
-    throw new UserError("Invalid body.metadata.source.type");
-  }
-  if (
-    !version ||
-    version < MIN_SUPPORTED_ENCODER_VERSION ||
-    version > CURRENT_ENCODER_VERSION
-  ) {
-    throw new UserError("Unsupported body.metadata.source.version");
+  const updater = new BlendUpdater(existingBlend, recipe);
+  try {
+    updater.validate(req.uid);
+  } catch (e: unknown) {
+    if (e instanceof IllegalBlendAccessError) {
+      logger.error(
+        `A user is trying to access another user's blend. Blend id: ${id}. ` +
+          `Owner id: ${existingBlend.createdBy}. Requesting user id: ${req.uid}`
+      );
+      // Don't let the possible attacker know that this is a valid blend id.
+      throw new ObjectNotFoundError("Blend not found");
+    }
   }
 
   await ensureBrandingEntitlement(recipe, req.uid);
-  const recipeWrapper = new RecipeWrapper(recipe);
-  recipeWrapper.removeBrandingPlaceholders();
-  const { interactions, branding } = recipe;
 
-  // The mobile apps use "fileKey" attribute instead of uri
-  // The "uri" that the server sends in chooseRecipe API is converted
-  // by them and here we need to convert back
-  // This is messy, we know, gotta fix.
-  interface clientStoredImage extends StoredImage {
-    fileKey: string;
-  }
-
-  const imageObjects = images.map((image: clientStoredImage) => ({
-    uri: image.fileKey,
-    uid: image.uid,
-  }));
-
-  const now = Date.now();
   const creditsService = diContainer.get<CreditsService>(TYPES.CreditsService);
   await creditsService.runWithCreditAndWatermarkCheck(
     req.uid,
@@ -311,54 +264,12 @@ const submitBlend = async (
     req.buildVersion,
     req.clientType,
     async (shouldWatermark: boolean, creditServiceActivityLogId: string) => {
-      const update: BlendStatusUpdate = {
-        status: BlendStatus.Submitted,
-        on: now,
+      const blend = updater.updatedBlend(req.uid, shouldWatermark);
+      const body = await blendService.updateBlend(
+        blend,
         creditServiceActivityLogId,
-      };
-      const updatedOn = DateTime.utc().toISODate();
-      const params = {
-        UpdateExpression:
-          "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), branding = :branding," +
-          "interactions = :inter, images = :images, externalImages = :externalImages," +
-          "gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
-          "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, " +
-          "#isWatermarked = :isWatermarked, #background = :background REMOVE expireAt",
-        ExpressionAttributeNames: {
-          "#st": "status",
-          "#isWatermarked": "isWatermarked",
-          "#background": "background",
-        },
-        ExpressionAttributeValues: {
-          ":s": "SUBMITTED",
-          ":update": [update],
-          ":branding": branding || null,
-          ":inter": interactions,
-          ":images": imageObjects,
-          ":externalImages": externalImages,
-          ":gifsOrStickers": gifsOrStickers,
-          ":texts": texts,
-          ":buttons": buttons || [],
-          ":links": links || [],
-          ":metadata": metadata,
-          ":updatedAt": now,
-          ":updatedOn": updatedOn,
-          ":isWatermarked": shouldWatermark || false,
-          ":background": recipeWrapper.getBackground(version),
-        },
-        Key: { id },
-        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-        ReturnValues: "ALL_NEW",
-      };
-      const dbUpdateResponse = await DynamoDB._().updateItem(params);
-      const updatedRecipe = dbUpdateResponse.Attributes;
-      // Add id
-      updatedRecipe.id = id;
-
-      const body = updatedRecipe as Recipe;
-      if (shouldWatermark) {
-        new RecipeWrapper(body).addWatermark();
-      }
+        false
+      );
 
       await new VesApi().saveExport({
         body,
