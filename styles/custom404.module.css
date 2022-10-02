@@ -1,0 +1,32 @@
+.container {
+  height: 100vh;
+}
+
+.body {
+  height: 100vh;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.image404 {
+  margin: 2rem auto 3rem auto;
+  width: 35%;
+}
+
+.link {
+  margin-top: 1rem;
+  color: #8F1AF6 !important;
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .image {
+    width: 70%;
+  }
+}
+
