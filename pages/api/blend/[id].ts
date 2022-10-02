@@ -24,6 +24,7 @@ import { CreditsService } from "server/service/credits";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import { BlendUpdater } from "server/engine/blend/updater";
 import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
+import { ExportPrepAgent } from "server/engine/blend/export";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -265,11 +266,12 @@ const submitBlend = async (
     req.clientType,
     async (shouldWatermark: boolean, creditServiceActivityLogId: string) => {
       const blend = updater.updatedBlend(req.uid, shouldWatermark);
-      const body = await blendService.updateBlend(
+      const dbBlend = await blendService.updateBlend(
         blend,
         creditServiceActivityLogId,
         false
       );
+      const body = new ExportPrepAgent(dbBlend).prepareForVes(shouldWatermark);
 
       await new VesApi().saveExport({
         body,

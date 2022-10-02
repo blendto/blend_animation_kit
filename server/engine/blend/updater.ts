@@ -77,10 +77,6 @@ export class BlendUpdater {
       uid: image.uid,
     }));
 
-    if (shouldWatermark) {
-      new RecipeWrapper(this.existingBlend).addWatermark();
-    }
-
     return {
       isWatermarked: shouldWatermark,
       interactions,
