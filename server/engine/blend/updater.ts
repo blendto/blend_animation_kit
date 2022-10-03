@@ -78,6 +78,7 @@ export class BlendUpdater {
     }));
 
     return {
+      ...this.existingBlend,
       isWatermarked: shouldWatermark,
       interactions,
       images: imageObjects,
@@ -89,7 +90,6 @@ export class BlendUpdater {
       branding: branding || null,
       buttons,
       links,
-      ...this.existingBlend,
     };
   }
 }
