@@ -5,6 +5,7 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { Recipe } from "server/base/models/recipe";
 import { handleAxiosCall } from "server/helpers/network";
 import axiosRetry from "axios-retry";
+import { Blend } from "server/base/models/blend";
 
 const VES_SERVICE_BASE_URL = ConfigProvider.VES_API_BASE_PATH;
 
@@ -16,6 +17,7 @@ export interface PreviewRequestParams {
     withoutBg: string;
   };
 }
+
 export interface PreviewRequestParamsV2 {
   body: Recipe;
   schema: "RECIPE" | "BLEND";
@@ -29,6 +31,17 @@ export enum ExportRequestSchema {
 export interface SaveExportRequest {
   body: Recipe;
   schema: ExportRequestSchema;
+}
+
+export interface SuppliedFFmpegDependencies {
+  duration: number;
+  files: Record<string, string>;
+  outputPaths: Record<string, string>;
+}
+
+export interface GenerateFFmpegCommandRequest {
+  blend: Blend;
+  dependencies: SuppliedFFmpegDependencies;
 }
 
 export interface SavePreviewRequest extends SaveExportRequest {
@@ -94,5 +107,16 @@ export default class VesApi {
         async () => await this.httpClient.post("/saveExport", params)
       )
     ).data;
+  }
+
+  async generateFFmpegCommands(
+    params: GenerateFFmpegCommandRequest
+  ): Promise<Record<string, string>> {
+    return (
+      await handleAxiosCall(
+        async () =>
+          await this.httpClient.post("/generateFFmpegExportCommand", params)
+      )
+    ).data as Record<string, string>;
   }
 }

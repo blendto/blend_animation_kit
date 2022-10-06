@@ -1,7 +1,6 @@
 import { isEmpty } from "lodash";
 import { RecipeVariantId } from "server/base/models/recipeList";
 import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
-import { nanoid } from "nanoid";
 import { UserError } from "../errors";
 import { HeroImageFileKeys } from "./heroImage";
 
@@ -169,12 +168,12 @@ export interface Recipe {
   id: string;
   variant?: string;
   images?: StoredImage[];
-  externalImages?: any[];
+  externalImages?: Record<string, unknown>[];
   branding?: BrandingDetails;
-  gifsOrStickers?: any[];
-  texts?: any[];
-  buttons?: any[];
-  links?: any[];
+  gifsOrStickers?: Record<string, unknown>[];
+  texts?: Record<string, unknown>[];
+  buttons?: Record<string, unknown>[];
+  links?: Record<string, unknown>[];
   recipeDetails?: RecipeDetails;
   interactions?: Interaction[];
   metadata?: RecipeMetadata;
@@ -310,7 +309,7 @@ export class RecipeWrapper {
     const dx = 0;
     const dy = height - interactionHeight;
 
-    const assetUid = nanoid(20);
+    const assetUid = "@@watermark";
     const watermarkInteraction = {
       action: "DISPLAY_INLINE",
       assetUid,
