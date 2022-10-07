@@ -8,7 +8,7 @@ import { BlendService } from "server/service/blend";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
-import RecoEngineApi from "server/internal/reco-engine";
+import RecoEngineApi, { StyleSuggestions } from "server/internal/reco-engine";
 import { Recipe } from "server/base/models/recipe";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
@@ -150,6 +150,17 @@ export class SuggestionService {
     suggestions.common = await Promise.all(suggestionPromises);
 
     return suggestions.common;
+  }
+
+  async suggestStyles(fileKey: string, ip: string): Promise<StyleSuggestions> {
+    const suggestions = await this.recoEngineApi.suggestStyles(
+      fileKey,
+      this.userService.getUserAgent(ip)
+    );
+    suggestions.styleSuggestions = suggestions.styleSuggestions.map((s) => ({
+      colorPalette: s.colorPalette,
+    }));
+    return suggestions;
   }
 
   async recipeListMapper(list: RecipeList): Promise<RecipeList> {

@@ -14,6 +14,16 @@ export interface PaginatedRecipeListSuggestions {
   nextPageKey?: number;
 }
 
+export interface StyleSuggestions {
+  styleSuggestions: {
+    colorPalette: {
+      colors: string[];
+      contrastingColors: [string, string][];
+      similarColors: [string, string][];
+    };
+  }[];
+}
+
 export default class RecoEngineApi {
   httpClient = axios.create({
     baseURL: ConfigProvider.RECO_API_BASE_PATH,
@@ -45,6 +55,21 @@ export default class RecoEngineApi {
           await this.httpClient.post("/suggestRecipeCategoriesv2", {
             fileKeys: { hero: heroImageKey },
             pageKey,
+            userAgentDetails: await userAgentPromise,
+          })
+      )
+    ).data;
+  }
+
+  async suggestStyles(
+    heroImageKey: string,
+    userAgentPromise: Promise<UserAgentDetails | null>
+  ): Promise<StyleSuggestions> {
+    return (
+      await handleAxiosCall<StyleSuggestions>(
+        async () =>
+          await this.httpClient.post("/suggestStyles", {
+            fileKeys: { hero: heroImageKey },
             userAgentDetails: await userAgentPromise,
           })
       )

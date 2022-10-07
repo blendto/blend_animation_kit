@@ -86,9 +86,14 @@ export enum InteractionLayerTypes {
   BrandingLogo = "BRANDING_LOGO",
 }
 
+interface StyleConfig {
+  color: { primary?: string; fill?: string };
+}
+
 export interface InteractionMetadata {
   $: string;
   layerType?: InteractionLayerTypes;
+  style?: StyleConfig;
 }
 
 export interface GeometricPositionable extends InteractionMetadata {
@@ -181,9 +186,45 @@ export interface Recipe {
   background?: BackgroundInfo;
   thumbnail?: string;
   imageFileKeys?: HeroImageFileKeys[];
+  style?: {
+    config: {
+      color?: {
+        tags: string[];
+        default: Record<string, string>;
+        rules: {
+          similarColorTags: [string, string][];
+          contrastingColorTags: [string, string][];
+        };
+      };
+      gradient?: {
+        default: {
+          colors: string[];
+          angle: number;
+          stops: number[];
+        };
+        rules: {
+          similarColorTags: string[];
+          contrastingColorTags: string[];
+        };
+      };
+    };
+  };
 }
 
-export interface BackgroundInfo {}
+interface BackgroundInfo {
+  $: BackgroundType;
+  color?: string;
+  opacity?: number;
+  colors?: string[];
+  angle?: number;
+  stops?: number[];
+  style?: StyleConfig;
+}
+
+export enum BackgroundType {
+  GradientBackgroundInfo = "GradientBackgroundInfo",
+  ColoredBackgroundInfo = "ColoredBackgroundInfo",
+}
 
 export class RecipeUtils {
   static aspectRatioToVariant(aspectRatio: Size) {
@@ -342,7 +383,11 @@ export class RecipeWrapper {
   getBackground(encoderVersion: number): BackgroundInfo {
     const { background } = this.recipe;
     if (!background && encoderVersion >= 2.6) {
-      return { $: "ColoredBackgroundInfo", color: "#ffffffff", opacity: 0 };
+      return {
+        $: BackgroundType.ColoredBackgroundInfo,
+        color: "#ffffffff",
+        opacity: 0,
+      };
     }
     return background || null;
   }

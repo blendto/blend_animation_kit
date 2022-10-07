@@ -15,3 +15,9 @@ export function addSuffixToFileKey(
   const fileKeyWithoutExt = extractFileKeyWithoutExtension(fileKey);
   return `${fileKeyWithoutExt}${suffix}.${extension}`;
 }
+
+export function replaceUriPrefix(uri: string, newPrefix: string): string {
+  const uriParts = uri.split("/");
+  uriParts[0] = newPrefix;
+  return uriParts.join("/");
+}
