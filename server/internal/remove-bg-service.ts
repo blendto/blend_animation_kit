@@ -176,7 +176,10 @@ export class RemoveBgService implements IService {
     });
 
     const { width, height } = await sharpInst.metadata();
-    const webp = await sharpInst.toFormat("webp", { quality: 90 }).toBuffer();
+    const webp = await sharpInst
+      .toFormat("webp", { quality: 90 })
+      .withMetadata()
+      .toBuffer();
 
     let imageToUse = webp;
 
