@@ -41,6 +41,10 @@ export class BlendUpdater {
     ) {
       throw new UserError("Unsupported body.metadata.source.version");
     }
+
+    if (!this.incomingRecipe.heroImages?.original) {
+      this.incomingRecipe.heroImages = null;
+    }
   }
 
   updatedBlend(updaterUid: string, shouldWatermark: boolean): Blend {

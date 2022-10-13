@@ -1,7 +1,7 @@
 import DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
-import { Recipe } from "server/base/models/recipe";
+import { Recipe, RecipeWrapper } from "server/base/models/recipe";
 import { Blend, BlendStatus, BlendVersion } from "server/base/models/blend";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import ConfigProvider from "server/base/ConfigProvider";
@@ -166,6 +166,9 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   if (!blend || blend?.status === BlendStatus.Deleted) {
     throw new ObjectNotFoundError("Blend not found");
   }
+
+  const recipeWrapper = new RecipeWrapper(blend);
+  recipeWrapper.clean();
 
   const {
     images,

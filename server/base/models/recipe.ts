@@ -185,6 +185,7 @@ export interface Recipe {
   title?: string;
   background?: BackgroundInfo;
   thumbnail?: string;
+  heroImages?: HeroImageFileKeys;
   imageFileKeys?: HeroImageFileKeys[];
   style?: {
     config: {
@@ -244,6 +245,12 @@ export class RecipeWrapper {
 
   constructor(recipe: Recipe) {
     this.recipe = recipe;
+  }
+
+  clean() {
+    if (!this.recipe.heroImages?.original) {
+      this.recipe.heroImages = null;
+    }
   }
 
   replaceHero(
