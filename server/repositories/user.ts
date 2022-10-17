@@ -13,6 +13,7 @@ export enum UserUpdatePaths {
   stripeCustomerId = "/stripeCustomerId",
   favouriteRecipes = "/favouriteRecipes",
   appleOfflineToken = "/appleOfflineToken",
+  name = "/name",
 }
 
 const userDynamooseSchema = new DynamooseSchema({
