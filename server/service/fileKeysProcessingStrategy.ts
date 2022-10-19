@@ -103,14 +103,6 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     );
 
     if (this.fileKeys.withoutBg) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      fireAndForget(() =>
-        heroImageService.createNewImage(
-          this.blendId,
-          this.userId,
-          this.fileKeys
-        )
-      );
       return this.fileKeys;
     }
 

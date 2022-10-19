@@ -18,19 +18,25 @@ import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import logger from "server/base/Logger";
-import { withReqHandler } from "server/helpers/request";
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import { HeroImageFileKeys } from "server/base/models/heroImage";
 import { RemoveBGSource } from "server/base/models/removeBg";
+import { fireAndForget } from "server/helpers/async-runner";
+import HeroImageService from "server/service/heroImage";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
 export default withReqHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
-        return removeBgAndStore(req, res);
+        return ensureAuth(removeBgAndStore, req, res);
       default:
         throw new MethodNotAllowedError();
     }
@@ -52,7 +58,10 @@ export const RemoveBgRequestSchema = Joi.object({
   isHeroImage: Joi.bool().default(false),
 });
 
-const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
+const removeBgAndStore = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const body = req.body as RemoveBgRequest;
   const { id } = req.query;
 
@@ -174,6 +183,17 @@ const removeBgAndStore = async (req: NextApiRequest, res: NextApiResponse) => {
       );
     }
   }
+
+  const heroImageService = diContainer.get<HeroImageService>(
+    TYPES.HeroImageService
+  );
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  fireAndForget(() =>
+    heroImageService.createNewImage(blend.id, req.uid, {
+      original: fileKey,
+      withoutBg: bgRemovedFileKey,
+    })
+  );
 
   res.send({
     original: fileKey,
