@@ -37,15 +37,13 @@ const SuggestRecipesPaginatedSchema = Joi.object({
     original: Joi.string().required(),
     withoutBg: Joi.string().required(),
   })
+    .allow(null)
     .unknown(true)
     .optional(),
-  heroImageId: Joi.string().when("fileKeys", {
-    is: Joi.not(),
-    then: Joi.forbidden(),
-  }),
+  heroImageId: Joi.string().allow(null),
   pageKey: Joi.number().optional().allow(null),
   userChosenSuperClass: Joi.string().optional().allow(null),
-  filters: Joi.object().unknown(true),
+  filters: Joi.object().unknown(true).allow(null),
 });
 
 const suggestRecipesV2 = async (
@@ -65,8 +63,15 @@ const suggestRecipesV2 = async (
     validate(
       body,
       requestComponentToValidate.body,
-      SuggestRecipesPaginatedSchema
+      SuggestRecipesPaginatedSchema,
+      true,
+      true
     ) as SuggestRecipesPaginatedRequestBody;
+
+  if (!heroImageId && !fileKeys?.original) {
+    res.status(400).send({ message: "Invalid filekeys / heroImageId" });
+    return;
+  }
 
   const blend: Blend = await diContainer
     .get<BlendService>(TYPES.BlendService)
