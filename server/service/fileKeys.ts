@@ -1,6 +1,6 @@
 import { IService } from "server/service";
 import { injectable } from "inversify";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
 import { Blend } from "server/base/models/blend";
 import { getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
@@ -31,8 +31,8 @@ export default class FileKeysService implements IService {
 
   constructUpdatedFileKeysFromBlend(
     blend: Blend,
-    imageFileKey: HeroImageFileKeys
-  ): HeroImageFileKeys[] {
+    imageFileKey: ImageFileKeys
+  ): ImageFileKeys[] {
     const imageFileKeys = blend.imageFileKeys ?? [];
 
     const index = imageFileKeys.findIndex(
@@ -50,7 +50,7 @@ export default class FileKeysService implements IService {
   retrieveFileKeyItemFromBlend(
     blend: Blend,
     fileKey: string
-  ): HeroImageFileKeys | undefined {
+  ): ImageFileKeys | undefined {
     const { imageFileKeys, heroImages } = blend;
 
     if (

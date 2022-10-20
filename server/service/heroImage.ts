@@ -13,9 +13,9 @@ import {
 } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import {
-  createHeroBucketFileKeys,
+  generateHeroBucketFileKeys,
   HeroImage,
-  HeroImageFileKeys,
+  ImageFileKeys,
   HeroImageStatus,
   HeroImageStatusUpdate,
 } from "server/base/models/heroImage";
@@ -137,10 +137,10 @@ export default class HeroImageService implements IService {
   async createNewImage(
     blendId: string,
     userId: string,
-    blendBucketFileKeys: HeroImageFileKeys
+    blendBucketFileKeys: ImageFileKeys
   ): Promise<HeroImage> {
     const heroImageId = this.nanoid(16);
-    const heroBucketFilekeys = createHeroBucketFileKeys(
+    const heroBucketFilekeys = generateHeroBucketFileKeys(
       heroImageId,
       blendBucketFileKeys
     );
@@ -186,6 +186,57 @@ export default class HeroImageService implements IService {
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       Item: heroImage,
     });
+
+    return heroImage;
+  }
+
+  async updateBgRemoved(
+    heroImageId: string,
+    blendId: string,
+    userId: string,
+    blendBucketFileKeys: ImageFileKeys
+  ): Promise<HeroImage> {
+    const oldHero = await this.getImage(heroImageId, userId);
+    const fileKeysToDelete = [oldHero.withoutBg, oldHero.thumbnail];
+    const heroBucketFilekeys = generateHeroBucketFileKeys(
+      heroImageId,
+      blendBucketFileKeys
+    );
+
+    const copyBgRemovedFile: Promise<any> = this.copyObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      blendBucketFileKeys.withoutBg,
+      ConfigProvider.HERO_IMAGES_BUCKET,
+      heroBucketFilekeys.withoutBg
+    );
+
+    const saveThumbnail: Promise<void> = this.createAndSaveThumbnail(
+      blendBucketFileKeys.withoutBg,
+      heroBucketFilekeys.thumbnail
+    );
+
+    await Promise.all([copyBgRemovedFile, saveThumbnail]);
+
+    const params = {
+      UpdateExpression:
+        "SET lastUsedAt = :lastUsedAt, withoutBg = :withoutBg, thumbnail = :thumbnail",
+      ExpressionAttributeValues: {
+        ":lastUsedAt": Date.now(),
+        ":withoutBg": heroBucketFilekeys.withoutBg,
+        ":thumbnail": heroBucketFilekeys.thumbnail,
+      },
+      Key: { id: heroImageId },
+      TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
+      ReturnValues: "ALL_NEW",
+    };
+    const heroImage = (await this.dataStore.updateItem(params))
+      .Attributes as HeroImage;
+
+    await Promise.all(
+      fileKeysToDelete.map((fileKey) =>
+        this.deleteObject(ConfigProvider.HERO_IMAGES_BUCKET, fileKey)
+      )
+    );
 
     return heroImage;
   }

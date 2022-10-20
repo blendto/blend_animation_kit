@@ -9,7 +9,7 @@ import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
 import Joi from "joi";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
 import FileKeysService from "server/service/fileKeys";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 
@@ -68,7 +68,7 @@ const updateMask = async (
     original: originalFileKey,
     mask: maskFileKey,
     withoutBg: bgRemovedImageFileKey,
-  } as HeroImageFileKeys;
+  } as ImageFileKeys;
 
   await blendService.addOrUpdateImageFileKeys(blend, fileKeyItem, {
     isHeroImage: blend.heroImages?.original === originalFileKey,
@@ -102,7 +102,7 @@ const getMask = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       original: fileKey,
       withoutBg: fileKey,
       mask: bgMaskFileKey,
-    } as HeroImageFileKeys;
+    } as ImageFileKeys;
 
     await blendService.addOrUpdateImageFileKeys(blend, imageFileKeyItem);
     return res.send(imageFileKeyItem);

@@ -2,8 +2,14 @@ import axios from "axios";
 import ConfigProvider from "server/base/ConfigProvider";
 import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
-import { UserAgentDetails } from "../base/models/userAgentDetails";
-import { SearchRecipeResponse } from "../base/models/recipe";
+import { UserAgentDetails } from "server/base/models/userAgentDetails";
+import { SearchRecipeResponse } from "server/base/models/recipe";
+import { DetectProductCategoryResponse } from "server/base/models/recoEngine";
+import {
+  ClassificationMetadata,
+  BgRemovedFileKeys,
+} from "server/base/models/removeBg";
+import { plainToClass } from "class-transformer";
 
 export interface RecipeListSuggestions {
   suggestedRecipeCategories: RecipeList[];
@@ -29,6 +35,47 @@ export default class RecoEngineApi {
     baseURL: ConfigProvider.RECO_API_BASE_PATH,
   });
 
+  private dedicatedClassToSuperClassMapping: Record<string, string> = {
+    vechicles: "automobile",
+    bikes: "automobile",
+    bags: "bag",
+    beverages: "beverage",
+    clothes_on_flat_surfaces: "clothing",
+    clothing_on_hanger: "clothing",
+    clothing_on_mannequin: "clothing",
+    lingerie: "clothing",
+    personal_care: "cosmetics",
+    mobile_phone: "electronics",
+    mobile_phone_accessories: "electronics",
+    electronics: "electronics",
+    hardware: "electronics",
+    eyewear: "eyewear",
+    accessories: "fashion_accessories",
+    caps: "fashion_accessories",
+    socks: "fashion_accessories",
+    food: "food",
+    food_bowl: "food",
+    plated_food: "food",
+    packaged_food_products: "food",
+    gift_bouquet: "furnishing",
+    books: "furnishing",
+    décor: "furnishing",
+    furniture: "furnishing",
+    graphic: "graphics",
+    jewellery: "jewellery",
+    pet_supplies: "others",
+    toys: "others",
+    musical_instruments: "others",
+    plants: "others",
+    outdoor: "others",
+    kitchen: "others",
+    portrait: "person",
+    above_waist_portrait: "person",
+    profile_pic: "person",
+    group_of_people: "person",
+    shoes: "shoes",
+  };
+
   async suggestRecipeLists(
     heroImageKey: string,
     userAgentPromise: Promise<UserAgentDetails | null>
@@ -44,11 +91,20 @@ export default class RecoEngineApi {
     ).data;
   }
 
-  async suggestRecipeListsPaginated(
-    heroImageKey: string,
-    userAgentPromise: Promise<UserAgentDetails | null>,
-    pageKey?: number
-  ): Promise<PaginatedRecipeListSuggestions> {
+  async suggestRecipeListsPaginated(requestBody: {
+    heroImageKey: string;
+    userAgentPromise: Promise<UserAgentDetails | null>;
+    pageKey?: number;
+    productSuperCategory?: string;
+    filters?: Record<string, unknown>;
+  }): Promise<PaginatedRecipeListSuggestions> {
+    const {
+      heroImageKey,
+      userAgentPromise,
+      pageKey,
+      productSuperCategory,
+      filters,
+    } = requestBody;
     return (
       await handleAxiosCall<PaginatedRecipeListSuggestions>(
         async () =>
@@ -56,6 +112,8 @@ export default class RecoEngineApi {
             fileKeys: { hero: heroImageKey },
             pageKey,
             userAgentDetails: await userAgentPromise,
+            productSuperCategory,
+            filters,
           })
       )
     ).data;
@@ -109,6 +167,10 @@ export default class RecoEngineApi {
     ).data;
   };
 
+  private getDedicatedClassToSuperClassMapping(className: string): string {
+    return this.dedicatedClassToSuperClassMapping[className] ?? "others";
+  }
+
   async searchRecipes(
     query: unknown,
     body: unknown
@@ -118,5 +180,26 @@ export default class RecoEngineApi {
         async () => await this.httpClient.post(`/searchRecipes`, body)
       )
     ).data as SearchRecipeResponse;
+  }
+
+  async detectProductCategory(
+    fileKeys: BgRemovedFileKeys
+  ): Promise<ClassificationMetadata> {
+    const categoryResponse = (
+      await handleAxiosCall(
+        async () =>
+          await this.httpClient.post(`/detectProductCategory`, {
+            fileKeys,
+          })
+      )
+    ).data as DetectProductCategoryResponse;
+
+    const { detectedClass } = categoryResponse;
+    const classificationMetadata = plainToClass(ClassificationMetadata, {
+      productSuperClass:
+        this.getDedicatedClassToSuperClassMapping(detectedClass),
+    });
+
+    return classificationMetadata;
   }
 }

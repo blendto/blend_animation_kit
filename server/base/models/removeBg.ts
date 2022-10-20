@@ -3,7 +3,7 @@ export interface ToolkitErrorResponse {
   message: string;
 }
 
-export interface ImageFileKeys {
+export interface BgRemovedFileKeys {
   original: string;
   withoutBg: string;
 }
@@ -14,5 +14,27 @@ export enum RemoveBGSource {
 
 export interface RemoveBGCommandMetadata {
   source: RemoveBGSource;
-  fileKeys: ImageFileKeys;
+  fileKeys: BgRemovedFileKeys;
+}
+
+export interface BgRemovalMetadata {
+  predictedClass: string;
+  primaryClass: string;
+  segmentationProvider: string;
+  qualityConfidence: string;
+}
+
+export class ClassificationMetadata {
+  productSuperClass: string;
+  userChosenSuperClass?: string;
+
+  public get superClass(): string {
+    return this.userChosenSuperClass ?? this.productSuperClass;
+  }
+}
+
+export interface BgRemovalRetriggerCheckResponse {
+  updatedClass: string;
+  predictedClass: string;
+  isRetriggerRequired: boolean;
 }

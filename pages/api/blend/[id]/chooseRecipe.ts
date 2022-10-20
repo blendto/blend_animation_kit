@@ -21,7 +21,7 @@ import {
   RecipeWrapper,
 } from "server/base/models/recipe";
 import BrandingService from "server/service/branding";
-import { SuggestionService } from "../../../../server/service/suggestion";
+import { SuggestionService } from "server/service/suggestion";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {

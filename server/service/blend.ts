@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { nanoid } from "nanoid";
 import { DateTime } from "luxon";
 
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { BlendHeroImage, ImageFileKeys } from "server/base/models/heroImage";
 import DynamoDB from "server/external/dynamodb";
 import {
   BatchLevelEditStatus,
@@ -33,6 +33,7 @@ import {
   RecipeVariantId,
 } from "server/base/models/recipeList";
 import { DaxDB } from "server/external/dax";
+import { plainToClass } from "class-transformer";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -71,24 +72,26 @@ export class BlendService implements IService {
 
   async addOrUpdateImageFileKeys(
     blend: Blend,
-    fileKeyItem: HeroImageFileKeys,
-    options = { isHeroImage: false as boolean }
+    fileKeyItem: ImageFileKeys | BlendHeroImage,
+    options = { isHeroImage: false }
   ) {
-    const newFileKeys = this.fileKeysService.constructUpdatedFileKeysFromBlend(
-      blend,
-      fileKeyItem
-    );
+    const newFileKeysList =
+      this.fileKeysService.constructUpdatedFileKeysFromBlend(
+        blend,
+        plainToClass(ImageFileKeys, fileKeyItem, { strategy: "excludeAll" })
+      );
 
     let updateQuery =
       "SET updatedAt = :updatedAt, imageFileKeys = :imageFileKeys";
     const expressionAttributes = {
       ":updatedAt": Date.now(),
-      ":imageFileKeys": newFileKeys,
+      ":imageFileKeys": newFileKeysList,
     };
     if (options.isHeroImage) {
+      const blendHeroImage = plainToClass(BlendHeroImage, fileKeyItem);
       updateQuery = `${updateQuery}, heroImages = :heroImages`;
-      expressionAttributes[":heroImages"] = fileKeyItem;
-      blend.heroImages = fileKeyItem;
+      expressionAttributes[":heroImages"] = blendHeroImage;
+      blend.heroImages = blendHeroImage;
     }
 
     await this.dataStore.updateItem({
@@ -191,7 +194,7 @@ export class BlendService implements IService {
       }
     } while (true);
 
-    let heroImages = null as HeroImageFileKeys | null;
+    let heroImages = null as ImageFileKeys | null;
     if (options?.heroFileName) {
       heroImages = {
         original: `${blendRequestId}/${options.heroFileName}`,
@@ -207,7 +210,7 @@ export class BlendService implements IService {
   async addBlendToDB(
     id: string,
     userId?: string,
-    options?: { batchId: string; heroImages: HeroImageFileKeys }
+    options?: { batchId: string; heroImages: ImageFileKeys }
   ): Promise<Blend> {
     const currentTime = Date.now();
     const currentDate = DateTime.utc().toISODate();
@@ -556,7 +559,7 @@ export class BlendService implements IService {
 
   async copyRecipeToBlend(
     blendId: string,
-    heroImages: HeroImageFileKeys,
+    heroImages: ImageFileKeys,
     recipe: Recipe,
     isWatermarked?: boolean
   ): Promise<Blend> {

@@ -5,7 +5,7 @@ import ConfigProvider from "server/base/ConfigProvider";
 import sharp from "sharp";
 import { Stream } from "stream";
 import { Blend } from "server/base/models/blend";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
 
 describe("FileKeys Service", () => {
   const fileKeysService = diContainer.get<FileKeysService>(
@@ -19,13 +19,13 @@ describe("FileKeys Service", () => {
       original: "Bnyldj7K/PFJmJA1G5U-9BpNohsPga.png",
       mask: "Bnyldj7K/PFJmJA1G5U-9BpNohsPga-bg-mask.png",
     },
-  ] as HeroImageFileKeys[];
+  ] as ImageFileKeys[];
 
   const generateFakeBlend = () =>
     ({
       imageFileKeys: JSON.parse(
         JSON.stringify(imageFileKeys)
-      ) as HeroImageFileKeys[],
+      ) as ImageFileKeys[],
       heroImages: {
         withoutBg: "Bnyldj7K/hero-bg-removed.png",
         original: "Bnyldj7K/hero.png",

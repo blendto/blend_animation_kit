@@ -1,6 +1,6 @@
 import type { NextApiResponse } from "next";
 import { Blend } from "server/base/models/blend";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
@@ -24,7 +24,7 @@ export default withReqHandler(
 );
 
 interface SuggestRecipesRequestBody {
-  fileKeys: HeroImageFileKeys;
+  fileKeys: ImageFileKeys;
   multipleAspectRatios?: boolean;
   heroImageId?: string;
 }
@@ -66,8 +66,7 @@ const suggestRecipes = async (
     heroImageId
   );
 
-  const finalisedFileKeys: HeroImageFileKeys =
-    await fileKeysProcessor.process();
+  const finalisedFileKeys: ImageFileKeys = await fileKeysProcessor.process();
 
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   await blendService.addOrUpdateImageFileKeys(blend, finalisedFileKeys, {

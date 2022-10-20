@@ -2,7 +2,7 @@ import { isEmpty } from "lodash";
 import { RecipeVariantId } from "server/base/models/recipeList";
 import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
 import { UserError } from "../errors";
-import { HeroImageFileKeys } from "./heroImage";
+import { BlendHeroImage, ImageFileKeys } from "./heroImage";
 
 export enum ElementSource {
   blend = "BLEND",
@@ -185,8 +185,8 @@ export interface Recipe {
   title?: string;
   background?: BackgroundInfo;
   thumbnail?: string;
-  heroImages?: HeroImageFileKeys;
-  imageFileKeys?: HeroImageFileKeys[];
+  heroImages?: BlendHeroImage;
+  imageFileKeys?: ImageFileKeys[];
   style?: {
     config: {
       color?: {
@@ -254,7 +254,7 @@ export class RecipeWrapper {
   }
 
   replaceHero(
-    fileKeys: HeroImageFileKeys,
+    fileKeys: ImageFileKeys,
     image?: StoredImage,
     interaction?: Interaction
   ) {
@@ -406,8 +406,9 @@ export interface SearchRecipeResponse {
 }
 
 export interface SuggestRecipesPaginatedRequestBody {
-  fileKeys: HeroImageFileKeys;
+  fileKeys: ImageFileKeys;
   pageKey: number;
-  multipleAspectRatios?: boolean;
+  userChosenSuperClass?: string;
   heroImageId?: string;
+  filters: Record<string, unknown>;
 }

@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { extractExtensionFromFileKey } from "server/helpers/fileKeyUtils";
+import { ClassificationMetadata } from "server/base/models/removeBg";
 
 export enum HeroImageStatus {
   CREATED = "CREATED",
@@ -25,32 +26,38 @@ export interface HeroImage {
   statusHistory: HeroImageStatusUpdate[];
 }
 
-export interface HeroImageFileKeys {
+export class ImageFileKeys {
   original: string;
   withoutBg?: string;
   mask?: string;
+  trimLTWH?: [number, number, number, number];
 }
 
-export interface ExtendedHeroImageFileKeys extends HeroImageFileKeys {
+export interface ExtendedHeroImageFileKeys extends ImageFileKeys {
   thumbnail?: string;
+}
+
+export class BlendHeroImage extends ImageFileKeys {
+  heroImageId?: string;
+  classificationMetadata?: ClassificationMetadata;
 }
 
 export const createBlendBucketFileKeys = (
   blendId: string,
   heroImage: HeroImage
-): HeroImageFileKeys => {
+): ImageFileKeys => {
   const randomId = nanoid(16);
   const originalFileExt = extractExtensionFromFileKey(heroImage.original);
   const bgRemovedFileExt = extractExtensionFromFileKey(heroImage.withoutBg);
   return {
     original: `${blendId}/${randomId}.${originalFileExt}`,
     withoutBg: `${blendId}/${randomId}-bg-removed.${bgRemovedFileExt}`,
-  } as HeroImageFileKeys;
+  } as ImageFileKeys;
 };
 
-export const createHeroBucketFileKeys = (
+export const generateHeroBucketFileKeys = (
   heroImageId: string,
-  blendBucketFileKeys: HeroImageFileKeys
+  blendBucketFileKeys: ImageFileKeys
 ): ExtendedHeroImageFileKeys => {
   const originalFileExt = extractExtensionFromFileKey(
     blendBucketFileKeys.original
@@ -59,9 +66,11 @@ export const createHeroBucketFileKeys = (
     blendBucketFileKeys.withoutBg
   );
 
+  const randomStr = nanoid(4);
+
   return {
-    original: `${heroImageId}.${originalFileExt}`,
-    withoutBg: `${heroImageId}-bg-removed.${bgRemovedFileExt}`,
-    thumbnail: `${heroImageId}-thumbnail.${bgRemovedFileExt}`,
+    original: `${heroImageId}-${randomStr}.${originalFileExt}`,
+    withoutBg: `${heroImageId}-${randomStr}-bg-removed.${bgRemovedFileExt}`,
+    thumbnail: `${heroImageId}-${randomStr}-thumbnail.${bgRemovedFileExt}`,
   } as ExtendedHeroImageFileKeys;
 };

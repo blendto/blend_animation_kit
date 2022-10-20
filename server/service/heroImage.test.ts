@@ -14,6 +14,12 @@ import {
 } from "server/base/models/heroImage";
 import { ObjectNotFoundError } from "server/base/errors";
 import logger from "server/base/Logger";
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { mocked } from "jest-mock";
+import { nanoid } from "nanoid";
+
+jest.mock("nanoid");
+const mnanoid = mocked(nanoid);
 
 describe("HeroImageService", () => {
   const heroImageService = diContainer.get<HeroImageService>(
@@ -192,11 +198,14 @@ describe("HeroImageService", () => {
 
   describe("Image creation", () => {
     it("Copies blend original, copies blend without background, saves thumbnail and saves data to db", async () => {
+      const randomStr = "randomStr";
+      mnanoid.mockReturnValueOnce(randomStr);
+
       const blendId = "NxY2SIx2";
       const newImageId = "sywFj0-DLsN5-9uV_gSMo";
-      const heroImageFileKey = `${newImageId}.jpg`;
-      const heroImageFileKeyWithoutBg = `${newImageId}-bg-removed.png`;
-      const heroImageFileKeyThumbnail = `${newImageId}-thumbnail.png`;
+      const heroImageFileKey = `${newImageId}-${randomStr}.jpg`;
+      const heroImageFileKeyWithoutBg = `${newImageId}-${randomStr}-bg-removed.png`;
+      const heroImageFileKeyThumbnail = `${newImageId}-${randomStr}-thumbnail.png`;
       const fileKey = "NxY2SIx2/Ofvyno391qDDBDLk7JqPA.jpg";
       const fileKeyWithoutBg = "NxY2SIx2/Ofvyno391qDDBDLk7JqPA-bg-removed.png";
       const now = 1645009809102;

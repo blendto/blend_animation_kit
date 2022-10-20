@@ -9,7 +9,7 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import type DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
 import { getObject, uploadObject } from "server/external/s3";
 import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import logger from "server/base/Logger";
@@ -23,10 +23,17 @@ import {
 } from "server/helpers/imageUtils";
 import { addSuffixToFileKey } from "server/helpers/fileKeyUtils";
 import {
+  BgRemovalMetadata,
+  BgRemovalRetriggerCheckResponse,
   RemoveBGCommandMetadata,
   RemoveBGSource,
   ToolkitErrorResponse,
 } from "server/base/models/removeBg";
+import { handleAxiosCall } from "../helpers/network";
+
+export interface ConstructBgRemovedFileKeyOptions {
+  superClass?: string;
+}
 
 @injectable()
 export class RemoveBgService implements IService {
@@ -42,7 +49,10 @@ export class RemoveBgService implements IService {
     axiosRetry(this.httpClient, { retries: 3 });
   }
 
-  static constructBgRemovedFileKey = (fileKey: string) => {
+  static constructBgRemovedFileKey = (
+    fileKey: string,
+    options?: ConstructBgRemovedFileKeyOptions
+  ) => {
     const fileKeyParts = fileKey.split("/");
 
     const [fileNameWithExt] = fileKeyParts.slice(-1);
@@ -51,9 +61,11 @@ export class RemoveBgService implements IService {
       ? fileNameWithExt.split(".").slice(0, -1).join(".")
       : fileNameWithExt;
 
-    const bgRemovedFileName = `${fileNameWithoutExt}-bg-removed.png`;
+    const categorySuffix = options?.superClass ? `-${options?.superClass}` : "";
 
-    const bgMaskFileName = `${fileNameWithoutExt}-bg-mask.png`;
+    const bgRemovedFileName = `${fileNameWithoutExt}${categorySuffix}-bg-removed.png`;
+
+    const bgMaskFileName = `${fileNameWithoutExt}${categorySuffix}-bg-mask.png`;
 
     const bgRemovedFileKey = [
       ...fileKeyParts.slice(0, -1),
@@ -75,9 +87,7 @@ export class RemoveBgService implements IService {
   };
 
   logBgRemoval = async (
-    predictedClass: string,
-    primaryClass: string,
-    segmentationProvider: string,
+    removalMetadata: BgRemovalMetadata,
     metadata: RemoveBGCommandMetadata
   ) => {
     const currentTime = DateTime.utc();
@@ -86,9 +96,10 @@ export class RemoveBgService implements IService {
     const entry = {
       createdOn: currentDate,
       createdAt: currentTime.toMillis(),
-      detectedItem: predictedClass,
-      detectedObjectClass: primaryClass,
-      providerUsed: segmentationProvider,
+      detectedItem: removalMetadata.predictedClass,
+      detectedObjectClass: removalMetadata.primaryClass,
+      providerUsed: removalMetadata.segmentationProvider,
+      qualityConfidence: removalMetadata.qualityConfidence,
       source: metadata.source,
       fileKeys: metadata.fileKeys,
     };
@@ -99,25 +110,47 @@ export class RemoveBgService implements IService {
     });
   };
 
+  shouldRetriggerBgRemoval = async (
+    predictedClass: string,
+    updatedClass: string
+  ): Promise<BgRemovalRetriggerCheckResponse> => {
+    const { data } = await handleAxiosCall<Record<string, unknown>>(
+      async () =>
+        await this.httpClient.post("/bgRemovalTriggerCheck", {
+          predicted_class: predictedClass,
+          updated_class: updatedClass,
+        })
+    );
+    return {
+      updatedClass: data.updated_class as string,
+      isRetriggerRequired: data.is_retrigger_required as boolean,
+      predictedClass: data.predicted_class as string,
+    };
+  };
+
   removeBg = async (
     fileBuffer: Buffer,
     fileName: string,
     crop: boolean,
     onlyMask: boolean,
-    metadata: RemoveBGCommandMetadata
-  ): Promise<Buffer> => {
+    metadata: RemoveBGCommandMetadata,
+    category?: string
+  ): Promise<{ buffer: Buffer; metadata: BgRemovalMetadata }> => {
     const config = {
       crop: "False",
       channel: "rgba",
+      category,
     };
     // we need capital T for True in crop
     if (crop) config.crop = "True";
     if (onlyMask) {
       config.channel = "alpha";
     }
+
     const form = new FormData();
     form.append("file", fileBuffer, fileName);
     Object.keys(config).forEach((key) => {
+      if (!config[key]) return;
       form.append(key, config[key]);
     });
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -138,23 +171,28 @@ export class RemoveBgService implements IService {
       data: Stream;
       headers: Record<string, string>;
     };
-    await this.logBgRemoval(
-      headers["x-predicted-class"],
-      headers["x-primary-Class"],
-      headers["x-segmentation-provider"],
-      metadata
-    );
+
+    const bgRemovalMetadata = {
+      predictedClass: headers["x-predicted-class"],
+      primaryClass: headers["x-primary-class"],
+      segmentationProvider: headers["x-segmentation-provider"],
+      qualityConfidence: headers["x-quality-confidence"],
+    };
+
+    await this.logBgRemoval(bgRemovalMetadata, metadata);
 
     const buffer = await streamToBuffer(data);
 
     await RemoveBgService.validateImage(buffer);
 
-    return buffer;
+    return { buffer, metadata: bgRemovalMetadata };
   };
 
-  async removeBgAndStore(
-    fileKeys: HeroImageFileKeys
-  ): Promise<{ fileKeys: HeroImageFileKeys; updated: boolean }> {
+  async removeBgAndStore(fileKeys: ImageFileKeys): Promise<{
+    fileKeys: ImageFileKeys;
+    updated: boolean;
+    bgRemovalMetadata?: BgRemovalMetadata;
+  }> {
     if (fileKeys.withoutBg) {
       return {
         fileKeys,
@@ -207,7 +245,7 @@ export class RemoveBgService implements IService {
       }
     );
 
-    const rescaledMask = await rescaleImage(bgMask, { width, height });
+    const rescaledMask = await rescaleImage(bgMask.buffer, { width, height });
     const bgRemovedImageUsingMask = await applyMask(
       originalImage,
       rescaledMask
@@ -231,6 +269,7 @@ export class RemoveBgService implements IService {
         withoutBg: bgRemovedFileKey,
         mask: bgMaskFileKey,
       },
+      bgRemovalMetadata: bgMask.metadata,
       updated: true,
     };
   }

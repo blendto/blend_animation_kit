@@ -1,5 +1,5 @@
-import { Recipe, Size } from "./recipe";
-import { HeroImageFileKeys } from "./heroImage";
+import { Recipe, Size } from "server/base/models/recipe";
+import { BlendHeroImage } from "server/base/models/heroImage";
 
 export enum BlendStatus {
   Initialized = "INITIALIZED",
@@ -32,7 +32,7 @@ export interface Blend extends Recipe {
   createdOn: string;
   updatedAt: number;
   updatedOn: string;
-  heroImages?: HeroImageFileKeys;
+  heroImages?: BlendHeroImage;
   statusUpdates: BlendStatusUpdate[];
   expireAt?: number;
   batchLevelEditStatus?: BatchLevelEditStatus;

@@ -10,7 +10,7 @@ import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
 import RecoEngineApi, { StyleSuggestions } from "server/internal/reco-engine";
 import { Recipe } from "server/base/models/recipe";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
@@ -25,7 +25,7 @@ export class SuggestionService {
   async selectFileKeysFromBatchPreview(
     uid: string,
     batchId: string
-  ): Promise<HeroImageFileKeys> {
+  ): Promise<ImageFileKeys> {
     const blendIds = await this.blendService.getBlendIdsForBatch(batchId);
     const blendId = blendIds[0];
     if (!blendId) {
@@ -109,16 +109,17 @@ export class SuggestionService {
   }
 
   async suggestRecipesPaginated(
-    uid: string,
-    fileKey: string,
-    ip: string,
-    pageKey?: number
+    requestBody: SuggestRecipePaginatedRequestBody
   ): Promise<{ recipeLists: RecipeList[]; nextPageKey?: number }> {
-    const suggestions = await this.recoEngineApi.suggestRecipeListsPaginated(
-      fileKey,
-      this.userService.getUserAgent(ip),
-      pageKey
-    );
+    const { uid, fileKey, ip, pageKey, productSuperCategory, filters } =
+      requestBody;
+    const suggestions = await this.recoEngineApi.suggestRecipeListsPaginated({
+      heroImageKey: fileKey,
+      userAgentPromise: this.userService.getUserAgent(ip),
+      pageKey,
+      productSuperCategory,
+      filters,
+    });
 
     let recipeLists = suggestions.suggestedRecipeCategories;
 
@@ -190,4 +191,13 @@ export class SuggestionService {
 
     return recipeVariantId;
   }
+}
+
+interface SuggestRecipePaginatedRequestBody {
+  uid: string;
+  fileKey: string;
+  ip: string;
+  pageKey?: number;
+  productSuperCategory?: string;
+  filters?: Record<string, unknown>;
 }

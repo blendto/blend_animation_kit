@@ -1,7 +1,7 @@
 import {
   createBlendBucketFileKeys,
   HeroImage,
-  HeroImageFileKeys,
+  ImageFileKeys,
 } from "server/base/models/heroImage";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
@@ -21,12 +21,17 @@ import HeroImageService from "server/service/heroImage";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import { RemoveBGSource } from "server/base/models/removeBg";
 
+interface FileKeysProcessingOptions {
+  saveImage: boolean;
+}
+
 export abstract class FileKeysProcessingStrategy {
   static choose(
     blendId: string,
     userId: string,
-    fileKeys?: HeroImageFileKeys,
+    fileKeys?: ImageFileKeys,
     heroImageId?: string
+    // Should be removed soon
   ): FileKeysProcessingStrategy {
     if (heroImageId) {
       return new HeroImageIdBased(heroImageId, blendId, userId);
@@ -34,13 +39,14 @@ export abstract class FileKeysProcessingStrategy {
     return new HeroImageFileKeysBased(fileKeys, blendId, userId);
   }
 
-  abstract process(): Promise<HeroImageFileKeys>;
+  abstract process(): Promise<ImageFileKeys>;
 }
 
 export class HeroImageIdBased extends FileKeysProcessingStrategy {
   heroImageId: string;
   blendId: string;
   userId: string;
+
   constructor(heroImageId: string, blendId: string, userId: string) {
     super();
     this.heroImageId = heroImageId;
@@ -48,7 +54,7 @@ export class HeroImageIdBased extends FileKeysProcessingStrategy {
     this.userId = userId;
   }
 
-  async process(): Promise<HeroImageFileKeys> {
+  async process(): Promise<ImageFileKeys> {
     const heroImageService = diContainer.get<HeroImageService>(
       TYPES.HeroImageService
     );
@@ -57,9 +63,11 @@ export class HeroImageIdBased extends FileKeysProcessingStrategy {
       this.heroImageId,
       this.userId
     );
+
     if (!heroImage) {
       throw new UserError("No such hero image for user");
     }
+
     const blendBucketFilekeys = createBlendBucketFileKeys(
       this.blendId,
       heroImage
@@ -87,17 +95,18 @@ export class HeroImageIdBased extends FileKeysProcessingStrategy {
 }
 
 export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
-  fileKeys: HeroImageFileKeys;
+  fileKeys: ImageFileKeys;
   blendId: string;
   userId: string;
-  constructor(fileKeys: HeroImageFileKeys, blendId: string, userId: string) {
+
+  constructor(fileKeys: ImageFileKeys, blendId: string, userId: string) {
     super();
     this.fileKeys = fileKeys;
     this.blendId = blendId;
     this.userId = userId;
   }
 
-  async process(): Promise<HeroImageFileKeys> {
+  async process(): Promise<ImageFileKeys> {
     const heroImageService = diContainer.get<HeroImageService>(
       TYPES.HeroImageService
     );
@@ -133,7 +142,7 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     const updatedFilekeys = {
       original: this.fileKeys.original,
       withoutBg: bgRemovedFileKey,
-    } as HeroImageFileKeys;
+    } as ImageFileKeys;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     fireAndForget(() =>
@@ -150,7 +159,7 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
 async function createBgRemovedImage(
   originalImage: Buffer,
   fileNameWithExt: string,
-  fileKeys: HeroImageFileKeys,
+  fileKeys: ImageFileKeys,
   bgRemovedFileKey: string
 ) {
   logger.info({
@@ -216,7 +225,7 @@ async function createBgRemovedImage(
     await uploadObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       bgRemovedFileKey,
-      bgRemoved
+      bgRemoved.buffer
     );
   } catch (ex) {
     if (axios.isAxiosError(ex)) {

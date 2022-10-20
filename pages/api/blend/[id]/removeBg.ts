@@ -24,13 +24,16 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import { sharpInstance } from "server/helpers/sharpUtils";
-import { HeroImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
 import { RemoveBGSource } from "server/base/models/removeBg";
 import { fireAndForget } from "server/helpers/async-runner";
 import HeroImageService from "server/service/heroImage";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 
+/**
+ * @Deprecated("Use removeBg-v2")
+ */
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
@@ -140,7 +143,10 @@ const removeBgAndStore = async (
     if (useMask) {
       const { width, height } = metadata;
 
-      const rescaledMask = await rescaleImage(bgRemoved, { width, height });
+      const rescaledMask = await rescaleImage(bgRemoved.buffer, {
+        width,
+        height,
+      });
       const bgRemovedImageUsingMask = await applyMask(
         originalImage,
         rescaledMask
@@ -170,7 +176,7 @@ const removeBgAndStore = async (
         withoutBg: bgRemovedFileKey,
         original: fileKey,
         mask: bgMaskFileKey,
-      } as HeroImageFileKeys;
+      } as ImageFileKeys;
 
       await blendService.addOrUpdateImageFileKeys(blend, imageFileKeysItem, {
         isHeroImage: isHeroImage || blend.heroImages?.original === fileKey,
@@ -179,7 +185,7 @@ const removeBgAndStore = async (
       await uploadObject(
         ConfigProvider.BLEND_INGREDIENTS_BUCKET,
         bgRemovedFileKey,
-        bgRemoved
+        bgRemoved.buffer
       );
     }
   }
