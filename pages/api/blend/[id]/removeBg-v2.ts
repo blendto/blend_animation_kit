@@ -341,6 +341,7 @@ const removeBgAndStore = async (
 
     imageFileKeysItem = {
       ...imageFileKeysItem,
+      mask: bgMaskFileKey,
       trimLTWH,
       classificationMetadata,
     } as ImageFileKeys | BlendHeroImage;

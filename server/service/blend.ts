@@ -78,7 +78,7 @@ export class BlendService implements IService {
     const newFileKeysList =
       this.fileKeysService.constructUpdatedFileKeysFromBlend(
         blend,
-        plainToClass(ImageFileKeys, fileKeyItem, { strategy: "excludeAll" })
+        plainToClass(ImageFileKeys, fileKeyItem)
       );
 
     let updateQuery =
