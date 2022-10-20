@@ -225,6 +225,7 @@ interface BackgroundInfo {
 export enum BackgroundType {
   GradientBackgroundInfo = "GradientBackgroundInfo",
   ColoredBackgroundInfo = "ColoredBackgroundInfo",
+  ImageBackgroundInfo = "ImageBackgroundInfo",
 }
 
 export class RecipeUtils {
