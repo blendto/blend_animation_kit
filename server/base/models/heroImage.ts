@@ -31,7 +31,6 @@ export class ImageFileKeys {
   trimLTWH?: [number, number, number, number];
   withoutBg?: string;
   mask?: string;
-  trimLTWH?: [number, number, number, number];
 }
 
 export interface ExtendedHeroImageFileKeys extends ImageFileKeys {
