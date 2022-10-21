@@ -28,6 +28,7 @@ export interface HeroImage {
 
 export class ImageFileKeys {
   original: string;
+  trimLTWH?: [number, number, number, number];
   withoutBg?: string;
   mask?: string;
   trimLTWH?: [number, number, number, number];

@@ -21,6 +21,7 @@ import {
 import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import logger from "server/base/Logger";
 import { replaceUriPrefix } from "server/helpers/fileKeyUtils";
+import { DateTime } from "luxon";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -43,6 +44,8 @@ export class RecipeService implements IService {
         )
       )
     );
+    recipe.updatedOn = DateTime.utc().toISODate();
+    recipe.updatedAt = Date.now();
     await this.dataStore.putItem({
       TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
       Item: recipe,

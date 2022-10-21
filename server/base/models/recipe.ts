@@ -37,7 +37,7 @@ export interface ElementRef {
 export interface Elements {
   hero?: ElementRef;
   background: ElementRef;
-  title: ElementRef;
+  title: string;
 }
 
 export interface RecipeDetails {
@@ -46,15 +46,20 @@ export interface RecipeDetails {
   isPremium?: boolean;
 }
 
-export type InteractionAction = "DISPLAY_INLINE" | "STOP_DISPLAY";
-export type AssetType =
-  | "IMAGE"
-  | "EXT_IMAGE"
-  | "GIF"
-  | "STICKER"
-  | "TEXT"
-  | "LINK"
-  | "BRANDING";
+export enum InteractionAction {
+  DISPLAY_INLINE = "DISPLAY_INLINE",
+  STOP_DISPLAY = "STOP_DISPLAY",
+}
+
+export enum AssetType {
+  IMAGE = "IMAGE",
+  EXT_IMAGE = "EXT_IMAGE",
+  GIF = "GIF",
+  STICKER = "STICKER",
+  TEXT = "TEXT",
+  LINK = "LINK",
+  BRANDING = "BRANDING",
+}
 
 export interface Offset {
   dx: number;
@@ -87,7 +92,7 @@ export enum InteractionLayerTypes {
 }
 
 interface StyleConfig {
-  color: { primary?: string; fill?: string };
+  color?: { primary?: string; fill?: string };
 }
 
 export interface InteractionMetadata {
@@ -146,8 +151,12 @@ export interface Interaction {
 }
 
 export interface UserInteraction {
-  type: "LINK";
+  type: UserInteractionType;
   options: UserInteractionOptions;
+}
+
+export enum UserInteractionType {
+  LINK = "LINK",
 }
 
 export interface UserInteractionOptions {}
@@ -156,8 +165,13 @@ export interface LinkOptions extends UserInteractionOptions {
   target: string;
 }
 
+export enum SourceMetadataType {
+  MOBILE = "MOBILE",
+  WEB = "WEB",
+}
+
 export interface SourceMetadata {
-  type: "MOBILE" | "WEB";
+  type: SourceMetadataType;
   version: number;
 }
 
@@ -167,6 +181,8 @@ export interface RecipeMetadata {
   sourceRecipeId?: string;
   aspectRatio?: Size;
   sourceRecipe?: RecipeVariantId;
+  resolution?: Size;
+  target?: string;
 }
 
 export interface Recipe {
@@ -210,6 +226,13 @@ export interface Recipe {
       };
     };
   };
+  version?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  createdBy?: string;
+  isWatermarked?: boolean;
 }
 
 interface BackgroundInfo {
