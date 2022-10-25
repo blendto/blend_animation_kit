@@ -42,6 +42,7 @@ import sharp from "sharp";
 import { BlendHeroImage, ImageFileKeys } from "server/base/models/heroImage";
 import { fireAndForget } from "server/helpers/async-runner";
 import HeroImageService from "server/service/heroImage";
+import { plainToClass } from "class-transformer";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 const blendService = diContainer.get<BlendService>(TYPES.BlendService);
@@ -107,7 +108,10 @@ async function checkIfRetriggerNeeded(
   blend: Blend,
   userChosenSuperClass: string
 ): Promise<boolean> {
-  const classificationMetadata = blend.heroImages?.classificationMetadata;
+  const classificationMetadata = plainToClass(
+    ClassificationMetadata,
+    blend.heroImages?.classificationMetadata
+  );
   const previousClass =
     classificationMetadata?.userChosenSuperClass ??
     classificationMetadata?.productSuperClass;
@@ -268,10 +272,10 @@ const removeBgAndStore = async (
       userChosenSuperClass
     );
     if (!shouldRemoveBg) {
-      const classificationMetadata = {
+      const classificationMetadata = plainToClass(ClassificationMetadata, {
         ...blend.heroImages?.classificationMetadata,
         userChosenSuperClass,
-      };
+      });
       const blendHero = { ...blend.heroImages, classificationMetadata };
       await blendService.addOrUpdateImageFileKeys(blend, blendHero, {
         isHeroImage: true,

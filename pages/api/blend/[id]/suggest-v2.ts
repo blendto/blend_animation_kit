@@ -82,7 +82,7 @@ const suggestRecipesV2 = async (
     return;
   }
 
-  const classificationMetadata = plainToClass(
+  let classificationMetadata = plainToClass(
     ClassificationMetadata,
     blend.heroImages?.classificationMetadata
   );
@@ -124,7 +124,10 @@ const suggestRecipesV2 = async (
   ) {
     const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
-    classificationMetadata.userChosenSuperClass = userChosenSuperClass;
+    classificationMetadata = plainToClass(ClassificationMetadata, {
+      ...classificationMetadata,
+      userChosenSuperClass,
+    });
     await blendService.addOrUpdateImageFileKeys(blend, {
       ...blend.heroImages,
       classificationMetadata,
