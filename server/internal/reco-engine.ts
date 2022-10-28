@@ -9,7 +9,7 @@ import {
   ClassificationMetadata,
   BgRemovedFileKeys,
 } from "server/base/models/removeBg";
-import { plainToClass } from "class-transformer";
+import { instanceToPlain, plainToClass } from "class-transformer";
 
 export interface RecipeListSuggestions {
   suggestedRecipeCategories: RecipeList[];
@@ -34,6 +34,13 @@ export default class RecoEngineApi {
   httpClient = axios.create({
     baseURL: ConfigProvider.RECO_API_BASE_PATH,
   });
+
+  constructor() {
+    this.httpClient.interceptors.request.use((req) => {
+      req.data = instanceToPlain(req.data);
+      return req;
+    });
+  }
 
   private dedicatedClassToSuperClassMapping: Record<string, string> = {
     vechicles: "automobile",
