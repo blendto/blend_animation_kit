@@ -511,7 +511,7 @@ export class BatchService implements IService {
         ":deleted": BatchState.DELETED,
         ":emptyMap": {},
       },
-      ProjectionExpression: "id, updatedAt, #status, thumbnail",
+      ProjectionExpression: "id, updatedAt, #status, thumbnail, previews",
       FilterExpression: "#status <> :deleted and previews <> :emptyMap",
       ScanIndexForward: false,
       ExclusiveStartKey: pageKeyObject as Record<string, unknown>,
@@ -519,6 +519,8 @@ export class BatchService implements IService {
     });
 
     const batches = data.Items as Batch[];
+    batches.forEach((batch) => new BatchWrapper(batch).trimPreviews());
+
     const nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
 
     return { batches, nextPageKey };

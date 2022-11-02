@@ -83,6 +83,17 @@ export class BatchWrapper {
     );
   }
 
+  trimPreviews() {
+    const selectedPreview = Object.values(this.batch.previews).find(
+      (item) => !item.failed
+    );
+    if (selectedPreview) {
+      const trimmedPreview = <Record<string, BatchItemPreview>>{};
+      trimmedPreview[selectedPreview.blendId] = selectedPreview;
+      this.batch.previews = trimmedPreview;
+    }
+  }
+
   getIndividuallyEditedBlends(): string[] {
     return this.batch.operations
       .filter(
