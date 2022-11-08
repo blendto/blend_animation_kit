@@ -336,12 +336,17 @@ const removeBgAndStore = async (
       height: trimHeight,
     } = bgRemovedImageUsingMask.info;
 
-    trimLTWH = [
-      Math.abs(trimOffsetLeft),
-      Math.abs(trimOffsetTop),
-      trimWidth,
-      trimHeight,
-    ];
+    if (trimOffsetLeft) {
+      trimLTWH = [
+        Math.abs(trimOffsetLeft) || 0,
+        Math.abs(trimOffsetTop) || 0,
+        trimWidth,
+        trimHeight,
+      ];
+    } else {
+      // trimming failed
+      trimLTWH = null;
+    }
 
     imageFileKeysItem = {
       ...imageFileKeysItem,
