@@ -20,12 +20,19 @@ import { Recipe } from "server/base/models/recipe";
 import { Entitlement, revenueCat } from "server/external/revenue-cat";
 import Cors from "cors";
 import { initMiddleware } from "server/helpers/middleware";
+import { UpdateOperations } from "../repositories";
 
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
   buildVersion?: number;
   clientType?: string;
 };
+
+export interface JsonPatchBody {
+  path: string;
+  op: UpdateOperations;
+  value?: unknown;
+}
 
 const cors = Cors({
   methods: ["GET", "OPTIONS", "POST", "PUT", "DELETE"],
@@ -157,7 +164,9 @@ export const ensureSupportedClient: CustomMiddleware = async function (
   res: NextApiResponse
 ): Promise<void> {
   if (!req.headers["x-client-version"]) {
-    throw new ForbiddenError("Unsupported App! You're on an older app version. Update the App for a better experience.");
+    throw new ForbiddenError(
+      "Unsupported App! You're on an older app version. Update the App for a better experience."
+    );
   }
   await controller(req, res);
 };

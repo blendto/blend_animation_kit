@@ -34,6 +34,8 @@ import {
 } from "server/base/models/recipeList";
 import { DaxDB } from "server/external/dax";
 import { plainToClass } from "class-transformer";
+import { UpdateOperations } from "../repositories";
+import { JsonPatchBody } from "../helpers/request";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -43,6 +45,18 @@ type BlendsPage = { blends: Blend[]; nextPageKey: string };
 const PAGE_SIZE = 15;
 
 type RecipeVariantHeroCheckMap = Record<string, boolean>;
+
+export enum BlendUpdatePaths {
+  fileName = "/fileName",
+  updatedAt = "/updatedAt",
+  updatedOn = "/updatedOn",
+}
+
+export interface BlendPatchBody {
+  path: BlendUpdatePaths;
+  op: UpdateOperations;
+  value?: unknown;
+}
 
 @injectable()
 export class BlendService implements IService {
@@ -373,6 +387,30 @@ export class BlendService implements IService {
         Limit: 20,
       })
     ).Items;
+  }
+
+  async updateBlendbyDelta(
+    id: string,
+    updateBody: BlendPatchBody[]
+  ): Promise<Blend> {
+    const now = Date.now();
+    const updatedOn = DateTime.utc().toISODate();
+    updateBody.push({
+      path: BlendUpdatePaths.updatedAt,
+      op: UpdateOperations.replace,
+      value: now,
+    });
+    updateBody.push({
+      path: BlendUpdatePaths.updatedOn,
+      op: UpdateOperations.replace,
+      value: updatedOn,
+    });
+    const dbUpdateResponse = await this.dataStore.updateByDelta(
+      ConfigProvider.BLEND_DYNAMODB_TABLE,
+      { id },
+      updateBody as JsonPatchBody[]
+    );
+    return dbUpdateResponse.Attributes as Blend;
   }
 
   async updateBlend(

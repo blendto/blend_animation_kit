@@ -4,6 +4,9 @@ import logger from "server/base/Logger";
 import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
 import { IDataStore } from "./datastore";
 import AWS from "./aws";
+import ConfigProvider from "../base/ConfigProvider";
+import { jsonPatchToDynamoExp } from "../helpers/db";
+import { JsonPatchBody } from "../helpers/request";
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
@@ -86,6 +89,20 @@ export default class DynamoDB implements IDataStore {
         resolve(data);
       });
     });
+  }
+
+  updateByDelta(
+    tableName: string,
+    key: Record<string, unknown>,
+    changes: JsonPatchBody[]
+  ): Promise<AWS.DynamoDB.DocumentClient.UpdateItemOutput> {
+    const dynamoParams: AWS.DynamoDB.DocumentClient.UpdateItemInput = {
+      ...jsonPatchToDynamoExp(changes),
+      Key: key,
+      TableName: tableName,
+      ReturnValues: "ALL_NEW",
+    };
+    return this.updateItem(dynamoParams);
   }
 
   updateItem(

@@ -21,6 +21,7 @@ export enum BatchLevelEditStatus {
 export interface Blend extends Recipe {
   id: string;
   version: BlendVersion;
+  fileName?: string;
   batchId?: string;
   filePath?: string;
   imagePath?: string;

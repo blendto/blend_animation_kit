@@ -7,12 +7,14 @@ import { checkCompatibilityWithElements } from "server/base/errors/recipeVerific
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
 import { diContainer } from "inversify.config";
-import { BlendService } from "server/service/blend";
+import { BlendPatchBody, BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
 import {
   ensureAuth,
   ensureBrandingEntitlement,
   NextApiRequestExtended,
+  requestComponentToValidate,
+  validate,
   withReqHandler,
 } from "server/helpers/request";
 import {
@@ -25,6 +27,8 @@ import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import { BlendUpdater } from "server/engine/blend/updater";
 import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
 import { ExportPrepAgent } from "server/engine/blend/export";
+import Joi from "joi";
+import { UpdateOperations } from "../../../server/repositories";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -36,6 +40,9 @@ export default withReqHandler(
         return ensureAuth(submitBlend, req, res);
       case "DELETE":
         return ensureAuth(deleteBlend, req, res);
+      case "PATCH":
+        return ensureAuth(updateBlend, req, res);
+
       default:
         throw new MethodNotAllowedError();
     }
@@ -132,6 +139,7 @@ function trim(blend: Blend) {
     isWatermarked,
     gifsOrStickers,
     heroImages,
+    fileName,
   } = blend;
 
   return {
@@ -142,6 +150,7 @@ function trim(blend: Blend) {
     output,
     isWatermarked,
     heroImages,
+    fileName,
     interactions: trimInteractions(blend),
     isStatic: gifsOrStickers?.length <= 0 ?? true,
   };
@@ -284,4 +293,47 @@ const submitBlend = async (
       res.send(trim(generatedBlend));
     }
   );
+};
+
+enum BlendUpdateAllowedPaths {
+  fileName = "/fileName",
+}
+
+const UPDATE_BLEND_SCHEMA = Joi.object({
+  changes: Joi.array()
+    .items(
+      Joi.object({
+        path: Joi.string()
+          .required()
+          .valid(...Object.values(BlendUpdateAllowedPaths)),
+        op: Joi.string()
+          .required()
+          .valid(...Object.values(UpdateOperations)),
+        value: Joi.any().when("op", {
+          not: "remove",
+          then: Joi.required(),
+          otherwise: Joi.forbidden(),
+        }),
+      })
+    )
+    .required()
+    .min(1),
+});
+
+const updateBlend = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
+  validate(
+    req.body as object,
+    requestComponentToValidate.body,
+    UPDATE_BLEND_SCHEMA
+  );
+  const { id } = req.query as { id: string };
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+  const result = await blendService.updateBlendbyDelta(
+    id,
+    (req.body as { changes: BlendPatchBody[] }).changes
+  );
+  res.send(result);
 };
