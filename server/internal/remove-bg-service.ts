@@ -117,14 +117,14 @@ export class RemoveBgService implements IService {
     const { data } = await handleAxiosCall<Record<string, unknown>>(
       async () =>
         await this.httpClient.post("/bgRemovalTriggerCheck", {
-          predicted_class: predictedClass,
-          updated_class: updatedClass,
+          predicted_super_class: predictedClass,
+          updated_super_class: updatedClass,
         })
     );
     return {
-      updatedClass: data.updated_class as string,
+      updatedSuperClass: data.updated_super_class as string,
       isRetriggerRequired: data.is_retrigger_required as boolean,
-      predictedClass: data.predicted_class as string,
+      predictedSuperClass: data.predicted_super_class as string,
     };
   };
 

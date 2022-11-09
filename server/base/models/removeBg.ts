@@ -34,7 +34,7 @@ export class ClassificationMetadata {
 }
 
 export interface BgRemovalRetriggerCheckResponse {
-  updatedClass: string;
-  predictedClass: string;
+  updatedSuperClass: string;
+  predictedSuperClass: string;
   isRetriggerRequired: boolean;
 }
