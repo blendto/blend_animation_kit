@@ -246,6 +246,7 @@ export class BlendService implements IService {
         .toSeconds(),
       createdAt: currentTime,
       createdOn: currentDate,
+      fileName: this.generateDefaultFileName(currentTime),
       updatedAt: currentTime,
       updatedOn: currentDate,
       heroImages: options?.heroImages,
@@ -260,8 +261,12 @@ export class BlendService implements IService {
   }
 
   backfillBlendOutput(item: Blend) {
-    const { filePath, imagePath, thumbnail, status } = item;
+    const { filePath, fileName, imagePath, thumbnail, status } = item;
     let { output } = item;
+
+    if (!fileName) {
+      item.fileName = this.generateDefaultFileName(item.createdAt);
+    }
 
     if (!output && status === BlendStatus.Generated) {
       output = {
@@ -287,6 +292,19 @@ export class BlendService implements IService {
       thumbnail: output?.thumbnail.path ?? null,
       output: output ?? null,
     };
+  }
+
+  generateDefaultFileName(createdAt: number): string {
+    const date = new Date(createdAt);
+    return "".concat(
+      "blend",
+      String(date.getUTCDate()).padStart(2, "0"),
+      String(date.getUTCMonth()).padStart(2, "0"),
+      String(date.getUTCFullYear()).slice(2),
+      String(date.getUTCHours()).padStart(2, "0"),
+      String(date.getUTCMinutes()).padStart(2, "0"),
+      String(date.getUTCSeconds()).padStart(2, "0")
+    );
   }
 
   async clearExpiry(blendIds: string[]) {
