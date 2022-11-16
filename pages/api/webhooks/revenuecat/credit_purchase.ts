@@ -89,8 +89,6 @@ const registerCreditPurchase = async (
     TYPES.SubscriptionService
   );
   try {
-    // Ensure credits account is created
-    await subscriptionService.getOrCreate(event.app_user_id);
     res.send(
       await subscriptionService.addCredits(event.app_user_id, creditsToAdd)
     );

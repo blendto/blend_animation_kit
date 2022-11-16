@@ -147,18 +147,21 @@ export default class SubscriptionService implements IService {
     try {
       subscription = await this.get(userId);
     } catch (error) {
-      if (
-        error instanceof UserError &&
-        // TODO: Add error codes to credit service and user it to verify
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        JSON.parse(error.message).message === "Subscription not found"
-      ) {
-        subscription = await this.create(userId);
-      } else {
-        throw error;
-      }
+      subscription = await this.createOnMissingError(error as Error, userId);
     }
     return this.transform(subscription);
+  }
+
+  async createOnMissingError(error: Error, userId: string) {
+    if (
+      error instanceof UserError &&
+      // TODO: Add error codes to credit service and user it to verify
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      JSON.parse(error.message).message === "Subscription not found"
+    ) {
+      return await this.create(userId);
+    }
+    throw error;
   }
 
   getWaterMarkBuildVersion(): number {
@@ -252,9 +255,14 @@ export default class SubscriptionService implements IService {
     count: number,
     reason = CreditAdditionReason.PURCHASE
   ): Promise<SubscriptionEntity> {
-    return this.transform(
-      await this.creditServiceApi.addCredits(userId, count, { reason })
-    );
+    try {
+      return this.transform(
+        await this.creditServiceApi.addCredits(userId, count, { reason })
+      );
+    } catch (error) {
+      await this.createOnMissingError(error as Error, userId);
+      return await this.addCredits(userId, count, reason);
+    }
   }
 
   async getTransactions(
