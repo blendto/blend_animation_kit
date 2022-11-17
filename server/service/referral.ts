@@ -19,13 +19,15 @@ import SubscriptionService, {
 } from "./subscription";
 import { UserService } from "./user";
 
-export const REFEREE_CREDITS_REWARD_QUANTITY = 5;
+export const REFEREE_CREDITS_REWARD_QUANTITY = 10;
 export const REFERRER_CREDITS_REWARD_QUANTITY = 10;
 
 export enum REFERRAL_USER_ERROR {
   INVALID_REFERRAL_ID = "INVALID_REFERRAL_ID",
   DUPLICATE_REFERRAL = "DUPLICATE_REFERRAL",
   DUPLICATE_DEVICE_ID = "DUPLICATE_DEVICE_ID",
+  SELF_REFERRAL = "SELF_REFERRAL",
+  EXISTING_USER = "EXISTING_USER",
 }
 
 export type ReferralDashboardItem = {
@@ -47,6 +49,17 @@ export default class ReferralService implements IService {
       throw new UserError(
         "Duplicate device id",
         REFERRAL_USER_ERROR.DUPLICATE_DEVICE_ID
+      );
+    }
+  }
+
+  async ensureRefereeIsNew(refereeId: string): Promise<void> {
+    const referee = (await this.userService.get(refereeId)) as User;
+    const oneDayInMS = 24 * 60 * 60 * 1000;
+    if (new Date().getTime() - referee.createdAt >= oneDayInMS) {
+      throw new UserError(
+        "Referral rewards are applicable only for new users",
+        REFERRAL_USER_ERROR.EXISTING_USER
       );
     }
   }
@@ -83,15 +96,18 @@ export default class ReferralService implements IService {
       referral.reward.referrer.quantity,
       CreditAdditionReason.REFERRER_REWARD
     );
+    await this.repo.update(
+      { refereeUserId },
+      this.generateSuccessfulRewardDelta({ refereeRewarded: false })
+    );
     const updatedSubscription = await this.subscriptionService.addCredits(
       refereeUserId,
       referral.reward.referee.quantity,
       CreditAdditionReason.REFEREE_REWARD
     );
-
     await this.repo.update(
       { refereeUserId },
-      this.generateSuccessfulRewardDelta()
+      this.generateSuccessfulRewardDelta({})
     );
 
     await this.cleverTapService.registerEvent(
@@ -153,7 +169,10 @@ export default class ReferralService implements IService {
     }
   }
 
-  private generateSuccessfulRewardDelta(): JSONPatch {
+  private generateSuccessfulRewardDelta({
+    referrerRewarded = true,
+    refereeRewarded = true,
+  }): JSONPatch {
     return [
       {
         op: "replace",
@@ -162,12 +181,16 @@ export default class ReferralService implements IService {
           referee: {
             type: RewardType.CREDITS,
             quantity: REFEREE_CREDITS_REWARD_QUANTITY,
-            status: RewardStatus.REWARDED,
+            status: refereeRewarded
+              ? RewardStatus.REWARDED
+              : RewardStatus.INITIATED,
           },
           referrer: {
             type: RewardType.CREDITS,
             quantity: REFERRER_CREDITS_REWARD_QUANTITY,
-            status: RewardStatus.REWARDED,
+            status: referrerRewarded
+              ? RewardStatus.REWARDED
+              : RewardStatus.INITIATED,
           },
         },
       },

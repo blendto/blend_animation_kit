@@ -12,6 +12,7 @@ import {
 import { RewardType } from "server/repositories/referral";
 import ReferralService, {
   REFEREE_CREDITS_REWARD_QUANTITY,
+  REFERRAL_USER_ERROR,
 } from "server/service/referral";
 import { TYPES } from "server/types";
 
@@ -49,10 +50,12 @@ async function register(
   );
   // TODO: Put this back
   // await referralService.ensureDeviceIdIsOriginal(body.deviceId);
+  await referralService.ensureRefereeIsNew(req.uid);
   const referrer = await referralService.getReferrerOrFail(body.referralId);
   if (req.uid === referrer.id) {
     throw new UserError(
-      `User found to be trying to self refer! Id: ${referrer.id}`
+      `User found to be trying to self refer! Id: ${referrer.id}`,
+      REFERRAL_USER_ERROR.SELF_REFERRAL
     );
   }
   if (body.dryRun) {

@@ -69,7 +69,7 @@ describe("ReferralService", () => {
         .spyOn(referralService.repo, "createWithoutSurrogateKey")
         .mockRejectedValueOnce({ code: "ConditionalCheckFailedException" });
       await expect(
-        referralService.register(refereeUserId, referrerUserId)
+        referralService.register(refereeUserId, referrerUserId, deviceId)
       ).rejects.toThrow(
         new UserError(
           "This user's referral is already registerd",
@@ -121,22 +121,37 @@ describe("ReferralService", () => {
       jest
         .spyOn(referralService.cleverTapService, "registerEvent")
         .mockResolvedValueOnce();
-      jest.spyOn(referralService.repo, "update").mockResolvedValueOnce({
-        ...referral,
-        reward: {
-          referee: {
-            ...referral.reward.referee,
-            status: RewardStatus.REWARDED,
+      jest
+        .spyOn(referralService.repo, "update")
+        .mockResolvedValueOnce({
+          ...referral,
+          reward: {
+            referee: {
+              ...referral.reward.referee,
+              status: RewardStatus.INITIATED,
+            },
+            referrer: {
+              ...referral.reward.referrer,
+              status: RewardStatus.REWARDED,
+            },
           },
-          referrer: {
-            ...referral.reward.referrer,
-            status: RewardStatus.REWARDED,
+        })
+        .mockResolvedValueOnce({
+          ...referral,
+          reward: {
+            referee: {
+              ...referral.reward.referee,
+              status: RewardStatus.REWARDED,
+            },
+            referrer: {
+              ...referral.reward.referrer,
+              status: RewardStatus.REWARDED,
+            },
           },
-        },
-      });
+        });
 
       expect(
-        await referralService.register(refereeUserId, referrerUserId)
+        await referralService.register(refereeUserId, referrerUserId, deviceId)
       ).toMatchObject({
         reward: {
           type: referral.reward.referee.type,
