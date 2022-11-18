@@ -54,7 +54,7 @@ export default class ReferralService implements IService {
   }
 
   async ensureRefereeIsNew(refereeId: string): Promise<void> {
-    const referee = (await this.userService.get(refereeId)) as User;
+    const referee = await this.userService.getOrCreate(refereeId);
     const oneDayInMS = 24 * 60 * 60 * 1000;
     if (new Date().getTime() - referee.createdAt >= oneDayInMS) {
       throw new UserError(
