@@ -12,6 +12,7 @@ import {
   SourceMetadataType,
   UserInteractionType,
 } from "server/base/models/recipe";
+import { BatchLevelEditStatus } from "server/base/models/blend";
 import { Style } from "server/engine/blend/style";
 import {
   ensureServiceAuth,
@@ -184,8 +185,12 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
     style: STYLE_CONFIG_SCHEMA,
   }).allow(null),
   thumbnail: Joi.string(),
-  heroImages: IMAGE_FILE_KEY_SCHEMA,
+  heroImages: IMAGE_FILE_KEY_SCHEMA.allow(null),
   imageFileKeys: Joi.array().items(IMAGE_FILE_KEY_SCHEMA),
+  fileName: Joi.string().allow(null),
+  batchLevelEditStatus: Joi.string()
+    .valid(...Object.values(BatchLevelEditStatus))
+    .allow(null),
   style: Joi.object({
     config: Joi.object({
       color: Joi.object({
