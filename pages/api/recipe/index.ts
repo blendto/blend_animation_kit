@@ -111,7 +111,7 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
   recipeDetails: Joi.object({
     elements: Joi.object({
       hero: ELEMENT_SCHEMA,
-      background: ELEMENT_SCHEMA.required(),
+      background: ELEMENT_SCHEMA.required().allow(null),
       title: Joi.string().required().allow(null),
     }).required(),
     assets: Joi.object({
