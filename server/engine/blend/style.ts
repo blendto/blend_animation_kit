@@ -107,7 +107,9 @@ export class Style {
           );
         }
 
-        this.validateTag(allColorTags, recipe.background.style?.color?.primary);
+        if (recipe.background.style?.color?.primary) {
+          this.validateTag(allColorTags, recipe.background.style.color.primary);
+        }
       }
     }
   }

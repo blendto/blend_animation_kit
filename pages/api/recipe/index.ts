@@ -183,6 +183,7 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
     angle: Joi.number(),
     stops: Joi.array().items(Joi.number()),
     style: STYLE_CONFIG_SCHEMA,
+    editorSettings: Joi.object(),
   }).allow(null),
   thumbnail: Joi.string(),
   heroImages: IMAGE_FILE_KEY_SCHEMA.allow(null),
