@@ -63,6 +63,11 @@ const IMAGE_FILE_KEY_SCHEMA = Joi.object({
   trimLTWH: Joi.array().length(4).items(Joi.number()),
   withoutBg: Joi.string(),
   mask: Joi.string(),
+  heroImageId: Joi.string(),
+  classificationMetadata: Joi.object({
+    productSuperClass: Joi.string().required(),
+    userChosenSuperClass: Joi.string(),
+  }),
 });
 
 const SIZE_SCHEMA = Joi.object({
