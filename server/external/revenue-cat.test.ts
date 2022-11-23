@@ -19,7 +19,7 @@ describe("RevenueCat", () => {
   });
 
   describe("hasEntitlement", () => {
-    it.skip("returns false if a user doesn't have the asked entitlement", async () => {
+    it("returns false if a user doesn't have the asked entitlement", async () => {
       const getAPISpy = spyOnGetAPI({});
 
       const res = await revenueCat.hasEntitlement(userId, Entitlement.BRANDING);
@@ -31,7 +31,7 @@ describe("RevenueCat", () => {
       ]);
     });
 
-    it.skip("returns false if a user has the asked entitlement but as expired", async () => {
+    it("returns false if a user has the asked entitlement but as expired", async () => {
       const thirtyMinutesEarlier = new Date(now.getTime() - 30 * 60 * 1000);
       const getAPISpy = spyOnGetAPI({
         [Entitlement.BRANDING]: {
@@ -48,7 +48,7 @@ describe("RevenueCat", () => {
       ]);
     });
 
-    it.skip("returns true if a user has the asked entitlement and as not expired", async () => {
+    it("returns true if a user has the asked entitlement and as not expired", async () => {
       const thirtyMinutesLater = new Date(now.getTime() + 30 * 60 * 1000);
       const getAPISpy = spyOnGetAPI({
         [Entitlement.BRANDING]: {
