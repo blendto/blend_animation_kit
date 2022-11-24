@@ -2,6 +2,8 @@ import { UserError } from "server/base/errors";
 import { AxiosError, AxiosResponse } from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
 import logger from "server/base/Logger";
+import ExternalHTTPError from "server/base/errors/ExternalHTTPError";
+import { pick } from "lodash";
 
 export async function handleAxiosCall<ResponseDataType>(
   axiosCall: () => Promise<AxiosResponse<ResponseDataType>>
@@ -20,7 +22,12 @@ export async function handleAxiosCall<ResponseDataType>(
         throw new UserError(errMessage as string);
       }
     }
-    throw error;
+    const extra = pick((error as AxiosError).config || {}, [
+      "baseURL",
+      "url",
+      "data",
+    ]);
+    throw new ExternalHTTPError((error as Error).message, extra);
   }
 }
 

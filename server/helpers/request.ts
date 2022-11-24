@@ -20,6 +20,7 @@ import { Recipe } from "server/base/models/recipe";
 import { Entitlement, revenueCat } from "server/external/revenue-cat";
 import Cors from "cors";
 import { initMiddleware } from "server/helpers/middleware";
+import ExternalHTTPError from "server/base/errors/ExternalHTTPError";
 import { UpdateOperations } from "../repositories";
 
 export type NextApiRequestExtended = NextApiRequest & {
@@ -121,6 +122,7 @@ export function withReqHandler(
             @typescript-eslint/no-unsafe-member-access
           */
           trace: err.stack,
+          extra: (err as ExternalHTTPError).extra || {},
         },
       });
       return res.status(500).send({ message: "Something went wrong!" });
