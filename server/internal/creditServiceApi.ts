@@ -1,10 +1,7 @@
 // noinspection JSMethodCanBeStatic
 
 import axios from "axios";
-import {
-  handleAxiosCall,
-  handleInternalAxiosCall,
-} from "server/helpers/network";
+import { handleInternalAxiosCall } from "server/helpers/network";
 import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import qs from "qs";
@@ -63,7 +60,7 @@ export default class CreditServiceApi {
       metadata,
     };
     return (
-      await handleAxiosCall<Record<string, unknown>>(
+      await handleInternalAxiosCall<Record<string, unknown>>(
         async () =>
           await this.httpClient.post(`/v1/subscriptions/credits`, data)
       )

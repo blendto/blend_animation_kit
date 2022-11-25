@@ -16,6 +16,7 @@ import CreditServiceApi, {
   ListingResponse,
 } from "server/internal/creditServiceApi";
 import { sum } from "lodash";
+import { withExponentialBackoffRetries } from "server/helpers/general";
 
 export interface SubscriptionEntity {
   adhocCredits: number;
@@ -147,21 +148,19 @@ export default class SubscriptionService implements IService {
     try {
       subscription = await this.get(userId);
     } catch (error) {
-      subscription = await this.createOnMissingError(error as Error, userId);
+      if (
+        !(
+          error instanceof UserError &&
+          // TODO: Add error codes to credit service and use it to verify
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          JSON.parse(error.message).message === "Subscription not found"
+        )
+      ) {
+        throw error;
+      }
+      subscription = await this.create(userId);
     }
     return this.transform(subscription);
-  }
-
-  async createOnMissingError(error: Error, userId: string) {
-    if (
-      error instanceof UserError &&
-      // TODO: Add error codes to credit service and user it to verify
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      JSON.parse(error.message).message === "Subscription not found"
-    ) {
-      return await this.create(userId);
-    }
-    throw error;
   }
 
   getWaterMarkBuildVersion(): number {
@@ -201,7 +200,7 @@ export default class SubscriptionService implements IService {
     } catch (err) {
       if (
         !(err instanceof UserError) ||
-        // TODO: Add error codes to credit service and user it to verify
+        // TODO: Add error codes to credit service and use it to verify
         !["Expired/Insufficient credits", "Subscription not found"].includes(
           /* eslint-disable-next-line
                 @typescript-eslint/no-unsafe-argument,
@@ -255,14 +254,15 @@ export default class SubscriptionService implements IService {
     count: number,
     reason = CreditAdditionReason.PURCHASE
   ): Promise<SubscriptionEntity> {
-    try {
-      return this.transform(
-        await this.creditServiceApi.addCredits(userId, count, { reason })
-      );
-    } catch (error) {
-      await this.createOnMissingError(error as Error, userId);
-      return await this.addCredits(userId, count, reason);
-    }
+    return this.transform(
+      // This is sometimes called concurrently to creation of a credits account.
+      // Wait out eventual creation with retries as necessary
+      await withExponentialBackoffRetries(
+        (userId: string, count: number, reason: CreditAdditionReason) =>
+          this.creditServiceApi.addCredits(userId, count, { reason }),
+        [userId, count, reason]
+      )
+    );
   }
 
   async getTransactions(
@@ -300,9 +300,12 @@ export default class SubscriptionService implements IService {
     userId: string,
     pageToken?: string
   ): Promise<GetLedgerResponse> {
-    const creditServiceRes = await this.creditServiceApi.fetchActivityLogs(
-      userId,
-      pageToken
+    // This is sometimes called concurrently to creation of a credits account.
+    // Wait out eventual creation with retries as necessary
+    const creditServiceRes = await withExponentialBackoffRetries(
+      (userId: string, pageToken?: string) =>
+        this.creditServiceApi.fetchActivityLogs(userId, pageToken),
+      [userId, pageToken]
     );
 
     const blendIds = new Set(
