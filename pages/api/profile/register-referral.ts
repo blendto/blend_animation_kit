@@ -48,8 +48,7 @@ async function register(
   const referralService = diContainer.get<ReferralService>(
     TYPES.ReferralService
   );
-  // TODO: Put this back
-  // await referralService.ensureDeviceIdIsOriginal(body.deviceId);
+  await referralService.ensureDeviceIdIsOriginal(body.deviceId);
   await referralService.ensureRefereeIsNew(req.uid);
   const referrer = await referralService.getReferrerOrFail(body.referralId);
   if (req.uid === referrer.id) {
