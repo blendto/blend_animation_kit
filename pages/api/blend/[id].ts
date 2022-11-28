@@ -135,6 +135,7 @@ function trim(blend: Blend) {
     status,
     filePath,
     imagePath,
+    metadata,
     output,
     isWatermarked,
     gifsOrStickers,
@@ -145,6 +146,7 @@ function trim(blend: Blend) {
   return {
     id,
     status,
+    metadata,
     filePath,
     imagePath,
     output,
