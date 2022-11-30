@@ -42,6 +42,7 @@ import sharp from "sharp";
 import { BlendHeroImage, ImageFileKeys } from "server/base/models/heroImage";
 import { fireAndForget } from "server/helpers/async-runner";
 import HeroImageService from "server/service/heroImage";
+import { ValidImageExtension } from "server/helpers/constants";
 import { plainToClass } from "class-transformer";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
@@ -246,7 +247,12 @@ const removeBgAndStore = async (
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
     fileKey
   );
-  originalImage = await (await sharpInstance(fetchedBuffer)).toBuffer();
+  const fileKeyParts = fileKey.split("/");
+  const [fileNameWithExt] = fileKeyParts.slice(-1);
+  const [fileExtension] = fileNameWithExt.split(".").slice(-1);
+  originalImage = await (
+    await sharpInstance(fetchedBuffer, {}, fileExtension as ValidImageExtension)
+  ).toBuffer();
 
   const { bgRemovedFileKey, bgMaskFileKey } =
     RemoveBgService.constructBgRemovedFileKey(fileKey, {

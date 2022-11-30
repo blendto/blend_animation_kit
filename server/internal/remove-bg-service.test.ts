@@ -24,6 +24,12 @@ describe("validating image format", () => {
     await expect(validation).resolves.toBe(undefined);
   });
 
+  it("does not throw an exception when valid avif image and extension buffer is passed", async () => {
+    const validImageBuffer = readFileSync("__tests__/assets/sample_avif.avif");
+    const validation = RemoveBgService.validateImage(validImageBuffer, "avif");
+    await expect(validation).resolves.toBe(undefined);
+  });
+
   it("constructs file names properly for files with extension", () => {
     const fileKey = "foobar/red-shoe.jpg";
     const { bgRemovedFileKey, bgMaskFileKey, fileNameWithExt } =

@@ -39,7 +39,7 @@ const FIFTEEN_MB = 15 * 1024 * 1024;
 
 export function createDestinationFileKey(
   fileName: string,
-  validExtensions: string[],
+  validExtensions: readonly string[],
   keyPrefix = ""
 ) {
   const fileNameParts = fileName.split(".");
@@ -71,7 +71,7 @@ export enum GetSignedUrlOperation {
 export const createSignedUploadUrl = async (
   fileName: string,
   bucketName: string,
-  validExtensions: string[],
+  validExtensions: readonly string[],
   {
     keyPrefix = "",
     outFileKey = null,

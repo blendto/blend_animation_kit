@@ -30,6 +30,7 @@ import {
   ToolkitErrorResponse,
 } from "server/base/models/removeBg";
 import { handleAxiosCall } from "../helpers/network";
+import { ValidImageExtension } from "../helpers/constants";
 
 export interface ConstructBgRemovedFileKeyOptions {
   superClass?: string;
@@ -82,8 +83,11 @@ export class RemoveBgService implements IService {
     return { bgRemovedFileKey, bgMaskFileKey, fileNameWithExt };
   };
 
-  static validateImage = async (buffer: Buffer) => {
-    await (await sharpInstance(buffer, {})).metadata();
+  static validateImage = async (
+    buffer: Buffer,
+    fileExtension?: ValidImageExtension
+  ) => {
+    await (await sharpInstance(buffer, {}, fileExtension)).metadata();
   };
 
   logBgRemoval = async (

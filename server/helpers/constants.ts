@@ -4,4 +4,8 @@ export const VALID_UPLOAD_IMAGE_EXTENSIONS = [
   "jpeg",
   "webp",
   "heic",
-];
+  "heif",
+  "avif",
+] as const;
+
+export type ValidImageExtension = typeof VALID_UPLOAD_IMAGE_EXTENSIONS[number];
