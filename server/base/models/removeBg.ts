@@ -1,3 +1,5 @@
+import { Rect } from "server/helpers/rect";
+
 export interface ToolkitErrorResponse {
   code?: string;
   message: string;
@@ -22,6 +24,7 @@ export interface BgRemovalMetadata {
   primaryClass: string;
   segmentationProvider: string;
   qualityConfidence: string;
+  cropBoundaries?: Rect;
 }
 
 export class ClassificationMetadata {

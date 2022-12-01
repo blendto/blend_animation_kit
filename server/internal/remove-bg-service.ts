@@ -31,6 +31,7 @@ import {
 } from "server/base/models/removeBg";
 import { handleAxiosCall } from "../helpers/network";
 import { ValidImageExtension } from "../helpers/constants";
+import { Rect } from "../helpers/rect";
 
 export interface ConstructBgRemovedFileKeyOptions {
   superClass?: string;
@@ -181,6 +182,9 @@ export class RemoveBgService implements IService {
       primaryClass: headers["x-primary-class"],
       segmentationProvider: headers["x-segmentation-provider"],
       qualityConfidence: headers["x-quality-confidence"],
+      cropBoundaries: Rect.tryParseBase64LTRB(
+        headers["x-crop-boundaries-ltrb"]
+      ),
     };
 
     await this.logBgRemoval(bgRemovalMetadata, metadata);
@@ -252,7 +256,8 @@ export class RemoveBgService implements IService {
     const rescaledMask = await rescaleImage(bgMask.buffer, { width, height });
     const bgRemovedImageUsingMask = await applyMask(
       originalImage,
-      rescaledMask
+      rescaledMask,
+      bgMask.metadata.cropBoundaries
     );
 
     await uploadObject(

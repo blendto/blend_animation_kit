@@ -5,10 +5,11 @@ import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
 import { UserError } from "server/base/errors";
 import { sharpInstance } from "server/helpers/sharpUtils";
+import { Rect } from "server/helpers/rect";
 
 const TRIM_THRESHOLD = 10;
 
-interface SharpResolveObject {
+export interface SharpResolveObject {
   data: Buffer;
   info: sharp.OutputInfo;
 }
@@ -63,7 +64,7 @@ export async function trimmedImageBuffer(
 export const applyMask = async (
   image: Buffer,
   mask: Buffer,
-  trim = true
+  cropBoundaries?: Rect
 ): Promise<SharpResolveObject> => {
   let sharpInst = await sharpInstance(image);
   const metadata = await sharpInst.metadata();
@@ -74,10 +75,17 @@ export const applyMask = async (
 
   const output = sharpInst.rotate().joinChannel(mask);
 
-  if (!trim) {
-    return output.toBuffer({ resolveWithObject: true });
-  }
   const img = await output.png({ compressionLevel: 0 }).toBuffer();
+  if (cropBoundaries) {
+    return await sharp(img)
+      .extract({
+        left: cropBoundaries.left,
+        top: cropBoundaries.top,
+        width: cropBoundaries.width,
+        height: cropBoundaries.height,
+      })
+      .toBuffer({ resolveWithObject: true });
+  }
   return await trimmedImageBuffer(await sharpInstance(img));
 };
 

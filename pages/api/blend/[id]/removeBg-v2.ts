@@ -44,6 +44,7 @@ import { fireAndForget } from "server/helpers/async-runner";
 import HeroImageService from "server/service/heroImage";
 import { ValidImageExtension } from "server/helpers/constants";
 import { plainToClass } from "class-transformer";
+import { Rect } from "server/helpers/rect";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 const blendService = diContainer.get<BlendService>(TYPES.BlendService);
@@ -87,9 +88,15 @@ async function generateBgRemovedImageFromMaskAndUpload(
   originalImage: Buffer,
   maskImage: Buffer,
   bgMaskFileKey: string,
-  bgRemovedFileKey: string
+  bgRemovedFileKey: string,
+  crop?: Rect
 ) {
-  const bgRemovedImageUsingMask = await applyMask(originalImage, maskImage);
+  const bgRemovedImageUsingMask = await applyMask(
+    originalImage,
+    maskImage,
+    crop
+  );
+
   await uploadObject(
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
     bgMaskFileKey,
@@ -327,31 +334,34 @@ const removeBgAndStore = async (
       width,
       height,
     });
+    const { cropBoundaries } = bgRemovalMetadata;
     const bgRemovedImageUsingMask =
       await generateBgRemovedImageFromMaskAndUpload(
         originalImage,
         rescaledMask,
         bgMaskFileKey,
-        bgRemovedFileKey
+        bgRemovedFileKey,
+        cropBoundaries
       );
 
-    const {
-      trimOffsetLeft,
-      trimOffsetTop,
-      width: trimWidth,
-      height: trimHeight,
-    } = bgRemovedImageUsingMask.info;
-
-    if (trimOffsetLeft) {
-      trimLTWH = [
-        Math.abs(trimOffsetLeft) || 0,
-        Math.abs(trimOffsetTop) || 0,
-        trimWidth,
-        trimHeight,
-      ];
+    if (cropBoundaries) {
+      trimLTWH = cropBoundaries.toLTWH();
     } else {
-      // trimming failed
-      trimLTWH = null;
+      const {
+        trimOffsetLeft,
+        trimOffsetTop,
+        width: trimWidth,
+        height: trimHeight,
+      } = bgRemovedImageUsingMask.info;
+
+      if (trimOffsetLeft) {
+        trimLTWH = [
+          Math.abs(trimOffsetLeft) || 0,
+          Math.abs(trimOffsetTop) || 0,
+          trimWidth,
+          trimHeight,
+        ];
+      }
     }
 
     imageFileKeysItem = {
