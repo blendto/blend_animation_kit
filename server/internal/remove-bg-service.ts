@@ -323,7 +323,7 @@ export class RemoveBgService implements IService {
     try {
       await fn.call(this);
     } catch (ex) {
-      if (axios.isAxiosError(ex)) {
+      if (axios.isAxiosError(ex) && ex.response) {
         logger.error({
           code: "RemoveBgService.RemoveBGFailed",
           key: metadata.fileKeys.original,
