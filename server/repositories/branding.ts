@@ -30,6 +30,17 @@ export enum BrandingUpdatePaths {
   instaHandle = "/instaHandle",
   website = "/website",
   address = "/address",
+  shopeeHandle = "/shopeeHandle",
+  youtubeHandle = "/youtubeHandle",
+  tiktokHandle = "/tiktokHandle",
+  pinterestHandle = "/pinterestHandle",
+  depopHandle = "/depopHandle",
+  poshmarkHandle = "/poshmarkHandle",
+  mercadoHandle = "/mercadoHandle",
+  lazadaHandle = "/lazadaHandle",
+  ebayHandle = "/ebayHandle",
+  amazonHandle = "/amazonHandle",
+  facebookHandle = "/facebookHandle",
   primaryLogo = "/logos/primaryEntry",
 }
 
@@ -47,6 +58,17 @@ export enum BrandingInfoType {
   InstaHandle = "instaHandle",
   Website = "website",
   Address = "address",
+  ShopeeHandle = "shopeeHandle",
+  YoutubeHandle = "youtubeHandle",
+  TiktokHandle = "tiktokHandle",
+  PinterestHandle = "pinterestHandle",
+  DepopHandle = "depopHandle",
+  PoshmarkHandle = "poshmarkHandle",
+  MercadoHandle = "mercadoHandle",
+  LazadaHandle = "lazadaHandle",
+  EbayHandle = "ebayHandle",
+  AmazonHandle = "amazonHandle",
+  FacebookHandle = "facebookHandle",
 }
 
 export interface BrandingEntity extends Entity {
@@ -60,6 +82,17 @@ export interface BrandingEntity extends Entity {
   [BrandingInfoType.InstaHandle]?: string;
   [BrandingInfoType.Website]?: string;
   [BrandingInfoType.Address]?: string;
+  [BrandingInfoType.ShopeeHandle]?: string;
+  [BrandingInfoType.YoutubeHandle]?: string;
+  [BrandingInfoType.TiktokHandle]?: string;
+  [BrandingInfoType.PinterestHandle]?: string;
+  [BrandingInfoType.DepopHandle]?: string;
+  [BrandingInfoType.PoshmarkHandle]?: string;
+  [BrandingInfoType.MercadoHandle]?: string;
+  [BrandingInfoType.LazadaHandle]?: string;
+  [BrandingInfoType.EbayHandle]?: string;
+  [BrandingInfoType.AmazonHandle]?: string;
+  [BrandingInfoType.FacebookHandle]?: string;
   logos: {
     primaryEntry?: string;
     entries: { fileKey: string; status: BrandingLogoStatus }[];
@@ -90,6 +123,17 @@ const brandingDynamooseSchema = new DynamooseSchema(
     instaHandle: String,
     website: String,
     address: String,
+    shopeeHandle: String,
+    youtubeHandle: String,
+    tiktokHandle: String,
+    pinterestHandle: String,
+    depopHandle: String,
+    poshmarkHandle: String,
+    mercadoHandle: String,
+    lazadaHandle: String,
+    ebayHandle: String,
+    amazonHandle: String,
+    facebookHandle: String,
     logos: {
       type: Object,
       schema: {
