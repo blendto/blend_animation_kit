@@ -19,6 +19,7 @@ import { MethodNotAllowedError } from "server/base/errors";
 import { plainToClass } from "class-transformer";
 import { ClassificationMetadata } from "server/base/models/removeBg";
 import Joi from "joi";
+import { SuggestFlowType } from "server/base/models/recoEngine";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -44,6 +45,9 @@ const SuggestRecipesPaginatedSchema = Joi.object({
   pageKey: Joi.number().optional().allow(null),
   userChosenSuperClass: Joi.string().optional().allow(null),
   filters: Joi.object().unknown(true).allow(null),
+  flow: Joi.string()
+    .valid(...Object.values(SuggestFlowType))
+    .default(SuggestFlowType.ASSISTED_MOBILE),
 });
 
 const suggestRecipesV2 = async (
@@ -59,14 +63,20 @@ const suggestRecipesV2 = async (
   /**
    *  Avoid using heroImageId here. Instead, use chooseHeroImage and pass the fileKeys
    */
-  const { fileKeys, pageKey, heroImageId, userChosenSuperClass, filters } =
-    validate(
-      body,
-      requestComponentToValidate.body,
-      SuggestRecipesPaginatedSchema,
-      true,
-      true
-    ) as SuggestRecipesPaginatedRequestBody;
+  const {
+    fileKeys,
+    pageKey,
+    heroImageId,
+    userChosenSuperClass,
+    filters,
+    flow,
+  } = validate(
+    body,
+    requestComponentToValidate.body,
+    SuggestRecipesPaginatedSchema,
+    true,
+    true
+  ) as SuggestRecipesPaginatedRequestBody;
 
   if (!heroImageId && !fileKeys?.original) {
     res.status(400).send({ message: "Invalid filekeys / heroImageId" });
@@ -110,6 +120,7 @@ const suggestRecipesV2 = async (
     productSuperCategory:
       userChosenSuperClass ?? classificationMetadata?.superClass,
     filters,
+    flow,
   });
 
   const promises = suggestions.recipeLists.map((recipeList) =>

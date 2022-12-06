@@ -14,6 +14,7 @@ import { ImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
+import { SuggestFlowType } from "server/base/models/recoEngine";
 
 @injectable()
 export class SuggestionService {
@@ -47,8 +48,14 @@ export class SuggestionService {
     ip: string
   ): Promise<RecipeList[]> {
     const heroImages = await this.selectFileKeysFromBatchPreview(uid, batchId);
-    return (await this.suggestRecipes(uid, heroImages.withoutBg, ip))
-      .recipeLists;
+    return (
+      await this.suggestRecipes(
+        uid,
+        heroImages.withoutBg,
+        ip,
+        SuggestFlowType.BATCH
+      )
+    ).recipeLists;
   }
 
   /**
@@ -58,12 +65,14 @@ export class SuggestionService {
     uid: string,
     fileKey: string,
     ip: string,
+    flow: SuggestFlowType,
     multipleAspectRatios?: boolean
   ): Promise<{ recipeLists: RecipeList[]; randomTemplates: string[] }> {
     let recipeLists = (
       await this.recoEngineApi.suggestRecipeLists(
         fileKey,
-        this.userService.getUserAgent(ip)
+        this.userService.getUserAgent(ip),
+        flow
       )
     ).suggestedRecipeCategories;
 
@@ -111,7 +120,7 @@ export class SuggestionService {
   async suggestRecipesPaginated(
     requestBody: SuggestRecipePaginatedRequestBody
   ): Promise<{ recipeLists: RecipeList[]; nextPageKey?: number }> {
-    const { uid, fileKey, ip, pageKey, productSuperCategory, filters } =
+    const { uid, fileKey, ip, pageKey, productSuperCategory, filters, flow } =
       requestBody;
     const suggestions = await this.recoEngineApi.suggestRecipeListsPaginated({
       heroImageKey: fileKey,
@@ -119,6 +128,7 @@ export class SuggestionService {
       pageKey,
       productSuperCategory,
       filters,
+      flow,
     });
 
     let recipeLists = suggestions.suggestedRecipeCategories;
@@ -200,4 +210,5 @@ interface SuggestRecipePaginatedRequestBody {
   pageKey?: number;
   productSuperCategory?: string;
   filters?: Record<string, unknown>;
+  flow: SuggestFlowType;
 }

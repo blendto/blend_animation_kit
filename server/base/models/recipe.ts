@@ -3,6 +3,7 @@ import { RecipeVariantId } from "server/base/models/recipeList";
 import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
 import { UserError } from "../errors";
 import { BlendHeroImage, ImageFileKeys } from "./heroImage";
+import { SuggestFlowType } from "./recoEngine";
 
 export enum ElementSource {
   blend = "BLEND",
@@ -435,4 +436,5 @@ export interface SuggestRecipesPaginatedRequestBody {
   userChosenSuperClass?: string;
   heroImageId?: string;
   filters: Record<string, unknown>;
+  flow: SuggestFlowType;
 }

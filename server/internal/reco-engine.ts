@@ -4,7 +4,10 @@ import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import { SearchRecipeResponse } from "server/base/models/recipe";
-import { DetectProductCategoryResponse } from "server/base/models/recoEngine";
+import {
+  DetectProductCategoryResponse,
+  SuggestFlowType,
+} from "server/base/models/recoEngine";
 import {
   ClassificationMetadata,
   BgRemovedFileKeys,
@@ -85,7 +88,8 @@ export default class RecoEngineApi {
 
   async suggestRecipeLists(
     heroImageKey: string,
-    userAgentPromise: Promise<UserAgentDetails | null>
+    userAgentPromise: Promise<UserAgentDetails | null>,
+    flow: SuggestFlowType
   ): Promise<RecipeListSuggestions> {
     return (
       await handleAxiosCall<RecipeListSuggestions>(
@@ -93,6 +97,7 @@ export default class RecoEngineApi {
           await this.httpClient.post("/suggestRecipeCategories", {
             fileKeys: { hero: heroImageKey },
             userAgentDetails: await userAgentPromise,
+            flow,
           })
       )
     ).data;
@@ -104,6 +109,7 @@ export default class RecoEngineApi {
     pageKey?: number;
     productSuperCategory?: string;
     filters?: Record<string, unknown>;
+    flow: SuggestFlowType;
   }): Promise<PaginatedRecipeListSuggestions> {
     const {
       heroImageKey,
@@ -111,6 +117,7 @@ export default class RecoEngineApi {
       pageKey,
       productSuperCategory,
       filters,
+      flow,
     } = requestBody;
     return (
       await handleAxiosCall<PaginatedRecipeListSuggestions>(
@@ -121,6 +128,7 @@ export default class RecoEngineApi {
             userAgentDetails: await userAgentPromise,
             productSuperCategory,
             filters,
+            flow,
           })
       )
     ).data;
@@ -140,39 +148,6 @@ export default class RecoEngineApi {
       )
     ).data;
   }
-
-  identifyProduct = async (query: any, body: any): Promise<any> =>
-    (
-      await handleAxiosCall(
-        async () => await this.httpClient.post("/identify-product", body)
-      )
-    ).data;
-
-  createDescriptions = async (query: any, body: any): Promise<any> =>
-    (
-      await handleAxiosCall(
-        async () => await this.httpClient.post("/descriptions", body)
-      )
-    ).data;
-
-  getDescriptions = async (query: any, body: any): Promise<any> => {
-    const { id } = query as { id: string };
-    return (
-      await handleAxiosCall(
-        async () => await this.httpClient.get("/descriptions/" + id)
-      )
-    ).data;
-  };
-
-  generateMoreDescriptions = async (query: any, body: any): Promise<any> => {
-    const { id } = query as { id: string };
-    return (
-      await handleAxiosCall(
-        async () =>
-          await this.httpClient.post(`/descriptions/${id}/generate`, body)
-      )
-    ).data;
-  };
 
   private getDedicatedClassToSuperClassMapping(className: string): string {
     return this.dedicatedClassToSuperClassMapping[className] ?? "others";
