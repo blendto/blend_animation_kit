@@ -65,8 +65,7 @@ export class SuggestionService {
     uid: string,
     fileKey: string,
     ip: string,
-    flow: SuggestFlowType,
-    multipleAspectRatios?: boolean
+    flow: SuggestFlowType
   ): Promise<{ recipeLists: RecipeList[]; randomTemplates: string[] }> {
     let recipeLists = (
       await this.recoEngineApi.suggestRecipeLists(
@@ -96,20 +95,6 @@ export class SuggestionService {
         .filter(({ variant }) => variant == "9:16")
         .map(({ id }) => id);
     });
-
-    if (!multipleAspectRatios) {
-      // If Multiple Aspect Ratios are not supported, backfill and filter out empty ones
-
-      // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
-      recipeLists.forEach((list) => {
-        list.recipeIds = list.recipes
-          // eslint-disable-next-line eqeqeq
-          .filter(({ variant }) => variant == "9:16")
-          .map(({ id }) => id);
-      });
-
-      recipeLists = recipeLists.filter((list) => list.recipeIds.length > 0);
-    }
 
     // For Backwards compatibility
     const randomTemplates = [];
