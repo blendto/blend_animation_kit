@@ -27,8 +27,8 @@ export interface StyleSuggestions {
   styleSuggestions: {
     colorPalette: {
       colors: string[];
-      contrastingColors: [string, string][];
-      similarColors: [string, string][];
+      contrastingColors: { indices: [string, string]; delta: number }[];
+      similarColors: { indices: [string, string]; delta: number }[];
     };
   }[];
 }
