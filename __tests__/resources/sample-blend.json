@@ -1,0 +1,236 @@
+{
+  "id": "AxhLeJZd",
+  "version": "GENERATED",
+  "audios": null,
+  "background": {
+    "$": "ColoredBackgroundInfo",
+    "color": "#ffffffff",
+    "opacity": 1
+  },
+  "batchLevelEditStatus": null,
+  "buttons": [],
+  "cameraClips": null,
+  "createdAt": 1670416023860,
+  "createdBy": "eJ8QgDiypzRiKv6WufcCPfsJvnX2",
+  "createdOn": "2022-12-07",
+  "externalImages": [],
+  "fileName": "blend071122122703",
+  "gifsOrStickers": [],
+  "heroImages": {
+    "classificationMetadata": {
+      "productSuperClass": "person"
+    },
+    "heroImageId": "NXUFedsusOl1z_mg",
+    "mask": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW-bg-mask.png",
+    "original": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW.jpg",
+    "trimLTWH": [0, 0, 908, 1233],
+    "withoutBg": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW-bg-removed.png"
+  },
+  "imageFileKeys": [
+    {
+      "classificationMetadata": {
+        "productSuperClass": "person",
+        "userChosenSuperClass": "person"
+      },
+      "heroImageId": "NXUFedsusOl1z_mg",
+      "mask": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW-bg-mask.png",
+      "original": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW.jpg",
+      "trimLTWH": [0, 0, 908, 1233],
+      "withoutBg": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW-bg-removed.png"
+    }
+  ],
+  "images": [
+    {
+      "uid": "68a61563-cb5a-485d-badc-c5fd6e99e655",
+      "uri": "AxhLeJZd/OEGlqniwhs7IUewTDf3aT.webp"
+    },
+    {
+      "uid": "45ffb33e-58e4-41f7-ae65-1834278d8a20",
+      "uri": "AxhLeJZd/QOTEhKBpVCq_6Ogcq_d0k.webp"
+    },
+    {
+      "uid": "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+      "uri": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW-bg-removed.png"
+    }
+  ],
+  "interactions": [
+    {
+      "action": "DISPLAY_INLINE",
+      "assetType": "IMAGE",
+      "assetUid": "68a61563-cb5a-485d-badc-c5fd6e99e655",
+      "metadata": {
+        "$": "ImageMetadata",
+        "hasBgRemoved": false,
+        "layerType": "BACKGROUND",
+        "position": {
+          "dx": 0.000000000000014210854715202004,
+          "dy": 0.000000000000014210854715202004
+        },
+        "relativeSize": {
+          "height": 1080,
+          "width": 1080
+        },
+        "rotation": 0,
+        "rotationOrigin": "CENTER",
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": {
+          "height": 1086.0110310340856,
+          "width": 1086.0110310340856
+        },
+        "zIndex": 0
+      },
+      "time": 0
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetType": "IMAGE",
+      "assetUid": "45ffb33e-58e4-41f7-ae65-1834278d8a20",
+      "metadata": {
+        "$": "ImageMetadata",
+        "hasBgRemoved": false,
+        "layerType": "IMAGE",
+        "position": {
+          "dx": 163.85294117647058,
+          "dy": 450.53465346534637
+        },
+        "relativeSize": {
+          "height": 1080,
+          "width": 1080
+        },
+        "rotation": 0,
+        "rotationOrigin": "CENTER",
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": {
+          "height": 304.94616336633663,
+          "width": 305.324039653036
+        },
+        "zIndex": 2
+      },
+      "time": 0
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetType": "IMAGE",
+      "assetUid": "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+      "metadata": {
+        "$": "ImageMetadata",
+        "hasBgRemoved": true,
+        "layerType": "IMAGE",
+        "position": {
+          "dx": 286,
+          "dy": 195.5
+        },
+        "relativeSize": {
+          "height": 1080,
+          "width": 1080
+        },
+        "rotation": 0,
+        "rotationOrigin": "CENTER",
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": {
+          "height": 689,
+          "width": 508
+        },
+        "zIndex": 1
+      },
+      "time": 0
+    }
+  ],
+  "isWatermarked": false,
+  "links": [],
+  "metadata": {
+    "aspectRatio": {
+      "height": 1,
+      "width": 1
+    },
+    "resolution": {
+      "height": 1080,
+      "width": 1080
+    },
+    "source": {
+      "version": 2.6,
+      "type": "MOBILE"
+    },
+    "sourceBlendId": "WDwl5-6_",
+    "sourceRecipe": {
+      "id": "TrendPostSale003",
+      "extra": {
+        "thumbnail": "TrendPostSale003/1-1-v002/thumbnail/1654773004034.jpeg"
+      },
+      "variant": "1:1:v002"
+    },
+    "sourceRecipeId": "TrendPostSale003",
+    "target": "square"
+  },
+  "output": {
+    "image": {
+      "fileSize": 266065,
+      "path": "AxhLeJZd/image-1670416283.jpg",
+      "resolution": {
+        "height": 2160,
+        "width": 2160
+      }
+    },
+    "imageHalfRes": {
+      "fileSize": 101566,
+      "path": "AxhLeJZd/image-x1-1670416283.jpg",
+      "resolution": {
+        "height": 1080,
+        "width": 1080
+      }
+    },
+    "imagePng": {
+      "fileSize": 803691,
+      "path": "AxhLeJZd/image-1670416283.png",
+      "resolution": {
+        "height": 2160,
+        "width": 2160
+      }
+    },
+    "imagePngHalfRes": {
+      "fileSize": 293667,
+      "path": "AxhLeJZd/image-x1-1670416283.png",
+      "resolution": {
+        "height": 1080,
+        "width": 1080
+      }
+    },
+    "isStatic": true,
+    "thumbnail": {
+      "fileSize": 3364,
+      "path": "AxhLeJZd/thumbnail-1670416283.webp",
+      "resolution": {
+        "height": 320,
+        "width": 320
+      }
+    },
+    "video": {
+      "fileSize": 132959,
+      "path": "AxhLeJZd/output-1670416283.mp4",
+      "resolution": {
+        "height": 1080,
+        "width": 1080
+      }
+    }
+  },
+  "slides": null,
+  "status": "GENERATED",
+  "statusUpdates": [
+    {
+      "on": 1670416023860,
+      "status": "INITIALIZED"
+    },
+    {
+      "creditServiceActivityLogId": "189fc483-b3e4-460c-ba46-0fed72e3c639",
+      "on": 1670416270525,
+      "status": "SUBMITTED"
+    }
+  ],
+  "texts": [],
+  "title": null,
+  "updatedAt": 1670416270525,
+  "updatedOn": "2022-12-07"
+}

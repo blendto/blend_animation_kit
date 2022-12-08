@@ -9,7 +9,7 @@ import { IService } from "server/service";
 import DynamoDB from "server/external/dynamodb";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
-import { Recipe, StoredImage } from "server/base/models/recipe";
+import { ElementSource, Recipe } from "server/base/models/recipe";
 import { UserError } from "server/base/errors";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import {
@@ -20,8 +20,8 @@ import {
 } from "server/external/s3";
 import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import logger from "server/base/Logger";
-import { replaceUriPrefix } from "server/helpers/fileKeyUtils";
 import { DateTime } from "luxon";
+import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -30,20 +30,26 @@ export class RecipeService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   async create(recipe: Recipe): Promise<void> {
-    recipe.images = recipe.images.map((i) => ({
-      ...i,
-      uri: replaceUriPrefix(i.uri, recipe.id),
-    }));
+    const imageDestinationURIs = BlendToRecipeConverter.imageDestinationURIs(
+      recipe,
+      ElementSource.recipe
+    );
     await Promise.all(
-      recipe.images.map((image) =>
+      recipe.images.map((i) =>
         copyObject(
           ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-          replaceUriPrefix(image.uri, recipe.metadata.sourceBlendId),
+          i.uri,
           ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
-          image.uri
+          imageDestinationURIs[i.uid]
         )
       )
     );
+    recipe.images = recipe.images.map((i) => ({
+      ...i,
+      uri: imageDestinationURIs[i.uid],
+      source: ElementSource.recipe,
+    }));
+
     recipe.updatedOn = DateTime.utc().toISODate();
     recipe.updatedAt = Date.now();
     await this.dataStore.putItem({

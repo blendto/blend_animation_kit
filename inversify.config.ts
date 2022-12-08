@@ -44,6 +44,10 @@ import {
   UserAccountActionQueue,
   UserAccountActionSqsConfig,
 } from "server/external/queue/userAccountActionQueue";
+import {
+  BrandingDynamooseRepo,
+  BrandingEntity,
+} from "server/repositories/branding";
 
 const diContainer = new Container();
 
@@ -129,6 +133,9 @@ diContainer
   .to(InterServiceAuth)
   .inSingletonScope();
 diContainer.bind<Firebase>(TYPES.Firebase).to(Firebase).inSingletonScope();
+diContainer
+  .bind<Repo<BrandingEntity>>(TYPES.BrandingRepo)
+  .toDynamicValue(() => new BrandingDynamooseRepo());
 diContainer
   .bind<Repo<User>>(TYPES.UserRepo)
   .toDynamicValue(() => new UserDynamooseRepo());

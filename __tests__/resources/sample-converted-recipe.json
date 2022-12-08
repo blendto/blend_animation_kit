@@ -1,0 +1,157 @@
+{
+  "id": "G3QXwY-Q",
+  "variant": "1:1",
+  "audios": null,
+  "background": {
+    "$": "ColoredBackgroundInfo",
+    "color": "#ffffffff",
+    "opacity": 1
+  },
+  "batchLevelEditStatus": null,
+  "buttons": [],
+  "cameraClips": null,
+  "createdBy": "eJ8QgDiypzRiKv6WufcCPfsJvnX2",
+  "externalImages": [],
+  "gifsOrStickers": [],
+  "images": [
+    {
+      "uid": "68a61563-cb5a-485d-badc-c5fd6e99e655",
+      "uri": "AxhLeJZd/OEGlqniwhs7IUewTDf3aT.webp"
+    },
+    {
+      "uid": "45ffb33e-58e4-41f7-ae65-1834278d8a20",
+      "uri": "AxhLeJZd/QOTEhKBpVCq_6Ogcq_d0k.webp"
+    },
+    {
+      "uid": "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+      "uri": "AxhLeJZd/lRcQUw-ooJWj7RjOl-sTW-bg-removed.png"
+    }
+  ],
+  "interactions": [
+    {
+      "action": "DISPLAY_INLINE",
+      "assetType": "IMAGE",
+      "assetUid": "68a61563-cb5a-485d-badc-c5fd6e99e655",
+      "metadata": {
+        "$": "ImageMetadata",
+        "hasBgRemoved": false,
+        "layerType": "BACKGROUND",
+        "position": {
+          "dx": 0.000000000000014210854715202004,
+          "dy": 0.000000000000014210854715202004
+        },
+        "relativeSize": {
+          "height": 1080,
+          "width": 1080
+        },
+        "rotation": 0,
+        "rotationOrigin": "CENTER",
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": {
+          "height": 1086.0110310340856,
+          "width": 1086.0110310340856
+        },
+        "zIndex": 0
+      },
+      "time": 0
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetType": "IMAGE",
+      "assetUid": "45ffb33e-58e4-41f7-ae65-1834278d8a20",
+      "metadata": {
+        "$": "ImageMetadata",
+        "hasBgRemoved": false,
+        "layerType": "IMAGE",
+        "position": {
+          "dx": 163.85294117647058,
+          "dy": 450.53465346534637
+        },
+        "relativeSize": {
+          "height": 1080,
+          "width": 1080
+        },
+        "rotation": 0,
+        "rotationOrigin": "CENTER",
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": {
+          "height": 304.94616336633663,
+          "width": 305.324039653036
+        },
+        "zIndex": 2
+      },
+      "time": 0
+    },
+    {
+      "action": "DISPLAY_INLINE",
+      "assetType": "IMAGE",
+      "assetUid": "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+      "metadata": {
+        "$": "ImageMetadata",
+        "hasBgRemoved": true,
+        "layerType": "IMAGE",
+        "position": {
+          "dx": 286,
+          "dy": 195.5
+        },
+        "relativeSize": {
+          "height": 1080,
+          "width": 1080
+        },
+        "rotation": 0,
+        "rotationOrigin": "CENTER",
+        "rotationX": 0,
+        "rotationY": 0,
+        "size": {
+          "height": 689,
+          "width": 508
+        },
+        "zIndex": 1
+      },
+      "time": 0
+    }
+  ],
+  "isWatermarked": false,
+  "links": [],
+  "metadata": {
+    "aspectRatio": {
+      "height": 1,
+      "width": 1
+    },
+    "resolution": {
+      "height": 1080,
+      "width": 1080
+    },
+    "source": {
+      "type": "MOBILE",
+      "version": 2.6
+    },
+    "sourceBlendId": "AxhLeJZd",
+    "sourceRecipe": {
+      "id": "TrendPostSale003",
+      "variant": "1:1:v002",
+      "extra": {
+        "thumbnail": "TrendPostSale003/1-1-v002/thumbnail/1654773004034.jpeg"
+      }
+    },
+    "sourceRecipeId": "TrendPostSale003",
+    "target": "square"
+  },
+  "recipeDetails": {
+    "elements": {
+      "background": {
+        "assetType": "IMAGE",
+        "uid": "68a61563-cb5a-485d-badc-c5fd6e99e655"
+      },
+      "hero": {
+        "assetType": "IMAGE",
+        "uid": "8678574c-1e3c-43da-bd92-8404e08ce4ad"
+      }
+    }
+  },
+  "slides": null,
+  "texts": [],
+  "title": null
+}

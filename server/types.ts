@@ -18,6 +18,7 @@ export const TYPES = {
   RecipeService: Symbol.for("RecipeService"),
   InterServiceAuth: Symbol.for("InterServiceAuth"),
   Firebase: Symbol.for("Firebase"),
+  BrandingRepo: Symbol.for("BrandingRepo"),
   UserRepo: Symbol.for("UserRepo"),
   ReferralRepo: Symbol.for("ReferralRepo"),
   AnalyticsRepo: Symbol.for("AnalyticsRepo"),

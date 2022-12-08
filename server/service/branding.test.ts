@@ -72,8 +72,8 @@ describe("BrandingService", () => {
 
   describe("Update", () => {
     it("Rejects primary logo update if logo list is empty", async () => {
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDoc);
 
       await expect(
@@ -87,8 +87,8 @@ describe("BrandingService", () => {
       ).rejects.toThrow(
         new UserError("Primary logo is pointing to an invalid file key")
       );
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
     });
 
     it("Rejects primary logo update if it points to a un-uploaded key", async () => {
@@ -110,8 +110,8 @@ describe("BrandingService", () => {
           ],
         },
       } as BrandingEntity;
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
 
       await expect(
@@ -125,8 +125,8 @@ describe("BrandingService", () => {
       ).rejects.toThrow(
         new UserError("Primary logo is pointing to an invalid file key")
       );
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
     });
 
     it("Rejects primary logo update if it points to a non-existent key", async () => {
@@ -144,8 +144,8 @@ describe("BrandingService", () => {
           ],
         },
       } as BrandingEntity;
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
 
       await expect(
@@ -159,8 +159,8 @@ describe("BrandingService", () => {
       ).rejects.toThrow(
         new UserError("Primary logo is pointing to an invalid file key")
       );
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
     });
 
     it("Updates primary logo if it points to a valid key", async () => {
@@ -198,8 +198,8 @@ describe("BrandingService", () => {
           ],
         },
       } as BrandingEntity;
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       const modelUpdateMock = jest
         .spyOn(brandingService.repo, "update")
@@ -215,8 +215,8 @@ describe("BrandingService", () => {
       const res = await brandingService.update(userId, jsonPatch);
       expect(res).toMatchObject(updatedBrandingDoc);
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
 
       expect(modelUpdateMock.mock.calls.length).toBe(1);
       expect(modelUpdateMock.mock.calls[0]).toMatchObject([
@@ -240,8 +240,8 @@ describe("BrandingService", () => {
           ],
         },
       } as BrandingEntity;
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
 
       await expect(
@@ -253,8 +253,8 @@ describe("BrandingService", () => {
         ])
       ).rejects.toThrow(new UserError("Primary logo pointer can't be unset"));
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
     });
 
     it("Supports unsetting other attributes", async () => {
@@ -265,8 +265,8 @@ describe("BrandingService", () => {
         email,
         whatsappNo,
       } as BrandingEntity;
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithOtherAttrs);
       const modelUpdateMock = jest
         .spyOn(brandingService.repo, "update")
@@ -285,8 +285,8 @@ describe("BrandingService", () => {
       const res = await brandingService.update(userId, jsonPatch);
       expect(res).toMatchObject(brandingDoc);
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
 
       expect(modelUpdateMock.mock.calls.length).toBe(1);
       expect(modelUpdateMock.mock.calls[0]).toMatchObject([
@@ -321,15 +321,15 @@ describe("BrandingService", () => {
         },
       } as BrandingEntity;
 
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       await expect(
         brandingService.initLogoUpload(userId, "foo.jpeg")
       ).rejects.toThrow(new UserError("You can't have more than 3 logos"));
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
     });
 
     it("Updates db and returns URL details to upload the logo to", async () => {
@@ -367,8 +367,8 @@ describe("BrandingService", () => {
         },
       } as BrandingEntity;
 
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       const createSignedUploadUrlMock = jest
         .spyOn(brandingService, "createSignedUploadUrl")
@@ -385,8 +385,8 @@ describe("BrandingService", () => {
       const res = await brandingService.initLogoUpload(userId, fileName);
       expect(res).toMatchObject({ url: s3ResMock });
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
 
       expect(createSignedUploadUrlMock.mock.calls.length).toBe(1);
       expect(createSignedUploadUrlMock.mock.calls[0]).toMatchObject([
@@ -459,8 +459,8 @@ describe("BrandingService", () => {
         },
       } as BrandingEntity;
 
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       const createSignedUploadUrlMock = jest
         .spyOn(brandingService, "createSignedUploadUrl")
@@ -477,8 +477,8 @@ describe("BrandingService", () => {
       const res = await brandingService.initLogoUpload(userId, fileName);
       expect(res).toMatchObject({ url: s3ResMock });
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
 
       expect(createSignedUploadUrlMock.mock.calls.length).toBe(1);
       expect(createSignedUploadUrlMock.mock.calls[0]).toMatchObject([
@@ -634,16 +634,16 @@ describe("BrandingService", () => {
 
   describe("Logo deletion", () => {
     it("Rejects request if the fileKey is invalid", async () => {
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDoc);
 
       await expect(
         brandingService.delLogo(userId, "SOME-VALUE")
       ).rejects.toThrow(new UserError("Invalid fileKey"));
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
     });
 
     it("Updates db and deletes file from s3", async () => {
@@ -678,8 +678,8 @@ describe("BrandingService", () => {
         },
       } as BrandingEntity;
 
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       const s3DeleteMock = jest
         .spyOn(brandingService, "deleteObject")
@@ -691,8 +691,8 @@ describe("BrandingService", () => {
       const res = await brandingService.delLogo(userId, fileKeyToDelete);
       expect(res).toMatchObject(updateResMock);
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
 
       expect(s3DeleteMock.mock.calls.length).toBe(1);
       expect(s3DeleteMock.mock.calls[0]).toMatchObject([
@@ -753,8 +753,8 @@ describe("BrandingService", () => {
         },
       } as BrandingEntity;
 
-      const getOrCreateMock = jest
-        .spyOn(brandingService, "getOrCreate")
+      const getMock = jest
+        .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       const s3DeleteMock = jest
         .spyOn(brandingService, "deleteObject")
@@ -766,8 +766,8 @@ describe("BrandingService", () => {
       const res = await brandingService.delLogo(userId, fileKeyToDelete);
       expect(res).toMatchObject(updateResMock);
 
-      expect(getOrCreateMock.mock.calls.length).toBe(1);
-      expect(getOrCreateMock.mock.calls[0]).toMatchObject([userId]);
+      expect(getMock.mock.calls.length).toBe(1);
+      expect(getMock.mock.calls[0]).toMatchObject([userId]);
 
       expect(s3DeleteMock.mock.calls.length).toBe(1);
       expect(s3DeleteMock.mock.calls[0]).toMatchObject([

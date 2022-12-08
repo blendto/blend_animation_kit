@@ -183,5 +183,3 @@ export class BrandingDynamooseRepo
     }
   );
 }
-
-export const brandingRepo: Repo<BrandingEntity> = new BrandingDynamooseRepo();

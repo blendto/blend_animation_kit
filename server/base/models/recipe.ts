@@ -37,8 +37,8 @@ export interface ElementRef {
 
 export interface Elements {
   hero?: ElementRef;
-  background: ElementRef;
-  title: string;
+  background?: ElementRef;
+  title?: ElementRef;
 }
 
 export interface RecipeDetails {

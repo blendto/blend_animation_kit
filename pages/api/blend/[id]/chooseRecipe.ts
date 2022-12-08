@@ -78,8 +78,8 @@ const useRecipeForBlend = async (
 
   if (req.uid) {
     await ensureBrandingEntitlement(recipe, req.uid);
-    const brandingProfile = await brandingService.getOrCreate(req.uid);
-    recipeWrapper.replaceBrandingInfo(brandingProfile);
+    const brandingProfile = await brandingService.get(req.uid);
+    if (brandingProfile) recipeWrapper.replaceBrandingInfo(brandingProfile);
   }
   if (encoderVersion < 3.0) {
     // Older apps with lesser encoder version won't know how to handle branding

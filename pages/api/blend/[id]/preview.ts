@@ -77,8 +77,8 @@ const generatePreview = async (
 
   recipeWrapper.replaceHero(body.fileKeys);
   if (req.uid) {
-    const brandingProfile = await brandingService.getOrCreate(req.uid);
-    recipeWrapper.replaceBrandingInfo(brandingProfile);
+    const brandingProfile = await brandingService.get(req.uid);
+    if (brandingProfile) recipeWrapper.replaceBrandingInfo(brandingProfile);
   }
 
   const previewStream = await vesapi.previewV2({

@@ -6,6 +6,7 @@ module.exports = {
       APPLE_CONF: Joi.string().required(),
       NEXT_PUBLIC_SELF_BASE_PATH: Joi.string().required(),
       RECIPE_DYNAMODB_TABLE: Joi.string().required(),
+      BRANDING_RECIPE_DYNAMODB_TABLE: Joi.string().required(),
       RECIPE_LISTS_DYNAMODB_TABLE: Joi.string().required(),
       CONFIG_DYNAMODB_TABLE: Joi.string().required(),
       BLEND_DYNAMODB_TABLE: Joi.string().required(),

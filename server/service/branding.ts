@@ -1,8 +1,11 @@
 import "reflect-metadata";
-import { injectable } from "inversify";
+import { DateTime } from "luxon";
+import { inject, injectable } from "inversify";
 import { UserError } from "server/base/errors";
 import ConfigProvider from "server/base/ConfigProvider";
+import DynamoDB from "server/external/dynamodb";
 import {
+  copyObject,
   createDestinationFileKey,
   createSignedUploadUrl,
   deleteObject,
@@ -10,21 +13,31 @@ import {
   GetSignedUrlOperation,
   uploadObject,
 } from "server/external/s3";
+import logger from "server/base/Logger";
 import { IService } from "server/service";
 import { UpdateOperations } from "server/repositories";
 import {
   BrandingEntity,
   BrandingLogoStatus,
-  brandingRepo,
   MAX_LOGOS,
   BrandingUpdatePaths,
 } from "server/repositories/branding";
 import { convertImageToWebp, rescaleImage } from "server/helpers/imageUtils";
+import { TYPES } from "server/types";
+import { Repo } from "server/repositories/base";
+import { BlendVersion } from "server/base/models/blend";
+import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
+import { replaceUriPrefix } from "server/helpers/fileKeyUtils";
+import { BrandingRecipe } from "server/base/models/brandingRecipe";
+import { ElementSource } from "server/base/models/recipe";
+import { BlendService } from "./blend";
 
 @injectable()
 export default class BrandingService implements IService {
   validExtensions = ["png", "jpg", "jpeg", "webp"];
-  repo = brandingRepo;
+  @inject(TYPES.BrandingRepo) repo: Repo<BrandingEntity>;
+  @inject(TYPES.BlendService) blendService: BlendService;
+  @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   // Required as class attributes for mocking
   createDestinationFileKey = createDestinationFileKey;
@@ -33,7 +46,7 @@ export default class BrandingService implements IService {
   uploadObject = uploadObject;
   getObject = getObject;
 
-  private async get(userId: string): Promise<BrandingEntity> {
+  async get(userId: string): Promise<BrandingEntity> {
     return (await this.repo.query({ userId }))[0];
   }
 
@@ -53,7 +66,7 @@ export default class BrandingService implements IService {
       value?: unknown;
     }[]
   ): Promise<BrandingEntity> {
-    const currentData = await this.getOrCreate(userId);
+    const currentData = await this.get(userId);
 
     changes.forEach((change) => {
       if (change.path === BrandingUpdatePaths.primaryLogo) {
@@ -81,7 +94,7 @@ export default class BrandingService implements IService {
     userId: string,
     fileName: string
   ): Promise<{ url: string }> {
-    const currentData = await this.getOrCreate(userId);
+    const currentData = await this.get(userId);
     const uploadedLogos =
       currentData.logos?.entries?.filter(
         (entry) => entry.status === BrandingLogoStatus.UPLOADED
@@ -132,6 +145,66 @@ export default class BrandingService implements IService {
     return { url: uploadURL };
   }
 
+  async addRecipe(
+    userId: string,
+    sourceBlendId: string,
+    heroAssetUid?: string,
+    backgroundAssetUid?: string
+  ) {
+    const branding = await this.getOrCreate(userId);
+
+    const blend = await this.blendService.getBlend(
+      sourceBlendId,
+      BlendVersion.generated,
+      true
+    );
+    if (userId !== blend.createdBy) {
+      logger.error(
+        `A user is trying to access another user's blend. Blend id: ${blend.id}. ` +
+          `Owner id: ${blend.createdBy}. Requesting user id: ${userId}`
+      );
+      // Don't let the possible attacker know that this is a valid blend id.
+      throw new UserError("Invalid sourceBlendId");
+    }
+
+    const blendToRecipeConverter = new BlendToRecipeConverter(blend);
+    const brandingRecipe = blendToRecipeConverter.convert(
+      heroAssetUid,
+      backgroundAssetUid
+    ) as BrandingRecipe;
+    brandingRecipe.userId = userId;
+
+    const imageDestinationURIs = BlendToRecipeConverter.imageDestinationURIs(
+      brandingRecipe,
+      ElementSource.branding,
+      branding.id
+    );
+    await Promise.all(
+      brandingRecipe.images.map((i) =>
+        copyObject(
+          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+          i.uri,
+          ConfigProvider.BRANDING_BUCKET,
+          imageDestinationURIs[i.uid]
+        )
+      )
+    );
+    brandingRecipe.images = brandingRecipe.images.map((i) => ({
+      ...i,
+      uri: imageDestinationURIs[i.uid],
+      source: ElementSource.branding,
+    }));
+
+    brandingRecipe.createdOn = brandingRecipe.updatedOn =
+      DateTime.utc().toISODate();
+    brandingRecipe.createdAt = brandingRecipe.updatedAt = Date.now();
+    brandingRecipe.lastUsedAt = brandingRecipe.updatedAt;
+    return await this.dataStore.putItem({
+      TableName: ConfigProvider.BRANDING_RECIPE_DYNAMODB_TABLE,
+      Item: brandingRecipe,
+    });
+  }
+
   async completeLogoUpload(fileKey: string): Promise<void> {
     const id = fileKey.split("/")[0];
     if (!id) {
@@ -180,7 +253,7 @@ export default class BrandingService implements IService {
   }
 
   async delLogo(userId: string, fileKey: string): Promise<BrandingEntity> {
-    const currentData = await this.getOrCreate(userId);
+    const currentData = await this.get(userId);
     if (!currentData.logos?.entries?.map((e) => e.fileKey).includes(fileKey)) {
       throw new UserError("Invalid fileKey");
     }
