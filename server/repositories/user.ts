@@ -8,6 +8,7 @@ import {
 } from "server/repositories/base";
 import ConfigProvider from "server/base/ConfigProvider";
 import { User } from "server/base/models/user";
+import { RecipeSource } from "server/base/models/recipeList";
 
 export enum UserUpdatePaths {
   stripeCustomerId = "/stripeCustomerId",
@@ -31,7 +32,7 @@ const userDynamooseSchema = new DynamooseSchema({
     type: String,
     index: {
       name: "referralId-index",
-      global: true,
+      type: "global",
     },
   },
   referralLink: String,
@@ -62,6 +63,10 @@ const userDynamooseSchema = new DynamooseSchema({
         schema: {
           recipeId: { type: String, required: true },
           recipeVariant: { type: String, required: true },
+          source: {
+            type: String,
+            enum: Object.values(RecipeSource),
+          },
         },
       },
     ],

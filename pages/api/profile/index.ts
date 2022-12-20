@@ -15,6 +15,7 @@ import {
 import { QueueConfig } from "server/external/queue";
 import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
 import { UserAccountActionType } from "server/base/models/queue-messages";
+import BrandingService from "server/service/branding";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -41,9 +42,15 @@ const getProfile = async (
   res: NextApiResponse
 ) => {
   const userService = diContainer.get<UserService>(TYPES.UserService);
+  const brandingService = diContainer.get<BrandingService>(
+    TYPES.BrandingService
+  );
   const profile = await userService.getOrCreate(req.uid);
   delete profile.appleOfflineToken;
-  return res.json(profile);
+  return res.json({
+    ...profile,
+    branding: await brandingService.getOrCreate(req.uid),
+  });
 };
 
 const UPDATE_BODY_SCHEMA = Joi.object({

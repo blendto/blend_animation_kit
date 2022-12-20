@@ -5,8 +5,12 @@ import { TYPES } from "server/types";
 import {
   ensureAuth,
   NextApiRequestExtended,
+  requestComponentToValidate,
+  validate,
   withReqHandler,
 } from "server/helpers/request";
+import Joi from "joi";
+import { RecipeSource } from "server/base/models/recipeList";
 import { FavouriteRecipe } from "server/base/models/user";
 
 export default withReqHandler(
@@ -23,10 +27,29 @@ export default withReqHandler(
   }
 );
 
+const UPDATE_BODY_SCHEMA = Joi.object({
+  favouriteRecipes: Joi.array()
+    .items(
+      Joi.object({
+        recipeId: Joi.string().required(),
+        recipeVariant: Joi.string().required(),
+        source: Joi.string()
+          .valid(...Object.values(RecipeSource))
+          .default(RecipeSource.DEFAULT),
+      })
+    )
+    .required(),
+});
+
 const updateFavourites = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
+  validate(
+    req.body as object,
+    requestComponentToValidate.body,
+    UPDATE_BODY_SCHEMA
+  );
   const { favouriteRecipes } = req.body as {
     favouriteRecipes: FavouriteRecipe[];
   };

@@ -17,6 +17,7 @@ import InterServiceAuth, {
 } from "server/internal/inter-service-auth";
 import { TYPES } from "server/types";
 import { Recipe } from "server/base/models/recipe";
+import { RecipeSource } from "server/base/models/recipeList";
 import { Entitlement, revenueCat } from "server/external/revenue-cat";
 import Cors from "cors";
 import { initMiddleware } from "server/helpers/middleware";
@@ -214,9 +215,10 @@ async function ensureEntitlement(userId: string, entitlement: Entitlement) {
 
 export async function ensureBrandingEntitlement(
   recipe: Recipe,
+  source: RecipeSource,
   userId: string
 ) {
-  if (!isEmpty(recipe.branding)) {
+  if (source === RecipeSource.BRANDING || !isEmpty(recipe.branding)) {
     await ensureEntitlement(userId, Entitlement.BRANDING);
   }
 }

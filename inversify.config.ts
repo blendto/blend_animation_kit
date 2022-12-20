@@ -48,6 +48,8 @@ import {
   BrandingDynamooseRepo,
   BrandingEntity,
 } from "server/repositories/branding";
+import { BrandingRecipe } from "server/base/models/brandingRecipe";
+import { BrandingRecipeDynamooseRepo } from "server/repositories/brandingRecipe";
 
 const diContainer = new Container();
 
@@ -136,6 +138,9 @@ diContainer.bind<Firebase>(TYPES.Firebase).to(Firebase).inSingletonScope();
 diContainer
   .bind<Repo<BrandingEntity>>(TYPES.BrandingRepo)
   .toDynamicValue(() => new BrandingDynamooseRepo());
+diContainer
+  .bind<Repo<BrandingRecipe>>(TYPES.BrandingRecipeRepo)
+  .toDynamicValue(() => new BrandingRecipeDynamooseRepo());
 diContainer
   .bind<Repo<User>>(TYPES.UserRepo)
   .toDynamicValue(() => new UserDynamooseRepo());

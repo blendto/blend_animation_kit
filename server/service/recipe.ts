@@ -23,7 +23,7 @@ import logger from "server/base/Logger";
 import { DateTime } from "luxon";
 import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024;
+export const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 @injectable()
 export class RecipeService implements IService {
@@ -49,6 +49,7 @@ export class RecipeService implements IService {
       uri: imageDestinationURIs[i.uid],
       source: ElementSource.recipe,
     }));
+    recipe.thumbnail = await this.generateRecipeThumbnail(recipe);
 
     recipe.updatedOn = DateTime.utc().toISODate();
     recipe.updatedAt = Date.now();
@@ -66,7 +67,7 @@ export class RecipeService implements IService {
     return <Recipe>recipe;
   }
 
-  async getRecipeOrFail(id: string, variant = "9:16"): Promise<Recipe> {
+  async getRecipeOrFail(id: string, variant?: string): Promise<Recipe> {
     const recipe = await this.getRecipe(id, variant);
     if (!recipe) {
       throw new UserError("Invalid recipe id and/or variant");
@@ -74,16 +75,7 @@ export class RecipeService implements IService {
     return recipe;
   }
 
-  async saveRecipeThumbnail(id: string, variant = "9:16"): Promise<void> {
-    const recipe = (await this.dataStore.getItem({
-      TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
-      Key: { id, variant },
-    })) as Recipe;
-
-    if (!recipe) {
-      throw new UserError("Invalid recipe", "404");
-    }
-
+  async generateRecipeThumbnail(recipe: Recipe): Promise<string> {
     const { fileName, fileKey } = RecipeService.thumbnailFileKey(recipe);
     const uploadDetails = (await createSignedUploadUrl(
       fileName,
@@ -101,6 +93,12 @@ export class RecipeService implements IService {
       uploadDetails,
     });
 
+    return fileKey;
+  }
+
+  async saveRecipeThumbnail(recipe: Recipe): Promise<void> {
+    const fileKey = await this.generateRecipeThumbnail(recipe);
+
     await this.dataStore.updateItem({
       UpdateExpression: "SET #thumbnail = :thumbnail",
       ExpressionAttributeNames: {
@@ -109,16 +107,20 @@ export class RecipeService implements IService {
       ExpressionAttributeValues: {
         ":thumbnail": fileKey,
       },
-      Key: { id, variant },
+      Key: { id: recipe.id, variant: recipe.variant },
       TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
       ReturnValues: "NONE",
     });
   }
 
-  private static thumbnailFileKey(recipe: Recipe) {
+  static thumbnailFileName(recipe: Recipe) {
     const isStatic: boolean =
       recipe.gifsOrStickers === null || recipe.gifsOrStickers.length === 0;
-    const fileName = isStatic ? `${Date.now()}.jpeg` : `${Date.now()}.webp`;
+    return isStatic ? `${Date.now()}.jpeg` : `${Date.now()}.webp`;
+  }
+
+  private static thumbnailFileKey(recipe: Recipe) {
+    const fileName = RecipeService.thumbnailFileName(recipe);
     const subFolder = recipe.variant.replaceAll(":", "-");
 
     const fileKey = `${recipe.id}/${subFolder}/thumbnail/${fileName}`;

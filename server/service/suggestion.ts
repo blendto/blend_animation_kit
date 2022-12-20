@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import {
   RecipeList,
+  RecipeSource,
   RecipeVariantId,
   SavedRecipeSuggestions,
 } from "server/base/models/recipeList";
@@ -15,11 +16,13 @@ import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
 import { SuggestFlowType } from "server/base/models/recoEngine";
+import BrandingService from "./branding";
 
 @injectable()
 export class SuggestionService {
   @inject(TYPES.BlendService) blendService: BlendService;
   @inject(TYPES.UserService) userService: UserService;
+  @inject(TYPES.BrandingService) brandingService: BrandingService;
   @inject(TYPES.DaxDB) daxStore: DaxDB;
   recoEngineApi = new RecoEngineApi();
 
@@ -129,6 +132,10 @@ export class SuggestionService {
         uid,
         recipeLists
       );
+      recipeLists = await this.brandingService.addToRecipeLists(
+        uid,
+        recipeLists
+      );
     }
 
     return { recipeLists, nextPageKey: suggestions.nextPageKey };
@@ -160,24 +167,31 @@ export class SuggestionService {
   }
 
   async recipeListMapper(list: RecipeList): Promise<RecipeList> {
-    const promises = list.recipes.map((recipe) =>
-      this.backfillRecipeDetails(recipe)
-    );
+    const promises = list.recipes.map((recipe) => {
+      if (recipe.source === RecipeSource.BRANDING) {
+        return recipe;
+      }
+      return this.backfillRecipeDetails(recipe);
+    });
     list.recipes = await Promise.all(promises);
     return list;
   }
 
   async backfillRecipeDetails(
-    recipeVariantId: RecipeVariantId
+    recipeVariantId: RecipeVariantId,
+    source = RecipeSource.DEFAULT
   ): Promise<RecipeVariantId> {
     const { id, variant } = recipeVariantId;
-
-    const recipe = (await this.daxStore.getItem({
-      TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
-      Key: { id, variant },
-    })) as Recipe;
+    const recipe =
+      source === RecipeSource.DEFAULT
+        ? ((await this.daxStore.getItem({
+            TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
+            Key: { id, variant },
+          })) as Recipe)
+        : await this.brandingService.getRecipeOrFail(id, variant);
 
     const { title, thumbnail } = recipe;
+    recipeVariantId.source = source;
     recipeVariantId.extra = {
       title,
       thumbnail,

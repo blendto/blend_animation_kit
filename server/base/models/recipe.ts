@@ -1,7 +1,9 @@
 import { isEmpty } from "lodash";
-import { RecipeVariantId } from "server/base/models/recipeList";
+import { v4 } from "uuid";
+import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
 import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
 import { UserError } from "../errors";
+import { BrandingRecipe } from "./brandingRecipe";
 import { BlendHeroImage, ImageFileKeys } from "./heroImage";
 import { SuggestFlowType } from "./recoEngine";
 
@@ -263,12 +265,13 @@ export class ChooseRecipeRequest {
   variant?: string;
   fileKeys?: { original: string; withoutBg: string };
   encoderVersion: number;
+  source: RecipeSource;
 }
 
 export class RecipeWrapper {
-  private recipe: Recipe;
+  private recipe: Recipe | BrandingRecipe;
 
-  constructor(recipe: Recipe) {
+  constructor(recipe: Recipe | BrandingRecipe) {
     this.recipe = recipe;
   }
 
@@ -283,19 +286,37 @@ export class RecipeWrapper {
     image?: StoredImage,
     interaction?: Interaction
   ) {
-    const heroUid = this.recipe.recipeDetails?.elements?.hero?.uid;
-    if (!heroUid) {
-      return;
-    }
-
-    if (!image) {
-      image = this.recipe.images.find((image) => image.uid === heroUid);
-    }
-    if (!interaction) {
-      interaction = this.recipe.interactions.find(
-        (interaction) =>
-          interaction.assetType === "IMAGE" && interaction.assetUid === heroUid
+    let heroUid = this.recipe.recipeDetails?.elements?.hero?.uid;
+    if (heroUid) {
+      if (!image) {
+        image = this.recipe.images.find((image) => image.uid === heroUid);
+      }
+      if (!interaction) {
+        interaction = this.recipe.interactions.find(
+          (interaction) =>
+            interaction.assetType === "IMAGE" &&
+            interaction.assetUid === heroUid
+        );
+      }
+    } else {
+      // Apply a default hero
+      heroUid = v4();
+      this.recipe.recipeDetails.elements.hero = {
+        uid: heroUid,
+        assetType: AssetType.IMAGE,
+      };
+      image = {
+        uid: heroUid,
+        uri: fileKeys.withoutBg,
+      };
+      const maxZIndex = Math.max(
+        ...this.recipe.interactions.map(
+          (i) => (i.metadata as ImageMetadata).zIndex
+        )
       );
+      interaction = this.defaultHeroInteraction(heroUid, maxZIndex);
+      this.recipe.images.push(image);
+      this.recipe.interactions.push(interaction);
     }
 
     if (!image || !interaction) {
@@ -313,6 +334,41 @@ export class RecipeWrapper {
     // cropping the image and uploading it.
     // The hero image should not have cropRect property in a recipe as it will get replaced.
     delete (interaction.metadata as ImageMetadata).cropRect;
+
+    return { image, interaction };
+  }
+
+  defaultHeroInteraction(heroUid: string, maxZIndex: number) {
+    const canvasSize = this.recipe.metadata.resolution;
+    const defaultHeroSize = {
+      width: canvasSize.width * 0.7,
+      height: canvasSize.height * 0.7,
+    };
+    return {
+      action: InteractionAction.DISPLAY_INLINE,
+      assetType: AssetType.IMAGE,
+      assetUid: heroUid,
+      metadata: {
+        $: "ImageMetadata",
+        hasBgRemoved: true,
+        layerType: InteractionLayerTypes.Image,
+        position: {
+          dx: (canvasSize.width - defaultHeroSize.width) / 2,
+          dy: (canvasSize.height - defaultHeroSize.height) / 2,
+        },
+        relativeSize: {
+          width: canvasSize.width,
+          height: canvasSize.height,
+        },
+        rotation: 0,
+        rotationOrigin: "CENTER",
+        rotationX: 0,
+        rotationY: 0,
+        size: defaultHeroSize,
+        zIndex: maxZIndex + 1,
+      } as ImageMetadata,
+      time: 0,
+    };
   }
 
   replaceBrandingInfo(brandingProfile: BrandingEntity): void {

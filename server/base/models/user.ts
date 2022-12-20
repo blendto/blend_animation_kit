@@ -1,5 +1,5 @@
 import { Entity } from "server/repositories/base";
-import { RecipeVariantId } from "server/base/models/recipeList";
+import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
 
 export interface SocialHandles {
   instagram?: string;
@@ -13,7 +13,7 @@ export interface ActivitySummary {
 export interface FavouriteRecipe {
   recipeId: string;
   recipeVariant: string;
-  fullRecipe?: RecipeVariantId;
+  source?: RecipeSource;
 }
 
 export interface User extends Entity {

@@ -1,6 +1,7 @@
 import { diContainer } from "inversify.config";
 import Joi from "joi";
 import { NextApiResponse } from "next";
+import { Size } from "server/base/models/recipe";
 import {
   ensureAuth,
   NextApiRequestExtended,
@@ -27,28 +28,32 @@ export default withReqHandler(
 
 const INIT_BODY_SCHEMA = Joi.object({
   fileName: Joi.string().required(),
+  size: Joi.object({
+    width: Joi.number().required(),
+    height: Joi.number().required(),
+  }).required(),
 });
 
 async function initLogoUpload(
   req: NextApiRequestExtended,
   res: NextApiResponse
 ): Promise<void> {
-  validate(
+  const validatedBody = validate(
     req.body as object,
     requestComponentToValidate.body,
     INIT_BODY_SCHEMA
   );
+  const { fileName, size } = validatedBody as {
+    fileName: string;
+    size: Size;
+  };
 
   const brandingService = diContainer.get<BrandingService>(
     TYPES.BrandingService
   );
   res
     .status(201)
-    /* eslint-disable-next-line
-      @typescript-eslint/no-unsafe-argument,
-      @typescript-eslint/no-unsafe-member-access
-    */
-    .send(await brandingService.initLogoUpload(req.uid, req.body.fileName));
+    .send(await brandingService.initLogoUpload(req.uid, fileName, size));
 }
 
 const DEL_QUERY_SCHEMA = Joi.object({

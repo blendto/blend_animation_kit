@@ -55,7 +55,7 @@ const referralDynamooseSchema = new DynamooseSchema(
       type: String,
       index: {
         name: "referrerUserId-refereeUserId-index",
-        global: true,
+        type: "global",
         rangeKey: "refereeUserId",
       },
     },
@@ -63,7 +63,7 @@ const referralDynamooseSchema = new DynamooseSchema(
       type: String,
       index: {
         name: "deviceId-index",
-        global: true,
+        type: "global",
       },
     },
     reward: {

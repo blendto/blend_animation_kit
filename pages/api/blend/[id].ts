@@ -270,7 +270,11 @@ const submitBlend = async (
     }
   }
 
-  await ensureBrandingEntitlement(recipe, req.uid);
+  await ensureBrandingEntitlement(
+    recipe,
+    recipe.metadata?.sourceRecipe?.source,
+    req.uid
+  );
 
   const creditsService = diContainer.get<CreditsService>(TYPES.CreditsService);
   await creditsService.runWithCreditAndWatermarkCheck(

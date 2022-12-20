@@ -14,10 +14,16 @@ export interface RecipeListUIConfig {
   showRecipeVariants?: boolean;
 }
 
+export enum RecipeSource {
+  DEFAULT = "DEFAULT",
+  BRANDING = "BRANDING",
+}
+
 export interface RecipeVariantId {
   id: string;
   variant: string;
   extra?: { title?: string; thumbnail?: string; isPremium?: boolean };
+  source?: RecipeSource;
 }
 
 export interface SavedRecipeSuggestions {

@@ -14,6 +14,8 @@ import BrandingService from "server/service/branding";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
 import { fireAndForget } from "server/helpers/async-runner";
+import { BrandingRecipe } from "server/base/models/brandingRecipe";
+import { RecipeSource } from "server/base/models/recipeList";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -36,18 +38,16 @@ const GEN_PREV_SCHEMA = Joi.object({
     original: Joi.string().required(),
     withoutBg: Joi.string().required(),
   }).required(),
+  source: Joi.string()
+    .valid(...Object.values(RecipeSource))
+    .default(RecipeSource.DEFAULT),
 });
 
 function saveRecipeThumbnailAsync(recipe: Recipe) {
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
-  if (!recipe.thumbnail) {
-    fireAndForget(
-      () => recipeService.saveRecipeThumbnail(recipe.id, recipe.variant),
-      {
-        operationName: "SAVING_RECIPE_THUMBNAIL",
-      }
-    ).catch(() => {});
-  }
+  fireAndForget(() => recipeService.saveRecipeThumbnail(recipe), {
+    operationName: "SAVING_RECIPE_THUMBNAIL",
+  }).catch(() => {});
 }
 
 const generatePreview = async (
@@ -65,15 +65,24 @@ const generatePreview = async (
       original: string;
       withoutBg: string;
     };
+    source: RecipeSource;
   };
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   const brandingService = diContainer.get<BrandingService>(
     TYPES.BrandingService
   );
 
-  const recipe = await recipeService.getRecipe(body.recipeId, body.variant);
+  const recipe =
+    body.source === RecipeSource.DEFAULT
+      ? await recipeService.getRecipeOrFail(body.recipeId, body.variant)
+      : await brandingService.getRecipeOrFail(body.recipeId, body.variant);
   const recipeWrapper = new RecipeWrapper(recipe);
-  saveRecipeThumbnailAsync(recipe);
+  if (!recipe.thumbnail && body.source === RecipeSource.DEFAULT) {
+    // Deprecated. Newer recipe previews are generated synchronously during creation.
+    saveRecipeThumbnailAsync(
+      JSON.parse(JSON.stringify(recipe)) as Recipe | BrandingRecipe
+    );
+  }
 
   recipeWrapper.replaceHero(body.fileKeys);
   if (req.uid) {

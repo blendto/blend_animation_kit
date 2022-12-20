@@ -2,7 +2,11 @@
   "links": [],
   "metadata": {
     "sourceBlendId": "Bt5OJgzL",
-    "source": { "type": "MOBILE", "version": 2 }
+    "source": { "type": "MOBILE", "version": 2 },
+    "resolution": {
+      "width": 361.27840909090907,
+      "height": 642.2727272727273
+    }
   },
   "texts": [
     { "value": "2021", "uid": "7e298d49-322b-4064-aa0f-2aea9ca4a6dc" },

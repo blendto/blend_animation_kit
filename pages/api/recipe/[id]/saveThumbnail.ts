@@ -25,6 +25,6 @@ const saveRecipeThumbnail = async (
   const { variant } = req.body as { variant: string };
 
   const service = diContainer.get<RecipeService>(TYPES.RecipeService);
-  await service.saveRecipeThumbnail(id, variant);
+  await service.saveRecipeThumbnail(await service.getRecipeOrFail(id, variant));
   res.status(200).end();
 };

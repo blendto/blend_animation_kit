@@ -20,8 +20,6 @@ export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse): Promise<void> => {
     const { method } = req;
     switch (method) {
-      case "GET":
-        return await ensureAuth(getBranding, req, res);
       case "PATCH":
         return await ensureAuth(updateBranding, req, res);
       default:
@@ -29,16 +27,6 @@ export default withReqHandler(
     }
   }
 );
-
-async function getBranding(
-  req: NextApiRequestExtended,
-  res: NextApiResponse
-): Promise<void> {
-  const brandingService = diContainer.get<BrandingService>(
-    TYPES.BrandingService
-  );
-  res.send(await brandingService.getOrCreate(req.uid));
-}
 
 const UPDATE_BODY_SCHEMA = Joi.object({
   changes: Joi.array()

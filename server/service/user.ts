@@ -125,6 +125,12 @@ export class UserService implements IService {
     return await this.repo.get({ id });
   }
 
+  async getOrFail(id: string): Promise<User> {
+    const user = await this.get(id);
+    if (!user) throw new UserError("User doesn't exist!");
+    return user;
+  }
+
   async getOrCreate(id: string): Promise<User> {
     let profile = await this.get(id);
     if (!profile) {
@@ -269,11 +275,14 @@ export class UserService implements IService {
       TYPES.SuggestionService
     );
     const promises = favouriteRecipes.map(async (favourite) => {
-      const { recipeId: id, recipeVariant: variant } = favourite;
-      const fullRecipe = await suggestionService.backfillRecipeDetails({
-        id,
-        variant,
-      });
+      const { recipeId: id, recipeVariant: variant, source } = favourite;
+      const fullRecipe = await suggestionService.backfillRecipeDetails(
+        {
+          id,
+          variant,
+        },
+        source
+      );
       return { ...favourite, fullRecipe };
     });
     return Promise.all(promises);

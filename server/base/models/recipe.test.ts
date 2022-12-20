@@ -7,7 +7,15 @@ import {
   BrandingStatus,
 } from "server/repositories/branding";
 import { UserError } from "../errors";
-import { ElementSource, ImageMetadata, Recipe, RecipeWrapper } from "./recipe";
+import {
+  AssetType,
+  ElementSource,
+  ImageMetadata,
+  InteractionAction,
+  InteractionLayerTypes,
+  Recipe,
+  RecipeWrapper,
+} from "./recipe";
 
 function getSampleRecipe() {
   return JSON.parse(
@@ -27,13 +35,40 @@ describe("RecipeWrapper", () => {
       original: "MxGSFzX4/UjG7owG-HtbFG1IMKN2r1.png",
     };
 
-    it("retains the recipe as is in the absence of hero details", () => {
+    it("puts a default hero in the absence of hero details", () => {
       delete recipeCopy.recipeDetails.elements.hero;
       const recipeCopy2 = getSampleRecipe();
       delete recipeCopy2.recipeDetails.elements.hero;
       const wrapper = new RecipeWrapper(recipeCopy);
       wrapper.replaceHero(fileKeys);
 
+      recipeCopy2.images.push({
+        uid: recipeCopy.recipeDetails.elements.hero.uid,
+        uri: "MxGSFzX4/UjG7owG-HtbFG1IMKN2r1-bg-removed.png",
+        source: ElementSource.blend,
+      });
+      recipeCopy2.interactions.push({
+        action: InteractionAction.DISPLAY_INLINE,
+        assetType: AssetType.IMAGE,
+        assetUid: recipeCopy.recipeDetails.elements.hero.uid,
+        metadata: {
+          $: "ImageMetadata",
+          hasBgRemoved: true,
+          layerType: InteractionLayerTypes.Image,
+          position: { dx: 54.191761363636374, dy: 96.3409090909091 },
+          relativeSize: {
+            width: 361.27840909090907,
+            height: 642.2727272727273,
+          },
+          rotation: 0,
+          rotationOrigin: "CENTER",
+          rotationX: 0,
+          rotationY: 0,
+          size: { width: 252.89488636363632, height: 449.59090909090907 },
+          zIndex: 10,
+        } as ImageMetadata,
+        time: 0,
+      });
       expect(recipeCopy).toMatchObject(recipeCopy2);
     });
 

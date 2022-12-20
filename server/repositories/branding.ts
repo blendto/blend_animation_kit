@@ -1,4 +1,5 @@
 import ConfigProvider from "server/base/ConfigProvider";
+import { Size } from "server/base/models/recipe";
 
 import {
   DynamooseModel,
@@ -95,7 +96,7 @@ export interface BrandingEntity extends Entity {
   [BrandingInfoType.FacebookHandle]?: string;
   logos: {
     primaryEntry?: string;
-    entries: { fileKey: string; status: BrandingLogoStatus }[];
+    entries: { fileKey: string; size: Size; status: BrandingLogoStatus }[];
   };
   updatedAt?: number;
   status?: BrandingStatus;
@@ -112,7 +113,7 @@ const brandingDynamooseSchema = new DynamooseSchema(
       type: String,
       index: {
         name: ConfigProvider.BRANDING_DYNAMODB_USER_ID_INDEX,
-        global: true,
+        type: "global",
       },
     },
     brandName: String,
@@ -145,6 +146,10 @@ const brandingDynamooseSchema = new DynamooseSchema(
               type: Object,
               schema: {
                 fileKey: String,
+                size: {
+                  type: Object,
+                  schema: { width: Number, height: Number },
+                },
                 status: {
                   type: String,
                   enum: Object.values(BrandingLogoStatus),

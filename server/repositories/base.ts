@@ -3,7 +3,7 @@ import {
   model as dynamooseModel,
   Schema as DynamooseSchema,
 } from "dynamoose";
-import { Document as DynamooseEntity } from "dynamoose/dist/Document";
+import { Item as DynamooseEntity } from "dynamoose/dist/Item";
 import { Model as DynamooseModel } from "dynamoose/dist/Model";
 import { get, set } from "lodash";
 import { nanoid } from "nanoid";
@@ -12,12 +12,18 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
 import { getCredentials } from "server/external/aws";
 
-const { sdk } = aws;
 // Vercel envs have their own AWS config as default. Explicitly pick up our's
-sdk.config.update({
-  credentials: getCredentials(),
-  region: ConfigProvider.AWS_CLOUD_REGION,
-});
+aws.ddb.set(
+  /*
+  eslint-disable-next-line
+    @typescript-eslint/no-unsafe-call,
+    @typescript-eslint/no-unsafe-argument
+  */
+  new aws.ddb.DynamoDB({
+    credentials: getCredentials(),
+    region: ConfigProvider.AWS_CLOUD_REGION,
+  })
+);
 
 type KeyObject = {
   [attribute: string]: string | number;
@@ -37,7 +43,10 @@ export abstract class Repo<ExtendedEntity extends Entity> {
     params: Partial<ExtendedEntity>
   ): Promise<ExtendedEntity>;
   abstract get?(keyObject: KeyObject): Promise<ExtendedEntity | void>;
-  abstract query?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity[]>;
+  abstract query?(
+    params: Partial<ExtendedEntity>,
+    options?: Record<string, unknown>
+  ): Promise<ExtendedEntity[]>;
   abstract update?(
     keyObject: KeyObject,
     jsonPatch: JSONPatch,
@@ -86,10 +95,20 @@ export class DynamooseRepo<
     return (await this.model.get(keyObject)) as unknown as ExtendedEntity;
   }
 
-  async query(params: Partial<ExtendedEntity>): Promise<ExtendedEntity[]> {
-    return (await this.model
-      .query(params as unknown as Partial<DynamooseExtendedEntity>)
-      .exec()) as unknown as ExtendedEntity[];
+  async query(
+    params: Partial<ExtendedEntity>,
+    options?: { limit?: number; sort?: "ascending" | "descending" }
+  ): Promise<ExtendedEntity[]> {
+    let dQuery = this.model.query(
+      params as unknown as Partial<DynamooseExtendedEntity>
+    );
+    if (options?.limit) {
+      dQuery = dQuery.limit(options.limit);
+    }
+    if (options?.sort) {
+      dQuery = dQuery.sort(options.sort);
+    }
+    return (await dQuery.exec()) as unknown as ExtendedEntity[];
   }
 
   async update(

@@ -21,7 +21,7 @@ import {
   RecipeWrapper,
 } from "server/base/models/recipe";
 import BrandingService from "server/service/branding";
-import { SuggestionService } from "server/service/suggestion";
+import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -43,6 +43,9 @@ const CHOOSE_RECIPE_SCHEMA = Joi.object({
     withoutBg: Joi.string().required(),
   }),
   encoderVersion: Joi.number().required(),
+  source: Joi.string()
+    .valid(...Object.values(RecipeSource))
+    .default(RecipeSource.DEFAULT),
 });
 
 const useRecipeForBlend = async (
@@ -55,16 +58,16 @@ const useRecipeForBlend = async (
     requestComponentToValidate.body,
     CHOOSE_RECIPE_SCHEMA
   ) as ChooseRecipeRequest;
-  const { recipeId, variant, fileKeys, encoderVersion } = body;
+  const { recipeId, variant, fileKeys, encoderVersion, source } = body;
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   const brandingService = diContainer.get<BrandingService>(
     TYPES.BrandingService
   );
 
-  const recipe = await recipeService.getRecipe(recipeId, variant);
-  if (!recipe) {
-    throw new UserError("No such recipe");
-  }
+  const recipe =
+    source === RecipeSource.DEFAULT
+      ? await recipeService.getRecipeOrFail(recipeId, variant)
+      : await brandingService.useRecipe(req.uid, recipeId, variant);
   const recipeWrapper = new RecipeWrapper(recipe);
 
   if (!checkCompatibilityWithElements(recipe, encoderVersion)) {
@@ -77,7 +80,7 @@ const useRecipeForBlend = async (
   let interactionUpdatePromise;
 
   if (req.uid) {
-    await ensureBrandingEntitlement(recipe, req.uid);
+    await ensureBrandingEntitlement(recipe, source, req.uid);
     const brandingProfile = await brandingService.get(req.uid);
     if (brandingProfile) recipeWrapper.replaceBrandingInfo(brandingProfile);
   }
@@ -89,25 +92,22 @@ const useRecipeForBlend = async (
     );
   }
 
+  if (fileKeys) {
+    const { image, interaction } = recipeWrapper.replaceHero(fileKeys);
+    interactionUpdatePromise = adjustSizeToFit(interaction, image.uri);
+  }
   const blendImages = recipe.images.map((image) => {
     if (image.uid === recipe.recipeDetails.elements.hero?.uid) {
-      const interaction = recipe.interactions.find(
-        (interaction) =>
-          interaction.assetType === "IMAGE" &&
-          interaction.assetUid === image.uid
-      );
-      if (fileKeys) {
-        recipeWrapper.replaceHero(fileKeys, image, interaction);
-        interactionUpdatePromise = adjustSizeToFit(interaction, image.uri);
-        return image;
-      }
+      return image;
     }
     const uriParts = image.uri.split("/");
     uriParts[0] = blendId as string;
     const targetUri = uriParts.join("/");
     copyFilePromises.push(
       copyObject(
-        ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
+        source === RecipeSource.DEFAULT
+          ? ConfigProvider.RECIPE_INGREDIENTS_BUCKET
+          : ConfigProvider.BRANDING_BUCKET,
         image.uri,
         ConfigProvider.BLEND_INGREDIENTS_BUCKET,
         targetUri
@@ -118,16 +118,23 @@ const useRecipeForBlend = async (
 
   await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
 
-  const recipeVariantId = await diContainer
-    .get<SuggestionService>(TYPES.SuggestionService)
-    .backfillRecipeDetails({ id: recipe.id, variant: recipe.variant });
-
+  const sourceRecipe: RecipeVariantId = {
+    id: recipeId,
+    variant,
+    extra: {
+      title: recipe.title,
+      thumbnail: recipe.thumbnail,
+      isPremium:
+        source === RecipeSource.DEFAULT ? recipe.recipeDetails.isPremium : true,
+    },
+    source,
+  };
   return res.send({
     ...recipe,
     metadata: {
       ...recipe.metadata,
       sourceRecipeId: recipe.id,
-      sourceRecipe: recipeVariantId,
+      sourceRecipe,
     },
     id: blendId,
     images: blendImages,
