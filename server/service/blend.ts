@@ -134,6 +134,14 @@ export class BlendService implements IService {
     return data.Items.map((entry) => entry.id as string);
   }
 
+  async getUserBlend(blendId: string, createdBy: string): Promise<Blend> {
+    const blend = await this.getBlend(blendId);
+    if (!blend || blend.createdBy !== createdBy) {
+      throw new UserError("No such blend for user");
+    }
+    return blend;
+  }
+
   async getBlend(
     id: string,
     version: BlendVersion = BlendVersion.current,

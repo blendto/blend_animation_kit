@@ -540,7 +540,7 @@ describe("BrandingService", () => {
     it("Rejects request if the file key has invalid blend id", async () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
-        .mockImplementation((brandingId) => Promise.resolve());
+        .mockImplementation(() => Promise.resolve(null as BrandingEntity));
       await expect(brandingService.completeLogoUpload(fileKey)).rejects.toThrow(
         new UserError("Invalid fileKey")
       );

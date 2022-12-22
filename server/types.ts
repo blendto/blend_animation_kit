@@ -28,4 +28,6 @@ export const TYPES = {
   AnalyticsService: Symbol.for("AnalyticsService"),
   FileKeysService: Symbol.for("FileKeysService"),
   CreditsService: Symbol.for("CreditsService"),
+  AIStudioService: Symbol.for("AIStudioService"),
+  AIBlendPhotoRepo: Symbol.for("AIBlendPhotoRepo"),
 };

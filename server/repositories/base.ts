@@ -12,7 +12,7 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
 import { getCredentials } from "server/external/aws";
 
-// Vercel envs have their own AWS config as default. Explicitly pick up our's
+// Vercel envs have their own AWS config as default. Explicitly pick up ours
 aws.ddb.set(
   /*
   eslint-disable-next-line
@@ -42,7 +42,7 @@ export abstract class Repo<ExtendedEntity extends Entity> {
   abstract createWithoutSurrogateKey?(
     params: Partial<ExtendedEntity>
   ): Promise<ExtendedEntity>;
-  abstract get?(keyObject: KeyObject): Promise<ExtendedEntity | void>;
+  abstract get?(keyObject: KeyObject): Promise<ExtendedEntity>;
   abstract query?(
     params: Partial<ExtendedEntity>,
     options?: Record<string, unknown>
@@ -51,6 +51,10 @@ export abstract class Repo<ExtendedEntity extends Entity> {
     keyObject: KeyObject,
     jsonPatch: JSONPatch,
     currentData?: ExtendedEntity
+  ): Promise<ExtendedEntity>;
+  abstract updatePartial(
+    keyObject: KeyObject,
+    partialEntity: Partial<ExtendedEntity>
   ): Promise<ExtendedEntity>;
   abstract delete?(keyObject: KeyObject): Promise<void>;
 }
@@ -91,7 +95,7 @@ export class DynamooseRepo<
     )) as unknown as ExtendedEntity;
   }
 
-  async get(keyObject: KeyObject): Promise<ExtendedEntity | void> {
+  async get(keyObject: KeyObject): Promise<ExtendedEntity> {
     return (await this.model.get(keyObject)) as unknown as ExtendedEntity;
   }
 
@@ -122,7 +126,7 @@ export class DynamooseRepo<
       // Fetch current data only if there is a nested update
       jsonPatch.find((change) => change.path.slice(1).includes("/"))
     ) {
-      currentData = (await this.get(keyObject)) as ExtendedEntity;
+      currentData = await this.get(keyObject);
       if (!currentData) {
         throw new UserError("Invalid keyObject");
       }
@@ -154,6 +158,16 @@ export class DynamooseRepo<
     return (await this.model.update(
       keyObject,
       updateSet as unknown as Partial<DynamooseExtendedEntity>
+    )) as unknown as ExtendedEntity;
+  }
+
+  async updatePartial(
+    keyObject: KeyObject,
+    partialEntity: Partial<ExtendedEntity>
+  ): Promise<ExtendedEntity> {
+    return (await this.model.update(
+      keyObject,
+      partialEntity as unknown as DynamooseExtendedEntity
     )) as unknown as ExtendedEntity;
   }
 

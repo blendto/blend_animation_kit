@@ -1,0 +1,43 @@
+import type { NextApiResponse } from "next";
+
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
+import { MethodNotAllowedError } from "server/base/errors";
+import { GenerateSamplesRequest } from "server/base/models/aistudio";
+import { diContainer } from "inversify.config";
+import { AIStudioService } from "server/service/aistudio";
+import { TYPES } from "server/types";
+
+export default withReqHandler(
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
+    const { method } = req;
+    switch (method) {
+      case "POST":
+        return ensureAuth(generateSamples, req, res);
+      default:
+        throw new MethodNotAllowedError();
+    }
+  }
+);
+
+const generateSamples = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
+  const { id } = req.query as { id: string };
+  const generateSamplesRequest = GenerateSamplesRequest.deserialize(
+    req.body as Record<string, unknown>
+  );
+  const aiStudioService = diContainer.get<AIStudioService>(
+    TYPES.AIStudioService
+  );
+  const out = await aiStudioService.requestGenerationSample(
+    id,
+    generateSamplesRequest,
+    req.uid
+  );
+  res.status(200).send(out);
+};

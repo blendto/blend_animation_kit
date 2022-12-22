@@ -44,6 +44,9 @@ import {
   UserAccountActionQueue,
   UserAccountActionSqsConfig,
 } from "server/external/queue/userAccountActionQueue";
+import { AIStudioService } from "server/service/aistudio";
+import { AiBlendPhotoDynamooseRepo } from "server/repositories/ai-blend-photo";
+import { AIBlendPhoto } from "server/base/models/aistudio";
 import {
   BrandingDynamooseRepo,
   BrandingEntity,
@@ -168,4 +171,11 @@ diContainer
   .bind<CreditsService>(TYPES.CreditsService)
   .to(CreditsService)
   .inSingletonScope();
+diContainer
+  .bind<AIStudioService>(TYPES.AIStudioService)
+  .to(AIStudioService)
+  .inSingletonScope();
+diContainer
+  .bind<Repo<AIBlendPhoto>>(TYPES.AIBlendPhotoRepo)
+  .toDynamicValue(() => new AiBlendPhotoDynamooseRepo());
 export { diContainer };

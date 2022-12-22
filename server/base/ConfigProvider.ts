@@ -79,6 +79,14 @@ class ConfigProvider {
     return this.retrieveOrCrash("USER_DYNAMODB_TABLE");
   }
 
+  public get AI_BLEND_PHOTOS_TABLE(): string {
+    return this.retrieveOrCrash("AI_BLEND_PHOTOS_TABLE");
+  }
+
+  public get AI_BLEND_PHOTO_TOPICS_TABLE(): string {
+    return this.retrieveOrCrash("AI_BLEND_PHOTO_TOPICS_TABLE");
+  }
+
   public get REFERRAL_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("REFERRAL_DYNAMODB_TABLE");
   }
@@ -107,6 +115,10 @@ class ConfigProvider {
 
   public get VES_API_BASE_PATH(): string {
     return this.retrieveOrCrash("VES_API_BASE_PATH");
+  }
+
+  public get AI_STUDIO_BASE_URL(): string {
+    return this.retrieveOrCrash("AI_STUDIO_BASE_URL");
   }
 
   public get RECO_API_BASE_PATH(): string {
