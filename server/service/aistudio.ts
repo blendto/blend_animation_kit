@@ -48,7 +48,7 @@ export class AIStudioService implements IService {
       topicId: item.topicId,
       isPremium: item.isPremium,
       thumbnail: item.thumbnail,
-      localisedLabel: item.label[languageCode],
+      localisedLabel: item.label[languageCode] ?? item.label.en,
     }));
   }
 
