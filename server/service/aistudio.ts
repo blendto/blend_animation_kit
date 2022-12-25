@@ -20,6 +20,7 @@ import AiStudioGeneratorApi, {
 } from "server/internal/aiStudioGeneratorApi";
 import { DaxDB } from "server/external/dax";
 import ConfigProvider from "server/base/ConfigProvider";
+import { fireAndForget } from "server/helpers/async-runner";
 
 @injectable()
 export class AIStudioService implements IService {
@@ -32,7 +33,10 @@ export class AIStudioService implements IService {
     blendId: string,
     createdBy: string
   ): Promise<AIBlendPhoto> {
-    const aiBlendPhoto = await this.repo.get({ blendId });
+    const aiBlendPhoto = (await this.dataStore.getItem({
+      TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
+      Key: { blendId },
+    })) as AIBlendPhoto;
     if (aiBlendPhoto?.createdBy !== createdBy) {
       throw new UserError("No such AI Blend Photo exists");
     }
@@ -56,25 +60,50 @@ export class AIStudioService implements IService {
     blendId: string,
     generateSamplesRequest: GenerateSamplesRequest,
     createdBy: string
-  ): Promise<AIBlendPhoto> {
+  ): Promise<{
+    aiBlendPhoto: AIBlendPhoto;
+    activeSampleGenerationRequest: AiStudioGenerateSamplesRequest;
+  }> {
     const blend = await this.blendService.getUserBlend(blendId, createdBy);
-    if (!blend.heroImages) {
+    const { heroImages } = blend;
+    if (!heroImages) {
       throw new UserError("Blend does not have `heroImages`");
     }
+
     const aiBlendPhoto = await this.repo.get({ blendId });
     const { prompts, aiStudioRequest } = generateSamplesRequest.updatePrompts(
       blendId,
-      aiBlendPhoto.prompts || []
+      aiBlendPhoto?.prompts || []
     );
+    await this.updateBlendPhoto(
+      blendId,
+      aiBlendPhoto,
+      heroImages,
+      prompts,
+      createdBy
+    );
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    fireAndForget(() => this.requestImageGeneration(aiStudioRequest)).then();
+    const saved = await this.getAIBlendPhotoForUser(blendId, createdBy);
+    return {
+      aiBlendPhoto: saved,
+      activeSampleGenerationRequest: aiStudioRequest,
+    };
+  }
 
-    const update = AIStudioService.createEntity(
-      blend.heroImages,
-      createdBy,
-      prompts
-    );
-    const saved = await this.repo.updatePartial({ blendId }, update);
-    await this.requestImageGeneration(aiStudioRequest);
-    return saved;
+  private async updateBlendPhoto(
+    blendId: string,
+    aiBlendPhoto: AIBlendPhoto,
+    heroImages: ImageFileKeys,
+    prompts: Prompt[],
+    createdBy: string
+  ) {
+    if (aiBlendPhoto) {
+      const update = AIStudioService.updateEntity(prompts);
+      return await this.repo.updatePartial({ blendId }, update);
+    }
+    const update = AIStudioService.createEntity(heroImages, createdBy, prompts);
+    return await this.repo.updatePartial({ blendId }, update);
   }
 
   private static createEntity(
@@ -90,8 +119,18 @@ export class AIStudioService implements IService {
       prompts,
       createdAt: currentTime,
       createdOn: currentDate,
+      updatedAt: currentTime,
       createdBy,
       status: AIBlendPhotoGenerationStatus.INITIALIZED,
+    } as AIBlendPhoto;
+  }
+
+  private static updateEntity(prompts: Prompt[]): AIBlendPhoto {
+    return {
+      generatedImages: [],
+      prompts,
+      updatedAt: Date.now(),
+      status: AIBlendPhotoGenerationStatus.GENERATING,
     } as AIBlendPhoto;
   }
 

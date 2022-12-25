@@ -24,14 +24,12 @@ const aiBlendPhotoDynamooseSchema = new DynamooseSchema(
     generatedImages: { type: Array },
     createdOn: { type: String },
     createdBy: { type: String },
+    createdAt: { type: Number },
+    updatedAt: { type: Number },
     status: { type: String, enum: Object.values(AIBlendPhotoGenerationStatus) },
   },
   {
-    timestamps: {
-      createdAt: "createdAt",
-      updatedAt: "updatedAt",
-    },
-    saveUnknown: ["fileKeys.*", "prompts.**"],
+    saveUnknown: ["fileKeys.**", "prompts.**"],
   }
 );
 
