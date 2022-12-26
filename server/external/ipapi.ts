@@ -7,6 +7,7 @@ export default class IpApi {
     params: {
       access_key: ConfigProvider.IPAPI_ACCESS_KEY,
     },
+    timeout: 3000, // 3 seconds
   });
 
   async getIpInfo(ipAddress: string) {
