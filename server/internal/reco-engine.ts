@@ -3,10 +3,9 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
-import { SearchRecipeResponse } from "server/base/models/recipe";
+import { SearchRecipeResponse, FlowType } from "server/base/models/recipe";
 import {
   DetectProductCategoryResponse,
-  SuggestFlowType,
 } from "server/base/models/recoEngine";
 import {
   ClassificationMetadata,
@@ -89,7 +88,7 @@ export default class RecoEngineApi {
   async suggestRecipeLists(
     heroImageKey: string,
     userAgentPromise: Promise<UserAgentDetails | null>,
-    flow: SuggestFlowType
+    flow: FlowType
   ): Promise<RecipeListSuggestions> {
     return (
       await handleAxiosCall<RecipeListSuggestions>(
@@ -109,7 +108,7 @@ export default class RecoEngineApi {
     pageKey?: number;
     productSuperCategory?: string;
     filters?: Record<string, unknown>;
-    flow: SuggestFlowType;
+    flow: FlowType;
   }): Promise<PaginatedRecipeListSuggestions> {
     const {
       heroImageKey,

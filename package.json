@@ -12,6 +12,7 @@
     "start:qw": "node -r dotenv/config -r dd-trace/init build/queue-workers.ts/index.js",
     "flow": "flow",
     "test": "jest",
+    "test-dev": "doppler run -- jest",
     "prepare": "husky install",
     "postinstall": "patch-package"
   },

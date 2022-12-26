@@ -39,6 +39,7 @@ export interface Entity {}
 
 export abstract class Repo<ExtendedEntity extends Entity> {
   abstract create?(params: Partial<ExtendedEntity>): Promise<ExtendedEntity>;
+
   abstract createWithoutSurrogateKey?(
     params: Partial<ExtendedEntity>
   ): Promise<ExtendedEntity>;
@@ -47,6 +48,7 @@ export abstract class Repo<ExtendedEntity extends Entity> {
     params: Partial<ExtendedEntity>,
     options?: Record<string, unknown>
   ): Promise<ExtendedEntity[]>;
+
   abstract update?(
     keyObject: KeyObject,
     jsonPatch: JSONPatch,
@@ -56,6 +58,7 @@ export abstract class Repo<ExtendedEntity extends Entity> {
     keyObject: KeyObject,
     partialEntity: Partial<ExtendedEntity>
   ): Promise<ExtendedEntity>;
+
   abstract delete?(keyObject: KeyObject): Promise<void>;
 }
 
@@ -101,7 +104,11 @@ export class DynamooseRepo<
 
   async query(
     params: Partial<ExtendedEntity>,
-    options?: { limit?: number; sort?: "ascending" | "descending" }
+    options?: {
+      limit?: number;
+      sort?: "ascending" | "descending";
+      startAt?: { [key: string]: any };
+    }
   ): Promise<ExtendedEntity[]> {
     let dQuery = this.model.query(
       params as unknown as Partial<DynamooseExtendedEntity>
@@ -111,6 +118,9 @@ export class DynamooseRepo<
     }
     if (options?.sort) {
       dQuery = dQuery.sort(options.sort);
+    }
+    if (options?.startAt) {
+      dQuery = dQuery.startAt(options.startAt);
     }
     return (await dQuery.exec()) as unknown as ExtendedEntity[];
   }

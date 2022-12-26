@@ -5,7 +5,6 @@ import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
 import { UserError } from "../errors";
 import { BrandingRecipe } from "./brandingRecipe";
 import { BlendHeroImage, ImageFileKeys } from "./heroImage";
-import { SuggestFlowType } from "./recoEngine";
 
 export enum ElementSource {
   blend = "BLEND",
@@ -32,6 +31,13 @@ export interface BrandingDetails {
   };
 }
 
+export enum FlowType {
+  START_WITH_A_TEMPLATE = "START_WITH_A_TEMPLATE",
+  BATCH = "BATCH",
+  ASSISTED_WEB = "ASSISTED_WEB",
+  ASSISTED_MOBILE = "ASSISTED_MOBILE"
+}
+
 export interface ElementRef {
   uid: string;
   assetType: string;
@@ -39,6 +45,7 @@ export interface ElementRef {
 
 export interface Elements {
   hero?: ElementRef;
+  heroes?: ElementRef[];
   background?: ElementRef;
   title?: ElementRef;
 }
@@ -120,7 +127,8 @@ export interface ImageMetadata extends GeometricPositionable {
   fillColor?: string;
 }
 
-export interface BrandingLogoMetadata extends GeometricPositionable {}
+export interface BrandingLogoMetadata extends GeometricPositionable {
+}
 
 type TextAlignment = "LEFT" | "CENTER" | "RIGHT";
 type TextBackgroundShape = "RECT" | "ROUNDED_RECT";
@@ -162,7 +170,8 @@ export enum UserInteractionType {
   LINK = "LINK",
 }
 
-export interface UserInteractionOptions {}
+export interface UserInteractionOptions {
+}
 
 export interface LinkOptions extends UserInteractionOptions {
   target: string;
@@ -206,6 +215,7 @@ export interface Recipe {
   thumbnail?: string;
   heroImages?: BlendHeroImage;
   imageFileKeys?: ImageFileKeys[];
+  applicableFor?: FlowType[];
   style?: {
     config: {
       color?: {
@@ -284,7 +294,7 @@ export class RecipeWrapper {
   replaceHero(
     fileKeys: ImageFileKeys,
     image?: StoredImage,
-    interaction?: Interaction
+    interaction?: Interaction,
   ) {
     let heroUid = this.recipe.recipeDetails?.elements?.hero?.uid;
     if (heroUid) {
@@ -295,7 +305,7 @@ export class RecipeWrapper {
         interaction = this.recipe.interactions.find(
           (interaction) =>
             interaction.assetType === "IMAGE" &&
-            interaction.assetUid === heroUid
+            interaction.assetUid === heroUid,
         );
       }
     } else {
@@ -311,8 +321,8 @@ export class RecipeWrapper {
       };
       const maxZIndex = Math.max(
         ...this.recipe.interactions.map(
-          (i) => (i.metadata as ImageMetadata).zIndex
-        )
+          (i) => (i.metadata as ImageMetadata).zIndex,
+        ),
       );
       interaction = this.defaultHeroInteraction(heroUid, maxZIndex);
       this.recipe.images.push(image);
@@ -321,7 +331,7 @@ export class RecipeWrapper {
 
     if (!image || !interaction) {
       throw new UserError(
-        `Either/both of hero image and interaction is missing`
+        `Either/both of hero image and interaction is missing`,
       );
     }
     image.source = ElementSource.blend;
@@ -391,7 +401,7 @@ export class RecipeWrapper {
         } else {
           unavailableAttributes.push(att);
         }
-      }
+      },
     );
     if (!this.recipe.branding.info.isPlaceholder) {
       // Delete all placeholder values if there's atleast one available attribute
@@ -411,7 +421,7 @@ export class RecipeWrapper {
             {
               info: "BrandingInfoMetadata",
               logo: "BrandingLogoMetadata",
-            }[type]
+            }[type],
         );
       }
     });
@@ -492,5 +502,5 @@ export interface SuggestRecipesPaginatedRequestBody {
   userChosenSuperClass?: string;
   heroImageId?: string;
   filters: Record<string, unknown>;
-  flow: SuggestFlowType;
+  flow: FlowType;
 }

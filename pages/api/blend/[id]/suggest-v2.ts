@@ -5,7 +5,7 @@ import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import { SuggestionService } from "server/service/suggestion";
-import { SuggestRecipesPaginatedRequestBody } from "server/base/models/recipe";
+import { FlowType, SuggestRecipesPaginatedRequestBody } from "server/base/models/recipe";
 
 import {
   ensureAuth,
@@ -19,7 +19,6 @@ import { MethodNotAllowedError } from "server/base/errors";
 import { plainToClass } from "class-transformer";
 import { ClassificationMetadata } from "server/base/models/removeBg";
 import Joi from "joi";
-import { SuggestFlowType } from "server/base/models/recoEngine";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -46,8 +45,8 @@ const SuggestRecipesPaginatedSchema = Joi.object({
   userChosenSuperClass: Joi.string().optional().allow(null),
   filters: Joi.object().unknown(true).allow(null),
   flow: Joi.string()
-    .valid(...Object.values(SuggestFlowType))
-    .default(SuggestFlowType.ASSISTED_MOBILE),
+    .valid(...Object.values(FlowType))
+    .default(FlowType.ASSISTED_MOBILE),
 });
 
 const suggestRecipesV2 = async (

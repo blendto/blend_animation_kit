@@ -53,6 +53,11 @@ import {
 } from "server/repositories/branding";
 import { BrandingRecipe } from "server/base/models/brandingRecipe";
 import { BrandingRecipeDynamooseRepo } from "server/repositories/brandingRecipe";
+import {
+  NonHeroRecipeListDynamooseRepo,
+  NonHeroRecipeListEntity,
+} from "./server/repositories/nonHeroRecipeList";
+import { NonHeroRecipeListService } from "./server/service/nonHeroRecipeList";
 
 const diContainer = new Container();
 
@@ -134,6 +139,10 @@ diContainer
   .to(RecipeService)
   .inSingletonScope();
 diContainer
+  .bind<NonHeroRecipeListService>(TYPES.NonHeroRecipeListService)
+  .to(NonHeroRecipeListService)
+  .inSingletonScope();
+diContainer
   .bind<InterServiceAuth>(TYPES.InterServiceAuth)
   .to(InterServiceAuth)
   .inSingletonScope();
@@ -141,6 +150,9 @@ diContainer.bind<Firebase>(TYPES.Firebase).to(Firebase).inSingletonScope();
 diContainer
   .bind<Repo<BrandingEntity>>(TYPES.BrandingRepo)
   .toDynamicValue(() => new BrandingDynamooseRepo());
+diContainer
+  .bind<Repo<NonHeroRecipeListEntity>>(TYPES.NonHeroRecipeListRepo)
+  .toDynamicValue(() => new NonHeroRecipeListDynamooseRepo());
 diContainer
   .bind<Repo<BrandingRecipe>>(TYPES.BrandingRecipeRepo)
   .toDynamicValue(() => new BrandingRecipeDynamooseRepo());

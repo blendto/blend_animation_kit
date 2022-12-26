@@ -5,7 +5,7 @@ import { MethodNotAllowedError } from "server/base/errors";
 import {
   AssetType,
   BackgroundType,
-  ElementSource,
+  ElementSource, FlowType,
   InteractionAction,
   InteractionLayerTypes,
   Recipe,
@@ -114,9 +114,11 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
   texts: ARRAY_OF_OBJECTS_SCHEMA,
   buttons: ARRAY_OF_OBJECTS_SCHEMA,
   links: ARRAY_OF_OBJECTS_SCHEMA,
+  applicableFor: Joi.array().items(...Object.values(FlowType)),
   recipeDetails: Joi.object({
     elements: Joi.object({
-      hero: ELEMENT_SCHEMA,
+      hero: ELEMENT_SCHEMA.allow(null),
+      heroes: Joi.array().items(ELEMENT_SCHEMA),
       background: ELEMENT_SCHEMA.required().allow(null),
       title: Joi.string().required().allow(null),
     }).required(),

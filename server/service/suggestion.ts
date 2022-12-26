@@ -10,12 +10,11 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
 import RecoEngineApi, { StyleSuggestions } from "server/internal/reco-engine";
-import { Recipe } from "server/base/models/recipe";
+import { FlowType, Recipe } from "server/base/models/recipe";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
-import { SuggestFlowType } from "server/base/models/recoEngine";
 import BrandingService from "./branding";
 
 @injectable()
@@ -56,7 +55,7 @@ export class SuggestionService {
         uid,
         heroImages.withoutBg,
         ip,
-        SuggestFlowType.BATCH
+        FlowType.BATCH
       )
     ).recipeLists;
   }
@@ -68,7 +67,7 @@ export class SuggestionService {
     uid: string,
     fileKey: string,
     ip: string,
-    flow: SuggestFlowType
+    flow: FlowType
   ): Promise<{ recipeLists: RecipeList[]; randomTemplates: string[] }> {
     let recipeLists = (
       await this.recoEngineApi.suggestRecipeLists(
@@ -209,5 +208,5 @@ interface SuggestRecipePaginatedRequestBody {
   pageKey?: number;
   productSuperCategory?: string;
   filters?: Record<string, unknown>;
-  flow: SuggestFlowType;
+  flow: FlowType;
 }

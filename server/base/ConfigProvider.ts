@@ -71,6 +71,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("RECIPE_DYNAMODB_TABLE");
   }
 
+  public get NON_HERO_RECIPE_LIST_DYNAMODB_TABLE(): string {
+    return this.retrieveOrCrash("NON_HERO_RECIPE_LIST_DYNAMODB_TABLE");
+  }
+
   public get BRANDING_RECIPE_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("BRANDING_RECIPE_DYNAMODB_TABLE");
   }
