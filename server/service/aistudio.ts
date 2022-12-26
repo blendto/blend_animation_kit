@@ -21,6 +21,7 @@ import AiStudioGeneratorApi, {
 import { DaxDB } from "server/external/dax";
 import ConfigProvider from "server/base/ConfigProvider";
 import { fireAndForget } from "server/helpers/async-runner";
+import logger from "server/base/Logger";
 
 @injectable()
 export class AIStudioService implements IService {
@@ -83,7 +84,14 @@ export class AIStudioService implements IService {
       createdBy
     );
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fireAndForget(() => this.requestImageGeneration(aiStudioRequest)).then();
+    fireAndForget(() => this.requestImageGeneration(aiStudioRequest)).catch(
+      (err) => {
+        logger.error({
+          source: "AI_STUDIO_INTERNAL_API",
+          error: (err as unknown).toString(),
+        });
+      }
+    );
     const saved = await this.getAIBlendPhotoForUser(blendId, createdBy);
     return {
       aiBlendPhoto: saved,
