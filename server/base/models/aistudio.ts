@@ -118,6 +118,7 @@ export enum AIBlendPhotoGenerationStatus {
   INITIALIZED = "INITIALIZED",
   GENERATING = "GENERATING",
   GENERATED = "GENERATED",
+  FAILED = "FAILED",
 }
 
 export class Prompt {

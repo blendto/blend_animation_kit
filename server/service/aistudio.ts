@@ -12,7 +12,6 @@ import {
   Prompt,
 } from "server/base/models/aistudio";
 import { DateTime } from "luxon";
-import { Repo } from "server/repositories/base";
 import UserError from "server/base/errors/UserError";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import AiStudioGeneratorApi, {
@@ -28,7 +27,13 @@ export class AIStudioService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
   @inject(TYPES.DaxDB) daxStore: DaxDB;
   @inject(TYPES.BlendService) blendService: BlendService;
-  @inject(TYPES.AIBlendPhotoRepo) repo: Repo<AIBlendPhoto>;
+
+  async getAIBlendPhoto(blendId: string): Promise<AIBlendPhoto> {
+    return (await this.dataStore.getItem({
+      TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
+      Key: { blendId },
+    })) as AIBlendPhoto;
+  }
 
   async getAIBlendPhotoForUser(
     blendId: string,
@@ -71,7 +76,7 @@ export class AIStudioService implements IService {
       throw new UserError("Blend does not have `heroImages`");
     }
 
-    const aiBlendPhoto = await this.repo.get({ blendId });
+    const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
     const { prompts, aiStudioRequest } = generateSamplesRequest.updatePrompts(
       blendId,
       aiBlendPhoto?.prompts || []
@@ -107,14 +112,39 @@ export class AIStudioService implements IService {
     createdBy: string
   ) {
     if (aiBlendPhoto) {
-      const update = AIStudioService.updateEntity(prompts);
-      return await this.repo.updatePartial({ blendId }, update);
+      return await this.dataStore.updateItem({
+        UpdateExpression:
+          "SET #st = :s, #updatedAt = :updatedAt, #prompts = :prompts",
+        ExpressionAttributeNames: {
+          "#st": "status",
+          "#updatedAt": "updatedAt",
+          "#prompts": "prompts",
+        },
+        ExpressionAttributeValues: {
+          ":s": AIBlendPhotoGenerationStatus.GENERATING,
+          ":updatedAt": Date.now(),
+          ":prompts": prompts,
+        },
+        Key: { blendId },
+        TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
+        ReturnValues: "NONE",
+      });
     }
-    const update = AIStudioService.createEntity(heroImages, createdBy, prompts);
-    return await this.repo.updatePartial({ blendId }, update);
+    const photo = AIStudioService.createEntity(
+      blendId,
+      heroImages,
+      createdBy,
+      prompts
+    );
+
+    return await this.dataStore.putItem({
+      TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
+      Item: photo,
+    });
   }
 
   private static createEntity(
+    blendId: string,
     fileKeys: ImageFileKeys,
     createdBy: string,
     prompts: Prompt[]
@@ -122,6 +152,7 @@ export class AIStudioService implements IService {
     const currentTime = Date.now();
     const currentDate = DateTime.utc().toISODate();
     return {
+      blendId,
       fileKeys,
       generatedImages: [],
       prompts,
@@ -130,15 +161,6 @@ export class AIStudioService implements IService {
       updatedAt: currentTime,
       createdBy,
       status: AIBlendPhotoGenerationStatus.INITIALIZED,
-    } as AIBlendPhoto;
-  }
-
-  private static updateEntity(prompts: Prompt[]): AIBlendPhoto {
-    return {
-      generatedImages: [],
-      prompts,
-      updatedAt: Date.now(),
-      status: AIBlendPhotoGenerationStatus.GENERATING,
     } as AIBlendPhoto;
   }
 
