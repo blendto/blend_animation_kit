@@ -16,6 +16,7 @@ export const MAX_LOGOS = 3;
 export enum BrandingLogoStatus {
   INITIALIZED = "INITIALIZED",
   UPLOADED = "UPLOADED",
+  PROCESSED = "PROCESSED",
 }
 
 export enum BrandingStatus {
@@ -72,6 +73,17 @@ export enum BrandingInfoType {
   FacebookHandle = "facebookHandle",
 }
 
+export interface BrandingLogo {
+  fileKey: string;
+  size: Size;
+  removeBg: boolean;
+  status: BrandingLogoStatus;
+}
+
+export enum BrandingLogoFromUploadsSource {
+  HERO_IMAGE = "HERO_IMAGE",
+}
+
 export interface BrandingEntity extends Entity {
   id: string;
   userId: string;
@@ -96,7 +108,7 @@ export interface BrandingEntity extends Entity {
   [BrandingInfoType.FacebookHandle]?: string;
   logos: {
     primaryEntry?: string;
-    entries: { fileKey: string; size: Size; status: BrandingLogoStatus }[];
+    entries: BrandingLogo[];
   };
   updatedAt?: number;
   status?: BrandingStatus;
@@ -150,6 +162,7 @@ const brandingDynamooseSchema = new DynamooseSchema(
                   type: Object,
                   schema: { width: Number, height: Number },
                 },
+                removeBg: Boolean,
                 status: {
                   type: String,
                   enum: Object.values(BrandingLogoStatus),

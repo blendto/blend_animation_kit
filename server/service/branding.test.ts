@@ -30,6 +30,7 @@ describe("BrandingService", () => {
     updatedAt,
     status,
   } as BrandingEntity;
+  const size = { width: 128, height: 128 };
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -325,7 +326,7 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       await expect(
-        brandingService.initLogoUpload(userId, "foo.jpeg")
+        brandingService.initLogoUpload(userId, "foo.jpeg", size, false)
       ).rejects.toThrow(new UserError("You can't have more than 3 logos"));
 
       expect(getMock.mock.calls.length).toBe(1);
@@ -382,7 +383,12 @@ describe("BrandingService", () => {
         "createDestinationFileKey"
       );
 
-      const res = await brandingService.initLogoUpload(userId, fileName);
+      const res = await brandingService.initLogoUpload(
+        userId,
+        fileName,
+        size,
+        false
+      );
       expect(res).toMatchObject({ url: s3ResMock });
 
       expect(getMock.mock.calls.length).toBe(1);
@@ -474,7 +480,12 @@ describe("BrandingService", () => {
         "createDestinationFileKey"
       );
 
-      const res = await brandingService.initLogoUpload(userId, fileName);
+      const res = await brandingService.initLogoUpload(
+        userId,
+        fileName,
+        size,
+        false
+      );
       expect(res).toMatchObject({ url: s3ResMock });
 
       expect(getMock.mock.calls.length).toBe(1);
@@ -531,6 +542,7 @@ describe("BrandingService", () => {
 
   describe("Logo update as uploaded on s3 trigger", () => {
     const fileKey = `${id}/avsDCf2bQ_MVjSKaR9IvN.jpeg`;
+    const webpFileKey = `${fileKey.split(".")[0]}.webp`;
     it("Rejects request if the file key is missing blend id", async () => {
       await expect(brandingService.completeLogoUpload("")).rejects.toThrow(
         new UserError("Invalid fileKey")
@@ -559,7 +571,7 @@ describe("BrandingService", () => {
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
     });
 
-    it("Rejects request if the corresponding logo is seen as already uploaded", async () => {
+    it("Ignores request if the corresponding logo is seen as already uploaded", async () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce({
@@ -569,11 +581,7 @@ describe("BrandingService", () => {
             entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
           },
         } as BrandingEntity);
-      await expect(brandingService.completeLogoUpload(fileKey)).rejects.toThrow(
-        new UserError(
-          "Logo has already been marked as uploaded. Duplicate trigger?"
-        )
-      );
+      await brandingService.completeLogoUpload(fileKey);
       expect(getSpy.mock.calls.length).toBe(1);
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
     });
@@ -583,7 +591,14 @@ describe("BrandingService", () => {
         ...brandingDoc,
         logos: {
           primaryEntry: fileKey,
-          entries: [{ fileKey, status: BrandingLogoStatus.INITIALIZED }],
+          entries: [
+            {
+              fileKey,
+              status: BrandingLogoStatus.INITIALIZED,
+              size,
+              removeBg: false,
+            },
+          ],
         },
       };
       const getSpy = jest
@@ -605,6 +620,15 @@ describe("BrandingService", () => {
             primaryEntry: fileKey,
             entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
           },
+        } as BrandingEntity)
+        .mockResolvedValue({
+          ...brandingDoc,
+          logos: {
+            primaryEntry: webpFileKey,
+            entries: [
+              { fileKey: webpFileKey, status: BrandingLogoStatus.PROCESSED },
+            ],
+          },
         } as BrandingEntity);
 
       await brandingService.completeLogoUpload(fileKey);
@@ -612,9 +636,24 @@ describe("BrandingService", () => {
       expect(getSpy.mock.calls.length).toBe(1);
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
 
-      const webpFileKey = `${fileKey.split(".")[0]}.webp`;
-      expect(updateSpy.mock.calls.length).toBe(1);
+      expect(updateSpy.mock.calls.length).toBe(2);
       expect(updateSpy.mock.calls[0]).toMatchObject([
+        { id },
+        [
+          {
+            op: "replace",
+            path: "/logos",
+            value: {
+              // Since we modify the same object, we see the same args as the 2nd update here
+              primaryEntry: webpFileKey,
+              entries: [
+                { fileKey: webpFileKey, status: BrandingLogoStatus.PROCESSED },
+              ],
+            },
+          },
+        ],
+      ]);
+      expect(updateSpy.mock.calls[1]).toMatchObject([
         { id },
         [
           {
@@ -623,7 +662,7 @@ describe("BrandingService", () => {
             value: {
               primaryEntry: webpFileKey,
               entries: [
-                { fileKey: webpFileKey, status: BrandingLogoStatus.UPLOADED },
+                { fileKey: webpFileKey, status: BrandingLogoStatus.PROCESSED },
               ],
             },
           },

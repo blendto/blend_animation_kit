@@ -12,6 +12,7 @@ export interface BgRemovedFileKeys {
 
 export enum RemoveBGSource {
   BLEND = "BLEND",
+  BRANDING = "BRANDING",
 }
 
 export interface RemoveBGCommandMetadata {

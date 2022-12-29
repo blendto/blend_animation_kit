@@ -32,6 +32,7 @@ const INIT_BODY_SCHEMA = Joi.object({
     width: Joi.number().required(),
     height: Joi.number().required(),
   }).required(),
+  removeBg: Joi.boolean().default(false),
 });
 
 async function initLogoUpload(
@@ -43,9 +44,10 @@ async function initLogoUpload(
     requestComponentToValidate.body,
     INIT_BODY_SCHEMA
   );
-  const { fileName, size } = validatedBody as {
+  const { fileName, size, removeBg } = validatedBody as {
     fileName: string;
     size: Size;
+    removeBg: boolean;
   };
 
   const brandingService = diContainer.get<BrandingService>(
@@ -53,7 +55,9 @@ async function initLogoUpload(
   );
   res
     .status(201)
-    .send(await brandingService.initLogoUpload(req.uid, fileName, size));
+    .send(
+      await brandingService.initLogoUpload(req.uid, fileName, size, removeBg)
+    );
 }
 
 const DEL_QUERY_SCHEMA = Joi.object({

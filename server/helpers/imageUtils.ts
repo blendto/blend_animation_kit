@@ -107,6 +107,18 @@ export const rescaleImage = async (
   }
 ) => await (await sharpInstance(image)).resize(options).toBuffer();
 
+export const rescaleImageAsObj = async (
+  image: Buffer,
+  options: {
+    width: number;
+    height?: number;
+    withoutEnlargement?: boolean;
+  }
+) =>
+  await (await sharpInstance(image))
+    .resize(options)
+    .toBuffer({ resolveWithObject: true });
+
 /**
  *
  * Modifies the interaction's metadata to ensure that the image has a tight bounds

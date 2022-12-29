@@ -21,8 +21,13 @@ import {
   BrandingLogoStatus,
   MAX_LOGOS,
   BrandingUpdatePaths,
+  BrandingLogo,
+  BrandingLogoFromUploadsSource,
 } from "server/repositories/branding";
-import { convertImageToWebp, rescaleImage } from "server/helpers/imageUtils";
+import {
+  convertImageToWebp,
+  rescaleImageAsObj,
+} from "server/helpers/imageUtils";
 import { TYPES } from "server/types";
 import { Repo } from "server/repositories/base";
 import { BlendVersion } from "server/base/models/blend";
@@ -30,10 +35,12 @@ import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
 import { BrandingRecipe } from "server/base/models/brandingRecipe";
 import { ElementSource, Size } from "server/base/models/recipe";
 import { RecipeList, RecipeSource } from "server/base/models/recipeList";
+import { RemoveBGSource } from "server/base/models/removeBg";
 import { fireAndForget } from "server/helpers/async-runner";
 import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import DynamoDB from "server/external/dynamodb";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
+import { RemoveBgService } from "server/internal/remove-bg-service";
 import { BlendService } from "./blend";
 import { MAX_FILE_SIZE, RecipeService } from "./recipe";
 import { UserService } from "./user";
@@ -47,6 +54,7 @@ export default class BrandingService implements IService {
   @inject(TYPES.BrandingRecipeRepo) brandingRecipeRepo: Repo<BrandingRecipe>;
   @inject(TYPES.UserService) userService: UserService;
   @inject(TYPES.BlendService) blendService: BlendService;
+  @inject(TYPES.RemoveBgService) removeBgService: RemoveBgService;
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
 
   // Required as class attributes for mocking
@@ -84,7 +92,12 @@ export default class BrandingService implements IService {
           [UpdateOperations.add, UpdateOperations.replace].includes(change.op)
         ) {
           const validLogoKeys = currentData.logos?.entries
-            ?.filter((entry) => entry.status === BrandingLogoStatus.UPLOADED)
+            ?.filter((entry) =>
+              [
+                BrandingLogoStatus.UPLOADED,
+                BrandingLogoStatus.PROCESSED,
+              ].includes(entry.status)
+            )
             .map((entry) => entry.fileKey);
           if (!validLogoKeys.includes(change.value as string)) {
             throw new UserError(
@@ -103,16 +116,12 @@ export default class BrandingService implements IService {
   async initLogoUpload(
     userId: string,
     fileName: string,
-    size: Size
+    size: Size,
+    removeBg: boolean
   ): Promise<{ url: string }> {
     const currentData = await this.get(userId);
-    const uploadedLogos =
-      currentData.logos?.entries?.filter(
-        (entry) => entry.status === BrandingLogoStatus.UPLOADED
-      ) || [];
-    if (uploadedLogos.length >= MAX_LOGOS) {
-      throw new UserError("You can't have more than 3 logos");
-    }
+    const uploadedLogos = this.getUploadedLogos(currentData);
+    this.validateLogoCount(uploadedLogos);
 
     const fileKey = this.createDestinationFileKey(
       fileName,
@@ -142,6 +151,7 @@ export default class BrandingService implements IService {
                 status: BrandingLogoStatus.INITIALIZED,
                 fileKey,
                 size,
+                removeBg,
               },
             ],
             // If no uploaded logos exist, mark this as primary
@@ -155,6 +165,66 @@ export default class BrandingService implements IService {
       currentData
     );
     return { url: uploadURL };
+  }
+
+  async copyLogoFromUploads(
+    userId: string,
+    source: BrandingLogoFromUploadsSource,
+    fileKey: string
+  ) {
+    const currentData = await this.get(userId);
+    const uploadedLogos = this.getUploadedLogos(currentData);
+    this.validateLogoCount(uploadedLogos);
+
+    const logo = await getObject(ConfigProvider.HERO_IMAGES_BUCKET, fileKey);
+    const fileKeyParts = fileKey.split("/");
+    const fileKeyWithoutPrefix = fileKeyParts[fileKeyParts.length - 1];
+    const brandingFileKey = `${currentData.id}/${fileKeyWithoutPrefix}`;
+    const { fileKey: optimizedFileKey, info } =
+      await this.optimizeAndUploadLogo(logo, brandingFileKey);
+
+    return await this.repo.update(
+      { id: currentData.id },
+      [
+        {
+          path: "/logos",
+          op: "replace",
+          value: {
+            entries: [
+              ...uploadedLogos,
+              {
+                status: BrandingLogoStatus.PROCESSED,
+                fileKey: optimizedFileKey,
+                size: { width: info.width, height: info.height },
+                removeBg: false,
+              },
+            ],
+            // If no uploaded logos exist, mark this as primary
+            primaryEntry:
+              uploadedLogos.length === 0
+                ? optimizedFileKey
+                : currentData.logos.primaryEntry,
+          },
+        },
+      ],
+      currentData
+    );
+  }
+
+  getUploadedLogos(branding: BrandingEntity) {
+    return (
+      branding.logos?.entries?.filter((entry) =>
+        [BrandingLogoStatus.UPLOADED, BrandingLogoStatus.PROCESSED].includes(
+          entry.status
+        )
+      ) || []
+    );
+  }
+
+  validateLogoCount(logos: BrandingLogo[]) {
+    if (logos.length >= MAX_LOGOS) {
+      throw new UserError(`You can't have more than ${MAX_LOGOS} logos`);
+    }
   }
 
   async addRecipe(
@@ -359,35 +429,94 @@ export default class BrandingService implements IService {
     if (!logoData) {
       throw new UserError("Invalid fileKey");
     }
-    if (logoData.status === BrandingLogoStatus.UPLOADED) {
-      throw new UserError(
-        "Logo has already been marked as uploaded. Duplicate trigger?"
+    if (
+      [BrandingLogoStatus.UPLOADED, BrandingLogoStatus.PROCESSED].includes(
+        logoData.status
+      )
+    ) {
+      logger.debug(
+        "Logo has already been marked as uploaded/processed. Duplicate trigger?"
       );
+      return;
     }
 
-    const logo = await this.getObject(ConfigProvider.BRANDING_BUCKET, fileKey);
-    const [fileName, extension] = fileKey.split(".");
-    const webpFileKey = `${fileName}.webp`;
-    await this.uploadObject(
-      ConfigProvider.BRANDING_BUCKET,
-      webpFileKey,
-      await rescaleImage(await convertImageToWebp(logo), {
-        width: 512,
-        height: 512,
-        withoutEnlargement: true,
-      })
-    );
-
-    if (brandingProfile.logos.primaryEntry === logoData.fileKey) {
-      brandingProfile.logos.primaryEntry = webpFileKey;
-    }
-    logoData.fileKey = webpFileKey;
+    // This intermediary status update is necessary for the client to not end up waiting
+    // for post processings, especially bg-removal if required, to complete.
     logoData.status = BrandingLogoStatus.UPLOADED;
     await this.repo.update({ id }, [
       { path: "/logos", op: "replace", value: brandingProfile.logos },
     ]);
 
+    let logo = await this.getObject(ConfigProvider.BRANDING_BUCKET, fileKey);
+    let bgRemovedFileKey: string;
+    if (logoData.removeBg) {
+      ({ bgRemovedFileKey, bgRemovegLogo: logo } = await this.removeBg(
+        fileKey,
+        logo
+      ));
+    }
+
+    const { fileKey: optimizedFileKey, info } =
+      await this.optimizeAndUploadLogo(
+        logo,
+        logoData.removeBg ? bgRemovedFileKey : fileKey
+      );
+
+    if (brandingProfile.logos.primaryEntry === logoData.fileKey) {
+      brandingProfile.logos.primaryEntry = optimizedFileKey;
+    }
+    logoData.fileKey = optimizedFileKey;
+    logoData.status = BrandingLogoStatus.PROCESSED;
+    logoData.size = {
+      width: info.width,
+      height: info.height,
+    };
+    await this.repo.update({ id }, [
+      { path: "/logos", op: "replace", value: brandingProfile.logos },
+    ]);
+
     await this.deleteObject(ConfigProvider.BRANDING_BUCKET, fileKey);
+  }
+
+  async optimizeAndUploadLogo(logo: Buffer, fileKey: string) {
+    const { data: optimizedLogo, info } = await rescaleImageAsObj(
+      await convertImageToWebp(logo),
+      {
+        width: 512,
+        withoutEnlargement: true,
+      }
+    );
+    const fileName = fileKey.split(".")[0];
+    const optimizedFileKey = `${fileName}.webp`;
+    await this.uploadObject(
+      ConfigProvider.BRANDING_BUCKET,
+      optimizedFileKey,
+      optimizedLogo
+    );
+    return { fileKey: optimizedFileKey, info };
+  }
+
+  async removeBg(fileKey: string, logo: Buffer) {
+    const { bgRemovedFileKey } =
+      RemoveBgService.constructBgRemovedFileKey(fileKey);
+    const [fileNameWithoutPrefix] = fileKey.split("/").slice(-1);
+    const metadata = {
+      source: RemoveBGSource.BRANDING,
+      fileKeys: {
+        original: fileKey,
+        withoutBg: bgRemovedFileKey,
+      },
+    };
+    const bgRemovegLogo = (
+      await this.removeBgService.removeBg(
+        logo,
+        fileNameWithoutPrefix,
+        false,
+        false,
+        metadata
+      )
+    ).buffer;
+    return { bgRemovedFileKey, bgRemovegLogo };
   }
 
   async delLogo(userId: string, fileKey: string): Promise<BrandingEntity> {

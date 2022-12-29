@@ -39,6 +39,9 @@
   "CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID",
   "CLEVERTAP_ACCOUNT_ID",
   "CLEVERTAP_PASSCODE",
+  "AI_STUDIO_BASE_URL",
+  "AI_BLEND_PHOTOS_TABLE",
+  "AI_BLEND_PHOTO_TOPICS_TABLE",
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });
