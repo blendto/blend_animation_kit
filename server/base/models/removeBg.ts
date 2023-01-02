@@ -32,6 +32,8 @@ export class ClassificationMetadata {
   productSuperClass: string;
   userChosenSuperClass?: string;
 
+  isAiStudioQualified: boolean;
+
   public get superClass(): string {
     return this.userChosenSuperClass ?? this.productSuperClass;
   }

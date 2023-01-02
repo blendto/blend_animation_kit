@@ -4,9 +4,7 @@ import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import { SearchRecipeResponse, FlowType } from "server/base/models/recipe";
-import {
-  DetectProductCategoryResponse,
-} from "server/base/models/recoEngine";
+import { DetectProductCategoryResponse } from "server/base/models/recoEngine";
 import {
   ClassificationMetadata,
   BgRemovedFileKeys,
@@ -175,10 +173,11 @@ export default class RecoEngineApi {
       )
     ).data as DetectProductCategoryResponse;
 
-    const { detectedClass } = categoryResponse;
+    const { detectedClass, isAiStudioQualified } = categoryResponse;
     const classificationMetadata = plainToClass(ClassificationMetadata, {
       productSuperClass:
         this.getDedicatedClassToSuperClassMapping(detectedClass),
+      isAiStudioQualified,
     });
 
     return classificationMetadata;
