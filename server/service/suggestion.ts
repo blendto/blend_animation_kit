@@ -51,12 +51,7 @@ export class SuggestionService {
   ): Promise<RecipeList[]> {
     const heroImages = await this.selectFileKeysFromBatchPreview(uid, batchId);
     return (
-      await this.suggestRecipes(
-        uid,
-        heroImages.withoutBg,
-        ip,
-        FlowType.BATCH
-      )
+      await this.suggestRecipes(uid, heroImages.withoutBg, ip, FlowType.BATCH)
     ).recipeLists;
   }
 
@@ -189,12 +184,13 @@ export class SuggestionService {
           })) as Recipe)
         : await this.brandingService.getRecipeOrFail(id, variant);
 
-    const { title, thumbnail } = recipe;
+    const { title, thumbnail, applicableFor } = recipe;
     recipeVariantId.source = source;
     recipeVariantId.extra = {
       title,
       thumbnail,
       isPremium: recipe.recipeDetails.isPremium,
+      applicableFor,
     };
 
     return recipeVariantId;

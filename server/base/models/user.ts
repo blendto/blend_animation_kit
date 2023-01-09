@@ -14,6 +14,7 @@ export interface FavouriteRecipe {
   recipeId: string;
   recipeVariant: string;
   source?: RecipeSource;
+  fullRecipe?: RecipeVariantId;
 }
 
 export interface User extends Entity {

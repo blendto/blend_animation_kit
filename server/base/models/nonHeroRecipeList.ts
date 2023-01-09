@@ -1,5 +1,6 @@
-interface Translation {
-  keywords: string[];
+import { FlowType } from "./recipe";
+
+export interface Translation {
   language: string;
   searchTerms: string[];
   title: string;
@@ -10,7 +11,6 @@ export interface NonHeroRecipeList {
   isEnabled: number;
   title: string;
   recipes: RecipeVariantId[];
-  areRecipesRandomizable: boolean;
   filters: Record<any, any>;
   translation: Translation[];
   sortOrder?: number;
@@ -24,6 +24,11 @@ export enum RecipeSource {
 export interface RecipeVariantId {
   id: string;
   variant: string;
-  extra?: { title?: string; thumbnail?: string; isPremium?: boolean };
+  extra?: {
+    title?: string;
+    thumbnail?: string;
+    isPremium?: boolean;
+    applicableFor?: FlowType[];
+  };
   source?: RecipeSource;
 }

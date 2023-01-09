@@ -3,6 +3,7 @@ import { MethodNotAllowedError } from "../../../server/base/errors";
 import { diContainer } from "../../../inversify.config";
 import { TYPES } from "../../../server/types";
 import {
+  ensureAuth,
   NextApiRequestExtended,
   withReqHandler,
 } from "../../../server/helpers/request";
@@ -13,7 +14,7 @@ export default withReqHandler(
     const { method } = req;
     switch (method) {
       case "GET":
-        return getRecipeLists(req, res);
+        return ensureAuth(getRecipeLists, req, res);
       default:
         throw new MethodNotAllowedError();
     }
@@ -30,6 +31,9 @@ const getRecipeLists = async (
   const {
     query: { pageKey },
   } = req;
-  const response = await nonHeroRecipeListService.getAll(pageKey as string);
-  res.send(response);
+  const recipeListsPage = await nonHeroRecipeListService.getAll(
+    pageKey as string,
+    req.uid
+  );
+  res.send(recipeListsPage);
 };

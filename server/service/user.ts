@@ -143,7 +143,6 @@ export class UserService implements IService {
     //   but rather simply created a new record with the attributes passed to the update).
     // - created before referral system was added.
     profile = await this.ensureProfileHasAllData(profile);
-
     profile.favouriteRecipes = await this.fetchDetailedFavourites(
       profile.favouriteRecipes
     );

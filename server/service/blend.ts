@@ -16,7 +16,12 @@ import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import UserError from "server/base/errors/UserError";
-import { ImageMetadata, Recipe, RecipeUtils } from "server/base/models/recipe";
+import {
+  FlowType,
+  ImageMetadata,
+  Recipe,
+  RecipeUtils,
+} from "server/base/models/recipe";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
 import {
   copyObject,
@@ -315,40 +320,42 @@ export class BlendService implements IService {
     await Promise.all(blendIds.map(clearOne));
   }
 
-  private async heroCheckMapForRecipes(
+  private async getRecipes(
     recipesIds: RecipeVariantId[]
-  ): Promise<RecipeVariantHeroCheckMap> {
+  ): Promise<Partial<Recipe>[]> {
     recipesIds = uniqWith(
       recipesIds,
       (value: RecipeVariantId, other: RecipeVariantId) =>
         value.id === other.id && value.variant === other.variant
     );
     const Keys = recipesIds.map(({ id, variant }) => ({ id, variant }));
-    const AttributesToGet = ["id", "recipeDetails", "variant"];
-
+    const ProjectionExpression = "id, recipeDetails, variant, applicableFor";
     const responseMap = await this.daxStore.batchGetItems({
       RequestItems: {
-        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, AttributesToGet },
+        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, ProjectionExpression },
       },
     });
-    const recipes = responseMap[
-      ConfigProvider.RECIPE_DYNAMODB_TABLE
-    ] as Recipe[];
+    return responseMap[ConfigProvider.RECIPE_DYNAMODB_TABLE] as Recipe[];
+  }
 
+  private heroCheckMapForRecipes(
+    recipes: Partial<Recipe>[]
+  ): RecipeVariantHeroCheckMap {
     const idVariantToHeroMap: RecipeVariantHeroCheckMap = {};
     recipes.forEach((recipe) => {
-      idVariantToHeroMap[recipeIdStr(recipe)] =
-        !!recipe.recipeDetails.elements.hero;
+      idVariantToHeroMap[
+        recipeIdStr({ id: recipe.id, variant: recipe.variant })
+      ] = !!recipe.recipeDetails.elements.hero;
     });
     return idVariantToHeroMap;
   }
 
-  async addRecentsToRecipeLists(
+  async getRecentRecipes(
     uid: string,
-    recipeLists: RecipeList[]
-  ): Promise<RecipeList[]> {
+    flowType?: FlowType
+  ): Promise<Partial<Recipe>[]> {
     const recentBlends = await this.getRecentBlends(uid);
-    let recentRecipes = recentBlends
+    const recentRecipeIds = recentBlends
       .filter(
         ({ metadata }) =>
           !!metadata.sourceRecipe ||
@@ -361,16 +368,61 @@ export class BlendService implements IService {
             variant: RecipeUtils.aspectRatioToVariant(metadata.aspectRatio),
           }
       );
-    const heroCheckMap = await this.heroCheckMapForRecipes(recentRecipes);
-    recentRecipes = recentRecipes.filter((r) => heroCheckMap[recipeIdStr(r)]);
+    let recentRecipes = await this.getRecipes(recentRecipeIds);
+    if (flowType === FlowType.START_WITH_A_TEMPLATE) {
+      recentRecipes = recentRecipes.filter(
+        (r) =>
+          r.applicableFor &&
+          r.applicableFor.some(
+            (flowType) => flowType === FlowType.START_WITH_A_TEMPLATE
+          )
+      );
+    } else {
+      recentRecipes = recentRecipes.filter(
+        (r) =>
+          !r.applicableFor ||
+          r.applicableFor.some((flowType) =>
+            [
+              FlowType.ASSISTED_WEB,
+              FlowType.ASSISTED_MOBILE,
+              FlowType.BATCH,
+            ].includes(flowType)
+          )
+      );
+      const heroCheckMap = this.heroCheckMapForRecipes(recentRecipes);
+      recentRecipes = recentRecipes.filter(
+        (r) => heroCheckMap[recipeIdStr({ id: r.id, variant: r.variant })]
+      );
+    }
+    // It is possible that recentRecipes might contain duplicates. Remove those.
+    recentRecipes = recentRecipes.filter(
+      (value, index, self) =>
+        index ===
+        self.findIndex((t) => t.id === value.id && t.variant === value.variant)
+    );
 
+    return recentRecipes;
+  }
+
+  async addRecentsToRecipeLists(
+    uid: string,
+    recipeLists: RecipeList[],
+    flowType?: FlowType
+  ): Promise<RecipeList[]> {
+    const recentRecipes = await this.getRecentRecipes(uid, flowType);
     if (recentRecipes.length > 0) {
       recipeLists.unshift({
         id: "recents",
         isEnabled: true,
         title: "⏰ Recently Used",
         recipeIds: [],
-        recipes: take(recentRecipes, 5),
+        recipes: take(
+          recentRecipes.map((r) => ({
+            id: r.id,
+            variant: r.variant,
+          })),
+          5
+        ),
         sortOrder: 0,
       });
     }

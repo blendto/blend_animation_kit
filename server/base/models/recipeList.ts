@@ -1,3 +1,5 @@
+import { FlowType } from "./recipe";
+
 export interface RecipeList {
   id: string;
   isEnabled: boolean;
@@ -22,7 +24,12 @@ export enum RecipeSource {
 export interface RecipeVariantId {
   id: string;
   variant: string;
-  extra?: { title?: string; thumbnail?: string; isPremium?: boolean };
+  extra?: {
+    title?: string;
+    thumbnail?: string;
+    isPremium?: boolean;
+    applicableFor?: FlowType[];
+  };
   source?: RecipeSource;
 }
 

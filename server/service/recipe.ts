@@ -75,6 +75,18 @@ export class RecipeService implements IService {
     return recipe;
   }
 
+  async getRecipes(
+    Keys: { [key: string]: any }[],
+    ProjectionExpression: string
+  ): Promise<Partial<Recipe>[]> {
+    const recipes = await this.dataStore.batchGetItems({
+      RequestItems: {
+        [ConfigProvider.RECIPE_DYNAMODB_TABLE]: { Keys, ProjectionExpression },
+      },
+    });
+    return recipes[ConfigProvider.RECIPE_DYNAMODB_TABLE] as Partial<Recipe>[];
+  }
+
   async generateRecipeThumbnail(recipe: Recipe): Promise<string> {
     const { fileName, fileKey } = RecipeService.thumbnailFileKey(recipe);
     const uploadDetails = (await createSignedUploadUrl(

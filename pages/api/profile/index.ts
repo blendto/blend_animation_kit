@@ -16,7 +16,10 @@ import { QueueConfig } from "server/external/queue";
 import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
 import { UserAccountActionType } from "server/base/models/queue-messages";
 import BrandingService from "server/service/branding";
+import { FlowType } from "../../../server/base/models/recipe";
+import { FavouriteRecipe } from "../../../server/base/models/user";
 
+const BUILD_V_BEFORE_START_WITH_TEMPLATE = 470;
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
@@ -37,6 +40,22 @@ export default withReqHandler(
   }
 );
 
+const filterOutNonAssistedFlowRecipes = (
+  favRecipes: FavouriteRecipe[]
+): FavouriteRecipe[] =>
+  favRecipes.filter(
+    (rec) =>
+      !rec.fullRecipe.extra.applicableFor ||
+      rec.fullRecipe.extra.applicableFor.length === 0 ||
+      rec.fullRecipe.extra.applicableFor.some((flow) =>
+        [
+          FlowType.BATCH,
+          FlowType.ASSISTED_MOBILE,
+          FlowType.ASSISTED_WEB,
+        ].includes(flow)
+      )
+  );
+
 const getProfile = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
@@ -47,6 +66,11 @@ const getProfile = async (
   );
   const profile = await userService.getOrCreate(req.uid);
   delete profile.appleOfflineToken;
+  if (req.buildVersion <= BUILD_V_BEFORE_START_WITH_TEMPLATE) {
+    profile.favouriteRecipes = filterOutNonAssistedFlowRecipes(
+      profile.favouriteRecipes
+    );
+  }
   return res.json({
     ...profile,
     branding: await brandingService.getOrCreate(req.uid),
