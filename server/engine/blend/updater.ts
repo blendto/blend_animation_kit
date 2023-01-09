@@ -16,6 +16,23 @@ export class BlendUpdater {
     this.incomingRecipe = incomingRecipe;
   }
 
+  static isDefaultFileNameFormat(name: string): boolean {
+    return /blend[\d+]{12}/.test(name);
+  }
+
+  static generateDefaultFileName(createdAt: number): string {
+    const date = new Date(createdAt);
+    return "".concat(
+      "blend",
+      String(date.getUTCDate()).padStart(2, "0"),
+      String(date.getUTCMonth()).padStart(2, "0"),
+      String(date.getUTCFullYear()).slice(2),
+      String(date.getUTCHours()).padStart(2, "0"),
+      String(date.getUTCMinutes()).padStart(2, "0"),
+      String(date.getUTCSeconds()).padStart(2, "0")
+    );
+  }
+
   validate(updaterUid: string) {
     if (this.existingBlend.createdBy !== updaterUid) {
       throw new IllegalBlendAccessError();
@@ -80,6 +97,13 @@ export class BlendUpdater {
       uri: image.fileKey,
       uid: image.uid,
     }));
+
+    const filename = this.existingBlend.fileName;
+    if (!filename || BlendUpdater.isDefaultFileNameFormat(filename)) {
+      this.existingBlend.fileName = BlendUpdater.generateDefaultFileName(
+        Date.now()
+      );
+    }
 
     return {
       ...this.existingBlend,

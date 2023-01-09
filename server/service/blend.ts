@@ -34,8 +34,9 @@ import {
 } from "server/base/models/recipeList";
 import { DaxDB } from "server/external/dax";
 import { plainToClass } from "class-transformer";
-import { UpdateOperations } from "../repositories";
-import { JsonPatchBody } from "../helpers/request";
+import { UpdateOperations } from "server/repositories";
+import { JsonPatchBody } from "server/helpers/request";
+import { BlendUpdater } from "server/engine/blend/updater";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -254,7 +255,7 @@ export class BlendService implements IService {
         .toSeconds(),
       createdAt: currentTime,
       createdOn: currentDate,
-      fileName: this.generateDefaultFileName(currentTime),
+      fileName: BlendUpdater.generateDefaultFileName(currentTime),
       updatedAt: currentTime,
       updatedOn: currentDate,
       heroImages: options?.heroImages,
@@ -273,7 +274,7 @@ export class BlendService implements IService {
     let { output } = item;
 
     if (!fileName) {
-      item.fileName = this.generateDefaultFileName(item.createdAt);
+      item.fileName = BlendUpdater.generateDefaultFileName(item.createdAt);
     }
 
     if (!output && status === BlendStatus.Generated) {
@@ -300,19 +301,6 @@ export class BlendService implements IService {
       thumbnail: output?.thumbnail.path ?? null,
       output: output ?? null,
     };
-  }
-
-  generateDefaultFileName(createdAt: number): string {
-    const date = new Date(createdAt);
-    return "".concat(
-      "blend",
-      String(date.getUTCDate()).padStart(2, "0"),
-      String(date.getUTCMonth()).padStart(2, "0"),
-      String(date.getUTCFullYear()).slice(2),
-      String(date.getUTCHours()).padStart(2, "0"),
-      String(date.getUTCMinutes()).padStart(2, "0"),
-      String(date.getUTCSeconds()).padStart(2, "0")
-    );
   }
 
   async clearExpiry(blendIds: string[]) {
@@ -472,7 +460,7 @@ export class BlendService implements IService {
         "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
         "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
         "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #batchSt = :batchSt, #isWatermarked = :isWatermarked," +
-        "#background = :background REMOVE expireAt",
+        "#background = :background, fileName = :fileName REMOVE expireAt",
       ExpressionAttributeNames: {
         "#st": "status",
         "#batchSt": "batchLevelEditStatus",
@@ -499,6 +487,7 @@ export class BlendService implements IService {
         ":batchSt": batchLevelEditStatus,
         ":isWatermarked": isWatermarked ?? false,
         ":background": blend.background ?? null,
+        ":fileName": blend.fileName,
       },
       Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
