@@ -10,7 +10,8 @@ import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
 import { BlendService } from "server/service/blend";
 import { IndividualBlendEditOperation } from "server/base/models/batchOperations";
-import { Blend } from "server/base/models/blend";
+import { Blend, BlendVersion } from "server/base/models/blend";
+import { BatchBlendUpdater } from "server/engine/batch/batchBlendUpdater";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -45,20 +46,16 @@ const updateBatchBlend = async (
   const batchService = diContainer.get<BatchService>(TYPES.BatchService);
 
   const batch = await batchService.getBatch(id as string, req.uid, true);
-  if (!batch.blends.includes(blendId)) {
-    throw new UserError("Blend Id not part of the batch");
-  }
+  const updater = new BatchBlendUpdater(batch);
+  updater.validate(blendId);
 
-  /**
-   * This transformation is bad, hence, not adding this to the service.
-   * Incoming body's blend.images does not adhere to StoredImage class' schema
-   */
-  blend.images = (blend.images as any[]).map(({ fileKey, uid }) => ({
-    uri: fileKey as string,
-    uid: uid as string,
-  }));
-
-  await blendService.updateBlend(blend);
+  const dbBlend = await blendService.getBlend(
+    blendId,
+    BlendVersion.current,
+    true
+  );
+  const updatedBlend = updater.updatedBlend(uid, dbBlend, blend);
+  await blendService.updateBlend(updatedBlend);
   const individualEditOperation = new IndividualBlendEditOperation(blendId);
   await batchService.applyOperation(id as string, uid, individualEditOperation);
   res.status(200).end();

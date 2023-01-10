@@ -539,7 +539,7 @@ export class BlendService implements IService {
         ":batchSt": batchLevelEditStatus,
         ":isWatermarked": isWatermarked ?? false,
         ":background": blend.background ?? null,
-        ":fileName": blend.fileName,
+        ":fileName": blend.fileName ?? null,
       },
       Key: { id: blend.id },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
