@@ -18,6 +18,7 @@ import { MethodNotAllowedError, UserError } from "server/base/errors";
 import {
   ChooseRecipeRequest,
   Interaction,
+  ElementSource,
   RecipeWrapper,
 } from "server/base/models/recipe";
 import BrandingService from "server/service/branding";
@@ -97,7 +98,7 @@ const useRecipeForBlend = async (
     interactionUpdatePromise = adjustSizeToFit(interaction, image.uri);
   }
   const blendImages = recipe.images.map((image) => {
-    if (image.uid === recipe.recipeDetails.elements.hero?.uid) {
+    if (fileKeys && image.uid === recipe.recipeDetails.elements.hero?.uid) {
       return image;
     }
     const uriParts = image.uri.split("/");
@@ -113,7 +114,7 @@ const useRecipeForBlend = async (
         targetUri
       )
     );
-    return { ...image, uri: targetUri };
+    return { ...image, uri: targetUri, source: ElementSource.blend };
   });
 
   await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
