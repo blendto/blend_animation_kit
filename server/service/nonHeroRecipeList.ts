@@ -13,6 +13,7 @@ import { UserService } from "./user";
 import { RecipeService } from "./recipe";
 import ConfigProvider from "../base/ConfigProvider";
 import { DaxDB } from "../external/dax";
+import logger from "../base/Logger";
 
 type NonHeroRecipeListPage = {
   recipeLists: NonHeroRecipeListEntity[];
@@ -45,10 +46,22 @@ export class NonHeroRecipeListService implements IService {
   async addRecipeDetailsInList(
     recipeList: NonHeroRecipeListEntity
   ): Promise<NonHeroRecipeListEntity> {
-    const recipeKeys = recipeList.recipes.map((recipe) => ({
+    const recipeKeysTemp = recipeList.recipes.map((recipe) => ({
       id: recipe.id,
       variant: recipe.variant,
     }));
+
+    // in case there are duplicate keys, remove those
+    const recipeKeys = recipeKeysTemp.filter(
+      (value, index, self) =>
+        index ===
+        self.findIndex((t) => t.id === value.id && t.variant === value.variant)
+    );
+    if (recipeKeys.length !== recipeKeysTemp.length) {
+      logger.warn(
+        `Duplicates found in recipe keys: ${JSON.stringify(recipeKeysTemp)}`
+      );
+    }
     const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
     const recipeDetailsList = await recipeService.getRecipes(
       recipeKeys,
