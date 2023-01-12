@@ -1,11 +1,14 @@
 import type { NextApiResponse } from "next";
-import { Blend } from "server/base/models/blend";
+import { Blend, BlendVersion } from "server/base/models/blend";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
 import { SuggestionService } from "server/service/suggestion";
-import { FlowType, SuggestRecipesPaginatedRequestBody } from "server/base/models/recipe";
+import {
+  FlowType,
+  SuggestRecipesPaginatedRequestBody,
+} from "server/base/models/recipe";
 
 import {
   ensureAuth,
@@ -84,7 +87,7 @@ const suggestRecipesV2 = async (
 
   const blend: Blend = await diContainer
     .get<BlendService>(TYPES.BlendService)
-    .getBlend(id as string);
+    .getBlend(id as string, BlendVersion.current, true);
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });
