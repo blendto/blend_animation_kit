@@ -2,7 +2,7 @@ import type { NextApiResponse } from "next";
 
 import Joi from "joi";
 
-import { Blend } from "server/base/models/blend";
+import { Blend, BlendVersion } from "server/base/models/blend";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
 import {
   deleteObject,
@@ -232,7 +232,11 @@ const removeBgAndStore = async (
   const body = req.body as RemoveBgRequest;
   const { id } = req.query;
 
-  const blend: Blend = await blendService.getBlend(id as string);
+  const blend: Blend = await blendService.getBlend(
+    id as string,
+    BlendVersion.current,
+    true
+  );
 
   if (!blend) {
     throw new UserError("Blend not found");
