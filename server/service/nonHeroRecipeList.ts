@@ -14,6 +14,7 @@ import { RecipeService } from "./recipe";
 import ConfigProvider from "../base/ConfigProvider";
 import { DaxDB } from "../external/dax";
 import logger from "../base/Logger";
+import IpApi from "../external/ipapi";
 
 type NonHeroRecipeListPage = {
   recipeLists: NonHeroRecipeListEntity[];
@@ -25,6 +26,7 @@ const PAGE_SIZE = 10;
 export class NonHeroRecipeListService implements IService {
   @inject(TYPES.DaxDB) daxStore: DaxDB;
   @inject(TYPES.NonHeroRecipeListRepo) repo: Repo<NonHeroRecipeListEntity>;
+  ipApi = new IpApi();
 
   async getRecipeListPage(pageKey: string): Promise<NonHeroRecipeListPage> {
     const encodedPageKey = new EncodedPageKey(pageKey);
@@ -83,7 +85,28 @@ export class NonHeroRecipeListService implements IService {
     return recipeList;
   }
 
-  async getAll(pageKey: string, uid: string): Promise<NonHeroRecipeListPage> {
+  async getCountryCodeFromIP(ip: string) {
+    if (ip) {
+      try {
+        const ipDetails = (await this.ipApi.getIpInfo(ip)) as Record<
+          string,
+          string
+        >;
+        const countryCode = ipDetails.country_code;
+        return countryCode;
+      } catch (err) {
+        logger.error(err);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  async getAll(
+    pageKey: string,
+    uid: string,
+    ip: string
+  ): Promise<NonHeroRecipeListPage> {
     const recipeListsPage: NonHeroRecipeListPage = {
       recipeLists: [],
       nextPageKey: pageKey,
@@ -99,11 +122,32 @@ export class NonHeroRecipeListService implements IService {
       fetched.nextPageKey
     );
 
-    const recipeListsWithDetails = await Promise.all(
+    let recipeListsWithDetails = await Promise.all(
       recipeListsPage.recipeLists.map(
         async (recipeList) => await this.addRecipeDetailsInList(recipeList)
       )
     );
+    // sort the recipe lists
+    recipeListsWithDetails.sort(
+      (a, b) =>
+        (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
+        (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
+    );
+
+    // filter based on IP
+    const countryCode = await this.getCountryCodeFromIP(ip);
+    if (countryCode) {
+      recipeListsWithDetails = recipeListsWithDetails.filter(
+        (recList) =>
+          recList.filters.countryCodes.length === 0 ||
+          recList.filters.countryCodes.includes(countryCode)
+      );
+    } else {
+      recipeListsWithDetails = recipeListsWithDetails.filter(
+        (recList) => recList.filters.countryCodes.length === 0
+      );
+    }
+
     if (!pageKey) {
       const blendService = diContainer.get<BlendService>(TYPES.BlendService);
       const recentRecipes = (
@@ -123,6 +167,7 @@ export class NonHeroRecipeListService implements IService {
             translation: [],
             id: "",
             isEnabled: 1,
+            sortOrder: 0,
           })
         ).recipes;
       const userService = diContainer.get<UserService>(TYPES.UserService);

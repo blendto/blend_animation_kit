@@ -6,12 +6,16 @@ export interface Translation {
   title: string;
 }
 
+interface Filters {
+  countryCodes: string[];
+}
+
 export interface NonHeroRecipeList {
   id: string;
   isEnabled: number;
   title: string;
   recipes: RecipeVariantId[];
-  filters: Record<any, any>;
+  filters: Filters;
   translation: Translation[];
   sortOrder?: number;
 }
