@@ -27,6 +27,7 @@ import { UpdateOperations } from "../repositories";
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
   buildVersion?: number;
+  ip?: string;
   clientType?: string;
 };
 
@@ -71,6 +72,10 @@ export function withReqHandler(
         const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
         extendedReq.uid = await firebaseService.extractUserIdFromRequest(req);
         extendedReq.buildVersion = extractBuildVersion(req);
+        extendedReq.ip = req.headers["x-forwarded-for"] as string;
+        if (!extendedReq.ip) {
+          logger.warn("Missing x-forwarded-for header");
+        }
         extendedReq.clientType = req.headers["x-client-type"] as string;
       }
       return await routingFunction(extendedReq, res);

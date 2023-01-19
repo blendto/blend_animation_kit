@@ -45,13 +45,20 @@ export class SuggestionService {
   }
 
   async suggestBatchRecipes(
+    buildVersion: number,
     uid: string,
     batchId: string,
     ip: string
   ): Promise<RecipeList[]> {
     const heroImages = await this.selectFileKeysFromBatchPreview(uid, batchId);
     return (
-      await this.suggestRecipes(uid, heroImages.withoutBg, ip, FlowType.BATCH)
+      await this.suggestRecipes(
+        buildVersion,
+        uid,
+        heroImages.withoutBg,
+        ip,
+        FlowType.BATCH
+      )
     ).recipeLists;
   }
 
@@ -59,6 +66,7 @@ export class SuggestionService {
    * @deprecated Use `suggestRecipesPaginated`
    */
   async suggestRecipes(
+    buildVersion: number,
     uid: string,
     fileKey: string,
     ip: string,
@@ -78,12 +86,15 @@ export class SuggestionService {
         (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
     );
 
-    if (uid) {
-      recipeLists = await this.blendService.addRecentsToRecipeLists(
-        uid,
-        recipeLists
-      );
-    }
+    recipeLists = await this.blendService.addRecentsToRecipeLists(
+      uid,
+      recipeLists
+    );
+    recipeLists = await this.brandingService.addToRecipeLists(
+      buildVersion,
+      uid,
+      recipeLists
+    );
 
     // For backward compatibility, use recipes to fill 9:16 ones in recipeIds
     recipeLists.forEach((list) => {
@@ -102,8 +113,16 @@ export class SuggestionService {
   async suggestRecipesPaginated(
     requestBody: SuggestRecipePaginatedRequestBody
   ): Promise<{ recipeLists: RecipeList[]; nextPageKey?: number }> {
-    const { uid, fileKey, ip, pageKey, productSuperCategory, filters, flow } =
-      requestBody;
+    const {
+      buildVersion,
+      uid,
+      fileKey,
+      ip,
+      pageKey,
+      productSuperCategory,
+      filters,
+      flow,
+    } = requestBody;
     const suggestions = await this.recoEngineApi.suggestRecipeListsPaginated({
       heroImageKey: fileKey,
       userAgentPromise: this.userService.getUserAgent(ip),
@@ -127,6 +146,7 @@ export class SuggestionService {
         recipeLists
       );
       recipeLists = await this.brandingService.addToRecipeLists(
+        buildVersion,
         uid,
         recipeLists
       );
@@ -198,6 +218,7 @@ export class SuggestionService {
 }
 
 interface SuggestRecipePaginatedRequestBody {
+  buildVersion: number;
   uid: string;
   fileKey: string;
   ip: string;

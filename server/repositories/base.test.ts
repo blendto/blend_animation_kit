@@ -5,6 +5,7 @@ import { UpdateOperations } from ".";
 import {
   BrandingDynamooseRepo,
   BrandingEntity,
+  BrandingInfoType,
   BrandingLogoStatus,
   BrandingStatus,
   BrandingUpdatePaths,
@@ -104,6 +105,8 @@ describe("Repo", () => {
   });
 
   describe("update", () => {
+    const whatsappNo = "+91 999 888 7776";
+
     it("Transforms update body from JSONPatch to dynamoose specific patch", async () => {
       const id = "wNALVbEj";
       const userId = "uxFJ2pRfNeMtfOO1dH5UhHKQbah2";
@@ -119,14 +122,19 @@ describe("Repo", () => {
             {
               fileKey: primaryLogoFileKey,
               status: BrandingLogoStatus.UPLOADED,
+              size: { width: 128, height: 128 },
+              removeBg: true,
             },
             {
               fileKey: otherLogoFileKey,
               status: BrandingLogoStatus.UPLOADED,
+              size: { width: 128, height: 128 },
+              removeBg: true,
             },
           ],
           primaryEntry: primaryLogoFileKey,
         },
+        info: [],
         updatedAt,
         status,
       };
@@ -139,16 +147,11 @@ describe("Repo", () => {
           Promise.resolve(branding)
         );
 
-      const whatsappNo = "+91 999 888 7776";
       await brandingRepo.update({ id }, [
         {
-          op: UpdateOperations.remove,
-          path: BrandingUpdatePaths.email,
-        },
-        {
-          op: UpdateOperations.add,
-          path: BrandingUpdatePaths.whatsappNo,
-          value: whatsappNo,
+          op: UpdateOperations.replace,
+          path: BrandingUpdatePaths.info,
+          value: [{ type: BrandingInfoType.WhatsappNo, value: whatsappNo }],
         },
         {
           op: UpdateOperations.replace,
@@ -164,7 +167,12 @@ describe("Repo", () => {
         { id },
         {
           $SET: {
-            whatsappNo,
+            info: [
+              {
+                type: BrandingInfoType.WhatsappNo,
+                value: whatsappNo,
+              },
+            ],
             logos: {
               entries: [
                 {
@@ -179,7 +187,6 @@ describe("Repo", () => {
               primaryEntry: otherLogoFileKey,
             },
           },
-          $REMOVE: ["email"],
         },
       ]);
     });
@@ -195,6 +202,7 @@ describe("Repo", () => {
         logos: {
           entries: [],
         },
+        info: [],
         updatedAt,
         status,
       };
@@ -207,8 +215,9 @@ describe("Repo", () => {
 
       await brandingRepo.update({ id }, [
         {
-          op: UpdateOperations.remove,
-          path: BrandingUpdatePaths.email,
+          op: UpdateOperations.replace,
+          path: BrandingUpdatePaths.info,
+          value: [{ type: BrandingInfoType.WhatsappNo, value: whatsappNo }],
         },
       ]);
 
@@ -217,7 +226,14 @@ describe("Repo", () => {
       expect(modelUpdateSpy.mock.calls[0]).toMatchObject([
         { id },
         {
-          $REMOVE: ["email"],
+          $SET: {
+            info: [
+              {
+                type: BrandingInfoType.WhatsappNo,
+                value: whatsappNo,
+              },
+            ],
+          },
         },
       ]);
     });

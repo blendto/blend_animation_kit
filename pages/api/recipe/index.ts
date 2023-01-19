@@ -5,7 +5,8 @@ import { MethodNotAllowedError } from "server/base/errors";
 import {
   AssetType,
   BackgroundType,
-  ElementSource, FlowType,
+  ElementSource,
+  FlowType,
   InteractionAction,
   InteractionLayerTypes,
   Recipe,
@@ -24,6 +25,7 @@ import {
 import { BlendMicroServices } from "server/internal/inter-service-auth";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
+import { BrandingInfoType } from "server/repositories/branding";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -46,8 +48,6 @@ const ELEMENT_SCHEMA = Joi.object({
   uid: Joi.string().required(),
   assetType: Joi.string().required(),
 });
-
-const BRANDING_INFO_DATA_SCHEMA = Joi.object({ value: Joi.string() });
 
 const ARRAY_OF_OBJECTS_SCHEMA = Joi.array().items(Joi.object({}).unknown(true));
 
@@ -90,24 +90,19 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
   externalImages: ARRAY_OF_OBJECTS_SCHEMA,
   branding: Joi.object({
     logo: Joi.object({
-      isPlaceholder: Joi.boolean().required(),
       data: Joi.object({
         uri: Joi.string().required(),
-        source: Joi.string().required().valid(ElementSource.branding),
-      }).required(),
+        source: Joi.string()
+          .valid(ElementSource.branding)
+          .default(ElementSource.branding),
+      }),
     }),
     info: Joi.object({
-      isPlaceholder: Joi.boolean().required(),
-      data: Joi.object({
-        brandName: BRANDING_INFO_DATA_SCHEMA,
-        upiHandle: BRANDING_INFO_DATA_SCHEMA,
-        email: BRANDING_INFO_DATA_SCHEMA,
-        contactNo: BRANDING_INFO_DATA_SCHEMA,
-        whatsappNo: BRANDING_INFO_DATA_SCHEMA,
-        instaHandle: BRANDING_INFO_DATA_SCHEMA,
-        website: BRANDING_INFO_DATA_SCHEMA,
-        address: BRANDING_INFO_DATA_SCHEMA,
-      }).required(),
+      data: Joi.array().items(
+        Joi.object({
+          type: Joi.string().valid(...Object.values(BrandingInfoType)),
+        })
+      ),
     }),
   }).allow(null),
   gifsOrStickers: ARRAY_OF_OBJECTS_SCHEMA,

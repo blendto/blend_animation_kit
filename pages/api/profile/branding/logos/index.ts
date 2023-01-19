@@ -28,10 +28,6 @@ export default withReqHandler(
 
 const INIT_BODY_SCHEMA = Joi.object({
   fileName: Joi.string().required(),
-  size: Joi.object({
-    width: Joi.number().required(),
-    height: Joi.number().required(),
-  }).required(),
   removeBg: Joi.boolean().default(false),
 });
 
@@ -44,9 +40,8 @@ async function initLogoUpload(
     requestComponentToValidate.body,
     INIT_BODY_SCHEMA
   );
-  const { fileName, size, removeBg } = validatedBody as {
+  const { fileName, removeBg } = validatedBody as {
     fileName: string;
-    size: Size;
     removeBg: boolean;
   };
 
@@ -55,9 +50,7 @@ async function initLogoUpload(
   );
   res
     .status(201)
-    .send(
-      await brandingService.initLogoUpload(req.uid, fileName, size, removeBg)
-    );
+    .send(await brandingService.initLogoUpload(req.uid, fileName, removeBg));
 }
 
 const DEL_QUERY_SCHEMA = Joi.object({

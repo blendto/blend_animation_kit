@@ -99,7 +99,7 @@ const suggestRecipesV2 = async (
     blend.heroImages?.classificationMetadata
   );
 
-  const ip = req.headers["x-forwarded-for"] as string;
+  const { ip } = req;
 
   const fileKeysProcessor = FileKeysProcessingStrategy.choose(
     id as string,
@@ -115,6 +115,7 @@ const suggestRecipesV2 = async (
   );
 
   const suggestions = await suggestionService.suggestRecipesPaginated({
+    buildVersion: req.buildVersion,
     uid: req.uid,
     fileKey: finalisedFileKeys.withoutBg,
     ip,

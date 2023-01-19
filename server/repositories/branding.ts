@@ -24,25 +24,7 @@ export enum BrandingStatus {
 }
 
 export enum BrandingUpdatePaths {
-  brandName = "/brandName",
-  upiHandle = "/upiHandle",
-  email = "/email",
-  contactNo = "/contactNo",
-  whatsappNo = "/whatsappNo",
-  instaHandle = "/instaHandle",
-  website = "/website",
-  address = "/address",
-  shopeeHandle = "/shopeeHandle",
-  youtubeHandle = "/youtubeHandle",
-  tiktokHandle = "/tiktokHandle",
-  pinterestHandle = "/pinterestHandle",
-  depopHandle = "/depopHandle",
-  poshmarkHandle = "/poshmarkHandle",
-  mercadoHandle = "/mercadoHandle",
-  lazadaHandle = "/lazadaHandle",
-  ebayHandle = "/ebayHandle",
-  amazonHandle = "/amazonHandle",
-  facebookHandle = "/facebookHandle",
+  info = "/info",
   primaryLogo = "/logos/primaryEntry",
 }
 
@@ -59,7 +41,6 @@ export enum BrandingInfoType {
   WhatsappNo = "whatsappNo",
   InstaHandle = "instaHandle",
   Website = "website",
-  Address = "address",
   ShopeeHandle = "shopeeHandle",
   YoutubeHandle = "youtubeHandle",
   TiktokHandle = "tiktokHandle",
@@ -71,11 +52,13 @@ export enum BrandingInfoType {
   EbayHandle = "ebayHandle",
   AmazonHandle = "amazonHandle",
   FacebookHandle = "facebookHandle",
+  TokopediaHandle = "tokopediaHandle",
+  CarousellHandle = "carousellHandle",
 }
 
 export interface BrandingLogo {
   fileKey: string;
-  size: Size;
+  size?: Size;
   removeBg: boolean;
   status: BrandingLogoStatus;
 }
@@ -87,25 +70,10 @@ export enum BrandingLogoFromUploadsSource {
 export interface BrandingEntity extends Entity {
   id: string;
   userId: string;
-  [BrandingInfoType.BrandName]?: string;
-  [BrandingInfoType.UpiHandle]?: string;
-  [BrandingInfoType.Email]?: string;
-  [BrandingInfoType.ContactNo]?: string;
-  [BrandingInfoType.WhatsappNo]?: string;
-  [BrandingInfoType.InstaHandle]?: string;
-  [BrandingInfoType.Website]?: string;
-  [BrandingInfoType.Address]?: string;
-  [BrandingInfoType.ShopeeHandle]?: string;
-  [BrandingInfoType.YoutubeHandle]?: string;
-  [BrandingInfoType.TiktokHandle]?: string;
-  [BrandingInfoType.PinterestHandle]?: string;
-  [BrandingInfoType.DepopHandle]?: string;
-  [BrandingInfoType.PoshmarkHandle]?: string;
-  [BrandingInfoType.MercadoHandle]?: string;
-  [BrandingInfoType.LazadaHandle]?: string;
-  [BrandingInfoType.EbayHandle]?: string;
-  [BrandingInfoType.AmazonHandle]?: string;
-  [BrandingInfoType.FacebookHandle]?: string;
+  info: {
+    type: BrandingInfoType;
+    value: string;
+  }[];
   logos: {
     primaryEntry?: string;
     entries: BrandingLogo[];
@@ -128,25 +96,22 @@ const brandingDynamooseSchema = new DynamooseSchema(
         type: "global",
       },
     },
-    brandName: String,
-    upiHandle: String,
-    email: String,
-    contactNo: String,
-    whatsappNo: String,
-    instaHandle: String,
-    website: String,
-    address: String,
-    shopeeHandle: String,
-    youtubeHandle: String,
-    tiktokHandle: String,
-    pinterestHandle: String,
-    depopHandle: String,
-    poshmarkHandle: String,
-    mercadoHandle: String,
-    lazadaHandle: String,
-    ebayHandle: String,
-    amazonHandle: String,
-    facebookHandle: String,
+    info: {
+      type: Array,
+      schema: [
+        {
+          type: Object,
+          schema: {
+            type: {
+              type: String,
+              enum: Object.values(BrandingInfoType),
+            },
+            value: String,
+          },
+        },
+      ],
+      default: [],
+    },
     logos: {
       type: Object,
       schema: {

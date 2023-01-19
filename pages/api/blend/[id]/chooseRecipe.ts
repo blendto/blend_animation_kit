@@ -17,12 +17,12 @@ import { TYPES } from "server/types";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
 import {
   ChooseRecipeRequest,
-  Interaction,
   ElementSource,
   RecipeWrapper,
 } from "server/base/models/recipe";
 import BrandingService from "server/service/branding";
 import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
+import { isEmpty } from "lodash";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -53,6 +53,7 @@ const useRecipeForBlend = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
+  const { ip } = req;
   const { id: blendId } = req.query;
   const body = validate(
     req.body as object,
@@ -82,15 +83,18 @@ const useRecipeForBlend = async (
 
   if (req.uid) {
     await ensureBrandingEntitlement(recipe, source, req.uid);
-    const brandingProfile = await brandingService.get(req.uid);
-    if (brandingProfile) recipeWrapper.replaceBrandingInfo(brandingProfile);
+    if (!isEmpty(recipe.branding)) {
+      const brandingProfile = await brandingService.get(req.uid);
+      if (brandingProfile) {
+        await recipeService.replaceBrandingInfo(recipe, brandingProfile, ip);
+      } else {
+        recipeWrapper.cleanupBranding();
+      }
+    }
   }
   if (encoderVersion < 3.0) {
     // Older apps with lesser encoder version won't know how to handle branding
-    recipe.interactions = recipe.interactions.filter(
-      (i: Interaction) =>
-        !["BrandingInfoMetadata", "BrandingLogoMetadata"].includes(i.metadata.$)
-    );
+    recipeWrapper.cleanupBranding();
   }
 
   if (fileKeys) {

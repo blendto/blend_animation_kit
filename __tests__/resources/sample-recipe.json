@@ -58,22 +58,14 @@
   ],
   "branding": {
     "logo": {
-      "isPlaceholder": true,
       "data": { "uri": "default/logo-placeholder.webp", "source": "BRANDING" }
     },
     "info": {
-      "isPlaceholder": true,
-      "data": {
-        "brandName": {
-          "value": "Blendit Studios"
-        },
-        "whatsappNo": {
-          "value": "+91 98765 43210"
-        },
-        "email": {
-          "value": "care@blend.to"
-        }
-      }
+      "data": [
+        { "type": "brandName", "value": "Blendit Studios" },
+        { "type": "whatsappNo", "value": "+91 98765 43210" },
+        { "type": "email", "value": "care@blend.to" }
+      ]
     }
   },
   "interactions": [
@@ -211,30 +203,30 @@
       "assetType": "TEXT"
     },
     {
+      "time": 0,
       "action": "DISPLAY_INLINE",
-      "assetUid": "438ed376-2778-4622-bc9c-709fab00e173",
+      "assetType": "BRANDING",
       "metadata": {
-        "layerType": "BRANDING_INFO",
         "$": "BrandingInfoMetadata",
         "color": "#ff000000",
-        "relativeSize": {
-          "width": 361.27840909090907,
-          "height": 642.2727272727273
-        },
-        "rotation": 0,
-        "align": "LEFT",
-        "textScaleFactor": 1,
-        "rotationX": 0,
-        "rotationY": 0,
-        "size": { "width": 245.14479283544787, "height": 104.87307010210168 },
-        "fontSize": 34,
-        "position": { "dx": 62.55468749999986, "dy": 448.92187499999966 },
-        "font": "Racing Sans One",
-        "zIndex": 5,
-        "iconSet": "Essential Set"
-      },
-      "time": 0,
-      "assetType": "BRANDING"
+        "font": "Roboto Slab",
+        "fontSize": 60.0,
+        "textScaleFactor": 1.0,
+        "itemGap": 20.0,
+        "iconMargin": 15.0,
+        "layout": "ROW",
+        "iconStyle": "FILLED",
+        "iconSize": 60.0,
+        "position": { "dx": 240.0, "dy": 960.0 },
+        "rotation": 0.0,
+        "rotationOrigin": "TOP_LEFT",
+        "rotationX": 0.0,
+        "rotationY": 0.0,
+        "relativeSize": { "width": 1080.0, "height": 1080.0 },
+        "size": { "width": 600.0, "height": 80.0 },
+        "zIndex": 1,
+        "layerType": "BRANDING_INFO"
+      }
     },
     {
       "action": "DISPLAY_INLINE",

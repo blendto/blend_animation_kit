@@ -9,7 +9,7 @@ import { IService } from "server/service";
 import DynamoDB from "server/external/dynamodb";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
-import { ElementSource, Recipe } from "server/base/models/recipe";
+import { ElementSource, Interaction, Recipe } from "server/base/models/recipe";
 import { UserError } from "server/base/errors";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import {
@@ -22,12 +22,16 @@ import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import logger from "server/base/Logger";
 import { DateTime } from "luxon";
 import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
+import { BrandingEntity } from "server/repositories/branding";
+import { isEmpty } from "lodash";
+import ConfigService from "./config";
 
 export const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 @injectable()
 export class RecipeService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
+  @inject(TYPES.ConfigService) configService: ConfigService;
 
   async create(recipe: Recipe): Promise<void> {
     const imageDestinationURIs = BlendToRecipeConverter.imageDestinationURIs(
@@ -331,5 +335,73 @@ export class RecipeService implements IService {
         quality: 90,
       })
       .toBuffer({ resolveWithObject: true });
+  }
+
+  async replaceBrandingInfo(
+    recipe: Recipe,
+    brandingProfile: BrandingEntity,
+    ip: string
+  ) {
+    if (recipe.branding?.logo) {
+      if (brandingProfile.logos.primaryEntry) {
+        recipe.branding.logo.data.uri = brandingProfile.logos.primaryEntry;
+      } else {
+        delete recipe.branding.logo;
+        recipe.interactions = recipe.interactions.filter(
+          (i: Interaction) => i.metadata.$ !== "BrandingLogoMetadata"
+        );
+      }
+    }
+
+    if (recipe.branding?.info) {
+      let missingHandlesCount = 0;
+      recipe.branding.info.data.forEach((item, index) => {
+        const itemFromProfile = brandingProfile.info.find(
+          (pItem) => item.type === pItem.type
+        );
+        if (!itemFromProfile) {
+          delete recipe.branding.info.data[index];
+          missingHandlesCount += 1;
+        } else {
+          recipe.branding.info.data[index].value = itemFromProfile.value;
+        }
+      });
+
+      if (missingHandlesCount > 0) {
+        recipe.branding.info.data = recipe.branding.info.data.filter(
+          (d) => !!d
+        );
+        const orderedHandleTypes = (
+          await this.configService.regionWiseOrderedBrandingHandles(ip)
+        ).filter(
+          (type) => !recipe.branding.info.data.find((i) => i.type === type)
+        );
+        let handleTypesIndex = 0;
+        while (
+          missingHandlesCount > 0 &&
+          handleTypesIndex < orderedHandleTypes.length
+        ) {
+          const matchingHandle = brandingProfile.info.find(
+            // eslint-disable-next-line no-loop-func
+            (i) => i.type === orderedHandleTypes[handleTypesIndex]
+          );
+          if (matchingHandle) {
+            recipe.branding.info.data.push({
+              type: matchingHandle.type,
+              value: matchingHandle.value,
+            });
+            missingHandlesCount -= 1;
+          }
+          handleTypesIndex += 1;
+        }
+      }
+
+      if (recipe.branding.info.data.length < 1) {
+        delete recipe.branding.info;
+        recipe.interactions = recipe.interactions.filter(
+          (i: Interaction) => i.metadata.$ !== "BrandingInfoMetadata"
+        );
+      }
+    }
   }
 }

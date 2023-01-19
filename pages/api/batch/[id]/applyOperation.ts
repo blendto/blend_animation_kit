@@ -25,16 +25,10 @@ const applyOperation = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const {
-    query: { id },
-    body: { operation },
-  } = req;
+  const id = req.query.id as string;
+  const { operation } = req.body as { operation: BatchOperation };
   const batchService = diContainer.get<BatchService>(TYPES.BatchService);
-  await batchService.applyOperation(
-    id as string,
-    req.uid,
-    operation as BatchOperation
-  );
-  const updatedBatch = await batchService.getBatch(id as string, req.uid, true);
+  await batchService.applyOperation(id, req.uid, operation);
+  const updatedBatch = await batchService.getBatch(id, req.uid, true);
   res.send(updatedBatch);
 };

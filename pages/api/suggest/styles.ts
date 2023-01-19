@@ -38,7 +38,7 @@ const suggestStyles = async (
   );
 
   const service = diContainer.get<SuggestionService>(TYPES.SuggestionService);
-  const ip = req.headers["x-forwarded-for"] as string;
+  const { ip } = req;
   const { fileKey } = req.query as { fileKey: string };
   const recipeSuggestions = await service.suggestStyles(fileKey, ip);
   res.send(recipeSuggestions);

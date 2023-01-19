@@ -31,7 +31,7 @@ const getRecipeLists = async (
   const {
     query: { pageKey },
   } = req;
-  const ip = req.headers["x-forwarded-for"] as string;
+  const { ip } = req;
   const recipeListsPage = await nonHeroRecipeListService.getAll(
     pageKey as string,
     req.uid,

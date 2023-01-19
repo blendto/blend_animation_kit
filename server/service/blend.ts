@@ -494,6 +494,7 @@ export class BlendService implements IService {
       interactions,
       metadata,
       isWatermarked,
+      branding,
     } = blend;
 
     const now = Date.now();
@@ -512,12 +513,13 @@ export class BlendService implements IService {
         "interactions = :inter, images = :images, externalImages = :externalImages, audios = :audios," +
         "slides = :slides, cameraClips = :clips, gifsOrStickers = :gifsOrStickers, texts = :texts, buttons = :buttons, links = :links," +
         "metadata = :metadata, updatedAt = :updatedAt, updatedOn = :updatedOn, #batchSt = :batchSt, #isWatermarked = :isWatermarked," +
-        "#background = :background, fileName = :fileName REMOVE expireAt",
+        "#background = :background, #branding = :branding, fileName = :fileName REMOVE expireAt",
       ExpressionAttributeNames: {
         "#st": "status",
         "#batchSt": "batchLevelEditStatus",
         "#isWatermarked": "isWatermarked",
         "#background": "background",
+        "#branding": "branding",
       },
       ExpressionAttributeValues: {
         ":s": "SUBMITTED",
@@ -539,6 +541,7 @@ export class BlendService implements IService {
         ":batchSt": batchLevelEditStatus,
         ":isWatermarked": isWatermarked ?? false,
         ":background": blend.background ?? null,
+        ":branding": branding ?? {},
         ":fileName": blend.fileName ?? null,
       },
       Key: { id: blend.id },

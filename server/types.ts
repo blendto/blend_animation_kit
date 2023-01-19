@@ -32,4 +32,6 @@ export const TYPES = {
   CreditsService: Symbol.for("CreditsService"),
   AIStudioService: Symbol.for("AIStudioService"),
   AIBlendPhotoRepo: Symbol.for("AIBlendPhotoRepo"),
+  ConfigService: Symbol.for("ConfigService"),
+  PreviewService: Symbol.for("PreviewService"),
 };

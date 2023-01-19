@@ -259,6 +259,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("CLEVERTAP_PASSCODE");
   }
 
+  public get IP_DETAILS_CACHE_TABLE(): string {
+    return this.retrieveOrCrash("IP_DETAILS_CACHE_TABLE");
+  }
+
   public get WATERMARK_BUILD_VERSION(): number {
     const versionStr = process.env.WATERMARK_BUILD_VERSION;
     const version = parseInt(versionStr, 10);

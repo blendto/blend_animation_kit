@@ -9,6 +9,7 @@ import {
   BrandingStatus,
   BrandingUpdatePaths,
   BrandingEntity,
+  BrandingInfoType,
 } from "server/repositories/branding";
 import BrandingService from "server/service/branding";
 import { TYPES } from "server/types";
@@ -27,6 +28,7 @@ describe("BrandingService", () => {
     logos: {
       entries: [],
     },
+    info: [],
     updatedAt,
     status,
   } as BrandingEntity;
@@ -263,8 +265,10 @@ describe("BrandingService", () => {
       const whatsappNo = "+91 999 999 9991@blend.to";
       const brandingDocWithOtherAttrs = {
         ...brandingDoc,
-        email,
-        whatsappNo,
+        info: [
+          { type: BrandingInfoType.Email, value: email },
+          { type: BrandingInfoType.WhatsappNo, value: whatsappNo },
+        ],
       } as BrandingEntity;
       const getMock = jest
         .spyOn(brandingService, "get")
@@ -275,12 +279,9 @@ describe("BrandingService", () => {
 
       const jsonPatch = [
         {
-          op: UpdateOperations.remove,
-          path: BrandingUpdatePaths.email,
-        },
-        {
-          op: UpdateOperations.remove,
-          path: BrandingUpdatePaths.whatsappNo,
+          op: UpdateOperations.replace,
+          path: BrandingUpdatePaths.info,
+          value: [],
         },
       ];
       const res = await brandingService.update(userId, jsonPatch);
@@ -326,7 +327,7 @@ describe("BrandingService", () => {
         .spyOn(brandingService, "get")
         .mockResolvedValueOnce(brandingDocWithLogos);
       await expect(
-        brandingService.initLogoUpload(userId, "foo.jpeg", size, false)
+        brandingService.initLogoUpload(userId, "foo.jpeg", false)
       ).rejects.toThrow(new UserError("You can't have more than 3 logos"));
 
       expect(getMock.mock.calls.length).toBe(1);
@@ -383,12 +384,7 @@ describe("BrandingService", () => {
         "createDestinationFileKey"
       );
 
-      const res = await brandingService.initLogoUpload(
-        userId,
-        fileName,
-        size,
-        false
-      );
+      const res = await brandingService.initLogoUpload(userId, fileName, false);
       expect(res).toMatchObject({ url: s3ResMock });
 
       expect(getMock.mock.calls.length).toBe(1);
@@ -480,12 +476,7 @@ describe("BrandingService", () => {
         "createDestinationFileKey"
       );
 
-      const res = await brandingService.initLogoUpload(
-        userId,
-        fileName,
-        size,
-        false
-      );
+      const res = await brandingService.initLogoUpload(userId, fileName, false);
       expect(res).toMatchObject({ url: s3ResMock });
 
       expect(getMock.mock.calls.length).toBe(1);

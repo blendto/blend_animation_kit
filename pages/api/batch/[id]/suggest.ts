@@ -28,11 +28,16 @@ const suggestBatchRecipes = async (
     query: { id },
   } = req;
 
-  const ip = req.headers["x-forwarded-for"] as string;
+  const { ip } = req;
   const batchId = id as string;
 
   const service = diContainer.get<SuggestionService>(TYPES.SuggestionService);
 
-  const recipeLists = await service.suggestBatchRecipes(req.uid, batchId, ip);
+  const recipeLists = await service.suggestBatchRecipes(
+    req.buildVersion,
+    req.uid,
+    batchId,
+    ip
+  );
   return res.status(200).json(recipeLists);
 };

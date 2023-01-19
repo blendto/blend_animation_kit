@@ -5,6 +5,7 @@ import {
 import { Recipe, RecipeWrapper } from "server/base/models/recipe";
 import { diContainer } from "inversify.config";
 import { RecipeService } from "server/service/recipe";
+import BrandingService from "server/service/branding";
 import { TYPES } from "server/types";
 import { Blend } from "server/base/models/blend";
 import { Batch } from "server/base/models/batch";
@@ -23,11 +24,14 @@ export default class BatchRecipeProcessor {
 
   async generateRecipe(): Promise<Recipe> {
     const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
-
-    const recipe = await recipeService.getRecipe(
-      this.selectRecipeOperation.recipeId,
-      this.selectRecipeOperation.variant
+    const brandingService = diContainer.get<BrandingService>(
+      TYPES.BrandingService
     );
+    const { recipeId, variant, source } = this.selectRecipeOperation;
+    const recipe =
+      source === "DEFAULT"
+        ? await recipeService.getRecipeOrFail(recipeId, variant)
+        : await brandingService.getRecipeOrFail(recipeId, variant);
 
     const recipeWrapper = new RecipeWrapper(recipe);
     recipeWrapper.replaceHero(this.blend.heroImages);

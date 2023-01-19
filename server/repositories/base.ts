@@ -43,7 +43,7 @@ export abstract class Repo<ExtendedEntity extends Entity> {
   abstract createWithoutSurrogateKey?(
     params: Partial<ExtendedEntity>
   ): Promise<ExtendedEntity>;
-  abstract get?(keyObject: KeyObject): Promise<ExtendedEntity>;
+  abstract get?(keyObject: KeyObject): Promise<ExtendedEntity | void>;
   abstract query?(
     params: Partial<ExtendedEntity>,
     options?: Record<string, unknown>
@@ -98,7 +98,7 @@ export class DynamooseRepo<
     )) as unknown as ExtendedEntity;
   }
 
-  async get(keyObject: KeyObject): Promise<ExtendedEntity> {
+  async get(keyObject: KeyObject): Promise<ExtendedEntity | void> {
     return (await this.model.get(keyObject)) as unknown as ExtendedEntity;
   }
 
@@ -136,7 +136,7 @@ export class DynamooseRepo<
       // Fetch current data only if there is a nested update
       jsonPatch.find((change) => change.path.slice(1).includes("/"))
     ) {
-      currentData = await this.get(keyObject);
+      currentData = (await this.get(keyObject)) as ExtendedEntity;
       if (!currentData) {
         throw new UserError("Invalid keyObject");
       }

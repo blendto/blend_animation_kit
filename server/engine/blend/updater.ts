@@ -82,7 +82,6 @@ export class BlendUpdater {
     } = metadata;
 
     const recipeWrapper = new RecipeWrapper(this.incomingRecipe);
-    recipeWrapper.removeBrandingPlaceholders();
     const { interactions, branding } = this.incomingRecipe;
 
     // The mobile apps use "fileKey" attribute instead of uri

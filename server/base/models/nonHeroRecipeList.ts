@@ -1,4 +1,5 @@
 import { FlowType } from "./recipe";
+import { RecipeSource } from "./recipeList";
 
 export interface Translation {
   language: string;
@@ -18,11 +19,6 @@ export interface NonHeroRecipeList {
   filters: Filters;
   translation: Translation[];
   sortOrder?: number;
-}
-
-export enum RecipeSource {
-  DEFAULT = "DEFAULT",
-  BRANDING = "BRANDING",
 }
 
 export interface RecipeVariantId {

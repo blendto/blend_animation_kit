@@ -56,8 +56,10 @@ import { BrandingRecipeDynamooseRepo } from "server/repositories/brandingRecipe"
 import {
   NonHeroRecipeListDynamooseRepo,
   NonHeroRecipeListEntity,
-} from "./server/repositories/nonHeroRecipeList";
-import { NonHeroRecipeListService } from "./server/service/nonHeroRecipeList";
+} from "server/repositories/nonHeroRecipeList";
+import { NonHeroRecipeListService } from "server/service/nonHeroRecipeList";
+import ConfigService from "server/service/config";
+import { PreviewService } from "server/service/preview";
 
 const diContainer = new Container();
 
@@ -82,6 +84,14 @@ diContainer
 diContainer
   .bind<BatchActionService>(TYPES.BatchActionService)
   .to(BatchActionService)
+  .inSingletonScope();
+diContainer
+  .bind<ConfigService>(TYPES.ConfigService)
+  .to(ConfigService)
+  .inSingletonScope();
+diContainer
+  .bind<PreviewService>(TYPES.PreviewService)
+  .to(PreviewService)
   .inSingletonScope();
 diContainer
   .bind<BatchTaskQueue<QueueConfig>>(TYPES.BatchTaskQueue)

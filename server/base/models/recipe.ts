@@ -1,7 +1,6 @@
-import { isEmpty } from "lodash";
 import { v4 } from "uuid";
 import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
-import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
+import { BrandingInfoType } from "server/repositories/branding";
 import { UserError } from "../errors";
 import { BrandingRecipe } from "./brandingRecipe";
 import { BlendHeroImage, ImageFileKeys } from "./heroImage";
@@ -22,12 +21,10 @@ export interface StoredImage {
 
 export interface BrandingDetails {
   logo?: {
-    isPlaceholder: boolean;
-    data: { uri: string; source: ElementSource.branding };
+    data: { uri: string; source: ElementSource };
   };
   info?: {
-    isPlaceholder: boolean;
-    data: { [attribute in BrandingInfoType]?: { value: string } };
+    data: { type: BrandingInfoType; value: string }[];
   };
 }
 
@@ -35,7 +32,7 @@ export enum FlowType {
   START_WITH_A_TEMPLATE = "START_WITH_A_TEMPLATE",
   BATCH = "BATCH",
   ASSISTED_WEB = "ASSISTED_WEB",
-  ASSISTED_MOBILE = "ASSISTED_MOBILE"
+  ASSISTED_MOBILE = "ASSISTED_MOBILE",
 }
 
 export interface ElementRef {
@@ -127,8 +124,7 @@ export interface ImageMetadata extends GeometricPositionable {
   fillColor?: string;
 }
 
-export interface BrandingLogoMetadata extends GeometricPositionable {
-}
+export interface BrandingLogoMetadata extends GeometricPositionable {}
 
 type TextAlignment = "LEFT" | "CENTER" | "RIGHT";
 type TextBackgroundShape = "RECT" | "ROUNDED_RECT";
@@ -148,8 +144,28 @@ export interface TextMetadata extends GeometricPositionable {
   background?: TextBackground;
 }
 
-export interface BrandingInfoMetadata extends TextMetadata {
-  iconSet: string;
+enum BrandingInfoLayout {
+  COLUMN = "COLUMN",
+  ROW = "ROW",
+}
+
+enum BrandingInfoIconStyle {
+  OUTLINE = "OUTLINE",
+  FILLED = "FILLED",
+  ORIGINAL = "ORIGINAL",
+  ROUNDED = "ROUNDED",
+}
+
+export interface BrandingInfoMetadata extends GeometricPositionable {
+  color: string;
+  font: string;
+  fontSize: number;
+  textScaleFactor: number;
+  itemGap?: number;
+  iconMargin?: number;
+  iconSize?: number;
+  layout?: BrandingInfoLayout;
+  iconStyle?: BrandingInfoIconStyle;
 }
 
 export interface Interaction {
@@ -170,8 +186,7 @@ export enum UserInteractionType {
   LINK = "LINK",
 }
 
-export interface UserInteractionOptions {
-}
+export interface UserInteractionOptions {}
 
 export interface LinkOptions extends UserInteractionOptions {
   target: string;
@@ -294,7 +309,7 @@ export class RecipeWrapper {
   replaceHero(
     fileKeys: ImageFileKeys,
     image?: StoredImage,
-    interaction?: Interaction,
+    interaction?: Interaction
   ) {
     let heroUid = this.recipe.recipeDetails?.elements?.hero?.uid;
     if (heroUid) {
@@ -305,7 +320,7 @@ export class RecipeWrapper {
         interaction = this.recipe.interactions.find(
           (interaction) =>
             interaction.assetType === "IMAGE" &&
-            interaction.assetUid === heroUid,
+            interaction.assetUid === heroUid
         );
       }
     } else {
@@ -321,8 +336,8 @@ export class RecipeWrapper {
       };
       const maxZIndex = Math.max(
         ...this.recipe.interactions.map(
-          (i) => (i.metadata as ImageMetadata).zIndex,
-        ),
+          (i) => (i.metadata as ImageMetadata).zIndex
+        )
       );
       interaction = this.defaultHeroInteraction(heroUid, maxZIndex);
       this.recipe.images.push(image);
@@ -331,7 +346,7 @@ export class RecipeWrapper {
 
     if (!image || !interaction) {
       throw new UserError(
-        `Either/both of hero image and interaction is missing`,
+        `Either/both of hero image and interaction is missing`
       );
     }
     image.source = ElementSource.blend;
@@ -381,50 +396,16 @@ export class RecipeWrapper {
     };
   }
 
-  replaceBrandingInfo(brandingProfile: BrandingEntity): void {
-    if (isEmpty(this.recipe.branding)) {
-      return;
-    }
-
-    if (brandingProfile.logos.primaryEntry) {
-      this.recipe.branding.logo.isPlaceholder = false;
-      this.recipe.branding.logo.data.uri = brandingProfile.logos.primaryEntry;
-    }
-
-    const unavailableAttributes = [];
-    Object.keys(this.recipe.branding.info.data).forEach(
-      (att: BrandingInfoType) => {
-        if (brandingProfile[att]) {
-          this.recipe.branding.info.data[att].value = brandingProfile[att];
-          // Set it to false if there's atleast one available attribute
-          this.recipe.branding.info.isPlaceholder = false;
-        } else {
-          unavailableAttributes.push(att);
-        }
-      },
+  filterOutBrandingInteractions() {
+    this.recipe.interactions = this.recipe.interactions.filter(
+      (i: Interaction) =>
+        !["BrandingInfoMetadata", "BrandingLogoMetadata"].includes(i.metadata.$)
     );
-    if (!this.recipe.branding.info.isPlaceholder) {
-      // Delete all placeholder values if there's atleast one available attribute
-      unavailableAttributes.forEach((att: BrandingInfoType) => {
-        delete this.recipe.branding.info.data[att];
-      });
-    }
   }
 
-  removeBrandingPlaceholders(): void {
-    Object.keys(this.recipe.branding || {}).forEach((type: "info" | "logo") => {
-      if (this.recipe.branding[type]?.isPlaceholder) {
-        delete this.recipe.branding[type];
-        this.recipe.interactions = this.recipe.interactions.filter(
-          (i: Interaction) =>
-            i.metadata.$ !==
-            {
-              info: "BrandingInfoMetadata",
-              logo: "BrandingLogoMetadata",
-            }[type],
-        );
-      }
-    });
+  cleanupBranding() {
+    delete this.recipe.branding;
+    this.filterOutBrandingInteractions();
   }
 
   replaceId(id: string) {

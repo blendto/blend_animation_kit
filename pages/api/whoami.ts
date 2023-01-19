@@ -32,7 +32,7 @@ async function whoami(
   req: NextApiRequestExtended,
   res: NextApiResponse<any>
 ): Promise<any> {
-  const ip = req.headers["x-forwarded-for"] as string;
+  const { ip } = req;
 
   if (!ip) {
     return res.status(400).send({ message: "Invalid request" });
@@ -42,7 +42,7 @@ async function whoami(
   return res.send({
     uid: req.uid,
     details: {
-      countryCode: ipDetails["country_code"],
+      countryCode: ipDetails.country_code,
     },
   });
 }
@@ -50,14 +50,14 @@ async function whoami(
 export async function getUserAgentDetails(
   req: NextApiRequestExtended
 ): Promise<UserAgentDetails | null> {
-  const ip = req.headers["x-forwarded-for"] as string;
+  const { ip } = req;
   if (!ip) {
     return null;
   }
 
   try {
     const ipDetails = await ipApi.getIpInfo(ip);
-    return new UserAgentDetails(ipDetails["country_code"]);
+    return new UserAgentDetails(ipDetails.country_code);
   } catch (err) {
     logger.error(err);
     return null;
