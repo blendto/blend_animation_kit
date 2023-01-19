@@ -39,16 +39,16 @@ const generatePreview = async (
   const { ip } = req;
   const { uid } = req;
   const batchId = req.query.id as string;
-  validate(
+  const body = validate(
     req.body as object,
     requestComponentToValidate.body,
     GEN_PREV_SCHEMA
-  );
-  const { recipeId, variant, source } = req.body as {
+  ) as {
     recipeId: string;
     variant?: string;
     source: RecipeSource;
   };
+  const { recipeId, variant, source } = body;
 
   const service = diContainer.get<SuggestionService>(TYPES.SuggestionService);
   const fileKeys = await service.selectFileKeysFromBatchPreview(
