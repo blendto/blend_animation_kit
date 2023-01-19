@@ -45,14 +45,14 @@ const updateFavourites = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  validate(
+  const body = validate(
     req.body as object,
     requestComponentToValidate.body,
     UPDATE_BODY_SCHEMA
-  );
-  const { favouriteRecipes } = req.body as {
+  ) as {
     favouriteRecipes: FavouriteRecipe[];
   };
+  const { favouriteRecipes } = body;
   const userService = diContainer.get<UserService>(TYPES.UserService);
   const user = await userService.updateFavouriteRecipes(
     req.uid,
