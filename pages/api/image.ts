@@ -12,6 +12,7 @@ import { withReqHandler } from "server/helpers/request";
 import { NextApiRequest, NextApiResponse } from "next";
 import { BlendVersion } from "server/base/models/blend";
 import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
+import logger from "../../server/base/Logger";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //  20 MB
 
@@ -63,8 +64,20 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
     throw new UserError("No such blend exists");
   }
 
+  const fileNameArr = fileName.split(".");
+  let extension = fileNameArr.pop();
+  VALID_UPLOAD_IMAGE_EXTENSIONS.forEach((validExt) => {
+    if (extension.startsWith(validExt)) {
+      if (extension !== validExt) {
+        logger.info(`changing extension from ${extension} to ${validExt}`);
+      }
+      extension = validExt;
+    }
+  });
+  const fileNameCorrected = `${fileNameArr.join(".")}.${extension}`;
+
   const urlDetails = await createSignedUploadUrl(
-    fileName,
+    fileNameCorrected,
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
     VALID_UPLOAD_IMAGE_EXTENSIONS,
     {

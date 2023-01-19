@@ -53,6 +53,7 @@ export function createDestinationFileKey(
   const extension = fileNameParts[fileNameParts.length - 1].toLowerCase();
 
   if (!validExtensions.includes(extension)) {
+    logger.error(`Invalid file extension ${extension}`);
     throw new UserError(
       `Invalid file extension ${extension}. Valid extensions are ${validExtensions.join(
         ","
