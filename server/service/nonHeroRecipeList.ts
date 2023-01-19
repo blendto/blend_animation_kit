@@ -37,7 +37,7 @@ export class NonHeroRecipeListService implements IService {
 
     const data = await this.repo.query(
       { isEnabled: 1 },
-      { limit: PAGE_SIZE, startAt: pageKeyObject }
+      { limit: PAGE_SIZE, sort: "ascending", startAt: pageKeyObject }
     );
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -112,9 +112,22 @@ export class NonHeroRecipeListService implements IService {
       nextPageKey: pageKey,
     };
     let fetched: NonHeroRecipeListPage;
+    const countryCode = await this.getCountryCodeFromIP(ip);
     do {
       // eslint-disable-next-line no-await-in-loop
       fetched = await this.getRecipeListPage(recipeListsPage.nextPageKey);
+      // filter the page result based on IP
+      if (countryCode) {
+        fetched.recipeLists = fetched.recipeLists.filter(
+          (recList) =>
+            recList.filters.countryCodes.length === 0 ||
+            recList.filters.countryCodes.includes(countryCode)
+        );
+      } else {
+        fetched.recipeLists = fetched.recipeLists.filter(
+          (recList) => recList.filters.countryCodes.length === 0
+        );
+      }
       recipeListsPage.recipeLists.push(...fetched.recipeLists);
       recipeListsPage.nextPageKey = fetched.nextPageKey;
     } while (
@@ -122,31 +135,11 @@ export class NonHeroRecipeListService implements IService {
       fetched.nextPageKey
     );
 
-    let recipeListsWithDetails = await Promise.all(
+    const recipeListsWithDetails = await Promise.all(
       recipeListsPage.recipeLists.map(
         async (recipeList) => await this.addRecipeDetailsInList(recipeList)
       )
     );
-    // sort the recipe lists
-    recipeListsWithDetails.sort(
-      (a, b) =>
-        (a.sortOrder ?? Number.MAX_SAFE_INTEGER) -
-        (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
-    );
-
-    // filter based on IP
-    const countryCode = await this.getCountryCodeFromIP(ip);
-    if (countryCode) {
-      recipeListsWithDetails = recipeListsWithDetails.filter(
-        (recList) =>
-          recList.filters.countryCodes.length === 0 ||
-          recList.filters.countryCodes.includes(countryCode)
-      );
-    } else {
-      recipeListsWithDetails = recipeListsWithDetails.filter(
-        (recList) => recList.filters.countryCodes.length === 0
-      );
-    }
 
     if (!pageKey) {
       const blendService = diContainer.get<BlendService>(TYPES.BlendService);

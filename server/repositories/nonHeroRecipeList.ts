@@ -24,8 +24,9 @@ const nonHeroRecipeListDynamooseSchema = new DynamooseSchema({
   isEnabled: {
     type: Number,
     index: {
-      name: "isEnabled-index",
+      name: "isEnabled-sortOrder-index",
       type: "global",
+      rangeKey: "sortOrder",
     },
   },
   title: String,
