@@ -36,36 +36,8 @@ describe("SubscriptionService", () => {
     jest.restoreAllMocks();
   });
 
-  describe("Get or create", () => {
-    it("Creates subscription for the user if non-existent", async () => {
-      const axiosResData = { message: "Subscription not found" };
-      const axiosErr: AxiosError = {
-        name: "",
-        message: "",
-        config: {},
-        response: {
-          data: axiosResData,
-          status: 400,
-          statusText: "BAD_REQUEST",
-          headers: {},
-          config: {},
-        },
-        isAxiosError: true,
-        toJSON: () => axiosResData,
-      };
-      jest
-        .spyOn(subscriptionService.httpClient, "get")
-        .mockRejectedValueOnce(axiosErr);
-      jest.spyOn(subscriptionService.httpClient, "post").mockResolvedValueOnce({
-        data: subscriptionRes,
-        status: 201,
-      });
-
-      const res = await subscriptionService.getOrCreate(userId);
-      expect(res).toMatchObject(transformedRes);
-    });
-
-    it("Retrieves subscription for the user if existent", async () => {
+  describe("Get", () => {
+    it("Fetches the subscription", async () => {
       jest.spyOn(subscriptionService.httpClient, "get").mockResolvedValueOnce({
         data: subscriptionRes,
         status: 200,

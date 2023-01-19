@@ -96,26 +96,26 @@ export default class SubscriptionService implements IService {
   });
   creditServiceApi = new CreditServiceApi();
 
-  private async get(userId: string): Promise<Record<string, unknown>> {
+  private async get(
+    userId: string,
+    createIfMissing = false
+  ): Promise<Record<string, unknown>> {
+    const params: {
+      source: Source;
+      subject: string;
+      createIfMissing?: boolean;
+      planId?: string;
+    } = {
+      source: Source.FIREBASE,
+      subject: userId,
+    };
+    if (createIfMissing) {
+      params.createIfMissing = true;
+      params.planId = ConfigProvider.CREDIT_SERVICE_PLAN_ID;
+    }
     return (
       await handleAxiosCall<Record<string, unknown>>(
-        async () =>
-          await this.httpClient.get(
-            `/v1/subscriptions?source=${Source.FIREBASE}&subject=${userId}`
-          )
-      )
-    ).data;
-  }
-
-  private async create(userId: string): Promise<Record<string, unknown>> {
-    return (
-      await handleAxiosCall<Record<string, unknown>>(
-        async () =>
-          await this.httpClient.post(`/v1/subscriptions`, {
-            source: Source.FIREBASE,
-            subject: userId,
-            planId: ConfigProvider.CREDIT_SERVICE_PLAN_ID,
-          })
+        async () => await this.httpClient.get(`/v1/subscriptions`, { params })
       )
     ).data;
   }
@@ -144,23 +144,7 @@ export default class SubscriptionService implements IService {
   }
 
   async getOrCreate(userId: string): Promise<SubscriptionEntity> {
-    let subscription: Record<string, unknown>;
-    try {
-      subscription = await this.get(userId);
-    } catch (error) {
-      if (
-        !(
-          error instanceof UserError &&
-          // TODO: Add error codes to credit service and use it to verify
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          JSON.parse(error.message).message === "Subscription not found"
-        )
-      ) {
-        throw error;
-      }
-      subscription = await this.create(userId);
-    }
-    return this.transform(subscription);
+    return this.transform(await this.get(userId, true));
   }
 
   getWaterMarkBuildVersion(): number {
