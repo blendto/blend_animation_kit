@@ -63,18 +63,21 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   if (!blend) {
     throw new UserError("No such blend exists");
   }
-
+  let fileNameCorrected = fileName;
   const fileNameArr = fileName.split(".");
   let extension = fileNameArr.pop();
-  VALID_UPLOAD_IMAGE_EXTENSIONS.forEach((validExt) => {
-    if (extension.startsWith(validExt)) {
-      if (extension !== validExt) {
-        logger.info(`changing extension from ${extension} to ${validExt}`);
+  if (fileNameArr.length > 0) {
+    // filename contains extension
+    VALID_UPLOAD_IMAGE_EXTENSIONS.forEach((validExt) => {
+      if (extension.startsWith(validExt)) {
+        if (extension !== validExt) {
+          logger.info(`changing extension from ${extension} to ${validExt}`);
+        }
+        extension = validExt;
+        fileNameCorrected = `${fileNameArr.join(".")}.${extension}`;
       }
-      extension = validExt;
-    }
-  });
-  const fileNameCorrected = `${fileNameArr.join(".")}.${extension}`;
+    });
+  }
 
   const urlDetails = await createSignedUploadUrl(
     fileNameCorrected,
