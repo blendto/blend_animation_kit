@@ -273,6 +273,16 @@ class ConfigProvider {
     return version;
   }
 
+  public get BRANDING_BUILD_VERSION(): number {
+    const versionStr = process.env.BRANDING_BUILD_VERSION;
+    const version = parseInt(versionStr, 10);
+    // eslint-disable-next-line no-restricted-globals
+    if (isNaN(version)) {
+      return null;
+    }
+    return version;
+  }
+
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
     if (!variable || variable.trim().length === 0) {

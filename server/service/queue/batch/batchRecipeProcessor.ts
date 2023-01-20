@@ -27,7 +27,11 @@ export default class BatchRecipeProcessor {
     const brandingService = diContainer.get<BrandingService>(
       TYPES.BrandingService
     );
-    const { recipeId, variant, source } = this.selectRecipeOperation;
+    const {
+      recipeId,
+      variant,
+      source = "DEFAULT",
+    } = this.selectRecipeOperation;
     const recipe =
       source === "DEFAULT"
         ? await recipeService.getRecipeOrFail(recipeId, variant)

@@ -34,7 +34,11 @@ const userAccountActionQueue = diContainer.get<
 >(TYPES.UserAccountActionQueue);
 
 function logError(op: string, qMessage: object, e: unknown): Promise<void> {
-  logger.error({ op, message: { qMessage, error: e as object } });
+  const { name, message: errMsg, stack } = e as Error;
+  logger.error({
+    op,
+    message: { qMessage, error: { name, message: errMsg, stack } },
+  });
   return Promise.reject(e);
 }
 

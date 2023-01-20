@@ -291,7 +291,10 @@ export default class BrandingService implements IService {
   }
 
   isValidbuildVersion(buildVersion: number) {
-    return buildVersion > 485;
+    return (
+      ConfigProvider.BRANDING_BUILD_VERSION &&
+      buildVersion >= ConfigProvider.BRANDING_BUILD_VERSION
+    );
   }
 
   async addToRecipeLists(

@@ -92,9 +92,10 @@ export class BatchActionService implements IService {
   }
 
   private async handleProcessingError(message: BatchTaskMessage, e: unknown) {
+    const { name, message: errMsg, stack } = e as Error;
     logger.error({
       op: "BATCH_PROCESS_FAILURE_SKIP_RETRY",
-      message: { qMessage: message, error: e },
+      message: { qMessage: message, error: { name, message: errMsg, stack } },
     });
     const { batchId, blendId } = message;
     if (message.type === BatchTaskType.process_upload) {
