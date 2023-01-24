@@ -4,6 +4,7 @@ import { BlendHeroImage } from "server/base/models/heroImage";
 export enum BlendStatus {
   Initialized = "INITIALIZED",
   Submitted = "SUBMITTED",
+  ExportInitiated = "EXPORT_INITIATED",
   Generated = "GENERATED",
   Deleted = "DELETED",
 }
@@ -55,6 +56,7 @@ export interface BlendStatusUpdate {
   status: BlendStatus;
   on: number;
   creditServiceActivityLogId?: string;
+  blendHash?: string;
 }
 
 export interface BlendOutput {

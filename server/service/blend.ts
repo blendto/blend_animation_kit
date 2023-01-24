@@ -8,6 +8,7 @@ import {
   BatchLevelEditStatus,
   Blend,
   BlendStatus,
+  BlendStatusUpdate,
   BlendVersion,
   MinimalBlend,
 } from "server/base/models/blend";
@@ -479,9 +480,48 @@ export class BlendService implements IService {
     return dbUpdateResponse.Attributes as Blend;
   }
 
+  async reportExport(
+    id: string,
+    shouldWatermark: boolean,
+    creditServiceActivityLogId: string,
+    blendHash: string
+  ): Promise<Blend> {
+    const now = Date.now();
+    const updatedOn = DateTime.utc().toISODate();
+
+    const statusUpdate = {
+      status: BlendStatus.ExportInitiated,
+      on: now,
+      creditServiceActivityLogId,
+      blendHash,
+    };
+
+    const params = {
+      UpdateExpression:
+        "SET  statusUpdates = list_append(statusUpdates, :update), updatedAt = :updatedAt, " +
+        "updatedOn = :updatedOn, #isWatermarked = :isWatermarked",
+      ExpressionAttributeNames: {
+        "#isWatermarked": "isWatermarked",
+      },
+      ExpressionAttributeValues: {
+        ":update": [statusUpdate],
+        ":updatedAt": now,
+        ":updatedOn": updatedOn,
+        ":isWatermarked": shouldWatermark,
+      },
+      Key: { id },
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      ReturnValues: "ALL_NEW",
+    };
+
+    const dbUpdateResponse = await this.dataStore.updateItem(params);
+    return dbUpdateResponse.Attributes as Blend;
+  }
+
   async updateBlend(
     blend: Blend,
     creditServiceActivityLogId?: string,
+    blendHash?: string,
     isBatchedBlend = true
   ): Promise<Blend> {
     const {
@@ -506,7 +546,8 @@ export class BlendService implements IService {
       status: "SUBMITTED",
       on: now,
       creditServiceActivityLogId,
-    };
+      blendHash,
+    } as BlendStatusUpdate;
     const params = {
       UpdateExpression:
         "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), title = :title," +

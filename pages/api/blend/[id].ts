@@ -25,10 +25,9 @@ import {
 import { CreditsService } from "server/service/credits";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import { BlendUpdater } from "server/engine/blend/updater";
-import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
 import { ExportPrepAgent } from "server/engine/blend/export";
 import Joi from "joi";
-import { UpdateOperations } from "../../../server/repositories";
+import { UpdateOperations } from "server/repositories";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -129,7 +128,7 @@ const deleteBlend = async (
   res.send({ status: "Success" });
 };
 
-function trim(blend: Blend) {
+export function trim(blend: Blend) {
   const {
     id,
     status,
@@ -242,6 +241,31 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   res.send(trimmedBlend);
 };
 
+async function generate(
+  blendId: string,
+  uid: string,
+  updater: BlendUpdater,
+  shouldWatermark: boolean,
+  creditServiceActivityLogId: string = null
+) {
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+  const blend = updater.updatedBlend(uid, shouldWatermark);
+  const dbBlend = await blendService.updateBlend(
+    blend,
+    creditServiceActivityLogId,
+    updater.incomingBlendHash(),
+    false
+  );
+  const body = new ExportPrepAgent(dbBlend).prepareForVes(shouldWatermark);
+
+  await new VesApi().saveExport({
+    body,
+    schema: ExportRequestSchema.Blend,
+  });
+  const generatedBlend = await blendService.getBlend(blendId, null, true);
+  return trim(generatedBlend);
+}
+
 const submitBlend = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
@@ -250,24 +274,23 @@ const submitBlend = async (
   const recipe = req.body as Recipe;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
-  let existingBlend = await blendService.getBlend(id);
+  let existingBlend = await blendService.getBlend(id, null, true);
   if (!existingBlend) {
     // Blend might have expired, recreate it
     existingBlend = await blendService.addBlendToDB(id, req.uid);
   }
 
   const updater = new BlendUpdater(existingBlend, recipe);
-  try {
-    updater.validate(req.uid);
-  } catch (e: unknown) {
-    if (e instanceof IllegalBlendAccessError) {
-      logger.error(
-        `A user is trying to access another user's blend. Blend id: ${id}. ` +
-          `Owner id: ${existingBlend.createdBy}. Requesting user id: ${req.uid}`
-      );
-      // Don't let the possible attacker know that this is a valid blend id.
-      throw new ObjectNotFoundError("Blend not found");
-    }
+  updater.validate(req.uid);
+
+  if (updater.isBlendSame()) {
+    const trimmedBlend = await generate(
+      id,
+      req.uid,
+      updater,
+      existingBlend.isWatermarked
+    );
+    return res.send(trimmedBlend);
   }
 
   await ensureBrandingEntitlement(
@@ -283,20 +306,15 @@ const submitBlend = async (
     req.buildVersion,
     req.clientType,
     async (shouldWatermark: boolean, creditServiceActivityLogId: string) => {
-      const blend = updater.updatedBlend(req.uid, shouldWatermark);
-      const dbBlend = await blendService.updateBlend(
-        blend,
-        creditServiceActivityLogId,
-        false
+      const trimmedBlend = await generate(
+        id,
+        req.uid,
+        updater,
+        shouldWatermark,
+        creditServiceActivityLogId
       );
-      const body = new ExportPrepAgent(dbBlend).prepareForVes(shouldWatermark);
 
-      await new VesApi().saveExport({
-        body,
-        schema: ExportRequestSchema.Blend,
-      });
-      const generatedBlend = await blendService.getBlend(id, null, true);
-      res.send(trim(generatedBlend));
+      res.send(trimmedBlend);
     }
   );
 };

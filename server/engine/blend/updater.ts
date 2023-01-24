@@ -1,11 +1,12 @@
 import { Recipe, RecipeWrapper, StoredImage } from "server/base/models/recipe";
-import { UserError } from "server/base/errors";
+import { ObjectNotFoundError, UserError } from "server/base/errors";
 import {
   CURRENT_ENCODER_VERSION,
   MIN_SUPPORTED_ENCODER_VERSION,
 } from "server/constants";
 import { Blend } from "server/base/models/blend";
-import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
+import logger from "server/base/Logger";
+import objectHash from "object-hash";
 
 export class BlendUpdater {
   existingBlend: Blend;
@@ -35,7 +36,12 @@ export class BlendUpdater {
 
   validate(updaterUid: string) {
     if (this.existingBlend.createdBy !== updaterUid) {
-      throw new IllegalBlendAccessError();
+      logger.error(
+        `A user is trying to access another user's blend. Blend id: ${this.existingBlend.id}. ` +
+          `Owner id: ${this.existingBlend.createdBy}. Requesting user id: ${updaterUid}`
+      );
+      // Don't let the possible attacker know that this is a valid blend id.
+      throw new ObjectNotFoundError("Blend not found");
     }
 
     const { metadata } = this.incomingRecipe;
@@ -117,6 +123,38 @@ export class BlendUpdater {
       branding: branding || null,
       buttons,
       links,
+    };
+  }
+
+  incomingBlendHash(): string {
+    return objectHash.MD5(this.getPartialForComparison());
+  }
+
+  isBlendSame(): boolean {
+    const hash = this.incomingBlendHash();
+    return this.existingBlend.statusUpdates.some((s) => s.blendHash === hash);
+  }
+
+  private getPartialForComparison(): object {
+    // Not comparing `images` because `images` would be incorrect/missing
+    // in the incoming blend in the `/verifyExport` flow
+    const {
+      interactions,
+      externalImages,
+      gifsOrStickers,
+      texts,
+      metadata,
+      background,
+      branding,
+    } = this.incomingRecipe;
+    return {
+      interactions,
+      externalImages,
+      gifsOrStickers,
+      texts,
+      metadata,
+      background,
+      branding,
     };
   }
 }
