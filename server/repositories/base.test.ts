@@ -1,3 +1,4 @@
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { UserError } from "server/base/errors";
 
 import { DynamooseRepo } from "./base";
@@ -70,9 +71,12 @@ describe("Repo", () => {
         .spyOn(brandingRepo.model, "create")
         .mockImplementationOnce((params) =>
           // eslint-disable-next-line prefer-promise-reject-errors
-          Promise.reject({
-            code: "ConditionalCheckFailedException",
-          })
+          Promise.reject(
+            new ConditionalCheckFailedException({
+              $metadata: {},
+              message: "",
+            })
+          )
         )
         .mockImplementationOnce((params) =>
           Promise.resolve({

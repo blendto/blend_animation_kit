@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { PresignedPost } from "aws-sdk/clients/s3";
 import { DateTime } from "luxon";
 import { inject, injectable } from "inversify";
-import { UserError } from "server/base/errors";
+import { UserError, UserErrorCode } from "server/base/errors";
 import ConfigProvider from "server/base/ConfigProvider";
 import {
   copyObject,
@@ -33,7 +33,7 @@ import { Repo } from "server/repositories/base";
 import { BlendVersion } from "server/base/models/blend";
 import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
 import { BrandingRecipe } from "server/base/models/brandingRecipe";
-import { ElementSource, Size } from "server/base/models/recipe";
+import { ElementSource } from "server/base/models/recipe";
 import { RecipeList, RecipeSource } from "server/base/models/recipeList";
 import { RemoveBGSource } from "server/base/models/removeBg";
 import { fireAndForget } from "server/helpers/async-runner";
@@ -43,6 +43,7 @@ import {
 } from "server/helpers/constants";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import DynamoDB from "server/external/dynamodb";
+import { withExponentialBackoffRetries } from "server/helpers/general";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import { BlendService } from "./blend";
@@ -72,9 +73,28 @@ export default class BrandingService implements IService {
     return (await this.repo.query({ userId }))[0];
   }
 
+  async getOrFail(userId: string): Promise<BrandingEntity> {
+    const profile = await this.get(userId);
+    if (!profile) {
+      throw new UserError(
+        "Branding Profile Not Found",
+        UserErrorCode.BRANDING_PROFILE_NOT_FOUND
+      );
+    }
+    return profile;
+  }
+
   async getOrCreate(userId: string): Promise<BrandingEntity> {
-    let existingProfile = await this.get(userId);
-    if (!existingProfile) {
+    let existingProfile: BrandingEntity;
+    try {
+      existingProfile = await withExponentialBackoffRetries(
+        (userId: string) => this.getOrFail(userId),
+        [userId]
+      );
+    } catch (e) {
+      if ((e as UserError).code !== UserErrorCode.BRANDING_PROFILE_NOT_FOUND) {
+        throw e;
+      }
       existingProfile = await this.repo.create({ userId });
     }
     return existingProfile;

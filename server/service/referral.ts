@@ -1,3 +1,4 @@
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { inject, injectable } from "inversify";
 import { sum } from "lodash";
 import { UserError } from "server/base/errors";
@@ -158,8 +159,7 @@ export default class ReferralService implements IService {
     try {
       return await this.repo.createWithoutSurrogateKey(partialEntity);
     } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (err.code === "ConditionalCheckFailedException") {
+      if ((err as Error).name === ConditionalCheckFailedException.name) {
         throw new UserError(
           "This user's referral is already registerd",
           REFERRAL_USER_ERROR.DUPLICATE_REFERRAL

@@ -42,6 +42,8 @@ describe("BrandingService", () => {
     it("Creates branding profile for the user if non-existent", async () => {
       const querySpy = jest
         .spyOn(brandingService.repo, "query")
+        .mockResolvedValue([])
+        .mockResolvedValue([])
         .mockResolvedValue([]);
       const createSpy = jest
         .spyOn(brandingService.repo, "create")
@@ -50,8 +52,10 @@ describe("BrandingService", () => {
       const res = await brandingService.getOrCreate(userId);
       expect(res).toMatchObject(brandingDoc);
 
-      expect(querySpy.mock.calls.length).toBe(1);
+      expect(querySpy.mock.calls.length).toBe(3);
       expect(querySpy.mock.calls[0]).toMatchObject([{ userId }]);
+      expect(querySpy.mock.calls[1]).toMatchObject([{ userId }]);
+      expect(querySpy.mock.calls[2]).toMatchObject([{ userId }]);
 
       expect(createSpy.mock.calls.length).toBe(1);
       expect(createSpy.mock.calls[0]).toMatchObject([{ userId }]);

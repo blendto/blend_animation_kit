@@ -7,4 +7,10 @@ class UserError extends Error {
   }
 }
 
+export enum UserErrorCode {
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+  INVALID_USER_ID = "INVALID_USER_ID",
+  BRANDING_PROFILE_NOT_FOUND = "BRANDING_PROFILE_NOT_FOUND",
+}
+
 export default UserError;

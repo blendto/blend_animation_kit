@@ -1,3 +1,4 @@
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { diContainer } from "inversify.config";
 import { UserError } from "server/base/errors";
 import { RewardStatus, RewardType } from "server/repositories/referral";
@@ -67,7 +68,12 @@ describe("ReferralService", () => {
     it("Fails if referral is duplicate", async () => {
       jest
         .spyOn(referralService.repo, "createWithoutSurrogateKey")
-        .mockRejectedValueOnce({ code: "ConditionalCheckFailedException" });
+        .mockRejectedValueOnce(
+          new ConditionalCheckFailedException({
+            $metadata: {},
+            message: "",
+          })
+        );
       await expect(
         referralService.register(refereeUserId, referrerUserId, deviceId)
       ).rejects.toThrow(

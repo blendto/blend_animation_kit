@@ -5,13 +5,8 @@ import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import { NextApiRequest } from "next";
 import { injectable } from "inversify";
-import UserError from "server/base/errors/UserError";
+import UserError, { UserErrorCode } from "server/base/errors/UserError";
 import ConfigProvider from "../base/ConfigProvider";
-
-export enum FirebaseErrCode {
-  USER_NOT_FOUND = "USER_NOT_FOUND",
-  INVALID_USER_ID = "INVALID_USER_ID",
-}
 
 export enum FirebaseDynamicLinkSuffixType {
   SHORT = "SHORT",
@@ -85,9 +80,9 @@ export default class Firebase {
     } catch (e) {
       const errCode = (e as Record<string, unknown>).code;
       if (errCode === "auth/user-not-found") {
-        throw new UserError("User Not Found", FirebaseErrCode.USER_NOT_FOUND);
+        throw new UserError("User Not Found", UserErrorCode.USER_NOT_FOUND);
       } else if (errCode === "auth/invalid-uid") {
-        throw new UserError("Invalid User Id", FirebaseErrCode.INVALID_USER_ID);
+        throw new UserError("Invalid User Id", UserErrorCode.INVALID_USER_ID);
       }
       throw new Error(`Something went wrong: ${errCode}`);
     }
@@ -117,7 +112,7 @@ export default class Firebase {
               (userIdentifier as unknown as { uid: string }).uid
           )
           .join(", ")}`,
-        FirebaseErrCode.USER_NOT_FOUND
+        UserErrorCode.USER_NOT_FOUND
       );
     }
     return users;

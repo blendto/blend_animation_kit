@@ -1,3 +1,4 @@
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { FavouriteRecipe, User } from "server/base/models/user";
 import DynamoDB from "server/external/dynamodb";
 import "reflect-metadata";
@@ -12,13 +13,14 @@ import { inject, injectable } from "inversify";
 import IpApi from "server/external/ipapi";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
 import logger from "server/base/Logger";
-import Firebase, { FirebaseErrCode } from "server/external/firebase";
+import Firebase from "server/external/firebase";
 import { JSONPatch, Repo } from "server/repositories/base";
 import { UserUpdatePaths } from "server/repositories/user";
 import { UpdateOperations } from "server/repositories";
 import { SuggestionService } from "server/service/suggestion";
+import { withExponentialBackoffRetries } from "server/helpers/general";
 import AppleService from "server/external/apple";
-import { UserError } from "server/base/errors";
+import { UserError, UserErrorCode } from "server/base/errors";
 import HeroImageService from "./heroImage";
 import { BatchService } from "./batch";
 import SubscriptionService from "./subscription";
@@ -127,14 +129,25 @@ export class UserService implements IService {
 
   async getOrFail(id: string): Promise<User> {
     const user = await this.get(id);
-    if (!user) throw new UserError("User doesn't exist!");
+    if (!user) {
+      throw new UserError("User Not Found", UserErrorCode.USER_NOT_FOUND);
+    }
     return user;
   }
 
   async getOrCreate(id: string): Promise<User> {
-    let profile = await this.get(id);
-    if (!profile) {
-      profile = await this.create(id);
+    let profile: User;
+    try {
+      profile = await withExponentialBackoffRetries(
+        (id: string) => this.getOrFail(id),
+        [id]
+      );
+    } catch (e) {
+      if ((e as UserError).code === UserErrorCode.USER_NOT_FOUND) {
+        profile = await this.create(id);
+      } else {
+        throw e;
+      }
     }
 
     // Profiles could be missing partial/full data if it was
@@ -204,7 +217,15 @@ export class UserService implements IService {
       ...profile,
       referralId: await this.generateUniqueReferralId(profile),
     };
-    return await this.repo.createWithoutSurrogateKey(profile);
+    try {
+      return await this.repo.createWithoutSurrogateKey(profile);
+    } catch (e) {
+      if ((e as Error).name === ConditionalCheckFailedException.name) {
+        // Profile got created by a concurrent call
+        return await this.getOrFail(userId);
+      }
+      throw e;
+    }
   }
 
   async migrateUserBlends(
@@ -345,7 +366,7 @@ export class UserService implements IService {
     try {
       await firebaseService.deleteUser(id);
     } catch (e) {
-      if ((e as UserError).code !== FirebaseErrCode.USER_NOT_FOUND) {
+      if ((e as UserError).code !== UserErrorCode.USER_NOT_FOUND) {
         throw e;
       }
       // This must be a retry where the firebase account deletion was successful in a previous try.

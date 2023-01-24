@@ -1,3 +1,4 @@
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import {
   aws,
   model as dynamooseModel,
@@ -81,8 +82,7 @@ export class DynamooseRepo<
         ...params,
       } as unknown as Partial<DynamooseExtendedEntity>)) as unknown as ExtendedEntity;
     } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (err.code === "ConditionalCheckFailedException") {
+      if ((err as Error).name === ConditionalCheckFailedException.name) {
         // Generated id already exists. Re-generate.
         return await this.create(params);
       }

@@ -6,7 +6,7 @@ export async function withExponentialBackoffRetries<T>(
   maxRetries = 2
 ): Promise<T> {
   let error: Error;
-  while (retriesDone < maxRetries) {
+  while (retriesDone <= maxRetries) {
     try {
       // eslint-disable-next-line no-await-in-loop
       return await fn(...fnArgs);
