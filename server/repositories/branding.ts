@@ -73,6 +73,7 @@ export interface BrandingEntity extends Entity {
   info: {
     type: BrandingInfoType;
     value: string;
+    link?: string;
   }[];
   logos: {
     primaryEntry?: string;
@@ -107,6 +108,7 @@ const brandingDynamooseSchema = new DynamooseSchema(
               enum: Object.values(BrandingInfoType),
             },
             value: String,
+            link: String,
           },
         },
       ],

@@ -155,7 +155,13 @@ describe("Repo", () => {
         {
           op: UpdateOperations.replace,
           path: BrandingUpdatePaths.info,
-          value: [{ type: BrandingInfoType.WhatsappNo, value: whatsappNo }],
+          value: [
+            {
+              type: BrandingInfoType.WhatsappNo,
+              value: whatsappNo,
+              link: `https://wa.me/${whatsappNo}`,
+            },
+          ],
         },
         {
           op: UpdateOperations.replace,
@@ -175,6 +181,7 @@ describe("Repo", () => {
               {
                 type: BrandingInfoType.WhatsappNo,
                 value: whatsappNo,
+                link: `https://wa.me/${whatsappNo}`,
               },
             ],
             logos: {

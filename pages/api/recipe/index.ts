@@ -100,7 +100,10 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
     info: Joi.object({
       data: Joi.array().items(
         Joi.object({
-          type: Joi.string().valid(...Object.values(BrandingInfoType)),
+          type: Joi.string()
+            .valid(...Object.values(BrandingInfoType))
+            .required(),
+          value: Joi.string().required(),
         })
       ),
     }),
