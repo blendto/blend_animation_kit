@@ -3,9 +3,7 @@ import { inject, injectable } from "inversify";
 import { sum } from "lodash";
 import { UserError } from "server/base/errors";
 import { User } from "server/base/models/user";
-import CleverTapService, {
-  CleverTapEventName,
-} from "server/external/clevertap";
+import CustomerIOService, { TrackableEvent } from "server/external/customerio";
 import { JSONPatch, Repo } from "server/repositories/base";
 import {
   ReferralEntity,
@@ -42,7 +40,7 @@ export default class ReferralService implements IService {
   @inject(TYPES.ReferralRepo) repo: Repo<ReferralEntity>;
   @inject(TYPES.UserService) userService: UserService;
   @inject(TYPES.SubscriptionService) subscriptionService: SubscriptionService;
-  @inject(TYPES.CleverTapService) cleverTapService: CleverTapService;
+  @inject(TYPES.CustomerIOService) customerIOService: CustomerIOService;
 
   async ensureDeviceIdIsOriginal(deviceId: string): Promise<void> {
     const referrals = await this.repo.query({ deviceId });
@@ -111,14 +109,15 @@ export default class ReferralService implements IService {
       this.generateSuccessfulRewardDelta({})
     );
 
-    await this.cleverTapService.registerEvent(
+    await this.customerIOService.trackEvent(
       referrerUserId,
-      CleverTapEventName.SUCCESSFUL_REFERRAL,
+      TrackableEvent.SUCCESSFUL_REFERRAL,
       {
-        rewardType: referral.reward.referrer.type,
+        rewardType: referral.reward.referrer.type.toString(),
         rewardQuantity: referral.reward.referrer.quantity,
       }
     );
+
     return {
       referrerId: referrerUserId,
       reward: {

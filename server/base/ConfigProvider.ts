@@ -251,16 +251,16 @@ class ConfigProvider {
     return process.env.LOG_LEVEL ?? "info";
   }
 
-  public get CLEVERTAP_ACCOUNT_ID(): string {
-    return this.retrieveOrCrash("CLEVERTAP_ACCOUNT_ID");
-  }
-
-  public get CLEVERTAP_PASSCODE(): string {
-    return this.retrieveOrCrash("CLEVERTAP_PASSCODE");
-  }
-
   public get IP_DETAILS_CACHE_TABLE(): string {
     return this.retrieveOrCrash("IP_DETAILS_CACHE_TABLE");
+  }
+
+  public get CUSTOMER_IO_SITE_ID(): string {
+    return this.retrieveOrCrash("CUSTOMER_IO_SITE_ID");
+  }
+
+  public get CUSTOMER_IO_API_KEY(): string {
+    return this.retrieveOrCrash("CUSTOMER_IO_API_KEY");
   }
 
   public get WATERMARK_BUILD_VERSION(): number {

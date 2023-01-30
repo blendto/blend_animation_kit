@@ -37,7 +37,7 @@ import { Analytics } from "server/base/models/analytics";
 import { NewAnalyticsService } from "server/service/newAnalytics";
 import { DaxDB } from "server/external/dax";
 import FileKeysService from "server/service/fileKeys";
-import CleverTapService from "server/external/clevertap";
+import CustomerIOService from "server/external/customerio";
 import { CreditsService } from "server/service/credits";
 import AppleService from "server/external/apple";
 import {
@@ -179,8 +179,8 @@ diContainer
   .bind<AppleService>(TYPES.AppleService)
   .toDynamicValue(() => new AppleService());
 diContainer
-  .bind<CleverTapService>(TYPES.CleverTapService)
-  .toDynamicValue(() => new CleverTapService());
+  .bind<CustomerIOService>(TYPES.CustomerIOService)
+  .toDynamicValue(() => new CustomerIOService());
 diContainer
   .bind<NewAnalyticsService>(TYPES.AnalyticsService)
   .to(NewAnalyticsService)

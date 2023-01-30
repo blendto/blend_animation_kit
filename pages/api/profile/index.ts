@@ -16,8 +16,11 @@ import { QueueConfig } from "server/external/queue";
 import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
 import { UserAccountActionType } from "server/base/models/queue-messages";
 import BrandingService from "server/service/branding";
-import { FlowType } from "../../../server/base/models/recipe";
-import { FavouriteRecipe } from "../../../server/base/models/user";
+import IpApi from "server/external/ipapi";
+import { FlowType } from "server/base/models/recipe";
+import { FavouriteRecipe } from "server/base/models/user";
+import CustomerIOService from "server/external/customerio";
+import { fireAndForget } from "server/helpers/async-runner";
 
 const BUILD_V_BEFORE_START_WITH_TEMPLATE = 470;
 export default withReqHandler(
@@ -64,6 +67,10 @@ const getProfile = async (
   const brandingService = diContainer.get<BrandingService>(
     TYPES.BrandingService
   );
+  const customerIOService = diContainer.get<CustomerIOService>(
+    TYPES.CustomerIOService
+  );
+
   const profile = await userService.getOrCreate(req.uid);
   delete profile.appleOfflineToken;
   if (req.buildVersion <= BUILD_V_BEFORE_START_WITH_TEMPLATE) {
@@ -71,6 +78,16 @@ const getProfile = async (
       profile.favouriteRecipes
     );
   }
+
+  // Start of side effect: Associate user to a country code in customer io
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  fireAndForget(async () => {
+    if (!req.ip) return;
+    const ipInfo = await new IpApi().getIpInfo(req.ip);
+    await customerIOService.markCountryForUser(req.uid, ipInfo.country_code);
+  });
+  // End of side effects
+
   return res.json({
     ...profile,
     branding: await brandingService.getOrCreate(req.uid),
