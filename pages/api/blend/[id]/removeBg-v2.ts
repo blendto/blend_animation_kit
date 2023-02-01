@@ -152,6 +152,11 @@ async function compressImageToWebp(
     });
 
     if (compressedImageMetadata.size > MAX_SIZE_ALLOWED) {
+      logger.warn({
+        op: "IMAGE_TOO_LARGE",
+        originalImageSize: metadata.size,
+        compressedImageSize: compressedImageMetadata.size,
+      });
       throw new UserError("Image too big in size");
     }
   }

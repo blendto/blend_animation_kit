@@ -320,9 +320,11 @@ export class RemoveBgService implements IService {
     fn: () => Promise<void>,
     metadata: RemoveBGCommandMetadata
   ) => {
+    const startTime = Date.now();
     try {
       await fn.call(this);
     } catch (ex) {
+      const endTime = Date.now();
       if (axios.isAxiosError(ex) && ex.response) {
         logger.error({
           code: "RemoveBgService.RemoveBGFailed",
@@ -333,6 +335,19 @@ export class RemoveBgService implements IService {
         // eslint-disable-next-line no-restricted-syntax
         for await (const chunk of ex.response.data) {
           data += chunk;
+        }
+
+        // avoid JSON parse error, which shadows the actual error
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (ex.response.headers["content-type"] === "text/html") {
+          if (ex.response.status === 502) {
+            logger.error({
+              op: "POSSIBLE_BG_REMOVAL_TIMEOUT",
+              fileKey: metadata.fileKeys.original,
+              timeTakenMilliseconds: endTime - startTime,
+            });
+          }
+          throw ex;
         }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const error: ToolkitErrorResponse = JSON.parse(data);
