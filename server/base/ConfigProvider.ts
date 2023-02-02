@@ -273,6 +273,15 @@ class ConfigProvider {
     return version;
   }
 
+  public get CLIENT_SIDE_GENERATION_BUILD_VERSION(): number {
+    const versionStr = process.env.CLIENT_SIDE_GENERATION_BUILD_VERSION;
+    const version = parseInt(versionStr, 10);
+    if (Number.isNaN(version)) {
+      return null;
+    }
+    return version;
+  }
+
   public get BRANDING_BUILD_VERSION(): number {
     const versionStr = process.env.BRANDING_BUILD_VERSION;
     const version = parseInt(versionStr, 10);

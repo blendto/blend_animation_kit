@@ -41,8 +41,13 @@ import {
 import { DaxDB } from "server/external/dax";
 import { plainToClass } from "class-transformer";
 import { UpdateOperations } from "server/repositories";
-import { JsonPatchBody } from "server/helpers/request";
+import {
+  ensureBrandingEntitlement,
+  JsonPatchBody,
+} from "server/helpers/request";
 import { BlendUpdater } from "server/engine/blend/updater";
+import { diContainer } from "inversify.config";
+import { CreditsService } from "server/service/credits";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -52,6 +57,8 @@ type BlendsPage = { blends: Blend[]; nextPageKey: string };
 const PAGE_SIZE = 15;
 
 type RecipeVariantHeroCheckMap = Record<string, boolean>;
+
+type VerifyExportResponse = { blend: Blend; didUpdate: boolean };
 
 export enum BlendUpdatePaths {
   fileName = "/fileName",
@@ -518,9 +525,65 @@ export class BlendService implements IService {
     return dbUpdateResponse.Attributes as Blend;
   }
 
+  async verifyExport(
+    blendId: string,
+    uid: string,
+    incomingRecipe: Recipe,
+    buildVersion: number,
+    clientType: string
+  ): Promise<VerifyExportResponse> {
+    let existingBlend = await this.getBlend(blendId);
+
+    if (!existingBlend) {
+      // Blend might have expired, recreate it
+      existingBlend = await this.addBlendToDB(blendId, uid);
+    }
+
+    const updater = new BlendUpdater(existingBlend, incomingRecipe);
+    updater.validate(uid);
+
+    if (updater.isBlendSame()) {
+      return { blend: existingBlend, didUpdate: false };
+    }
+
+    await ensureBrandingEntitlement(
+      incomingRecipe,
+      incomingRecipe.metadata?.sourceRecipe?.source,
+      uid
+    );
+
+    const creditsService = diContainer.get<CreditsService>(
+      TYPES.CreditsService
+    );
+    const promise = new Promise<VerifyExportResponse>((resolve, reject) => {
+      creditsService
+        .runWithCreditAndWatermarkCheck(
+          uid,
+          blendId,
+          buildVersion,
+          clientType,
+          async (
+            shouldWatermark: boolean,
+            creditServiceActivityLogId: string
+          ) => {
+            const dbBlend = await this.reportExport(
+              blendId,
+              shouldWatermark,
+              creditServiceActivityLogId,
+              updater.incomingBlendHash()
+            );
+
+            resolve({ blend: dbBlend, didUpdate: true });
+          }
+        )
+        .catch((e) => reject(e));
+    });
+
+    return await promise;
+  }
+
   async updateBlend(
     blend: Blend,
-    creditServiceActivityLogId?: string,
     blendHash?: string,
     isBatchedBlend = true
   ): Promise<Blend> {
@@ -545,7 +608,6 @@ export class BlendService implements IService {
     const statusUpdate = {
       status: "SUBMITTED",
       on: now,
-      creditServiceActivityLogId,
       blendHash,
     } as BlendStatusUpdate;
     const params = {
