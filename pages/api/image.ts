@@ -67,16 +67,20 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   const fileNameArr = fileName.split(".");
   let extension = fileNameArr.pop();
   if (fileNameArr.length > 0) {
-    // filename contains extension
-    VALID_UPLOAD_IMAGE_EXTENSIONS.forEach((validExt) => {
+    // Find the first valid extension that matches the file extension
+    // Note: The order of VALID_UPLOAD_IMAGE_EXTENSIONS is important for this to work correctly,
+    //           for instance, "jpe" should come after "jpeg"
+    for (let i = 0; i < VALID_UPLOAD_IMAGE_EXTENSIONS.length; i++) {
+      const validExt = VALID_UPLOAD_IMAGE_EXTENSIONS[i];
       if (extension.startsWith(validExt)) {
         if (extension !== validExt) {
           logger.info(`changing extension from ${extension} to ${validExt}`);
         }
         extension = validExt;
         fileNameCorrected = `${fileNameArr.join(".")}.${extension}`;
+        break;
       }
-    });
+    }
   }
 
   const urlDetails = await createSignedUploadUrl(

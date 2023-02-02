@@ -9,6 +9,8 @@ export const VALID_UPLOAD_IMAGE_EXTENSIONS = [
   "tiff",
   "dng",
   "gif",
+  "jfif",
+  "jpe",
 ] as const;
 
 export type ValidImageExtension = typeof VALID_UPLOAD_IMAGE_EXTENSIONS[number];
