@@ -3,8 +3,8 @@
 import axios from "axios";
 import { injectable } from "inversify";
 import ConfigProvider from "server/base/ConfigProvider";
-import { UserError } from "server/base/errors";
-import { Entitlement, revenueCat } from "server/external/revenue-cat";
+import { ForbiddenError, UserError } from "server/base/errors";
+import { revenueCat } from "server/external/revenue-cat";
 import { handleAxiosCall } from "server/helpers/network";
 import { IService } from "server/service";
 import { diContainer } from "inversify.config";
@@ -15,14 +15,20 @@ import { EncodedPageKey } from "server/helpers/paginationUtils";
 import CreditServiceApi, {
   ListingResponse,
 } from "server/internal/creditServiceApi";
-import { sum } from "lodash";
+import { isEmpty, sum } from "lodash";
 import { withExponentialBackoffRetries } from "server/helpers/general";
 import {
   RCDefaultEvent,
   RCTransferEvent,
   RevenueCatEvent,
 } from "server/engine/webhook/revenue-cat-event";
-import DynamoDB from "server/external/dynamodb";
+import { Recipe } from "server/base/models/recipe";
+import { RecipeSource } from "server/base/models/recipeList";
+import {
+  Entitlement,
+  FetchEntitlementResponse,
+} from "server/base/models/revenue-cat";
+import { DaxDB } from "server/external/dax";
 
 export interface SubscriptionEntity {
   adhocCredits: number;
@@ -157,8 +163,49 @@ export default class SubscriptionService implements IService {
     return ConfigProvider.WATERMARK_BUILD_VERSION;
   }
 
+  async readEntitlementsCachePopulateIfMissing(
+    userId: string
+  ): Promise<FetchEntitlementResponse> {
+    const db = diContainer.get<DaxDB>(TYPES.DaxDB);
+    const record = (await db.getItem({
+      TableName: ConfigProvider.USER_ENTITLEMENTS_TABLE,
+      Key: { userId },
+      ConsistentRead: true,
+    })) as FetchEntitlementResponse;
+
+    if (record) return record;
+    return await this.fetchAndUpdateUserEntitlementsCache(userId);
+  }
+
+  async userHasEntitlement(
+    userId: string,
+    entitlement: Entitlement
+  ): Promise<boolean> {
+    const { entitlements, expiry } =
+      await this.readEntitlementsCachePopulateIfMissing(userId);
+    return entitlements.includes(entitlement) && expiry < Date.now();
+  }
+
   async hasRevenueCatHDExportEntitlement(userId: string): Promise<boolean> {
-    return await revenueCat.hasEntitlement(userId, Entitlement.HD_EXPORT);
+    return await this.userHasEntitlement(userId, Entitlement.HD_EXPORT);
+  }
+
+  async ensureEntitlement(userId: string, entitlement: Entitlement) {
+    if (!(await this.userHasEntitlement(userId, entitlement))) {
+      throw new ForbiddenError(`User doesn't have ${entitlement} entitlement`);
+    }
+  }
+
+  async ensureBrandingEntitlement(
+    recipe: Recipe,
+    source: RecipeSource,
+    userId: string
+  ) {
+    const doesRecipeHaveBranding =
+      source === RecipeSource.BRANDING || !isEmpty(recipe.branding);
+    if (doesRecipeHaveBranding) {
+      await this.ensureEntitlement(userId, Entitlement.BRANDING);
+    }
   }
 
   async canDoWatermarkFreeExport(
@@ -440,9 +487,9 @@ export default class SubscriptionService implements IService {
     userId: string,
     entitlements: string[],
     expiry?: number
-  ): Promise<void> {
-    const db = diContainer.get<DynamoDB>(TYPES.DynamoDB);
-    await db.putItem({
+  ): Promise<FetchEntitlementResponse> {
+    const db = diContainer.get<DaxDB>(TYPES.DaxDB);
+    return (await db.putItem({
       TableName: ConfigProvider.USER_ENTITLEMENTS_TABLE,
       Item: {
         userId,
@@ -450,12 +497,15 @@ export default class SubscriptionService implements IService {
         expiry: expiry ?? Date.now(),
         updatedAt: Date.now(),
       },
-    });
+      ReturnValues: "ALL_NEW",
+    })) as FetchEntitlementResponse;
   }
 
-  async fetchAndUpdateUserEntitlementsCache(userId: string): Promise<void> {
+  async fetchAndUpdateUserEntitlementsCache(
+    userId: string
+  ): Promise<FetchEntitlementResponse> {
     const userEntitlements = await revenueCat.getEntitlements(userId);
-    await this.updateUserEntitlementsCache(
+    return await this.updateUserEntitlementsCache(
       userId,
       userEntitlements.entitlements,
       userEntitlements.expiry

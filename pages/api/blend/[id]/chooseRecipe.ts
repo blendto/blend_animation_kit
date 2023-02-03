@@ -4,7 +4,6 @@ import { copyObject } from "server/external/s3";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import {
-  ensureBrandingEntitlement,
   NextApiRequestExtended,
   requestComponentToValidate,
   validate,
@@ -23,6 +22,7 @@ import {
 import BrandingService from "server/service/branding";
 import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
 import { isEmpty } from "lodash";
+import SubscriptionService from "server/service/subscription";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -65,6 +65,9 @@ const useRecipeForBlend = async (
   const brandingService = diContainer.get<BrandingService>(
     TYPES.BrandingService
   );
+  const subService = diContainer.get<SubscriptionService>(
+    TYPES.SubscriptionService
+  );
 
   const recipe =
     source === RecipeSource.DEFAULT
@@ -82,7 +85,7 @@ const useRecipeForBlend = async (
   let interactionUpdatePromise;
 
   if (req.uid) {
-    await ensureBrandingEntitlement(recipe, source, req.uid);
+    await subService.ensureBrandingEntitlement(recipe, source, req.uid);
     if (!isEmpty(recipe.branding)) {
       const brandingProfile = await brandingService.get(req.uid);
       if (brandingProfile) {

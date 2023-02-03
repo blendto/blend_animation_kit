@@ -41,13 +41,11 @@ import {
 import { DaxDB } from "server/external/dax";
 import { plainToClass } from "class-transformer";
 import { UpdateOperations } from "server/repositories";
-import {
-  ensureBrandingEntitlement,
-  JsonPatchBody,
-} from "server/helpers/request";
+import { JsonPatchBody } from "server/helpers/request";
 import { BlendUpdater } from "server/engine/blend/updater";
 import { diContainer } from "inversify.config";
 import { CreditsService } from "server/service/credits";
+import SubscriptionService from "server/service/subscription";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -546,7 +544,11 @@ export class BlendService implements IService {
       return { blend: existingBlend, didUpdate: false };
     }
 
-    await ensureBrandingEntitlement(
+    const subscriptionService = diContainer.get<SubscriptionService>(
+      TYPES.SubscriptionService
+    );
+
+    await subscriptionService.ensureBrandingEntitlement(
       incomingRecipe,
       incomingRecipe.metadata?.sourceRecipe?.source,
       uid

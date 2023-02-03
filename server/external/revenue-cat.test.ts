@@ -1,4 +1,5 @@
-import { Entitlement, Entitlements, revenueCat } from "./revenue-cat";
+import { Entitlement, Entitlements } from "server/base/models/revenue-cat";
+import { revenueCat } from "./revenue-cat";
 
 function spyOnGetAPI(entitlements: Entitlements) {
   return jest.spyOn(revenueCat.httpClient, "get").mockResolvedValueOnce({

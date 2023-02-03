@@ -1,18 +1,11 @@
 import axios from "axios";
 import ConfigProvider from "server/base/ConfigProvider";
 import { handleAxiosCall } from "server/helpers/network";
-
-export enum Entitlement {
-  BRANDING = "BRANDING",
-  BATCH_EDIT = "BATCH_EDIT",
-  HD_EXPORT = "HD_EXPORT",
-}
-
-export type Entitlements = {
-  [attribute in Entitlement]?: {
-    expires_date: string;
-  };
-};
+import {
+  Entitlement,
+  Entitlements,
+  FetchEntitlementResponse,
+} from "server/base/models/revenue-cat";
 
 class RevenueCat {
   httpClient = axios.create({
@@ -45,9 +38,7 @@ class RevenueCat {
     );
   }
 
-  async getEntitlements(
-    userId: string
-  ): Promise<{ entitlements: string[]; expiry: number }> {
+  async getEntitlements(userId: string): Promise<FetchEntitlementResponse> {
     const subscriptionData = (await this.getSubscriber(userId)) as {
       subscriber?: {
         entitlements: Entitlements;

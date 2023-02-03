@@ -1,6 +1,6 @@
 import { diContainer } from "inversify.config";
 import { ObjectSchema } from "joi";
-import { isEmpty, pick } from "lodash";
+import { pick } from "lodash";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import logger from "server/base/Logger";
@@ -16,9 +16,6 @@ import InterServiceAuth, {
   BlendMicroServices,
 } from "server/internal/inter-service-auth";
 import { TYPES } from "server/types";
-import { Recipe } from "server/base/models/recipe";
-import { RecipeSource } from "server/base/models/recipeList";
-import { Entitlement, revenueCat } from "server/external/revenue-cat";
 import Cors from "cors";
 import { initMiddleware } from "server/helpers/middleware";
 import ExternalHTTPError from "server/base/errors/ExternalHTTPError";
@@ -210,22 +207,6 @@ export async function ensureServiceAuth(
   await interServiceAuth.validate(serviceType, authHeader);
 
   await controller(req, res);
-}
-
-async function ensureEntitlement(userId: string, entitlement: Entitlement) {
-  if (!(await revenueCat.hasEntitlement(userId, entitlement))) {
-    throw new ForbiddenError(`User doesn't have ${entitlement} entitlement`);
-  }
-}
-
-export async function ensureBrandingEntitlement(
-  recipe: Recipe,
-  source: RecipeSource,
-  userId: string
-) {
-  if (source === RecipeSource.BRANDING || !isEmpty(recipe.branding)) {
-    await ensureEntitlement(userId, Entitlement.BRANDING);
-  }
 }
 
 export enum requestComponentToValidate {
