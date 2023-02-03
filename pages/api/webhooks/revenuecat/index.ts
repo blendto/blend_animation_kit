@@ -30,7 +30,7 @@ export default withReqHandler(
       case "POST":
         return await ensureServiceAuth(
           BlendMicroServices.RevenueCatWebHook,
-          registerCreditPurchase,
+          processWebhook,
           req,
           res
         );
@@ -60,7 +60,7 @@ async function updateUserEntitlement(eventJSON: Record<string, unknown>) {
   }
 }
 
-const registerCreditPurchase = async (
+const processWebhook = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {

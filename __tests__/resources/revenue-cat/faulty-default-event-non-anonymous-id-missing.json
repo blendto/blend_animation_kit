@@ -1,0 +1,37 @@
+{
+  "api_version": "1.0",
+  "event": {
+    "aliases": [
+      "$RCAnonymousID:083be3010fb04236be84703ad1ac58c5",
+      "$RCAnonymousID:083be3010fb04236be84703ad1ac58c5"
+    ],
+    "app_id": "app456edeb34a",
+    "app_user_id": "$RCAnonymousID:083be3010fb04236be84703ad1ac58c5",
+    "cancel_reason": "BILLING_ERROR",
+    "commission_percentage": 0.15,
+    "country_code": "ID",
+    "currency": "IDR",
+    "entitlement_id": null,
+    "entitlement_ids": ["BRANDING", "BATCH_EDIT", "PRO", "HD_EXPORT"],
+    "environment": "PRODUCTION",
+    "event_timestamp_ms": 1674882056296,
+    "expiration_at_ms": 1674968455895,
+    "id": "F348F966-1C8A-4C8D-9BA8-D18FDD24A0AE",
+    "is_family_share": false,
+    "offer_code": null,
+    "original_app_user_id": "$RCAnonymousID:083be3010fb04236be84703ad1ac58c5",
+    "original_transaction_id": "GPA.3313-8067-3874-01706",
+    "period_type": "TRIAL",
+    "presented_offering_id": "subscriptions",
+    "price": 0,
+    "price_in_purchased_currency": 0,
+    "product_id": "blend_999_12_month",
+    "purchased_at_ms": 1674888461129,
+    "store": "PLAY_STORE",
+    "subscriber_attributes": {},
+    "takehome_percentage": 0.85,
+    "tax_percentage": 0,
+    "transaction_id": "GPA.3313-8067-3874-01706..0",
+    "type": "CANCELLATION"
+  }
+}

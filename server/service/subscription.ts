@@ -17,6 +17,12 @@ import CreditServiceApi, {
 } from "server/internal/creditServiceApi";
 import { sum } from "lodash";
 import { withExponentialBackoffRetries } from "server/helpers/general";
+import {
+  RCDefaultEvent,
+  RCTransferEvent,
+  RevenueCatEvent,
+} from "server/engine/webhook/revenue-cat-event";
+import DynamoDB from "server/external/dynamodb";
 
 export interface SubscriptionEntity {
   adhocCredits: number;
@@ -417,5 +423,52 @@ export default class SubscriptionService implements IService {
       blend: blendMap[blendId],
       coinsCount,
     };
+  }
+
+  async processRevenueCatEvent(event: RevenueCatEvent): Promise<void> {
+    if (event instanceof RCTransferEvent) {
+      const { from, to } = event.getTransferDetails();
+      await this.transferUserEntitlementsInCache(from, to);
+    }
+    if (event instanceof RCDefaultEvent) {
+      const { userId, entitlements, expiry } = event.getUpdateDetails();
+      await this.updateUserEntitlementsCache(userId, entitlements, expiry);
+    }
+  }
+
+  async updateUserEntitlementsCache(
+    userId: string,
+    entitlements: string[],
+    expiry?: number
+  ): Promise<void> {
+    const db = diContainer.get<DynamoDB>(TYPES.DynamoDB);
+    await db.putItem({
+      TableName: ConfigProvider.USER_ENTITLEMENTS_TABLE,
+      Item: {
+        userId,
+        entitlements: entitlements ?? [],
+        expiry: expiry ?? Date.now(),
+        updatedAt: Date.now(),
+      },
+    });
+  }
+
+  async fetchAndUpdateUserEntitlementsCache(userId: string): Promise<void> {
+    const userEntitlements = await revenueCat.getEntitlements(userId);
+    await this.updateUserEntitlementsCache(
+      userId,
+      userEntitlements.entitlements,
+      userEntitlements.expiry
+    );
+  }
+
+  async transferUserEntitlementsInCache(
+    sourceUid: string,
+    targetUid: string
+  ): Promise<void> {
+    await Promise.all([
+      this.fetchAndUpdateUserEntitlementsCache(sourceUid),
+      this.fetchAndUpdateUserEntitlementsCache(targetUid),
+    ]);
   }
 }

@@ -255,6 +255,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("IP_DETAILS_CACHE_TABLE");
   }
 
+  public get USER_ENTITLEMENTS_TABLE(): string {
+    return this.retrieveOrCrash("USER_ENTITLEMENTS_TABLE");
+  }
+
   public get CUSTOMER_IO_SITE_ID(): string {
     return this.retrieveOrCrash("CUSTOMER_IO_SITE_ID");
   }

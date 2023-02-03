@@ -9,7 +9,9 @@ export enum Entitlement {
 }
 
 export type Entitlements = {
-  [attribute in Entitlement]?: Record<string, unknown>;
+  [attribute in Entitlement]?: {
+    expires_date: string;
+  };
 };
 
 class RevenueCat {
@@ -38,10 +40,31 @@ class RevenueCat {
       "subscriber" in subscriptionData &&
       entitlement in subscriptionData.subscriber.entitlements &&
       new Date(
-        subscriptionData.subscriber.entitlements[entitlement]
-          .expires_date as string
+        subscriptionData.subscriber.entitlements[entitlement].expires_date
       ) > new Date()
     );
+  }
+
+  async getEntitlements(
+    userId: string
+  ): Promise<{ entitlements: string[]; expiry: number }> {
+    const subscriptionData = (await this.getSubscriber(userId)) as {
+      subscriber?: {
+        entitlements: Entitlements;
+      };
+    };
+
+    const entitlements = subscriptionData.subscriber?.entitlements ?? {};
+
+    // Here we are considering entitlement expiry to be the max of all expiry
+    // as user is assigned all entitlements together. This will most likely
+    // change in the future
+    let expiry: number = null;
+    Object.entries(entitlements).forEach(([, val]) => {
+      expiry = Math.max(new Date(val.expires_date).getTime(), expiry);
+    });
+
+    return { entitlements: Object.keys(entitlements), expiry };
   }
 }
 

@@ -1,0 +1,18 @@
+{
+  "api_version": "1.0",
+  "event": {
+    "app_id": "app456edeb34a",
+    "event_timestamp_ms": 1674875181938,
+    "id": "63038C07-9B78-4C7E-B3F7-5CFB6C6DF0A2",
+    "store": "PLAY_STORE",
+    "transferred_from": [
+      "$RCAnonymousID:7b07b803898841118249e396a048d7da",
+      "oE9AG2RAXgf8muEeRrbPokqeByl1"
+    ],
+    "transferred_to": [
+      "$RCAnonymousID:fdcb275e30b2491e95007428c56f7fb6",
+      "YUeNl5cW9ZfNA8XKZYecLeJ3rKp1"
+    ],
+    "type": "TRANSFER"
+  }
+}

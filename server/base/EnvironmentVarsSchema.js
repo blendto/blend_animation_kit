@@ -37,6 +37,7 @@ module.exports = {
       BG_REMOVER_API_KEY: Joi.string().required(),
       BG_REMOVAL_LOG_TABLE_NAME: Joi.string().required(),
       BRANDING_DYNAMODB_TABLE: Joi.string().required(),
+      USER_ENTITLEMENTS_TABLE: Joi.string().required(),
       BRANDING_DYNAMODB_USER_ID_INDEX: Joi.string().required(),
       BRANDING_BUCKET: Joi.string().required(),
       SERVICE_API_KEYS_SECRET_ARN: Joi.string().required(),

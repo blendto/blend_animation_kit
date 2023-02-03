@@ -1,0 +1,159 @@
+[
+  {
+    "api_version": "1.0",
+    "event": {
+      "aliases": [
+        "$RCAnonymousID:083be3010fb04236be84703ad1ac58c5",
+        "vI7M5N7lN0RVOg0gAyEhPWhDtNY2"
+      ],
+      "app_id": "app456edeb34a",
+      "app_user_id": "vI7M5N7lN0RVOg0gAyEhPWhDtNY2",
+      "cancel_reason": "BILLING_ERROR",
+      "commission_percentage": 0.15,
+      "country_code": "ID",
+      "currency": "IDR",
+      "entitlement_id": null,
+      "entitlement_ids": ["BRANDING", "BATCH_EDIT", "PRO", "HD_EXPORT"],
+      "environment": "PRODUCTION",
+      "event_timestamp_ms": 1674882056296,
+      "expiration_at_ms": 1674968455895,
+      "id": "F348F966-1C8A-4C8D-9BA8-D18FDD24A0AE",
+      "is_family_share": false,
+      "offer_code": null,
+      "original_app_user_id": "$RCAnonymousID:083be3010fb04236be84703ad1ac58c5",
+      "original_transaction_id": "GPA.3313-8067-3874-01706",
+      "period_type": "TRIAL",
+      "presented_offering_id": "subscriptions",
+      "price": 0,
+      "price_in_purchased_currency": 0,
+      "product_id": "blend_999_12_month",
+      "purchased_at_ms": 1674888461129,
+      "store": "PLAY_STORE",
+      "subscriber_attributes": {},
+      "takehome_percentage": 0.85,
+      "tax_percentage": 0,
+      "transaction_id": "GPA.3313-8067-3874-01706..0",
+      "type": "CANCELLATION"
+    }
+  },
+  {
+    "api_version": "1.0",
+    "event": {
+      "aliases": [
+        "$RCAnonymousID:2d56093a9be846fbb81dd1c301f08497",
+        "5k2j0XSZQdU5MFZKeyrSiZcgJCD2"
+      ],
+      "app_id": "app456edeb34a",
+      "app_user_id": "5k2j0XSZQdU5MFZKeyrSiZcgJCD2",
+      "commission_percentage": 0.15,
+      "country_code": "ID",
+      "currency": "IDR",
+      "entitlement_id": null,
+      "entitlement_ids": ["HD_EXPORT", "BRANDING", "PRO", "BATCH_EDIT"],
+      "environment": "PRODUCTION",
+      "event_timestamp_ms": 1674882025383,
+      "expiration_at_ms": 1675148359330,
+      "id": "112421BD-317E-404B-A261-15C3C514C8DA",
+      "is_family_share": false,
+      "offer_code": null,
+      "original_app_user_id": "$RCAnonymousID:2d56093a9be846fbb81dd1c301f08497",
+      "original_transaction_id": "GPA.3382-2419-8023-87611",
+      "period_type": "TRIAL",
+      "presented_offering_id": "subscriptions",
+      "price": 0,
+      "price_in_purchased_currency": 0,
+      "product_id": "blend_999_12_month",
+      "purchased_at_ms": 1674882009559,
+      "store": "PLAY_STORE",
+      "subscriber_attributes": {},
+      "takehome_percentage": 0.85,
+      "tax_percentage": 0,
+      "transaction_id": "GPA.3382-2419-8023-87611",
+      "type": "INITIAL_PURCHASE"
+    }
+  },
+  {
+    "api_version": "1.0",
+    "event": {
+      "aliases": [
+        "DGxeRyE7stULZpo22SRO64Dmelu2",
+        "$RCAnonymousID:7cac85c6dd134f5d8a4f848e87725075"
+      ],
+      "app_id": "app760313de76",
+      "app_user_id": "DGxeRyE7stULZpo22SRO64Dmelu2",
+      "commission_percentage": 0.3,
+      "country_code": "ID",
+      "currency": "IDR",
+      "entitlement_id": null,
+      "entitlement_ids": ["PRO", "HD_EXPORT", "BATCH_EDIT", "BRANDING"],
+      "environment": "PRODUCTION",
+      "event_timestamp_ms": 1674880964794,
+      "expiration_at_ms": 1674880828000,
+      "expiration_reason": "UNSUBSCRIBE",
+      "id": "4AC3FBB0-8A8F-4718-8230-4F4850C74FA3",
+      "is_family_share": false,
+      "offer_code": null,
+      "original_app_user_id": "$RCAnonymousID:7cac85c6dd134f5d8a4f848e87725075",
+      "original_transaction_id": "220001472915810",
+      "period_type": "TRIAL",
+      "presented_offering_id": null,
+      "price": 0,
+      "price_in_purchased_currency": 0,
+      "product_id": "blend_1500_year",
+      "purchased_at_ms": 1674621628000,
+      "store": "APP_STORE",
+      "subscriber_attributes": {
+        "$attConsentStatus": {
+          "updated_at_ms": 1671063865197,
+          "value": "denied"
+        }
+      },
+      "takehome_percentage": 0.7,
+      "tax_percentage": 0.0636,
+      "transaction_id": "220001472915810",
+      "type": "EXPIRATION"
+    }
+  },
+  {
+    "api_version": "1.0",
+    "event": {
+      "aliases": [
+        "$RCAnonymousID:e90f55da143748b3a7b317fb51904058",
+        "Od96t5jZRbaSiQluI1WQihGv2b32"
+      ],
+      "app_id": "app760313de76",
+      "app_user_id": "Od96t5jZRbaSiQluI1WQihGv2b32",
+      "commission_percentage": 0.3,
+      "country_code": "DE",
+      "currency": "EUR",
+      "entitlement_id": null,
+      "entitlement_ids": ["HD_EXPORT", "PRO", "BATCH_EDIT", "BRANDING"],
+      "environment": "PRODUCTION",
+      "event_timestamp_ms": 1675325165961,
+      "expiration_at_ms": 1677773062000,
+      "id": "CB167BD9-BCDC-4E25-BFCA-FC8DF00FB26F",
+      "is_family_share": false,
+      "is_trial_conversion": false,
+      "offer_code": null,
+      "original_app_user_id": "$RCAnonymousID:e90f55da143748b3a7b317fb51904058",
+      "original_transaction_id": "90001458662962",
+      "period_type": "NORMAL",
+      "presented_offering_id": null,
+      "price": 11.002,
+      "price_in_purchased_currency": 9.99,
+      "product_id": "blend_150_month",
+      "purchased_at_ms": 1675353862000,
+      "store": "APP_STORE",
+      "subscriber_attributes": {
+        "$attConsentStatus": {
+          "updated_at_ms": 1672675295824,
+          "value": "denied"
+        }
+      },
+      "takehome_percentage": 0.7,
+      "tax_percentage": 0.1118,
+      "transaction_id": "90001490174290",
+      "type": "RENEWAL"
+    }
+  }
+]
