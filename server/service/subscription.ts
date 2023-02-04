@@ -166,15 +166,20 @@ export default class SubscriptionService implements IService {
   async readEntitlementsCachePopulateIfMissing(
     userId: string
   ): Promise<FetchEntitlementResponse> {
+    const record = await this.getCachedEntitlements(userId);
+
+    if (record) return record;
+    await this.fetchAndUpdateUserEntitlementsCache(userId);
+    return await this.getCachedEntitlements(userId);
+  }
+
+  private async getCachedEntitlements(userId: string) {
     const db = diContainer.get<DaxDB>(TYPES.DaxDB);
-    const record = (await db.getItem({
+    return (await db.getItem({
       TableName: ConfigProvider.USER_ENTITLEMENTS_TABLE,
       Key: { userId },
       ConsistentRead: true,
     })) as FetchEntitlementResponse;
-
-    if (record) return record;
-    return await this.fetchAndUpdateUserEntitlementsCache(userId);
   }
 
   async userHasEntitlement(
@@ -487,9 +492,9 @@ export default class SubscriptionService implements IService {
     userId: string,
     entitlements: string[],
     expiry?: number
-  ): Promise<FetchEntitlementResponse> {
+  ): Promise<void> {
     const db = diContainer.get<DaxDB>(TYPES.DaxDB);
-    return (await db.putItem({
+    await db.putItem({
       TableName: ConfigProvider.USER_ENTITLEMENTS_TABLE,
       Item: {
         userId,
@@ -497,15 +502,12 @@ export default class SubscriptionService implements IService {
         expiry: expiry ?? Date.now(),
         updatedAt: Date.now(),
       },
-      ReturnValues: "ALL_NEW",
-    })) as FetchEntitlementResponse;
+    });
   }
 
-  async fetchAndUpdateUserEntitlementsCache(
-    userId: string
-  ): Promise<FetchEntitlementResponse> {
+  async fetchAndUpdateUserEntitlementsCache(userId: string): Promise<void> {
     const userEntitlements = await revenueCat.getEntitlements(userId);
-    return await this.updateUserEntitlementsCache(
+    await this.updateUserEntitlementsCache(
       userId,
       userEntitlements.entitlements,
       userEntitlements.expiry
