@@ -188,7 +188,7 @@ export default class SubscriptionService implements IService {
   ): Promise<boolean> {
     const { entitlements, expiry } =
       await this.readEntitlementsCachePopulateIfMissing(userId);
-    return entitlements.includes(entitlement) && expiry < Date.now();
+    return entitlements.includes(entitlement) && expiry > Date.now();
   }
 
   async hasRevenueCatHDExportEntitlement(userId: string): Promise<boolean> {
