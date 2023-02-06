@@ -334,11 +334,13 @@ export class RecipeWrapper {
         uid: heroUid,
         uri: fileKeys.withoutBg,
       };
-      const maxZIndex = Math.max(
-        ...this.recipe.interactions.map(
-          (i) => (i.metadata as ImageMetadata).zIndex
-        )
-      );
+      const maxZIndex = this.recipe.interactions.length
+        ? Math.max(
+            ...this.recipe.interactions.map(
+              (i) => (i.metadata as ImageMetadata).zIndex
+            )
+          )
+        : 0;
       interaction = this.defaultHeroInteraction(heroUid, maxZIndex);
       this.recipe.images.push(image);
       this.recipe.interactions.push(interaction);
