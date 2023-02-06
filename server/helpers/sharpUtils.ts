@@ -13,7 +13,11 @@ export async function sharpInstance(
     return sharp(options);
   }
   const converted = await convertToValidFormat(input, fileExtension);
-  return sharp(converted, options);
+  return (
+    sharp(converted, options)
+      // Retain orientation based on original EXIF data
+      .rotate()
+  );
 }
 
 async function convertToValidFormat(
