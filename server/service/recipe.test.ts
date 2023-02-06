@@ -61,8 +61,13 @@ describe("RecipeService", () => {
 
     it("replaces info if available and deletes logo if unavailable", async () => {
       jest
-        .spyOn(recipeService.configService, "regionWiseOrderedBrandingHandles")
-        .mockResolvedValueOnce([]);
+        .spyOn(recipeService.configService, "branding")
+        .mockResolvedValueOnce({
+          logos: { paths: [] },
+          info: {
+            countryWiseSortedHandles: [],
+          },
+        });
       await recipeService.replaceBrandingInfo(
         recipeCopy,
         omit(brandingProfile, "logos.primaryEntry", "logos.entries.0"),
@@ -93,8 +98,13 @@ describe("RecipeService", () => {
 
     it("replaces logo if available and deletes info if unavailable", async () => {
       jest
-        .spyOn(recipeService.configService, "regionWiseOrderedBrandingHandles")
-        .mockResolvedValueOnce([]);
+        .spyOn(recipeService.configService, "branding")
+        .mockResolvedValueOnce({
+          logos: { paths: [] },
+          info: {
+            countryWiseSortedHandles: [],
+          },
+        });
       await recipeService.replaceBrandingInfo(
         recipeCopy,
         {
@@ -122,8 +132,13 @@ describe("RecipeService", () => {
 
     it("replaces both info and logo if available", async () => {
       jest
-        .spyOn(recipeService.configService, "regionWiseOrderedBrandingHandles")
-        .mockResolvedValueOnce([]);
+        .spyOn(recipeService.configService, "branding")
+        .mockResolvedValueOnce({
+          logos: { paths: [] },
+          info: {
+            countryWiseSortedHandles: [],
+          },
+        });
       await recipeService.replaceBrandingInfo(
         recipeCopy,
         brandingProfile,
@@ -152,21 +167,26 @@ describe("RecipeService", () => {
 
     it("if available, adds other handles from profile and tries to match the original count", async () => {
       jest
-        .spyOn(recipeService.configService, "regionWiseOrderedBrandingHandles")
-        .mockResolvedValueOnce([
-          BrandingInfoType.BrandName,
-          BrandingInfoType.WhatsappNo,
-          BrandingInfoType.ShopeeHandle,
-          BrandingInfoType.InstaHandle,
-          BrandingInfoType.TiktokHandle,
-          BrandingInfoType.ContactNo,
-          BrandingInfoType.FacebookHandle,
-          BrandingInfoType.Email,
-          BrandingInfoType.YoutubeHandle,
-          BrandingInfoType.TokopediaHandle,
-          BrandingInfoType.Website,
-          BrandingInfoType.LazadaHandle,
-        ]);
+        .spyOn(recipeService.configService, "branding")
+        .mockResolvedValueOnce({
+          logos: { paths: [] },
+          info: {
+            countryWiseSortedHandles: [
+              BrandingInfoType.BrandName,
+              BrandingInfoType.WhatsappNo,
+              BrandingInfoType.ShopeeHandle,
+              BrandingInfoType.InstaHandle,
+              BrandingInfoType.TiktokHandle,
+              BrandingInfoType.ContactNo,
+              BrandingInfoType.FacebookHandle,
+              BrandingInfoType.Email,
+              BrandingInfoType.YoutubeHandle,
+              BrandingInfoType.TokopediaHandle,
+              BrandingInfoType.Website,
+              BrandingInfoType.LazadaHandle,
+            ],
+          },
+        });
       await recipeService.replaceBrandingInfo(
         recipeCopy,
         {

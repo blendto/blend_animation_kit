@@ -1,10 +1,9 @@
 import type { NextApiResponse } from "next";
 import { MethodNotAllowedError } from "server/base/errors";
 import { NextApiRequestExtended, withReqHandler } from "server/helpers/request";
-import ConfigProvider from "server/base/ConfigProvider";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
-import { DaxDB } from "server/external/dax";
+import ConfigService from "server/service/config";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse): Promise<void> => {
@@ -22,10 +21,7 @@ const getBrandingHandlesConfig = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const daxDB = diContainer.get<DaxDB>(TYPES.DaxDB);
-  const { logos } = (await daxDB.getItem({
-    TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
-    Key: { key: "branding_handles", version: "1" },
-  })) as { logos: unknown[] };
-  res.send({ logos });
+  const { ip } = req;
+  const configService = diContainer.get<ConfigService>(TYPES.ConfigService);
+  res.send(await configService.branding(ip));
 };

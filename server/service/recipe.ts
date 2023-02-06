@@ -372,8 +372,8 @@ export class RecipeService implements IService {
           (d) => !!d
         );
         const orderedHandleTypes = (
-          await this.configService.regionWiseOrderedBrandingHandles(ip)
-        ).filter(
+          await this.configService.branding(ip)
+        ).info.countryWiseSortedHandles.filter(
           (type) => !recipe.branding.info.data.find((i) => i.type === type)
         );
         let handleTypesIndex = 0;

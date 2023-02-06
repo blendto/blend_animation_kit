@@ -11,12 +11,28 @@ export default class ConfigService implements IService {
   @inject(TYPES.UserService) private userService: UserService;
   @inject(TYPES.DaxDB) daxStore: DaxDB;
 
-  async regionWiseOrderedBrandingHandles(ip: string) {
+  async branding(ip: string) {
     const userAgentDetails = await this.userService.getUserAgent(ip);
-    const { data: handles } = (await this.daxStore.getItem({
+    const { logos, info } = (await this.daxStore.getItem({
       TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
-      Key: { key: "ordered_regionwise_branding_handles", version: "1" },
-    })) as { data: Record<string, BrandingInfoType[]> };
-    return handles[userAgentDetails?.countryCode] ?? handles.DEFAULT;
+      Key: { key: "branding", version: "1" },
+    })) as {
+      logos: {
+        paths: {
+          type: BrandingInfoType;
+          uri: string;
+          style: string;
+        }[];
+      };
+      info: { countryWiseSortedHandles: Record<string, BrandingInfoType[]> };
+    };
+    return {
+      logos,
+      info: {
+        countryWiseSortedHandles:
+          info.countryWiseSortedHandles[userAgentDetails?.countryCode] ??
+          info.countryWiseSortedHandles.DEFAULT,
+      },
+    };
   }
 }
