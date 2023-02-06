@@ -189,6 +189,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     metadata,
     background,
     heroImages,
+    branding,
   } = blend;
 
   if (
@@ -215,6 +216,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       metadata,
       background,
       heroImages,
+      branding,
     };
 
     if (blend.status === BlendStatus.Initialized) {
