@@ -1,4 +1,5 @@
-import logger from "../base/Logger";
+import logger from "server/base/Logger";
+import { TrimLTWH } from "server/base/models/heroImage";
 
 export class Rect {
   left: number;
@@ -21,7 +22,7 @@ export class Rect {
     return this.bottom - this.top;
   }
 
-  toLTWH(): [number, number, number, number] {
+  toLTWH(): TrimLTWH {
     return [
       this.left,
       this.top,

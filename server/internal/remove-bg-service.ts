@@ -9,7 +9,7 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
 import type DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
-import { ImageFileKeys } from "server/base/models/heroImage";
+import { ImageFileKeys, TrimLTWH } from "server/base/models/heroImage";
 import { getObject, uploadObject } from "server/external/s3";
 import { bufferToStream, streamToBuffer } from "server/helpers/bufferUtils";
 import logger from "server/base/Logger";
@@ -286,7 +286,7 @@ export class RemoveBgService implements IService {
   async applyMaskAndUpload(
     originalFileKey: string,
     maskFileKey: string
-  ): Promise<string> {
+  ): Promise<ImageFileKeys> {
     const originalImage = await getObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       originalFileKey
@@ -313,7 +313,30 @@ export class RemoveBgService implements IService {
       bgRemovedImageFileKey,
       bufferToStream(bgRemovedImageUsingMask.data)
     );
-    return bgRemovedImageFileKey;
+
+    const {
+      trimOffsetLeft,
+      trimOffsetTop,
+      width: trimWidth,
+      height: trimHeight,
+    } = bgRemovedImageUsingMask.info;
+
+    let trimLTWH: TrimLTWH;
+    if (trimOffsetLeft) {
+      trimLTWH = [
+        Math.abs(trimOffsetLeft ?? 0),
+        Math.abs(trimOffsetTop ?? 0),
+        trimWidth,
+        trimHeight,
+      ];
+    }
+
+    return {
+      original: originalFileKey,
+      mask: maskFileKey,
+      withoutBg: bgRemovedImageFileKey,
+      trimLTWH,
+    };
   }
 
   private handleBgRemovalException = async (

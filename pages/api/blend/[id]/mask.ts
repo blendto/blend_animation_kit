@@ -59,16 +59,10 @@ const updateMask = async (
 
   const blend = await blendService.getBlend(id, null, true);
 
-  const bgRemovedImageFileKey = await removeBgService.applyMaskAndUpload(
+  const fileKeyItem = await removeBgService.applyMaskAndUpload(
     originalFileKey,
     maskFileKey
   );
-
-  const fileKeyItem = {
-    original: originalFileKey,
-    mask: maskFileKey,
-    withoutBg: bgRemovedImageFileKey,
-  } as ImageFileKeys;
 
   await blendService.addOrUpdateImageFileKeys(blend, fileKeyItem, {
     isHeroImage: blend.heroImages?.original === originalFileKey,

@@ -12,6 +12,8 @@ export type HeroImageStatusUpdate = {
   updatedAt: number;
 };
 
+export type TrimLTWH = [number, number, number, number];
+
 export interface HeroImage {
   id: string;
   original: string;
@@ -28,7 +30,7 @@ export interface HeroImage {
 
 export class ImageFileKeys {
   original: string;
-  trimLTWH?: [number, number, number, number];
+  trimLTWH?: TrimLTWH;
   withoutBg?: string;
   mask?: string;
 }
