@@ -463,7 +463,8 @@ export default class BrandingService implements IService {
       (e) => e.fileKey === fileKey
     );
     if (!logoData) {
-      throw new UserError("Invalid fileKey");
+      // Not a logo upload. Ignore
+      return;
     }
     if (
       [BrandingLogoStatus.UPLOADED, BrandingLogoStatus.PROCESSED].includes(

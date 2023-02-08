@@ -555,13 +555,11 @@ describe("BrandingService", () => {
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
     });
 
-    it("Rejects request if the corresponding blend has no such fileKey", async () => {
+    it("Ignores request if the corresponding blend has no such fileKey", async () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce(brandingDoc);
-      await expect(brandingService.completeLogoUpload(fileKey)).rejects.toThrow(
-        new UserError("Invalid fileKey")
-      );
+      await brandingService.completeLogoUpload(fileKey);
       expect(getSpy.mock.calls.length).toBe(1);
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
     });
