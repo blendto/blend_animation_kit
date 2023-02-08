@@ -24,6 +24,7 @@ import { UserError, UserErrorCode } from "server/base/errors";
 import HeroImageService from "./heroImage";
 import { BatchService } from "./batch";
 import SubscriptionService from "./subscription";
+import BrandingService from "./branding";
 
 export type UserJSONUpdate = {
   path: UserUpdatePaths;
@@ -226,6 +227,13 @@ export class UserService implements IService {
       }
       throw e;
     }
+  }
+
+  async migrateBranding(sourceUid: string, targetUid: string): Promise<void> {
+    const brandingService = diContainer.get<BrandingService>(
+      TYPES.BrandingService
+    );
+    await brandingService.migrateProfile(sourceUid, targetUid);
   }
 
   async migrateUserBlends(

@@ -67,6 +67,11 @@ export enum BrandingLogoFromUploadsSource {
   HERO_IMAGE = "HERO_IMAGE",
 }
 
+export interface BrandingLogosEntity {
+  primaryEntry?: string;
+  entries: BrandingLogo[];
+}
+
 export interface BrandingEntity extends Entity {
   id: string;
   userId: string;
@@ -75,10 +80,7 @@ export interface BrandingEntity extends Entity {
     value: string;
     link?: string;
   }[];
-  logos: {
-    primaryEntry?: string;
-    entries: BrandingLogo[];
-  };
+  logos: BrandingLogosEntity;
   updatedAt?: number;
   status?: BrandingStatus;
 }

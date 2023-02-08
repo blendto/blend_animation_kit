@@ -23,6 +23,7 @@ import {
   BrandingUpdatePaths,
   BrandingLogo,
   BrandingLogoFromUploadsSource,
+  BrandingLogosEntity,
 } from "server/repositories/branding";
 import {
   convertImageToWebp,
@@ -46,6 +47,7 @@ import DynamoDB from "server/external/dynamodb";
 import { withExponentialBackoffRetries } from "server/helpers/general";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import { RemoveBgService } from "server/internal/remove-bg-service";
+import { replaceUriPrefix } from "server/helpers/fileKeyUtils";
 import { BlendService } from "./blend";
 import { MAX_FILE_SIZE, RecipeService } from "./recipe";
 import { UserService } from "./user";
@@ -588,5 +590,128 @@ export default class BrandingService implements IService {
         value: logos,
       },
     ]);
+  }
+
+  async migrateProfile(sourceUid: string, targetUid: string) {
+    logger.info({ op: "MIGRATE_BRANDING_PROFILE", sourceUid, targetUid });
+    const targetBranding = await this.getOrCreate(targetUid);
+    const sourceBranding = await this.get(sourceUid);
+    if (sourceBranding) {
+      sourceBranding.info.forEach((sourceItem) => {
+        const targetItem = targetBranding.info.find(
+          (targetItem) => targetItem.type === sourceItem.type
+        );
+        if (targetItem) {
+          targetItem.link = sourceItem.link;
+          targetItem.value = sourceItem.value;
+        } else {
+          targetBranding.info.push(sourceItem);
+        }
+      });
+      if (!targetBranding.logos.entries.length) {
+        targetBranding.logos = await this.migrateLogos(
+          sourceBranding.logos,
+          targetBranding.id
+        );
+      } else {
+        // It's complicated to merge. Retain the older set.
+      }
+    }
+    await this.repo.updatePartial(
+      { id: targetBranding.id },
+      {
+        info: targetBranding.info,
+        logos: targetBranding.logos,
+      }
+    );
+    if (sourceBranding) {
+      await this.repo.delete({ id: sourceBranding.id });
+    }
+
+    await this.migrateRecipes(sourceUid, targetUid, targetBranding.id);
+  }
+
+  async migrateLogos(source: BrandingLogosEntity, targetBrandingId: string) {
+    const promises = [];
+    source.entries.forEach((e) => {
+      const { fileKey } = e;
+      const newFileKey = replaceUriPrefix(fileKey, targetBrandingId);
+      promises.push(
+        copyObject(
+          ConfigProvider.BRANDING_BUCKET,
+          fileKey,
+          ConfigProvider.BRANDING_BUCKET,
+          newFileKey
+        ).then(() => deleteObject(ConfigProvider.BRANDING_BUCKET, fileKey))
+      );
+      e.fileKey = newFileKey;
+      if (source.primaryEntry === fileKey) {
+        source.primaryEntry = newFileKey;
+      }
+    });
+    await Promise.all(promises);
+    return source;
+  }
+
+  async migrateRecipes(
+    sourceUid: string,
+    targetUid: string,
+    targetBrandingId: string
+  ) {
+    const recipes = await this.getRecipes(sourceUid);
+    if (recipes.length > 0) {
+      const updatePromises = [];
+      recipes.forEach((r) => {
+        const imagePromises = [];
+        r.images.forEach((i) => {
+          const { uri } = i;
+          const newUri = replaceUriPrefix(uri, targetBrandingId);
+          imagePromises.push(
+            copyObject(
+              ConfigProvider.BRANDING_BUCKET,
+              uri,
+              ConfigProvider.BRANDING_BUCKET,
+              newUri
+            ).then(() => deleteObject(ConfigProvider.BRANDING_BUCKET, uri))
+          );
+          i.uri = newUri;
+        });
+        const { thumbnail: thumbnailURI } = r;
+        if (thumbnailURI) {
+          const newThumbnailURI = replaceUriPrefix(
+            thumbnailURI,
+            targetBrandingId
+          );
+          imagePromises.push(
+            copyObject(
+              ConfigProvider.BRANDING_BUCKET,
+              thumbnailURI,
+              ConfigProvider.BRANDING_BUCKET,
+              newThumbnailURI
+            ).then(() =>
+              deleteObject(ConfigProvider.BRANDING_BUCKET, thumbnailURI)
+            )
+          );
+          r.thumbnail = newThumbnailURI;
+        }
+        updatePromises.push(
+          Promise.all(imagePromises).then(() =>
+            this.brandingRecipeRepo.updatePartial(
+              {
+                id: r.id,
+                variant: r.variant,
+              },
+              {
+                brandingId: targetBrandingId,
+                createdBy: targetUid,
+                userId: targetUid,
+                images: r.images,
+                thumbnail: r.thumbnail,
+              }
+            )
+          )
+        );
+      });
+    }
   }
 }
