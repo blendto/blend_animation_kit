@@ -250,7 +250,6 @@ async function generate(blendId: string, uid: string, incomingRecipe: Recipe) {
 
   const savedBlend = await blendService.updateBlend(
     updater.updatedBlend(uid, isWatermarked),
-    updater.incomingBlendHash(),
     false
   );
   const body = new ExportPrepAgent(savedBlend).prepareForVes(isWatermarked);

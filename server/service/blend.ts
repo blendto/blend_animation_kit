@@ -584,11 +584,7 @@ export class BlendService implements IService {
     return await promise;
   }
 
-  async updateBlend(
-    blend: Blend,
-    blendHash?: string,
-    isBatchedBlend = true
-  ): Promise<Blend> {
+  async updateBlend(blend: Blend, isBatchedBlend = true): Promise<Blend> {
     const {
       images,
       externalImages,
@@ -610,7 +606,6 @@ export class BlendService implements IService {
     const statusUpdate = {
       status: "SUBMITTED",
       on: now,
-      blendHash,
     } as BlendStatusUpdate;
     const params = {
       UpdateExpression:
