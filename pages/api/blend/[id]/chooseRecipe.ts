@@ -85,6 +85,10 @@ const useRecipeForBlend = async (
   let interactionUpdatePromise;
 
   if (req.uid) {
+    if (encoderVersion < 3.0) {
+      // Older apps with lesser encoder version won't know how to handle branding
+      recipeWrapper.cleanupBranding();
+    }
     await subService.ensureBrandingEntitlement(recipe, source, req.uid);
     if (!isEmpty(recipe.branding)) {
       const brandingProfile = await brandingService.get(req.uid);
@@ -94,10 +98,6 @@ const useRecipeForBlend = async (
         recipeWrapper.cleanupBranding();
       }
     }
-  }
-  if (encoderVersion < 3.0) {
-    // Older apps with lesser encoder version won't know how to handle branding
-    recipeWrapper.cleanupBranding();
   }
 
   if (fileKeys) {
