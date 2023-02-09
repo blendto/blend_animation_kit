@@ -311,7 +311,9 @@ export class RecipeWrapper {
     image?: StoredImage,
     interaction?: Interaction
   ) {
-    let heroUid = this.recipe.recipeDetails?.elements?.hero?.uid;
+    let heroUid =
+      this.recipe.recipeDetails?.elements?.hero?.uid ??
+      this.recipe.recipeDetails?.elements?.heroes?.[0]?.uid;
     if (heroUid) {
       if (!image) {
         image = this.recipe.images.find((image) => image.uid === heroUid);
