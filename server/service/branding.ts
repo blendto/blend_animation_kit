@@ -254,7 +254,7 @@ export default class BrandingService implements IService {
   async addRecipe(
     userId: string,
     sourceBlendId: string,
-    heroAssetUid?: string,
+    heroAssetUids?: string[],
     backgroundAssetUid?: string
   ) {
     const branding = await this.getOrCreate(userId);
@@ -275,7 +275,7 @@ export default class BrandingService implements IService {
 
     const blendToRecipeConverter = new BlendToRecipeConverter(blend);
     const brandingRecipe = blendToRecipeConverter.convert(
-      heroAssetUid,
+      heroAssetUids,
       backgroundAssetUid
     ) as BrandingRecipe;
     brandingRecipe.userId = userId;

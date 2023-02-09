@@ -40,6 +40,7 @@
   "AI_STUDIO_BASE_URL",
   "AI_BLEND_PHOTOS_TABLE",
   "AI_BLEND_PHOTO_TOPICS_TABLE",
+  "CUSTOMER_IO_API_KEY",
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });

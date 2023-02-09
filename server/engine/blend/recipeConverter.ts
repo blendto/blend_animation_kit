@@ -18,7 +18,7 @@ export class BlendToRecipeConverter {
   }
 
   convert(
-    heroAssetUid?: string,
+    heroAssetUids?: string[],
     backgroundAssetUid?: string,
     id = nanoid(8)
   ): Recipe {
@@ -26,7 +26,7 @@ export class BlendToRecipeConverter {
 
     this.cleanup();
     this.recipe.recipeDetails = { elements: {} };
-    this.setHero(heroAssetUid);
+    this.setHeroes(heroAssetUids);
     this.setImageBg(backgroundAssetUid);
 
     this.recipe.id = id;
@@ -55,17 +55,24 @@ export class BlendToRecipeConverter {
     ].forEach((attr) => delete this.recipe[attr]);
   }
 
-  private setHero(assetUid?: string) {
+  private setHeroes(assetUids?: string[]) {
     this.recipe.recipeDetails.elements.hero = null;
-    if (assetUid) {
-      const heroInteraction = this.blend.images.find((i) => i.uid === assetUid);
-      if (!heroInteraction) {
-        throw new UserError("Invalid hero uid");
-      }
-      this.recipe.recipeDetails.elements.hero = {
-        uid: assetUid,
-        assetType: AssetType.IMAGE,
-      };
+    this.recipe.recipeDetails.elements.heroes = [];
+    if (assetUids?.length) {
+      assetUids.forEach((assetUid) => {
+        const heroInteraction = this.blend.images.find(
+          (i) => i.uid === assetUid
+        );
+        if (!heroInteraction) {
+          throw new UserError("Invalid hero uid");
+        }
+        this.recipe.recipeDetails.elements.heroes.push({
+          uid: assetUid,
+          assetType: AssetType.IMAGE,
+        });
+      });
+      this.recipe.recipeDetails.elements.hero =
+        this.recipe.recipeDetails.elements.heroes[0];
     }
   }
 

@@ -148,7 +148,13 @@
       "hero": {
         "assetType": "IMAGE",
         "uid": "8678574c-1e3c-43da-bd92-8404e08ce4ad"
-      }
+      },
+      "heroes": [
+        {
+          "assetType": "IMAGE",
+          "uid": "8678574c-1e3c-43da-bd92-8404e08ce4ad"
+        }
+      ]
     }
   },
   "slides": null,

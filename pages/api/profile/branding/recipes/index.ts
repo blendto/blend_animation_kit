@@ -28,7 +28,7 @@ export default withReqHandler(
 
 const ADD_BODY_SCHEMA = Joi.object({
   sourceBlendId: Joi.string().required(),
-  heroAssetUid: Joi.string().allow(null),
+  heroAssetUids: Joi.array().items(Joi.string()).allow(null),
   backgroundAssetUid: Joi.string().allow(null),
 });
 
@@ -41,9 +41,9 @@ async function addRecipe(
     requestComponentToValidate.body,
     ADD_BODY_SCHEMA
   );
-  const { sourceBlendId, heroAssetUid, backgroundAssetUid } = req.body as {
+  const { sourceBlendId, heroAssetUids, backgroundAssetUid } = req.body as {
     sourceBlendId: string;
-    heroAssetUid: string;
+    heroAssetUids: string[];
     backgroundAssetUid: string;
   };
 
@@ -56,7 +56,7 @@ async function addRecipe(
       await brandingService.addRecipe(
         req.uid,
         sourceBlendId,
-        heroAssetUid,
+        heroAssetUids,
         backgroundAssetUid
       )
     );

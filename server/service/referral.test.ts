@@ -125,6 +125,9 @@ describe("ReferralService", () => {
         .mockResolvedValueOnce(updatedReferrerSubscription)
         .mockResolvedValueOnce(updatedRefereeSubscription);
       jest
+        .spyOn(referralService.customerIOService, "trackEvent")
+        .mockResolvedValueOnce();
+      jest
         .spyOn(referralService.repo, "update")
         .mockResolvedValueOnce({
           ...referral,

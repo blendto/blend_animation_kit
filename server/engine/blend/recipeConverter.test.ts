@@ -17,7 +17,7 @@ describe("BlendToRecipeConverter", () => {
       const recipeConverter = new BlendToRecipeConverter(blend);
       expect(
         recipeConverter.convert(
-          "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+          ["8678574c-1e3c-43da-bd92-8404e08ce4ad"],
           "68a61563-cb5a-485d-badc-c5fd6e99e655",
           "G3QXwY-Q"
         )
@@ -28,7 +28,7 @@ describe("BlendToRecipeConverter", () => {
       const recipeConverter = new BlendToRecipeConverter(blend);
       expect(() =>
         recipeConverter.convert(
-          "ABSENT-IMAGE-ID",
+          ["ABSENT-IMAGE-ID"],
           "68a61563-cb5a-485d-badc-c5fd6e99e655",
           "G3QXwY-Q"
         )
@@ -39,7 +39,7 @@ describe("BlendToRecipeConverter", () => {
       const recipeConverter = new BlendToRecipeConverter(blend);
       expect(() =>
         recipeConverter.convert(
-          "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+          ["8678574c-1e3c-43da-bd92-8404e08ce4ad"],
           "ABSENT-IMAGE-ID",
           "G3QXwY-Q"
         )
@@ -58,7 +58,7 @@ describe("BlendToRecipeConverter", () => {
         );
         expect(() =>
           recipeConverter.convert(
-            "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+            ["8678574c-1e3c-43da-bd92-8404e08ce4ad"],
             "68a61563-cb5a-485d-badc-c5fd6e99e655",
             "G3QXwY-Q"
           )
@@ -70,7 +70,7 @@ describe("BlendToRecipeConverter", () => {
       const recipeConverter = new BlendToRecipeConverter(blend);
       expect(
         recipeConverter.convert(
-          "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+          ["8678574c-1e3c-43da-bd92-8404e08ce4ad"],
           undefined,
           "G3QXwY-Q"
         )
@@ -92,7 +92,7 @@ describe("BlendToRecipeConverter", () => {
       const recipeConverter = new BlendToRecipeConverter(blendWithoutBgImage);
       expect(
         recipeConverter.convert(
-          "8678574c-1e3c-43da-bd92-8404e08ce4ad",
+          ["8678574c-1e3c-43da-bd92-8404e08ce4ad"],
           undefined,
           "G3QXwY-Q"
         )
@@ -110,6 +110,7 @@ describe("BlendToRecipeConverter", () => {
       recipeWithElemHeroAsNull.images.splice(2, 1);
       recipeWithElemHeroAsNull.interactions.splice(2, 1);
       recipeWithElemHeroAsNull.recipeDetails.elements.hero = null;
+      recipeWithElemHeroAsNull.recipeDetails.elements.heroes = [];
 
       const recipeConverter = new BlendToRecipeConverter(blendWithoutHero);
       expect(
