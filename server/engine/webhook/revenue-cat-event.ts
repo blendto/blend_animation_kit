@@ -63,27 +63,21 @@ export class RCTransferEvent extends RevenueCatEvent {
 
 export class RCDefaultEvent extends RevenueCatEvent {
   userId: string;
-  entitlementIds: string[];
   aliases: string[];
-  expiry: number;
 
   constructor(event: DefaultEventRequest) {
     super();
     this.userId = event.app_user_id;
-    this.entitlementIds = event.entitlement_ids;
     this.aliases = event.aliases;
-    this.expiry = event.expiration_at_ms;
   }
 
   getUpdateDetails(): {
     userId: string;
-    entitlements: string[];
-    expiry: number;
   } {
     const userId = this.isUserIdValid(this.userId)
       ? this.userId
       : this.extractUserId(this.aliases);
 
-    return { userId, entitlements: this.entitlementIds, expiry: this.expiry };
+    return { userId };
   }
 }

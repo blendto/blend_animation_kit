@@ -483,8 +483,8 @@ export default class SubscriptionService implements IService {
       await this.transferUserEntitlementsInCache(from, to);
     }
     if (event instanceof RCDefaultEvent) {
-      const { userId, entitlements, expiry } = event.getUpdateDetails();
-      await this.updateUserEntitlementsCache(userId, entitlements, expiry);
+      const { userId } = event.getUpdateDetails();
+      await this.fetchAndUpdateUserEntitlementsCache(userId);
     }
   }
 

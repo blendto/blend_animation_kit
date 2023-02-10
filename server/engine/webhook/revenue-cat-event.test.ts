@@ -18,8 +18,8 @@ describe("should process revenue cat webhook events", () => {
       const event = RevenueCatEvent.from(req);
       expect(event).toBeInstanceOf(RCDefaultEvent);
       const details = (event as RCDefaultEvent).getUpdateDetails();
-      const { entitlement_ids } = req.event as { entitlement_ids: string[] };
-      expect(details.entitlements).toBe(entitlement_ids);
+      const { app_user_id } = req.event as { app_user_id: string };
+      expect(details.userId).toBe(app_user_id);
     });
   });
 
