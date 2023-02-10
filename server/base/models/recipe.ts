@@ -156,6 +156,18 @@ enum BrandingInfoIconStyle {
   ROUNDED = "ROUNDED",
 }
 
+export enum BrandingInfoTransformType {
+  ICON = "ICON",
+  TEXT = "TEXT",
+}
+
+interface BrandingInfoTransform {
+  handle: BrandingInfoType;
+  position: Offset;
+  type: BrandingInfoTransformType;
+  size: Size;
+}
+
 export interface BrandingInfoMetadata extends GeometricPositionable {
   color: string;
   font: string;
@@ -166,6 +178,7 @@ export interface BrandingInfoMetadata extends GeometricPositionable {
   iconSize?: number;
   layout?: BrandingInfoLayout;
   iconStyle?: BrandingInfoIconStyle;
+  transforms?: BrandingInfoTransform[];
 }
 
 export interface Interaction {

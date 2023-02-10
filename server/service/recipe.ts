@@ -9,7 +9,13 @@ import { IService } from "server/service";
 import DynamoDB from "server/external/dynamodb";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
-import { ElementSource, Interaction, Recipe } from "server/base/models/recipe";
+import {
+  BrandingInfoMetadata,
+  BrandingInfoTransformType,
+  ElementSource,
+  Interaction,
+  Recipe,
+} from "server/base/models/recipe";
 import { UserError } from "server/base/errors";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import {
@@ -22,7 +28,7 @@ import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import logger from "server/base/Logger";
 import { DateTime } from "luxon";
 import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
-import { BrandingEntity } from "server/repositories/branding";
+import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
 import { isEmpty } from "lodash";
 import ConfigService from "./config";
 
@@ -354,20 +360,20 @@ export class RecipeService implements IService {
     }
 
     if (recipe.branding?.info) {
-      let missingHandlesCount = 0;
+      const missingHandles: BrandingInfoType[] = [];
       recipe.branding.info.data.forEach((item, index) => {
         const itemFromProfile = brandingProfile.info.find(
           (pItem) => item.type === pItem.type
         );
         if (!itemFromProfile) {
+          missingHandles.push(recipe.branding.info.data[index].type);
           delete recipe.branding.info.data[index];
-          missingHandlesCount += 1;
         } else {
           recipe.branding.info.data[index].value = itemFromProfile.value;
         }
       });
 
-      if (missingHandlesCount > 0) {
+      if (missingHandles.length) {
         recipe.branding.info.data = recipe.branding.info.data.filter(
           (d) => !!d
         );
@@ -377,8 +383,12 @@ export class RecipeService implements IService {
           (type) => !recipe.branding.info.data.find((i) => i.type === type)
         );
         let handleTypesIndex = 0;
+        const infoInteractionMetadata = recipe.interactions.find(
+          (i) => i.metadata.$ === "BrandingInfoMetadata"
+        ).metadata as BrandingInfoMetadata;
+
         while (
-          missingHandlesCount > 0 &&
+          missingHandles.length &&
           handleTypesIndex < orderedHandleTypes.length
         ) {
           const matchingHandle = brandingProfile.info.find(
@@ -390,9 +400,24 @@ export class RecipeService implements IService {
               type: matchingHandle.type,
               value: matchingHandle.value,
             });
-            missingHandlesCount -= 1;
+            const deletedInfoType = missingHandles.pop();
+            infoInteractionMetadata.transforms?.forEach((t) => {
+              if (t.handle === deletedInfoType) {
+                t.handle = matchingHandle.type;
+              }
+            });
           }
           handleTypesIndex += 1;
+        }
+
+        while (missingHandles.length) {
+          const deletedInfoType = missingHandles.pop();
+          if (infoInteractionMetadata.transforms?.length) {
+            infoInteractionMetadata.transforms =
+              infoInteractionMetadata.transforms.filter(
+                (t) => t.handle !== deletedInfoType
+              );
+          }
         }
       }
 
