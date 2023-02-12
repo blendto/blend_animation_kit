@@ -51,7 +51,20 @@ const getUserBlends = async (
   const {
     query: { pageKey },
   } = req;
+
+  let { blendsForConsistentRead } = req.query as {
+    blendsForConsistentRead: string[];
+  };
+
+  if (typeof blendsForConsistentRead === "string") {
+    blendsForConsistentRead = [blendsForConsistentRead];
+  }
+
   const response: { data: Blend[]; nextPageKey: string } =
-    await blendService.getUserBlends(req.uid, pageKey as string);
+    await blendService.getUserBlends(
+      req.uid,
+      pageKey as string,
+      blendsForConsistentRead ?? []
+    );
   res.send(response);
 };

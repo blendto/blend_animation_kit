@@ -675,7 +675,8 @@ export class BlendService implements IService {
 
   async getUserBlends(
     uid: string,
-    pageKey: string
+    pageKey: string,
+    blendsForConsistentRead: string[]
   ): Promise<{ data: Blend[]; nextPageKey: string }> {
     const pageItems = { data: [], nextPageKey: pageKey };
     let fetched: BlendsPage;
@@ -685,7 +686,37 @@ export class BlendService implements IService {
       pageItems.nextPageKey = fetched.nextPageKey;
     } while (pageItems.data.length < PAGE_SIZE && fetched.nextPageKey);
 
-    return pageItems;
+    let { data } = pageItems;
+    const { nextPageKey } = pageItems;
+    const promises = data.map(async (blend: Blend) => {
+      if (!blendsForConsistentRead.includes(blend.id)) return blend;
+      const {
+        id,
+        filePath,
+        fileName,
+        imagePath,
+        thumbnail,
+        output,
+        createdAt,
+        updatedAt,
+        status,
+      } = await this.getBlend(blend.id, BlendVersion.current, true);
+
+      return {
+        id,
+        filePath,
+        fileName,
+        imagePath,
+        thumbnail,
+        output,
+        createdAt,
+        updatedAt,
+        status,
+      };
+    });
+
+    data = await Promise.all(promises);
+    return { data, nextPageKey };
   }
 
   async deleteBlend(blendId: string) {
