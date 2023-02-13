@@ -531,7 +531,7 @@ export default class BrandingService implements IService {
       }
     );
     const fileName = fileKey.split(".")[0];
-    const optimizedFileKey = `${fileName}.webp`;
+    const optimizedFileKey = `${fileName}-optimized.webp`;
     await this.uploadObject(
       ConfigProvider.BRANDING_BUCKET,
       optimizedFileKey,

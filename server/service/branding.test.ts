@@ -537,7 +537,7 @@ describe("BrandingService", () => {
 
   describe("Logo update as uploaded on s3 trigger", () => {
     const fileKey = `${id}/avsDCf2bQ_MVjSKaR9IvN.jpeg`;
-    const webpFileKey = `${fileKey.split(".")[0]}.webp`;
+    const webpFileKey = `${fileKey.split(".")[0]}-optimized.webp`;
     it("Rejects request if the file key is missing blend id", async () => {
       await expect(brandingService.completeLogoUpload("")).rejects.toThrow(
         new UserError("Invalid fileKey")
