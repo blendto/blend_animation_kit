@@ -465,7 +465,9 @@ export default class BrandingService implements IService {
       (e) => e.fileKey === fileKey
     );
     if (!logoData) {
-      // Not a logo upload. Ignore
+      // Ignore. Either
+      // - not a logo upload
+      // - logo got deleted immediately
       return;
     }
     if (
@@ -555,7 +557,7 @@ export default class BrandingService implements IService {
       await this.removeBgService.removeBg(
         logo,
         fileNameWithoutPrefix,
-        false,
+        true,
         false,
         metadata
       )
