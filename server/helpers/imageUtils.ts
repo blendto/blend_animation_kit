@@ -187,7 +187,7 @@ export const readImageMetadata = async (image: Buffer) => {
 };
 
 export const createConvertedFileKey = (blendId, fileNameWithoutExt) =>
-  `${blendId}/${fileNameWithoutExt}-converted.jpg`;
+  `${blendId}/${fileNameWithoutExt}-converted.webp`;
 
 export const convertUnspportedFormatToWebp = async (
   fetchedBuffer: Buffer,
