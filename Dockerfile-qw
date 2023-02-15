@@ -21,6 +21,7 @@ FROM public.ecr.aws/bitnami/node:16-prod AS runner
 # ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
 RUN apt-get update && apt-get install --force-yes -yy \
   libjemalloc2 \
+  darktable \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -38,7 +39,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.env ./.env
 
-ARG BRANCH_NAME 
+ARG BRANCH_NAME
 ENV DD_VERSION ${BRANCH_NAME}
 
 USER nextjs
@@ -65,4 +66,4 @@ EXPOSE 3000
 # Uncomment the following line in case you want to disable telemetry.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-CMD pm2-runtime start npm --name 'web-client' --max-memory-restart 6G -- run start:qw 
+CMD pm2-runtime start npm --name 'web-client' --max-memory-restart 6G -- run start:qw

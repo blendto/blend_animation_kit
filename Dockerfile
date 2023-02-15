@@ -17,11 +17,13 @@ RUN yarn build
 # Production image, copy all the files and run next
 FROM public.ecr.aws/bitnami/node:16-prod AS runner
 
-# Install and use libjemalloc to prevent sharp memory leaks
+# Install and use libjemalloc to prevent sharp memory leaks, install darktable
 # ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
 RUN apt-get update && apt-get install --force-yes -yy \
   libjemalloc2 \
+  darktable \
   && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /app
 
@@ -39,7 +41,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.env ./.env
 
-ARG BRANCH_NAME 
+ARG BRANCH_NAME
 ENV DD_VERSION ${BRANCH_NAME}
 
 USER nextjs

@@ -26,6 +26,17 @@ import { BlendUpdater } from "server/engine/blend/updater";
 import { ExportPrepAgent } from "server/engine/blend/export";
 import Joi from "joi";
 import { UpdateOperations } from "server/repositories";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "../../../server/helpers/constants";
+import {
+  doesObjectExist,
+  getObject,
+  uploadObject,
+} from "../../../server/external/s3";
+import {
+  convertUnspportedFormatToWebp,
+  createConvertedFileKey,
+} from "../../../server/helpers/imageUtils";
+import { bufferToStream } from "../../../server/helpers/bufferUtils";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -243,11 +254,54 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
 
 async function generate(blendId: string, uid: string, incomingRecipe: Recipe) {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-
   const existingBlend = await blendService.getBlend(blendId, null, true);
   const { isWatermarked } = existingBlend;
+  await Promise.all(
+    incomingRecipe.images.map(async (img, i) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const fileKey: string = img.uri || img.fileKey;
+      const fileKeyParts = fileKey.split("/");
+      const [fileNameWithExt] = fileKeyParts.slice(-1);
+      const fileNameArr = fileNameWithExt.split(".");
+      const fileExtension = fileNameArr.pop();
+      const fileNameWithoutExt = fileNameArr.join(".");
+      if (!VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)) {
+        const convertedFileKey = createConvertedFileKey(
+          fileKeyParts[0],
+          fileNameWithoutExt
+        );
+        const convertedObjectExists = await doesObjectExist(
+          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+          convertedFileKey
+        );
+        if (!convertedObjectExists) {
+          // fetch, convert, upload if the converted Object doesn't already exist
+          // eslint-disable-next-line no-await-in-loop
+          const fetchedBuffer = await getObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            fileKey
+          );
+          // eslint-disable-next-line no-await-in-loop
+          const convertedBuffer = await convertUnspportedFormatToWebp(
+            fetchedBuffer,
+            fileKeyParts
+          );
+          // eslint-disable-next-line no-await-in-loop
+          await uploadObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            convertedFileKey,
+            bufferToStream(convertedBuffer)
+          ).catch((err) => {
+            throw new Error(`uploading file ${convertedFileKey} failed`);
+          });
+        }
+        incomingRecipe.images[i].uri = convertedFileKey;
+      }
+    })
+  );
   const updater = new BlendUpdater(existingBlend, incomingRecipe);
-
   const savedBlend = await blendService.updateBlend(
     updater.updatedBlend(uid, isWatermarked),
     false

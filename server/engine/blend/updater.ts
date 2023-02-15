@@ -89,17 +89,12 @@ export class BlendUpdater {
 
     const recipeWrapper = new RecipeWrapper(this.incomingRecipe);
     const { interactions, branding } = this.incomingRecipe;
-
-    // The mobile apps use "fileKey" attribute instead of uri
-    // The "uri" that the server sends in chooseRecipe API is converted
-    // by them and here we need to convert back
-    // This is messy, we know, gotta fix.
     interface ClientStoredImage extends StoredImage {
       fileKey: string;
     }
-
+    // The mobile apps use "fileKey" attribute instead of uri
     const imageObjects = images.map((image: ClientStoredImage) => ({
-      uri: image.fileKey,
+      uri: image.uri || image.fileKey,
       uid: image.uid,
     }));
 

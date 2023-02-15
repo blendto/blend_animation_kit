@@ -38,10 +38,7 @@ import { ElementSource } from "server/base/models/recipe";
 import { RecipeList, RecipeSource } from "server/base/models/recipeList";
 import { RemoveBGSource } from "server/base/models/removeBg";
 import { fireAndForget } from "server/helpers/async-runner";
-import {
-  ValidImageExtension,
-  VALID_UPLOAD_IMAGE_EXTENSIONS,
-} from "server/helpers/constants";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import DynamoDB from "server/external/dynamodb";
 import { withExponentialBackoffRetries } from "server/helpers/general";
@@ -491,9 +488,7 @@ export default class BrandingService implements IService {
     let logo = await this.getObject(ConfigProvider.BRANDING_BUCKET, fileKey);
     const [fileNameWithExt] = fileKey.split("/").slice(-1);
     const [fileExtension] = fileNameWithExt.split(".").slice(-1);
-    logo = await (
-      await sharpInstance(logo, {}, fileExtension as ValidImageExtension)
-    ).toBuffer();
+    logo = await (await sharpInstance(logo, {}, fileExtension)).toBuffer();
     let bgRemovedFileKey: string;
     if (logoData.removeBg) {
       ({ bgRemovedFileKey, bgRemovegLogo: logo } = await this.removeBg(

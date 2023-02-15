@@ -15,6 +15,8 @@ import { RemoveBgService } from "server/internal/remove-bg-service";
 import {
   applyMask,
   convertImageToWebp,
+  convertUnspportedFormatToWebp,
+  createConvertedFileKey,
   readImageMetadata,
   rescaleImage,
 } from "server/helpers/imageUtils";
@@ -42,7 +44,7 @@ import sharp from "sharp";
 import { BlendHeroImage, ImageFileKeys } from "server/base/models/heroImage";
 import { fireAndForget } from "server/helpers/async-runner";
 import HeroImageService from "server/service/heroImage";
-import { ValidImageExtension } from "server/helpers/constants";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
 import { plainToClass } from "class-transformer";
 import { Rect } from "server/helpers/rect";
 
@@ -52,7 +54,6 @@ const heroImageService = diContainer.get<HeroImageService>(
   TYPES.HeroImageService
 );
 const recoEngineApi = new RecoEngineApi();
-
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
@@ -251,12 +252,8 @@ const removeBgAndStore = async (
 
   const fileKeysToDelete: string[] = [];
 
-  const {
-    fileKey,
-    useMask = true,
-    isHeroImage = false,
-    userChosenSuperClass,
-  } = body;
+  const { useMask = true, isHeroImage = false, userChosenSuperClass } = body;
+  let { fileKey } = body;
 
   let originalImage: Buffer;
   const fetchedBuffer = await getObject(
@@ -265,11 +262,28 @@ const removeBgAndStore = async (
   );
   const fileKeyParts = fileKey.split("/");
   const [fileNameWithExt] = fileKeyParts.slice(-1);
-  const [fileExtension] = fileNameWithExt.split(".").slice(-1);
-  originalImage = await (
-    await sharpInstance(fetchedBuffer, {}, fileExtension as ValidImageExtension)
-  ).toBuffer();
-
+  const fileNameArr = fileNameWithExt.split(".");
+  const fileExtension = fileNameArr.pop();
+  const fileNameWithoutExt = fileNameArr.join(".");
+  if (VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)) {
+    originalImage = await (
+      await sharpInstance(fetchedBuffer, {}, fileExtension)
+    ).toBuffer();
+  } else {
+    // if the image is in any other format, convert it and upload the result to S3
+    originalImage = await convertUnspportedFormatToWebp(
+      fetchedBuffer,
+      fileKeyParts
+    );
+    fileKey = createConvertedFileKey(fileKeyParts[0], fileNameWithoutExt);
+    await uploadObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      fileKey,
+      bufferToStream(originalImage)
+    ).catch((err) => {
+      throw new Error(`uploading file ${fileKey} failed`);
+    });
+  }
   const { bgRemovedFileKey, bgMaskFileKey } =
     RemoveBgService.constructBgRemovedFileKey(fileKey, {
       superClass: userChosenSuperClass,

@@ -1,5 +1,4 @@
 import sharp from "sharp";
-import { ValidImageExtension } from "./constants";
 // eslint-disable-next-line max-len
 // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-unsafe-assignment
 const heicConvert = require("heic-convert");
@@ -7,7 +6,7 @@ const heicConvert = require("heic-convert");
 export async function sharpInstance(
   input?: Buffer,
   options?: sharp.SharpOptions,
-  fileExtension?: ValidImageExtension
+  fileExtension?: string
 ): Promise<sharp.Sharp> {
   if (!input) {
     return sharp(options);
@@ -22,7 +21,7 @@ export async function sharpInstance(
 
 async function convertToValidFormat(
   input: Buffer,
-  fileExtension?: ValidImageExtension
+  fileExtension?: string
 ): Promise<Buffer> {
   const metadata = await sharp(input).metadata();
   if (metadata.format === "heif") {

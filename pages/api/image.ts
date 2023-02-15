@@ -11,7 +11,10 @@ import { TYPES } from "server/types";
 import { withReqHandler } from "server/helpers/request";
 import { NextApiRequest, NextApiResponse } from "next";
 import { BlendVersion } from "server/base/models/blend";
-import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
+import {
+  VALID_UPLOAD_IMAGE_EXTENSIONS,
+  VALID_UPLOAD_RAW_EXTENSIONS,
+} from "server/helpers/constants";
 import logger from "../../server/base/Logger";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //  20 MB
@@ -65,13 +68,16 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   }
   let fileNameCorrected = fileName;
   const fileNameArr = fileName.split(".");
-  let extension = fileNameArr.pop();
+  let extension = fileNameArr.pop().toLowerCase();
+  const allSupportedExtensions = VALID_UPLOAD_IMAGE_EXTENSIONS.concat(
+    VALID_UPLOAD_RAW_EXTENSIONS
+  );
   if (fileNameArr.length > 0) {
     // Find the first valid extension that matches the file extension
     // Note: The order of VALID_UPLOAD_IMAGE_EXTENSIONS is important for this to work correctly,
     //           for instance, "jpe" should come after "jpeg"
-    for (let i = 0; i < VALID_UPLOAD_IMAGE_EXTENSIONS.length; i++) {
-      const validExt = VALID_UPLOAD_IMAGE_EXTENSIONS[i];
+    for (let i = 0; i < allSupportedExtensions.length; i++) {
+      const validExt = allSupportedExtensions[i];
       if (extension.startsWith(validExt)) {
         if (extension !== validExt) {
           logger.info(`changing extension from ${extension} to ${validExt}`);
@@ -86,7 +92,7 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   const urlDetails = await createSignedUploadUrl(
     fileNameCorrected,
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-    VALID_UPLOAD_IMAGE_EXTENSIONS,
+    allSupportedExtensions,
     {
       keyPrefix: id + "/",
       maxSize: MAX_FILE_SIZE,

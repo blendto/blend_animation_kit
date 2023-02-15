@@ -1,3 +1,9 @@
+import { promisify } from "util";
+import path from "path";
+import os from "os";
+import fs from "fs";
+import { exec } from "child_process";
+
 import sharp from "sharp";
 import { ImageMetadata, Interaction } from "server/base/models/recipe";
 import { getObject } from "server/external/s3";
@@ -6,6 +12,11 @@ import logger from "server/base/Logger";
 import { UserError } from "server/base/errors";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import { Rect } from "server/helpers/rect";
+
+const childProcess = promisify(exec);
+const mkdTemp = promisify(fs.mkdtemp);
+const writeFile = promisify(fs.writeFile);
+const fileExists = promisify(fs.exists);
 
 const TRIM_THRESHOLD = 10;
 
@@ -173,4 +184,50 @@ export const readImageMetadata = async (image: Buffer) => {
     });
     throw new UserError("Unable to process image", "unprocessable-image");
   }
+};
+
+export const createConvertedFileKey = (blendId, fileNameWithoutExt) =>
+  `${blendId}/${fileNameWithoutExt}-converted.jpg`;
+
+export const convertUnspportedFormatToWebp = async (
+  fetchedBuffer: Buffer,
+  fileKeyParts: string[]
+): Promise<Buffer> => {
+  const [fileNameWithExt] = fileKeyParts.slice(-1);
+  const fileNameArr = fileNameWithExt.split(".");
+  const fileExtension = fileNameArr.pop();
+  const fileNameWithoutExt = fileNameArr.join(".");
+  const tempDir = await mkdTemp(path.join(os.tmpdir(), fileKeyParts[0]));
+  const localInputFilePath = `${tempDir}/${fileNameWithExt}`;
+  const localOutputFilePath = `${tempDir}/${fileNameWithoutExt}.jpg`;
+  await writeFile(localInputFilePath, fetchedBuffer);
+  logger.debug({
+    op: "DARKTABLE_FILE_CONVERSION",
+    fileDownloadedTo: localInputFilePath,
+    originalExtension: fileExtension,
+  });
+  const processOutput = await childProcess(
+    `darktable-cli ${localInputFilePath} ${localOutputFilePath}`
+  ).catch((error) => {
+    logger.error({
+      op: "DARKTABLE_FILE_CONVERSION_ERROR",
+      fileName: fileNameWithExt,
+      error: JSON.stringify(error),
+    });
+    throw error;
+  });
+  logger.info({
+    op: "DARKTABLE_FILE_CONVERSION",
+    processOutput,
+  });
+  const doesFileExist = await fileExists(localOutputFilePath);
+  if (!doesFileExist) {
+    logger.error({
+      op: "DARKTABLE_FILE_CONVERSION_ERROR",
+      fileName: fileNameWithExt,
+      processOutput,
+    });
+    throw new UserError("File not supported");
+  }
+  return await sharp(localOutputFilePath).toFormat("webp").toBuffer();
 };
