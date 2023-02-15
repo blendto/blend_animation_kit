@@ -195,6 +195,12 @@ export const convertUnspportedFormatToWebp = async (
 ): Promise<Buffer> => {
   const [fileNameWithExt] = fileKeyParts.slice(-1);
   const fileNameArr = fileNameWithExt.split(".");
+  if (fileNameArr.length <= 1) {
+    // no extension. Try to convert using sharp and hope for the best
+    return await (await sharpInstance(fetchedBuffer))
+      .toFormat("webp")
+      .toBuffer();
+  }
   const fileExtension = fileNameArr.pop();
   const fileNameWithoutExt = fileNameArr.join(".");
   const tempDir = await mkdTemp(path.join(os.tmpdir(), fileKeyParts[0]));
