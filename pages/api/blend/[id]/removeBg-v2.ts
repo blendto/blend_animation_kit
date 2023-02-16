@@ -17,6 +17,7 @@ import {
   convertImageToWebp,
   convertUnspportedFormatToWebp,
   createConvertedFileKey,
+  getTargetDimensions,
   readImageMetadata,
   rescaleImage,
 } from "server/helpers/imageUtils";
@@ -44,7 +45,10 @@ import sharp from "sharp";
 import { BlendHeroImage, ImageFileKeys } from "server/base/models/heroImage";
 import { fireAndForget } from "server/helpers/async-runner";
 import HeroImageService from "server/service/heroImage";
-import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
+import {
+  MAX_IMAGE_DIMENSION,
+  VALID_UPLOAD_IMAGE_EXTENSIONS,
+} from "server/helpers/constants";
 import { plainToClass } from "class-transformer";
 import { Rect } from "server/helpers/rect";
 
@@ -256,7 +260,7 @@ const removeBgAndStore = async (
   let { fileKey } = body;
 
   let originalImage: Buffer;
-  const fetchedBuffer = await getObject(
+  let fetchedBuffer = await getObject(
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
     fileKey
   );
@@ -265,13 +269,10 @@ const removeBgAndStore = async (
   const fileNameArr = fileNameWithExt.split(".");
   const fileExtension = fileNameArr.pop();
   const fileNameWithoutExt = fileNameArr.join(".");
-  if (VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)) {
-    originalImage = await (
-      await sharpInstance(fetchedBuffer, {}, fileExtension)
-    ).toBuffer();
-  } else {
-    // if the image is in any other format, convert it and upload the result to S3
-    originalImage = await convertUnspportedFormatToWebp(
+  if (!VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)) {
+    // if the fetched image is in an unsupported format,
+    // we change things to make it look like the fetched image was a webp
+    fetchedBuffer = await convertUnspportedFormatToWebp(
       fetchedBuffer,
       fileKeyParts
     );
@@ -279,7 +280,7 @@ const removeBgAndStore = async (
     await uploadObject(
       ConfigProvider.BLEND_INGREDIENTS_BUCKET,
       fileKey,
-      bufferToStream(originalImage)
+      bufferToStream(fetchedBuffer)
     ).catch((err) => {
       throw new Error(`uploading file ${fileKey} failed`);
     });
@@ -301,7 +302,16 @@ const removeBgAndStore = async (
 
   let imageFileKeysItem: ImageFileKeys | BlendHeroImage = { ...fileKeys };
 
-  const metadata = await readImageMetadata(originalImage);
+  let metadata = await readImageMetadata(fetchedBuffer);
+  const targetDimensions: [number, number] = getTargetDimensions(
+    metadata.width,
+    metadata.height,
+    MAX_IMAGE_DIMENSION
+  );
+  originalImage = await (await sharpInstance(fetchedBuffer, {}, fileExtension))
+    .resize(targetDimensions[0], targetDimensions[1])
+    .toBuffer();
+  metadata = await readImageMetadata(originalImage);
   if (isHeroImage && userChosenSuperClass) {
     const shouldRemoveBg = await checkIfRetriggerNeeded(
       blend,

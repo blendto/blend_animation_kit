@@ -71,3 +71,5 @@ export const VALID_UPLOAD_RAW_EXTENSIONS = [
   "pnm",
   "ppm",
 ];
+
+export const MAX_IMAGE_DIMENSION = 4000;

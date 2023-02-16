@@ -237,3 +237,20 @@ export const convertUnspportedFormatToWebp = async (
   }
   return await sharp(localOutputFilePath).toFormat("webp").toBuffer();
 };
+
+export const getTargetDimensions = (
+  width: number,
+  height: number,
+  maxDimension: number
+): [number, number] => {
+  const maxToSourceSizeRatio = Math.min(
+    maxDimension / width,
+    maxDimension / height
+  );
+  if (maxToSourceSizeRatio > 1) return [width, height];
+  let targetWidth = Math.round(width * maxToSourceSizeRatio);
+  if (targetWidth % 2 !== 0) targetWidth += 1;
+  let targetHeight = Math.round(height * maxToSourceSizeRatio);
+  if (targetHeight % 2 !== 0) targetHeight += 1;
+  return [targetWidth, targetHeight];
+};
