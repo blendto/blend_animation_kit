@@ -18,6 +18,7 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import UserError from "server/base/errors/UserError";
 import {
+  ElementSource,
   FlowType,
   ImageMetadata,
   Recipe,
@@ -821,13 +822,21 @@ export class BlendService implements IService {
             interaction,
             heroImages.withoutBg
           );
-          return { ...image, uri: heroImages.withoutBg };
+          return {
+            ...image,
+            uri: heroImages.withoutBg,
+            source: ElementSource.blend,
+          };
         }
         interactionUpdatePromise = adjustSizeToFit(
           interaction,
           heroImages.original
         );
-        return { ...image, uri: heroImages.original };
+        return {
+          ...image,
+          uri: heroImages.original,
+          source: ElementSource.blend,
+        };
       }
       const uriParts = image.uri.split("/");
       uriParts[0] = blendId;
@@ -840,7 +849,7 @@ export class BlendService implements IService {
           targetUri
         )
       );
-      return { ...image, uri: targetUri };
+      return { ...image, uri: targetUri, source: ElementSource.blend };
     });
     await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
 
