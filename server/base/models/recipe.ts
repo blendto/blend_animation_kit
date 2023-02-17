@@ -11,6 +11,7 @@ export enum ElementSource {
   branding = "BRANDING",
   blend_assets = "BLEND_ASSETS",
   hero = "HERO",
+  blend_output = "BLEND_OUTPUT",
 }
 
 export interface StoredImage {

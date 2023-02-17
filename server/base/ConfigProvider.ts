@@ -266,6 +266,9 @@ class ConfigProvider {
   public get CUSTOMER_IO_API_KEY(): string {
     return this.retrieveOrCrash("CUSTOMER_IO_API_KEY");
   }
+  public get NEXT_PUBLIC_OUTPUT_BASE_PATH(): string {
+    return this.retrieveOrCrash("NEXT_PUBLIC_OUTPUT_BASE_PATH");
+  }
 
   public get WATERMARK_BUILD_VERSION(): number {
     const versionStr = process.env.WATERMARK_BUILD_VERSION;
