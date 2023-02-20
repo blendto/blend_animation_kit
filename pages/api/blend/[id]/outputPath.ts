@@ -5,9 +5,11 @@ import {
   withReqHandler,
 } from "../../../../server/helpers/request";
 import {
+  ForbiddenError,
   MethodNotAllowedError,
-  UnauthorizedError,
+  ObjectNotFoundError,
   UserError,
+  UserErrorCode,
 } from "../../../../server/base/errors";
 import { Blend, BlendVersion } from "../../../../server/base/models/blend";
 import { diContainer } from "../../../../inversify.config";
@@ -46,13 +48,16 @@ const getBlendOutputPath = async (
     true
   );
   if (!blend) {
-    throw new UserError("Blend not found");
+    throw new ObjectNotFoundError();
   }
   if (blend.createdBy !== userId) {
-    throw new UnauthorizedError("Invalid user id");
+    throw new ForbiddenError();
   }
   if (!blend.output.image?.path) {
-    throw new UserError("Output image path not found");
+    throw new UserError(
+      "Output image path not found",
+      UserErrorCode.NON_GENERATED_BLEND
+    );
   }
   if (format && format === "URL") {
     res.send({
