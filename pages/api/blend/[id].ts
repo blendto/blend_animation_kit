@@ -286,7 +286,8 @@ async function generate(blendId: string, uid: string, incomingRecipe: Recipe) {
           // eslint-disable-next-line no-await-in-loop
           const convertedBuffer = await convertUnspportedFormatToWebp(
             fetchedBuffer,
-            fileKeyParts
+            fileKeyParts[1],
+            fileKeyParts[0]
           );
           // eslint-disable-next-line no-await-in-loop
           await uploadObject(

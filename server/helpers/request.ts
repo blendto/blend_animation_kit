@@ -2,7 +2,7 @@ import { diContainer } from "inversify.config";
 import { ObjectSchema } from "joi";
 import { pick } from "lodash";
 import type { NextApiRequest, NextApiResponse } from "next";
-
+import { Form } from "multiparty";
 import logger from "server/base/Logger";
 import {
   ForbiddenError,
@@ -19,6 +19,7 @@ import { TYPES } from "server/types";
 import Cors from "cors";
 import { initMiddleware } from "server/helpers/middleware";
 import ExternalHTTPError from "server/base/errors/ExternalHTTPError";
+import { IncomingMessage } from "http";
 import { UpdateOperations } from "../repositories";
 
 export type NextApiRequestExtended = NextApiRequest & {
@@ -242,3 +243,22 @@ function extractBuildVersion(req: NextApiRequest): number {
   }
   return version;
 }
+
+type ImageUploadFormFields = Record<string, string[]>;
+type ImageUploadFormFiles = Record<string, { path: string }[]>;
+export interface ImageUploadForm {
+  fields: ImageUploadFormFields;
+  files: ImageUploadFormFiles;
+}
+
+export const parseIncomingForm = (req): Promise<ImageUploadForm> =>
+  new Promise((resolve, reject) => {
+    const form: Form = new Form();
+    form.parse(req as IncomingMessage, (err, fields, files) => {
+      if (err) return reject(err);
+      return resolve({
+        fields: fields as ImageUploadFormFields,
+        files: files as ImageUploadFormFiles,
+      });
+    });
+  });

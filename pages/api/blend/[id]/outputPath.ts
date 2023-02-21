@@ -1,5 +1,6 @@
 import { NextApiResponse } from "next";
 import {
+  AuthType,
   ensureServiceAuth,
   NextApiRequestExtended,
   withReqHandler,
@@ -33,17 +34,22 @@ export default withReqHandler(
       default:
         throw new MethodNotAllowedError();
     }
-  }
+  },
+  AuthType.SERVICE
 );
 
 const getBlendOutputPath = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const { id, format, userId } = req.query;
+  const { id, format, userId } = req.query as {
+    id: string;
+    format: string;
+    userId: string;
+  };
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   const blend: Blend = await blendService.getBlend(
-    id as string,
+    id,
     BlendVersion.current,
     true
   );
@@ -59,7 +65,7 @@ const getBlendOutputPath = async (
       UserErrorCode.NON_GENERATED_BLEND
     );
   }
-  if (format && format === "URL") {
+  if (format && format.toLowerCase() === "url") {
     res.send({
       url: `${ConfigProvider.NEXT_PUBLIC_OUTPUT_BASE_PATH}${blend.output.image.path}`,
     });

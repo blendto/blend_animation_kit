@@ -3,7 +3,6 @@ import path from "path";
 import os from "os";
 import fs from "fs";
 import { exec } from "child_process";
-
 import sharp from "sharp";
 import { ImageMetadata, Interaction } from "server/base/models/recipe";
 import { getObject } from "server/external/s3";
@@ -12,6 +11,7 @@ import logger from "server/base/Logger";
 import { UserError } from "server/base/errors";
 import { sharpInstance } from "server/helpers/sharpUtils";
 import { Rect } from "server/helpers/rect";
+import { nanoid } from "nanoid";
 
 const childProcess = promisify(exec);
 const mkdTemp = promisify(fs.mkdtemp);
@@ -191,9 +191,9 @@ export const createConvertedFileKey = (blendId, fileNameWithoutExt) =>
 
 export const convertUnspportedFormatToWebp = async (
   fetchedBuffer: Buffer,
-  fileKeyParts: string[]
+  fileNameWithExt: string,
+  tmpDirPrefix?: string
 ): Promise<Buffer> => {
-  const [fileNameWithExt] = fileKeyParts.slice(-1);
   const fileNameArr = fileNameWithExt.split(".");
   if (fileNameArr.length <= 1) {
     // no extension. Try to convert using sharp and hope for the best
@@ -203,7 +203,10 @@ export const convertUnspportedFormatToWebp = async (
   }
   const fileExtension = fileNameArr.pop();
   const fileNameWithoutExt = fileNameArr.join(".");
-  const tempDir = await mkdTemp(path.join(os.tmpdir(), fileKeyParts[0]));
+  if (!tmpDirPrefix) {
+    tmpDirPrefix = nanoid();
+  }
+  const tempDir = await mkdTemp(path.join(os.tmpdir(), tmpDirPrefix));
   const localInputFilePath = `${tempDir}/${fileNameWithExt}`;
   const localOutputFilePath = `${tempDir}/${fileNameWithoutExt}.jpg`;
   await writeFile(localInputFilePath, fetchedBuffer);

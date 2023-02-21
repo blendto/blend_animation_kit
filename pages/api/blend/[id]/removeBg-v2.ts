@@ -274,7 +274,8 @@ const removeBgAndStore = async (
     // we change things to make it look like the fetched image was a webp
     fetchedBuffer = await convertUnspportedFormatToWebp(
       fetchedBuffer,
-      fileKeyParts
+      fileKeyParts[1],
+      fileKeyParts[0]
     );
     fileKey = createConvertedFileKey(fileKeyParts[0], fileNameWithoutExt);
     await uploadObject(
