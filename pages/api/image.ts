@@ -11,11 +11,8 @@ import { TYPES } from "server/types";
 import { withReqHandler } from "server/helpers/request";
 import { NextApiRequest, NextApiResponse } from "next";
 import { BlendVersion } from "server/base/models/blend";
-import {
-  VALID_UPLOAD_IMAGE_EXTENSIONS,
-  VALID_UPLOAD_RAW_EXTENSIONS,
-} from "server/helpers/constants";
-import logger from "../../server/base/Logger";
+import { ALL_SUPPORTED_EXTENSIONS } from "server/helpers/constants";
+import { extractCorrectedFileName } from "server/helpers/fileKeyUtils";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //  20 MB
 
@@ -66,33 +63,12 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   if (!blend) {
     throw new UserError("No such blend exists");
   }
-  let fileNameCorrected = fileName;
-  const fileNameArr = fileName.split(".");
-  let extension = fileNameArr.pop().toLowerCase();
-  const allSupportedExtensions = VALID_UPLOAD_IMAGE_EXTENSIONS.concat(
-    VALID_UPLOAD_RAW_EXTENSIONS
-  );
-  if (fileNameArr.length > 0) {
-    // Find the first valid extension that matches the file extension
-    // Note: The order of VALID_UPLOAD_IMAGE_EXTENSIONS is important for this to work correctly,
-    //           for instance, "jpe" should come after "jpeg"
-    for (let i = 0; i < allSupportedExtensions.length; i++) {
-      const validExt = allSupportedExtensions[i];
-      if (extension.startsWith(validExt)) {
-        if (extension !== validExt) {
-          logger.info(`changing extension from ${extension} to ${validExt}`);
-        }
-        extension = validExt;
-        fileNameCorrected = `${fileNameArr.join(".")}.${extension}`;
-        break;
-      }
-    }
-  }
+  const fileNameCorrected = extractCorrectedFileName(fileName);
 
   const urlDetails = await createSignedUploadUrl(
     fileNameCorrected,
     ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-    allSupportedExtensions,
+    ALL_SUPPORTED_EXTENSIONS,
     {
       keyPrefix: id + "/",
       maxSize: MAX_FILE_SIZE,

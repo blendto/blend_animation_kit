@@ -5,6 +5,7 @@ import Joi from "joi";
 import { Blend, BlendVersion } from "server/base/models/blend";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
 import {
+  createDestinationFileKey,
   deleteObject,
   doesObjectExist,
   getObject,
@@ -46,11 +47,13 @@ import { BlendHeroImage, ImageFileKeys } from "server/base/models/heroImage";
 import { fireAndForget } from "server/helpers/async-runner";
 import HeroImageService from "server/service/heroImage";
 import {
+  ALL_SUPPORTED_EXTENSIONS,
   MAX_IMAGE_DIMENSION,
   VALID_UPLOAD_IMAGE_EXTENSIONS,
 } from "server/helpers/constants";
 import { plainToClass } from "class-transformer";
 import { Rect } from "server/helpers/rect";
+import { extractCorrectedFileName } from "server/helpers/fileKeyUtils";
 
 const removeBgService = diContainer.get<RemoveBgService>(TYPES.RemoveBgService);
 const blendService = diContainer.get<BlendService>(TYPES.BlendService);
@@ -78,8 +81,29 @@ interface RemoveBgRequest {
   userChosenSuperClass?: string;
 }
 
+interface EncodedImageRemoveBgRequest {
+  encodedImage: string;
+  fileName: string;
+  useMask: boolean;
+  crop: boolean;
+  isHeroImage: boolean;
+  userChosenSuperClass?: string;
+}
+
 export const RemoveBgRequestSchema = Joi.object({
   fileKey: Joi.string().required(),
+  useMask: Joi.bool().default(true),
+  crop: Joi.bool().default(true),
+  isHeroImage: Joi.bool().default(false),
+  userChosenSuperClass: Joi.string().when("isHeroImage", {
+    is: false,
+    then: Joi.forbidden(),
+  }),
+});
+
+export const EncodedImageRemoveBgRequestSchema = Joi.object({
+  encodedImage: Joi.string().required(),
+  fileName: Joi.string().required(),
   useMask: Joi.bool().default(true),
   crop: Joi.bool().default(true),
   isHeroImage: Joi.bool().default(false),
@@ -235,11 +259,58 @@ async function saveOrUpdateHeroImageDB(
   }
 }
 
+function validateRequest(body: object) {
+  if ((body as RemoveBgRequest).fileKey) {
+    validate(body, requestComponentToValidate.body, RemoveBgRequestSchema);
+  }
+  if ((body as EncodedImageRemoveBgRequest).encodedImage) {
+    validate(
+      body,
+      requestComponentToValidate.body,
+      EncodedImageRemoveBgRequestSchema
+    );
+  }
+}
+
+async function processRequestBody(
+  blendId: string,
+  body: object
+): Promise<RemoveBgRequest> {
+  if ((body as RemoveBgRequest).fileKey) {
+    return body as RemoveBgRequest;
+  }
+  const {
+    encodedImage,
+    fileName,
+    isHeroImage,
+    useMask,
+    crop,
+    userChosenSuperClass,
+  } = body as EncodedImageRemoveBgRequest;
+  const correctedFileName = extractCorrectedFileName(fileName);
+  const fileKey = createDestinationFileKey(
+    correctedFileName.trim(),
+    ALL_SUPPORTED_EXTENSIONS,
+    blendId + "/"
+  );
+  await uploadObject(
+    ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+    fileKey,
+    bufferToStream(Buffer.from(encodedImage, "base64"))
+  );
+  return {
+    fileKey,
+    isHeroImage,
+    useMask,
+    crop,
+    userChosenSuperClass,
+  };
+}
+
 const removeBgAndStore = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const body = req.body as RemoveBgRequest;
   const { id } = req.query;
 
   const blend: Blend = await blendService.getBlend(
@@ -252,10 +323,11 @@ const removeBgAndStore = async (
     throw new UserError("Blend not found");
   }
 
-  validate(body, requestComponentToValidate.body, RemoveBgRequestSchema);
+  validateRequest(req.body as object);
 
   const fileKeysToDelete: string[] = [];
 
+  const body = await processRequestBody(id as string, req.body as object);
   const { useMask = true, isHeroImage = false, userChosenSuperClass } = body;
   let { fileKey } = body;
 
