@@ -130,6 +130,10 @@ export class BlendUpdater {
     return this.existingBlend.statusUpdates.some((s) => s.blendHash === hash);
   }
 
+  wasPreviouslyWatermarked(): boolean {
+    return this.existingBlend.isWatermarked ?? false;
+  }
+
   private getPartialForComparison(): object {
     // Not comparing `images` because `images` would be incorrect/missing
     // in the incoming blend in the `/verifyExport` flow

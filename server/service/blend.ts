@@ -541,7 +541,7 @@ export class BlendService implements IService {
     const updater = new BlendUpdater(existingBlend, incomingRecipe);
     updater.validate(uid);
 
-    if (updater.isBlendSame()) {
+    if (updater.isBlendSame() && !updater.wasPreviouslyWatermarked()) {
       return { blend: existingBlend, didUpdate: false };
     }
 
