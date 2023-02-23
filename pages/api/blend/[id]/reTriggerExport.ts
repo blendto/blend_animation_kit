@@ -7,10 +7,10 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import { TYPES } from "server/types";
-import { BlendStatus, BlendVersion } from "server/base/models/blend";
+import { BlendVersion } from "server/base/models/blend";
 import { BlendService } from "server/service/blend";
-import SQS from "server/external/sqs";
-import ConfigProvider from "server/base/ConfigProvider";
+import { ExportPrepAgent } from "server/engine/blend/export";
+import VesApi, { ExportRequestSchema } from "server/internal/ves";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -31,13 +31,24 @@ const reTriggerExport = async (
   const { id } = req.query as { id: string };
 
   const service = diContainer.get<BlendService>(TYPES.BlendService);
-  const blend = await service.getBlend(id, BlendVersion.current, true);
-  blend.status = BlendStatus.Submitted;
-  blend.isWatermarked = false;
-  await service.updateBlend(blend);
+  const currentBlend = await service.getBlend(id, BlendVersion.current, true);
 
-  // TODO: integrate credit service
-  await new SQS(ConfigProvider.BLEND_GEN_QUEUE_URL).sendMessage(blend);
+  const { uid, buildVersion, clientType } = req;
+  const { blend } = await service.verifyExport(
+    id,
+    uid,
+    currentBlend,
+    buildVersion,
+    clientType
+  );
+
+  const { isWatermarked } = blend;
+  const body = new ExportPrepAgent(blend).prepareForVes(isWatermarked);
+
+  await new VesApi().saveExport({
+    body,
+    schema: ExportRequestSchema.Blend,
+  });
 
   res.send(blend);
 };
