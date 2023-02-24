@@ -26,17 +26,13 @@ import { BlendUpdater } from "server/engine/blend/updater";
 import { ExportPrepAgent } from "server/engine/blend/export";
 import Joi from "joi";
 import { UpdateOperations } from "server/repositories";
-import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "../../../server/helpers/constants";
-import {
-  doesObjectExist,
-  getObject,
-  uploadObject,
-} from "../../../server/external/s3";
+import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
+import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import {
   convertUnspportedFormatToWebp,
   createConvertedFileKey,
-} from "../../../server/helpers/imageUtils";
-import { bufferToStream } from "../../../server/helpers/bufferUtils";
+} from "server/helpers/imageUtils";
+import { bufferToStream } from "server/helpers/bufferUtils";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -252,7 +248,12 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   res.send(trimmedBlend);
 };
 
-async function generate(blendId: string, uid: string, incomingRecipe: Recipe) {
+async function generate(
+  blendId: string,
+  uid: string,
+  incomingRecipe: Recipe,
+  updatedAt: number
+) {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   const existingBlend = await blendService.getBlend(blendId, null, true);
   const { isWatermarked } = existingBlend;
@@ -295,6 +296,7 @@ async function generate(blendId: string, uid: string, incomingRecipe: Recipe) {
             convertedFileKey,
             bufferToStream(convertedBuffer)
           ).catch((err) => {
+            logger.error(err);
             throw new Error(`uploading file ${convertedFileKey} failed`);
           });
         }
@@ -305,7 +307,8 @@ async function generate(blendId: string, uid: string, incomingRecipe: Recipe) {
   const updater = new BlendUpdater(existingBlend, incomingRecipe);
   const savedBlend = await blendService.updateBlend(
     updater.updatedBlend(uid, isWatermarked),
-    false
+    false,
+    updatedAt
   );
   const body = new ExportPrepAgent(savedBlend).prepareForVes(isWatermarked);
 
@@ -317,19 +320,29 @@ async function generate(blendId: string, uid: string, incomingRecipe: Recipe) {
   return trim(generatedBlend);
 }
 
+function extractSubmitBlendBody(
+  body,
+  version
+): { recipe: Recipe; updatedAt?: number } {
+  if (version === "2.0") {
+    return body as { recipe: Recipe; updatedAt: number };
+  }
+  return { recipe: body as Recipe };
+}
+
 const submitBlend = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const { id } = req.query as { id: string };
-  const recipe = req.body as Recipe;
+  const { id, bodyVersion } = req.query as { id: string; bodyVersion?: string };
+  const { recipe, updatedAt } = extractSubmitBlendBody(req.body, bodyVersion);
   const { uid, buildVersion, clientType } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  // TODO: Set correct value for CLIENT_SIDE_GENERATION_BUILD_VERSION once app changes are merged
+
   if (buildVersion < ConfigProvider.CLIENT_SIDE_GENERATION_BUILD_VERSION) {
     await blendService.verifyExport(id, uid, recipe, buildVersion, clientType);
   }
-  const trimmedBlend = await generate(id, uid, recipe);
+  const trimmedBlend = await generate(id, uid, recipe, updatedAt);
   res.send(trimmedBlend);
 };
 

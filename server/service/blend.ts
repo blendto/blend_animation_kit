@@ -591,7 +591,11 @@ export class BlendService implements IService {
     return await promise;
   }
 
-  async updateBlend(blend: Blend, isBatchedBlend = true): Promise<Blend> {
+  async updateBlend(
+    blend: Blend,
+    isBatchedBlend = true,
+    updatedAt: number = null
+  ): Promise<Blend> {
     const {
       images,
       externalImages,
@@ -605,14 +609,15 @@ export class BlendService implements IService {
       branding,
     } = blend;
 
-    const now = Date.now();
-    const updatedOn = DateTime.utc().toISODate();
+    updatedAt = updatedAt ?? Date.now();
+    const updatedOn = DateTime.fromMillis(updatedAt).toUTC().toISODate();
+
     const batchLevelEditStatus = isBatchedBlend
       ? BatchLevelEditStatus.INDIVIDUALLY_EDITED
       : null;
     const statusUpdate = {
       status: "SUBMITTED",
-      on: now,
+      on: updatedAt,
     } as BlendStatusUpdate;
     const params = {
       UpdateExpression:
@@ -643,7 +648,7 @@ export class BlendService implements IService {
         ":buttons": buttons || [],
         ":links": links || [],
         ":metadata": metadata,
-        ":updatedAt": now,
+        ":updatedAt": updatedAt,
         ":updatedOn": updatedOn,
         ":batchSt": batchLevelEditStatus,
         ":isWatermarked": isWatermarked ?? false,
