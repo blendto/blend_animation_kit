@@ -31,12 +31,13 @@ export default class FileKeysService implements IService {
 
   constructUpdatedFileKeysFromBlend(
     blend: Blend,
+    lookupKey: string,
     imageFileKey: ImageFileKeys
   ): ImageFileKeys[] {
     const imageFileKeys = blend.imageFileKeys ?? [];
 
     const index = imageFileKeys.findIndex(
-      (fileKeyItem) => fileKeyItem.original === imageFileKey.original
+      (fileKeyItem) => fileKeyItem.original === lookupKey
     );
 
     if (index === -1) {

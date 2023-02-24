@@ -82,6 +82,7 @@ describe("FileKeys Service", () => {
 
       const updatedFileKeys = fileKeysService.constructUpdatedFileKeysFromBlend(
         generateFakeBlend(),
+        updatedFileKeyItem.original,
         updatedFileKeyItem
       );
       expect(updatedFileKeys.length).toBe(imageFileKeys.length);
@@ -98,6 +99,7 @@ describe("FileKeys Service", () => {
 
       const updatedFileKeys = fileKeysService.constructUpdatedFileKeysFromBlend(
         generateFakeBlend(),
+        newFileKeyItem.original,
         newFileKeyItem
       );
       expect(updatedFileKeys.length).toBe(imageFileKeys.length + 1);

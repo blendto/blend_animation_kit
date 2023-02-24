@@ -59,6 +59,11 @@ type RecipeVariantHeroCheckMap = Record<string, boolean>;
 
 type VerifyExportResponse = { blend: Blend; didUpdate: boolean };
 
+type UpdateImageFileKeysParams = {
+  isHeroImage: boolean;
+  fileKeyLookUpKey?: string;
+};
+
 export enum BlendUpdatePaths {
   fileName = "/fileName",
   updatedAt = "/updatedAt",
@@ -100,11 +105,12 @@ export class BlendService implements IService {
   async addOrUpdateImageFileKeys(
     blend: Blend,
     fileKeyItem: ImageFileKeys | BlendHeroImage,
-    options = { isHeroImage: false }
+    options: UpdateImageFileKeysParams = { isHeroImage: false }
   ) {
     const newFileKeysList =
       this.fileKeysService.constructUpdatedFileKeysFromBlend(
         blend,
+        options.fileKeyLookUpKey ?? fileKeyItem.original,
         plainToClass(ImageFileKeys, fileKeyItem)
       );
 
