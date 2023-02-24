@@ -505,7 +505,8 @@ export default class SubscriptionService implements IService {
     });
   }
 
-  async fetchAndUpdateUserEntitlementsCache(userId: string): Promise<void> {
+  async fetchAndUpdateUserEntitlementsCache(userId?: string): Promise<void> {
+    if (!userId) return;
     const userEntitlements = await revenueCat.getEntitlements(userId);
     await this.updateUserEntitlementsCache(
       userId,
