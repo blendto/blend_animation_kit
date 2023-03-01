@@ -11,6 +11,7 @@ import { MethodNotAllowedError, UserError } from "server/base/errors";
 import Joi from "joi";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import FileKeysService from "server/service/fileKeys";
+import HeroImageService from "server/service/heroImage";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -36,6 +37,7 @@ const replaceImage = async (
   res: NextApiResponse
 ) => {
   const { id } = req.query as { id: string };
+  const { uid } = req;
 
   const { error } = ImageReplacementRequestSchema.validate(req.body);
 
@@ -55,6 +57,9 @@ const replaceImage = async (
   const fileKeysService = diContainer.get<FileKeysService>(
     TYPES.FileKeysService
   );
+  const heroImageService = diContainer.get<HeroImageService>(
+    TYPES.HeroImageService
+  );
 
   const blend = await blendService.getBlend(id, null, true);
 
@@ -68,10 +73,15 @@ const replaceImage = async (
     imageFileKeyItem.mask
   );
 
+  const isHeroImage = blend.heroImages?.original === targetOriginalFileKey;
   await blendService.addOrUpdateImageFileKeys(blend, fileKeyItem, {
-    isHeroImage: blend.heroImages?.original === targetOriginalFileKey,
+    isHeroImage,
     fileKeyLookUpKey: targetOriginalFileKey,
   });
+  if (isHeroImage) {
+    const { heroImageId } = blend.heroImages;
+    await heroImageService.updateBgRemoved(heroImageId, id, uid, fileKeyItem);
+  }
 
   return res.send(fileKeyItem);
 };
