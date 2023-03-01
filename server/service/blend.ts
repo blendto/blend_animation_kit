@@ -161,6 +161,19 @@ export class BlendService implements IService {
     return blend;
   }
 
+  async getOrCreateBlend(blendId: string, uid: string) {
+    const existingBlend = await this.getBlend(
+      blendId,
+      BlendVersion.current,
+      true
+    );
+    if (existingBlend) {
+      return existingBlend;
+    }
+    // Blend might have expired, recreate it
+    return await this.addBlendToDB(blendId, uid);
+  }
+
   async getBlend(
     id: string,
     version: BlendVersion = BlendVersion.current,
@@ -537,12 +550,7 @@ export class BlendService implements IService {
     buildVersion: number,
     clientType: string
   ): Promise<VerifyExportResponse> {
-    let existingBlend = await this.getBlend(blendId);
-
-    if (!existingBlend) {
-      // Blend might have expired, recreate it
-      existingBlend = await this.addBlendToDB(blendId, uid);
-    }
+    const existingBlend = await this.getOrCreateBlend(blendId, uid);
 
     const updater = new BlendUpdater(existingBlend, incomingRecipe);
     updater.validate(uid);
