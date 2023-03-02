@@ -121,7 +121,8 @@ export class BlendService implements IService {
       ":imageFileKeys": newFileKeysList,
     };
     if (options.isHeroImage) {
-      const blendHeroImage = plainToClass(BlendHeroImage, fileKeyItem);
+      const heroImages = { ...blend.heroImages, ...fileKeyItem };
+      const blendHeroImage = plainToClass(BlendHeroImage, heroImages);
       updateQuery = `${updateQuery}, heroImages = :heroImages`;
       expressionAttributes[":heroImages"] = blendHeroImage;
       blend.heroImages = blendHeroImage;
