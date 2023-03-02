@@ -12,6 +12,9 @@ import Joi from "joi";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import FileKeysService from "server/service/fileKeys";
 import HeroImageService from "server/service/heroImage";
+import { ImageFileKeys } from "server/base/models/heroImage";
+import { listObjectsInFolder } from "server/external/s3";
+import ConfigProvider from "server/base/ConfigProvider";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -31,6 +34,25 @@ export const ImageReplacementRequestSchema = Joi.object({
   targetOriginalFileKey: Joi.string().required(),
   replacementOriginalFileKey: Joi.string().required(),
 });
+
+const queryBucketForFileKeyItem = async (
+  blendId: string,
+  fileKeyAlreadyInBucket: string,
+  imageFileKeyItems: ImageFileKeys[]
+): Promise<ImageFileKeys> => {
+  const files = await listObjectsInFolder(
+    ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+    blendId
+  );
+  const fileObject = files.find((file) => file.Key === fileKeyAlreadyInBucket);
+  const fileEtag = fileObject.ETag;
+
+  return imageFileKeyItems.find((fileKeys) =>
+    files.find(
+      (file) => file.ETag === fileEtag && fileKeys.original === file.Key
+    )
+  );
+};
 
 const replaceImage = async (
   req: NextApiRequestExtended,
@@ -67,6 +89,23 @@ const replaceImage = async (
     blend,
     targetOriginalFileKey
   );
+
+  if (!imageFileKeyItem) {
+    /**
+     * Assuming that this api is getting called again
+     * even though filekeys are updated.
+     * We query for the filekey used in the blend by querying the hash of replacement image
+     */
+    const queriedFileKeyItem = await queryBucketForFileKeyItem(
+      blend.id,
+      replacementOriginalFileKey,
+      blend.imageFileKeys
+    );
+    if (!queriedFileKeyItem) {
+      throw new Error("FileKeyItem not found in blend");
+    }
+    return res.send(queriedFileKeyItem);
+  }
 
   const fileKeyItem = await removeBgService.applyMaskAndUpload(
     replacementOriginalFileKey,
