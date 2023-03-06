@@ -66,6 +66,7 @@ const chooseHeroImage = async (
 
   const blendHeroImage = plainToClass(BlendHeroImage, {
     ...fileKeys,
+    heroImageId,
     classificationMetadata,
   });
 
