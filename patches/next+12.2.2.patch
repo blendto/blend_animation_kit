@@ -12,8 +12,8 @@ index bec14c4..c48cf41 100755
 +        // by setting this a few seconds higher than the ALB idle timeout
 +        // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#connection-idle-timeout
 +        // Hint: the alb is pre-opening connections behind the scene
-+        server.keepAliveTimeout = 65000;
-+        server.headersTimeout = 70000;
++        server.keepAliveTimeout = 185000;
++        server.headersTimeout = 190000;
      });
  }
  
