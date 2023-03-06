@@ -339,9 +339,14 @@ const removeBgAndStore = async (
   const fileKeyParts = fileKey.split("/");
   const [fileNameWithExt] = fileKeyParts.slice(-1);
   const fileNameArr = fileNameWithExt.split(".");
-  const fileExtension = fileNameArr.pop();
-  const fileNameWithoutExt = fileNameArr.join(".");
-  if (!VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)) {
+  let fileExtension = fileNameArr.pop();
+  let fileNameWithoutExt = fileNameArr.join(".");
+  if (fileNameArr.length <= 1) {
+    // No extension in the filename
+    fileNameWithoutExt = fileExtension;
+    fileExtension = "";
+  }
+  if (fileExtension && !VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)) {
     // if the fetched image is in an unsupported format,
     // we change things to make it look like the fetched image was a webp
     fetchedBuffer = await convertUnspportedFormatToWebp(

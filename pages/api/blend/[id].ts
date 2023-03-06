@@ -266,9 +266,17 @@ async function generate(
       const fileKeyParts = fileKey.split("/");
       const [fileNameWithExt] = fileKeyParts.slice(-1);
       const fileNameArr = fileNameWithExt.split(".");
-      const fileExtension = fileNameArr.pop();
-      const fileNameWithoutExt = fileNameArr.join(".");
-      if (!VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)) {
+      let fileExtension = fileNameArr.pop();
+      let fileNameWithoutExt = fileNameArr.join(".");
+      if (fileNameArr.length <= 1) {
+        // No extension in the filename
+        fileNameWithoutExt = fileExtension;
+        fileExtension = "";
+      }
+      if (
+        fileExtension &&
+        !VALID_UPLOAD_IMAGE_EXTENSIONS.includes(fileExtension)
+      ) {
         const convertedFileKey = createConvertedFileKey(
           fileKeyParts[0],
           fileNameWithoutExt
