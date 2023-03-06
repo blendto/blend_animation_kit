@@ -1,6 +1,6 @@
 export async function withExponentialBackoffRetries<T>(
   fn: (...args: unknown[]) => Promise<T>,
-  fnArgs: unknown[],
+  fnArgs: unknown[] = [],
   backOffFactor = 0.5,
   retriesDone = 0,
   maxRetries = 2

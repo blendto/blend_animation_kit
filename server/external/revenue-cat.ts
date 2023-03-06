@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import ConfigProvider from "server/base/ConfigProvider";
 import { handleAxiosCall } from "server/helpers/network";
 import {
@@ -6,6 +6,7 @@ import {
   Entitlements,
   FetchEntitlementResponse,
 } from "server/base/models/revenue-cat";
+import { withExponentialBackoffRetries } from "server/helpers/general";
 
 class RevenueCat {
   httpClient = axios.create({
@@ -16,9 +17,12 @@ class RevenueCat {
   });
 
   private async getSubscriber(userId: string) {
-    return (
+    return await (
       await handleAxiosCall(
-        async () => await this.httpClient.get(`/v1/subscribers/${userId}`)
+        async () =>
+          await withExponentialBackoffRetries(
+            async () => await this.httpClient.get(`/v1/subscribers/${userId}`)
+          )
       )
     ).data;
   }
