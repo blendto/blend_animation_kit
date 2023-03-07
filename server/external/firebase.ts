@@ -71,7 +71,7 @@ export default class Firebase {
   ): Promise<{ uid: string; isAnonymous: boolean }> {
     const authHeader = request.headers?.authorization;
     if (!authHeader?.startsWith("Bearer")) {
-      return null;
+      return { uid: null, isAnonymous: null };
     }
     const claims = await this.verifyAndDecodeToken(authHeader.substring(7));
     const {
