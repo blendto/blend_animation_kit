@@ -33,6 +33,7 @@ import {
   createConvertedFileKey,
 } from "server/helpers/imageUtils";
 import { bufferToStream } from "server/helpers/bufferUtils";
+import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -85,9 +86,11 @@ const deleteBlend = async (
     throw new ObjectNotFoundError("Blend not found");
   }
   if (blend.createdBy !== req.uid) {
-    logger.error(
-      `A user is trying to access another user's blend. Blend id: ${id}. ` +
-        `Owner id: ${blend.createdBy}. Requesting user id: ${req.uid}`
+    IllegalBlendAccessError.logIllegalBlendAccess(
+      id as string,
+      blend.createdBy,
+      req.uid,
+      req.isUserAnonymous
     );
     // Don't let the possible attacker know that this is a valid blend id.
     throw new ObjectNotFoundError("Blend not found");
@@ -252,7 +255,8 @@ async function generate(
   blendId: string,
   uid: string,
   incomingRecipe: Recipe,
-  updatedAt: number
+  updatedAt: number,
+  isUserAnonymous: boolean
 ) {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   const existingBlend = await blendService.getOrCreateBlend(blendId, uid);
@@ -314,7 +318,7 @@ async function generate(
   );
   const updater = new BlendUpdater(existingBlend, incomingRecipe);
   const savedBlend = await blendService.updateBlend(
-    updater.updatedBlend(uid, isWatermarked),
+    updater.updatedBlend(uid, isWatermarked, isUserAnonymous),
     false,
     updatedAt
   );
@@ -344,13 +348,26 @@ const submitBlend = async (
 ) => {
   const { id, bodyVersion } = req.query as { id: string; bodyVersion?: string };
   const { recipe, updatedAt } = extractSubmitBlendBody(req.body, bodyVersion);
-  const { uid, buildVersion, clientType } = req;
+  const { uid, buildVersion, clientType, isUserAnonymous } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
   if (buildVersion < ConfigProvider.CLIENT_SIDE_GENERATION_BUILD_VERSION) {
-    await blendService.verifyExport(id, uid, recipe, buildVersion, clientType);
+    await blendService.verifyExport(
+      id,
+      uid,
+      recipe,
+      buildVersion,
+      clientType,
+      isUserAnonymous
+    );
   }
-  const trimmedBlend = await generate(id, uid, recipe, updatedAt);
+  const trimmedBlend = await generate(
+    id,
+    uid,
+    recipe,
+    updatedAt,
+    isUserAnonymous
+  );
   res.send(trimmedBlend);
 };
 

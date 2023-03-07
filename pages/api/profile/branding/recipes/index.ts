@@ -56,6 +56,7 @@ async function addRecipe(
       await brandingService.addRecipe(
         req.uid,
         sourceBlendId,
+        req.isUserAnonymous,
         heroAssetUids,
         backgroundAssetUid
       )

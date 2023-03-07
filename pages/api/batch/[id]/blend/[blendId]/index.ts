@@ -54,7 +54,12 @@ const updateBatchBlend = async (
     BlendVersion.current,
     true
   );
-  const updatedBlend = updater.updatedBlend(uid, dbBlend, blend);
+  const updatedBlend = updater.updatedBlend(
+    uid,
+    dbBlend,
+    blend,
+    req.isUserAnonymous
+  );
   await blendService.updateBlend(updatedBlend);
   const individualEditOperation = new IndividualBlendEditOperation(blendId);
   await batchService.applyOperation(id as string, uid, individualEditOperation);

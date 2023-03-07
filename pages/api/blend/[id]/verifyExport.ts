@@ -26,14 +26,15 @@ const verifyExport = async (
   const { id } = req.query as { id: string };
   const recipe = req.body as Recipe;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const { uid, buildVersion, clientType } = req;
+  const { uid, buildVersion, clientType, isUserAnonymous } = req;
 
   const { blend, didUpdate } = await blendService.verifyExport(
     id,
     uid,
     recipe,
     buildVersion,
-    clientType
+    clientType,
+    isUserAnonymous
   );
   res.send({ blend: trim(blend), didUpdate });
 };

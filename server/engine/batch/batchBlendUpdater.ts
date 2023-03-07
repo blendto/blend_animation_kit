@@ -17,11 +17,13 @@ export class BatchBlendUpdater {
   updatedBlend(
     updaterUid: string,
     existingBlend: Blend,
-    incomingRecipe: Recipe
+    incomingRecipe: Recipe,
+    isUserAnonymous: boolean
   ): Blend {
     return new BlendUpdater(existingBlend, incomingRecipe).updatedBlend(
       updaterUid,
-      false
+      false,
+      isUserAnonymous
     );
   }
 }

@@ -24,6 +24,7 @@ import { UpdateOperations } from "../repositories";
 
 export type NextApiRequestExtended = NextApiRequest & {
   uid: string;
+  isUserAnonymous: boolean;
   buildVersion?: number;
   ip?: string;
   clientType?: string;
@@ -68,7 +69,10 @@ export function withReqHandler(
     try {
       if (authType === AuthType.USER) {
         const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
-        extendedReq.uid = await firebaseService.extractUserIdFromRequest(req);
+        const { uid, isAnonymous } =
+          await firebaseService.extractUserIdFromRequest(req);
+        extendedReq.uid = uid;
+        extendedReq.isUserAnonymous = isAnonymous;
         extendedReq.buildVersion = extractBuildVersion(req);
         extendedReq.ip = req.headers["x-forwarded-for"] as string;
         if (!extendedReq.ip) {

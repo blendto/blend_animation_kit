@@ -549,12 +549,13 @@ export class BlendService implements IService {
     uid: string,
     incomingRecipe: Recipe,
     buildVersion: number,
-    clientType: string
+    clientType: string,
+    isUserAnonymous: boolean
   ): Promise<VerifyExportResponse> {
     const existingBlend = await this.getOrCreateBlend(blendId, uid);
 
     const updater = new BlendUpdater(existingBlend, incomingRecipe);
-    updater.validate(uid);
+    updater.validate(uid, isUserAnonymous);
 
     if (updater.isBlendSame() && !updater.wasPreviouslyWatermarked()) {
       return { blend: existingBlend, didUpdate: false };

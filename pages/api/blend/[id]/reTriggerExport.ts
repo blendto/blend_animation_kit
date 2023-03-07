@@ -33,13 +33,14 @@ const reTriggerExport = async (
   const service = diContainer.get<BlendService>(TYPES.BlendService);
   const currentBlend = await service.getBlend(id, BlendVersion.current, true);
 
-  const { uid, buildVersion, clientType } = req;
+  const { uid, buildVersion, clientType, isUserAnonymous } = req;
   const { blend } = await service.verifyExport(
     id,
     uid,
     currentBlend,
     buildVersion,
-    clientType
+    clientType,
+    isUserAnonymous
   );
 
   const { isWatermarked } = blend;

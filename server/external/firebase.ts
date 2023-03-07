@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import "reflect-metadata";
 import admin from "firebase-admin";
 import { nanoid } from "nanoid";
@@ -65,13 +66,19 @@ export default class Firebase {
     return userCredential.user;
   }
 
-  async extractUserIdFromRequest(request: NextApiRequest): Promise<string> {
+  async extractUserIdFromRequest(
+    request: NextApiRequest
+  ): Promise<{ uid: string; isAnonymous: boolean }> {
     const authHeader = request.headers?.authorization;
     if (!authHeader?.startsWith("Bearer")) {
       return null;
     }
     const claims = await this.verifyAndDecodeToken(authHeader.substring(7));
-    return claims.uid;
+    const {
+      uid,
+      firebase: { sign_in_provider },
+    } = claims;
+    return { uid, isAnonymous: sign_in_provider === "anonymous" };
   }
 
   async withUserErrorHandler(res: Promise<admin.auth.UserRecord | void>) {

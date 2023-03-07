@@ -5,8 +5,8 @@ import {
   MIN_SUPPORTED_ENCODER_VERSION,
 } from "server/constants";
 import { Blend } from "server/base/models/blend";
-import logger from "server/base/Logger";
 import objectHash from "object-hash";
+import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
 
 export class BlendUpdater {
   existingBlend: Blend;
@@ -34,11 +34,14 @@ export class BlendUpdater {
     );
   }
 
-  validate(updaterUid: string) {
+  validate(updaterUid: string, isUpdaterAnonymous: boolean) {
     if (this.existingBlend.createdBy !== updaterUid) {
-      logger.error(
-        `A user is trying to access another user's blend. Blend id: ${this.existingBlend.id}. ` +
-          `Owner id: ${this.existingBlend.createdBy}. Requesting user id: ${updaterUid}`
+      const { id, createdBy } = this.existingBlend;
+      IllegalBlendAccessError.logIllegalBlendAccess(
+        id,
+        createdBy,
+        updaterUid,
+        isUpdaterAnonymous
       );
       // Don't let the possible attacker know that this is a valid blend id.
       throw new ObjectNotFoundError("Blend not found");
@@ -70,8 +73,12 @@ export class BlendUpdater {
     }
   }
 
-  updatedBlend(updaterUid: string, shouldWatermark: boolean): Blend {
-    this.validate(updaterUid);
+  updatedBlend(
+    updaterUid: string,
+    shouldWatermark: boolean,
+    isUpdaterAnonymous: boolean
+  ): Blend {
+    this.validate(updaterUid, isUpdaterAnonymous);
 
     const {
       images,

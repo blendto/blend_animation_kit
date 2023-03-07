@@ -18,12 +18,12 @@ import { IService } from "server/service";
 import { UpdateOperations } from "server/repositories";
 import {
   BrandingEntity,
-  BrandingLogoStatus,
-  MAX_LOGOS,
-  BrandingUpdatePaths,
   BrandingLogo,
   BrandingLogoFromUploadsSource,
   BrandingLogosEntity,
+  BrandingLogoStatus,
+  BrandingUpdatePaths,
+  MAX_LOGOS,
 } from "server/repositories/branding";
 import {
   convertImageToWebp,
@@ -45,6 +45,7 @@ import { withExponentialBackoffRetries } from "server/helpers/general";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import { replaceUriPrefix } from "server/helpers/fileKeyUtils";
+import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
 import { BlendService } from "./blend";
 import { MAX_FILE_SIZE, RecipeService } from "./recipe";
 import { UserService } from "./user";
@@ -251,6 +252,7 @@ export default class BrandingService implements IService {
   async addRecipe(
     userId: string,
     sourceBlendId: string,
+    isUserAnonymous: boolean,
     heroAssetUids?: string[],
     backgroundAssetUid?: string
   ) {
@@ -262,9 +264,11 @@ export default class BrandingService implements IService {
       true
     );
     if (userId !== blend.createdBy) {
-      logger.error(
-        `A user is trying to access another user's blend. Blend id: ${blend.id}. ` +
-          `Owner id: ${blend.createdBy}. Requesting user id: ${userId}`
+      IllegalBlendAccessError.logIllegalBlendAccess(
+        blend.id,
+        blend.createdBy,
+        userId,
+        isUserAnonymous
       );
       // Don't let the possible attacker know that this is a valid blend id.
       throw new UserError("Invalid sourceBlendId");
