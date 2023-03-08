@@ -73,8 +73,9 @@ const updateMask = async (
   await blendService.addOrUpdateImageFileKeys(blend, fileKeyItem, {
     isHeroImage,
   });
-  if (isHeroImage) {
-    const { heroImageId } = blend.heroImages;
+
+  const heroImageId = blend.heroImages?.heroImageId;
+  if (isHeroImage && heroImageId) {
     await heroImageService.updateBgRemoved(heroImageId, id, uid, fileKeyItem);
   }
 

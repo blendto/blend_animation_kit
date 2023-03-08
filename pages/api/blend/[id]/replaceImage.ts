@@ -117,8 +117,9 @@ const replaceImage = async (
     isHeroImage,
     fileKeyLookUpKey: targetOriginalFileKey,
   });
-  if (isHeroImage) {
-    const { heroImageId } = blend.heroImages;
+
+  const heroImageId = blend.heroImages?.heroImageId;
+  if (isHeroImage && heroImageId) {
     await heroImageService.updateBgRemoved(heroImageId, id, uid, fileKeyItem);
   }
 
