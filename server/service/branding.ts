@@ -89,7 +89,7 @@ export default class BrandingService implements IService {
     try {
       existingProfile = await withExponentialBackoffRetries(
         (userId: string) => this.getOrFail(userId),
-        [userId]
+        { fnArgs: [userId], backOffFactorInMS: 20 }
       );
     } catch (e) {
       if ((e as UserError).code !== UserErrorCode.BRANDING_PROFILE_NOT_FOUND) {

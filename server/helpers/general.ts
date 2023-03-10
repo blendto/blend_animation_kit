@@ -1,10 +1,14 @@
 export async function withExponentialBackoffRetries<T>(
   fn: (...args: unknown[]) => Promise<T>,
-  fnArgs: unknown[] = [],
-  backOffFactor = 0.5,
-  retriesDone = 0,
-  maxRetries = 2
+  options: {
+    fnArgs?: unknown[];
+    backOffFactorInMS: number;
+    maxRetries?: number;
+  }
 ): Promise<T> {
+  const { fnArgs = [], backOffFactorInMS, maxRetries = 2 } = options;
+
+  let retriesDone = 0;
   let error: Error;
   while (retriesDone <= maxRetries) {
     try {
@@ -14,7 +18,7 @@ export async function withExponentialBackoffRetries<T>(
       error = e as Error;
       // eslint-disable-next-line no-await-in-loop, no-loop-func
       await new Promise((resolve) => {
-        setTimeout(resolve, backOffFactor * 2 ** retriesDone);
+        setTimeout(resolve, backOffFactorInMS * 2 ** retriesDone);
       });
       retriesDone += 1;
     }

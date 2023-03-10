@@ -302,7 +302,7 @@ export default class SubscriptionService implements IService {
       await withExponentialBackoffRetries(
         (userId: string, count: number, reason: CreditAdditionReason) =>
           this.creditServiceApi.addCredits(userId, count, { reason }),
-        [userId, count, reason]
+        { fnArgs: [userId, count, reason], backOffFactorInMS: 100 }
       )
     );
   }
@@ -347,7 +347,7 @@ export default class SubscriptionService implements IService {
     const creditServiceRes = await withExponentialBackoffRetries(
       (userId: string, pageToken?: string) =>
         this.creditServiceApi.fetchActivityLogs(userId, pageToken),
-      [userId, pageToken]
+      { fnArgs: [userId, pageToken], backOffFactorInMS: 100 }
     );
 
     const blendIds = new Set(

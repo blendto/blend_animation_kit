@@ -21,7 +21,8 @@ class RevenueCat {
       await handleAxiosCall(
         async () =>
           await withExponentialBackoffRetries(
-            async () => await this.httpClient.get(`/v1/subscribers/${userId}`)
+            async () => await this.httpClient.get(`/v1/subscribers/${userId}`),
+            { backOffFactorInMS: 100 }
           )
       )
     ).data;

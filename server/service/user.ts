@@ -141,7 +141,7 @@ export class UserService implements IService {
     try {
       profile = await withExponentialBackoffRetries(
         (id: string) => this.getOrFail(id),
-        [id]
+        { fnArgs: [id], backOffFactorInMS: 20 }
       );
     } catch (e) {
       if ((e as UserError).code === UserErrorCode.USER_NOT_FOUND) {
