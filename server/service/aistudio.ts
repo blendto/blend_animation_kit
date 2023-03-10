@@ -53,6 +53,10 @@ export class AIStudioService implements IService {
     const itemList = (await this.daxStore.scanItems({
       TableName: ConfigProvider.AI_BLEND_PHOTO_TOPICS_TABLE,
       ProjectionExpression: "topicId, isPremium, thumbnail, label",
+      FilterExpression: "isEnabled = :true",
+      ExpressionAttributeValues: {
+        ":true": true,
+      },
     })) as AIBlendPhotoTopic[];
     return itemList.map((item) => ({
       topicId: item.topicId,
