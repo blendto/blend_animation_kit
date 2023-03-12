@@ -24,9 +24,6 @@ const getTopics = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const aiStudioService = diContainer.get<AIStudioService>(
     TYPES.AIStudioService
   );
-  const out = await aiStudioService.getTopics({
-    languageCode: language,
-    legacyOnly: true,
-  });
+  const out = await aiStudioService.fetchTopicsWithList(language);
   res.status(200).send(out);
 };

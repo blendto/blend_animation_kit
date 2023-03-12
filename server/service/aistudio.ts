@@ -8,6 +8,8 @@ import {
   AIBlendPhoto,
   AIBlendPhotoGenerationStatus,
   AIBlendPhotoTopic,
+  AIStudioTopicList,
+  AIStudioTopicListExternal,
   GenerateSamplesRequest,
   Prompt,
 } from "server/base/models/aistudio";
@@ -49,11 +51,18 @@ export class AIStudioService implements IService {
     return aiBlendPhoto;
   }
 
-  async getTopics(languageCode: string): Promise<Partial<AIBlendPhotoTopic>[]> {
+  async getTopics({
+    languageCode,
+    legacyOnly = false,
+  }: {
+    languageCode: string;
+    legacyOnly?: boolean;
+  }): Promise<Partial<AIBlendPhotoTopic>[]> {
     const itemList = (await this.daxStore.scanItems({
       TableName: ConfigProvider.AI_BLEND_PHOTO_TOPICS_TABLE,
       ProjectionExpression: "topicId, isPremium, thumbnail, label",
-      FilterExpression: "isEnabled = :true",
+      FilterExpression:
+        "isEnabled = :true" + (legacyOnly ? " and isLegacyTopic = :true" : ""),
       ExpressionAttributeValues: {
         ":true": true,
       },
@@ -63,6 +72,38 @@ export class AIStudioService implements IService {
       isPremium: item.isPremium,
       thumbnail: item.thumbnail,
       localisedLabel: item.label[languageCode] ?? item.label.en,
+    }));
+  }
+
+  async getAllTopicLists(): Promise<AIStudioTopicList[]> {
+    const itemList = (await this.daxStore.scanItems({
+      TableName: ConfigProvider.AI_STUDIO_TOPIC_LISTS_TABLE,
+      FilterExpression: "isEnabled = :true",
+      ExpressionAttributeValues: {
+        ":true": true,
+      },
+    })) as AIStudioTopicList[];
+    return itemList;
+  }
+
+  async fetchTopicsWithList(languageCode: string) {
+    const topicLists = await this.getAllTopicLists();
+    const topics = await this.getTopics({ languageCode });
+
+    const mergedTopicLists = this.mergeTopicsWithList(topicLists, topics);
+    return mergedTopicLists.map((list) => ({
+      ...list,
+      localisedLabel: list.label[languageCode] ?? list.label.en,
+    }));
+  }
+
+  mergeTopicsWithList(
+    lists: AIStudioTopicList[],
+    topics: Partial<AIBlendPhotoTopic>[]
+  ): AIStudioTopicListExternal[] {
+    return lists.map((list) => ({
+      ...list,
+      topics: topics.filter((topic) => list.topicIds.includes(topic.topicId)),
     }));
   }
 

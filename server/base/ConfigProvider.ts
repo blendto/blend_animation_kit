@@ -91,6 +91,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("AI_BLEND_PHOTO_TOPICS_TABLE");
   }
 
+  public get AI_STUDIO_TOPIC_LISTS_TABLE(): string {
+    return this.retrieveOrCrash("AI_STUDIO_TOPIC_LISTS_TABLE");
+  }
+
   public get REFERRAL_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("REFERRAL_DYNAMODB_TABLE");
   }

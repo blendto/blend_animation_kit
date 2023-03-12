@@ -134,6 +134,18 @@ export class AIBlendPhotoTopic {
   localisedLabel?: string;
 }
 
+export class AIStudioTopicList {
+  id: string;
+  isEnabled: boolean;
+  label: Record<string, string>;
+  topicIds: string[];
+}
+
+export class AIStudioTopicListExternal extends AIStudioTopicList {
+  localisedLabel?: string;
+  topics: Partial<AIBlendPhotoTopic>[];
+}
+
 export class AIBlendPhoto implements Entity {
   blendId: string;
   fileKeys: ImageFileKeys;
