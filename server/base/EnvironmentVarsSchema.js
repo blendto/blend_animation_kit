@@ -10,7 +10,6 @@ module.exports = {
       RECIPE_LISTS_DYNAMODB_TABLE: Joi.string().required(),
       CONFIG_DYNAMODB_TABLE: Joi.string().required(),
       BLEND_DYNAMODB_TABLE: Joi.string().required(),
-      BLEND_VERSIONED_DYNAMODB_TABLE: Joi.string().required(),
       BLEND_GEN_QUEUE_URL: Joi.string().required(),
       BLEND_INGREDIENTS_BUCKET: Joi.string().required(),
       RECIPE_INGREDIENTS_BUCKET: Joi.string().required(),

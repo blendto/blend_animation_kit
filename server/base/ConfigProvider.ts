@@ -43,10 +43,6 @@ class ConfigProvider {
     return this.retrieveOrCrash("CONFIG_DYNAMODB_TABLE");
   }
 
-  public get BLEND_VERSIONED_DYNAMODB_TABLE(): string {
-    return this.retrieveOrCrash("BLEND_VERSIONED_DYNAMODB_TABLE");
-  }
-
   public get BLEND_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("BLEND_DYNAMODB_TABLE");
   }

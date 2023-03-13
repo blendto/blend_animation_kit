@@ -10,7 +10,7 @@ import { TYPES } from "server/types";
 import { UserError } from "server/base/errors";
 import { BlendService } from "server/service/blend";
 import { IndividualBlendEditOperation } from "server/base/models/batchOperations";
-import { Blend, BlendVersion } from "server/base/models/blend";
+import { Blend } from "server/base/models/blend";
 import { BatchBlendUpdater } from "server/engine/batch/batchBlendUpdater";
 
 export default withReqHandler(
@@ -49,11 +49,7 @@ const updateBatchBlend = async (
   const updater = new BatchBlendUpdater(batch);
   updater.validate(blendId);
 
-  const dbBlend = await blendService.getBlend(
-    blendId,
-    BlendVersion.current,
-    true
-  );
+  const dbBlend = await blendService.getBlend(blendId, true);
   const updatedBlend = updater.updatedBlend(
     uid,
     dbBlend,

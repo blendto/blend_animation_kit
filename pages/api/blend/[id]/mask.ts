@@ -62,7 +62,7 @@ const updateMask = async (
     TYPES.HeroImageService
   );
 
-  const blend = await blendService.getBlend(id, null, true);
+  const blend = await blendService.getBlend(id, true);
 
   const fileKeyItem = await removeBgService.applyMaskAndUpload(
     originalFileKey,

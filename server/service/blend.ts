@@ -162,49 +162,29 @@ export class BlendService implements IService {
     return blend;
   }
 
-  async getOrCreateBlend(blendId: string, uid: string) {
-    const existingBlend = await this.getBlend(
-      blendId,
-      BlendVersion.current,
-      true
-    );
-    if (existingBlend) {
-      return existingBlend;
-    }
-    // Blend might have expired, recreate it
-    return await this.addBlendToDB(blendId, uid);
-  }
-
-  async getBlend(
-    id: string,
-    version: BlendVersion = BlendVersion.current,
-    consistentRead = false
-  ): Promise<Blend> {
-    let blend;
-
-    if (!consistentRead) {
-      blend = await this.dataStore.getItem({
-        TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
-        Key: { id, version },
-      });
-    }
-
-    if (!blend) {
-      // TODO: Remove this post migration. This is a HACK to fix consistency issues.
-      blend = await this.dataStore.getItem({
-        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-        Key: {
-          id,
-        },
-        ConsistentRead: consistentRead,
-      });
-    }
+  async getBlend(id: string, consistentRead = false): Promise<Blend> {
+    const blend = await this.dataStore.getItem({
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      Key: {
+        id,
+      },
+      ConsistentRead: consistentRead,
+    });
 
     if (!blend) {
       return null;
     }
 
     return this.backfillBlendOutput(<Blend>blend);
+  }
+
+  async getOrCreateBlend(blendId: string, uid: string) {
+    const existingBlend = await this.getBlend(blendId, true);
+    if (existingBlend) {
+      return existingBlend;
+    }
+    // Blend might have expired, recreate it
+    return await this.addBlendToDB(blendId, uid);
   }
 
   async getMinimalBlends(blendIds: string[]): Promise<MinimalBlend[]> {
@@ -459,7 +439,7 @@ export class BlendService implements IService {
   async getRecentBlends(uid: string) {
     return <Blend[]>(
       await this.dataStore.queryItems({
-        TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
         KeyConditionExpression: "#createdBy = :createdBy",
         IndexName: "created-by-idx",
         ExpressionAttributeNames: {
@@ -722,7 +702,7 @@ export class BlendService implements IService {
         createdAt,
         updatedAt,
         status,
-      } = await this.getBlend(blend.id, BlendVersion.current, true);
+      } = await this.getBlend(blend.id, true);
 
       return {
         id,
@@ -900,7 +880,7 @@ export class BlendService implements IService {
     const pageKeyObject = encodedPageKey.decode();
 
     const data = await this.dataStore.queryItems({
-      TableName: ConfigProvider.BLEND_VERSIONED_DYNAMODB_TABLE,
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       KeyConditionExpression: "#createdBy = :createdBy",
       IndexName: "createdBy-updatedAt-idx",
       ExpressionAttributeNames: {

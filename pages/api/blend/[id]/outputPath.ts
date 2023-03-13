@@ -4,21 +4,21 @@ import {
   ensureServiceAuth,
   NextApiRequestExtended,
   withReqHandler,
-} from "../../../../server/helpers/request";
+} from "server/helpers/request";
 import {
   ForbiddenError,
   MethodNotAllowedError,
   ObjectNotFoundError,
   UserError,
   UserErrorCode,
-} from "../../../../server/base/errors";
-import { Blend, BlendVersion } from "../../../../server/base/models/blend";
-import { diContainer } from "../../../../inversify.config";
-import { BlendService } from "../../../../server/service/blend";
-import { TYPES } from "../../../../server/types";
-import ConfigProvider from "../../../../server/base/ConfigProvider";
-import { BlendMicroServices } from "../../../../server/internal/inter-service-auth";
-import { ElementSource } from "../../../../server/base/models/recipe";
+} from "server/base/errors";
+import { Blend } from "server/base/models/blend";
+import { diContainer } from "inversify.config";
+import { BlendService } from "server/service/blend";
+import { TYPES } from "server/types";
+import ConfigProvider from "server/base/ConfigProvider";
+import { BlendMicroServices } from "server/internal/inter-service-auth";
+import { ElementSource } from "server/base/models/recipe";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -48,11 +48,7 @@ const getBlendOutputPath = async (
     userId: string;
   };
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const blend: Blend = await blendService.getBlend(
-    id,
-    BlendVersion.current,
-    true
-  );
+  const blend: Blend = await blendService.getBlend(id, true);
   if (!blend) {
     throw new ObjectNotFoundError();
   }

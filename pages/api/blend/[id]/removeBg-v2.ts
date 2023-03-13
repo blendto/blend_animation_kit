@@ -2,7 +2,7 @@ import type { NextApiResponse } from "next";
 
 import Joi from "joi";
 
-import { Blend, BlendVersion } from "server/base/models/blend";
+import { Blend } from "server/base/models/blend";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
 import {
   createDestinationFileKey,
@@ -37,8 +37,8 @@ import {
 import { sharpInstance } from "server/helpers/sharpUtils";
 import {
   BgRemovalMetadata,
-  ClassificationMetadata,
   BgRemovedFileKeys,
+  ClassificationMetadata,
   RemoveBGSource,
 } from "server/base/models/removeBg";
 import RecoEngineApi from "server/internal/reco-engine";
@@ -313,11 +313,7 @@ const removeBgAndStore = async (
 ) => {
   const { id } = req.query;
 
-  const blend: Blend = await blendService.getBlend(
-    id as string,
-    BlendVersion.current,
-    true
-  );
+  const blend: Blend = await blendService.getBlend(id as string, true);
 
   if (!blend) {
     throw new UserError("Blend not found");

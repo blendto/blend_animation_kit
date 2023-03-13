@@ -2,7 +2,7 @@ import DynamoDB from "server/external/dynamodb";
 import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
 import { Recipe, RecipeWrapper } from "server/base/models/recipe";
-import { Blend, BlendStatus, BlendVersion } from "server/base/models/blend";
+import { Blend, BlendStatus } from "server/base/models/blend";
 import { checkCompatibilityWithElements } from "server/base/errors/recipeVerification";
 import ConfigProvider from "server/base/ConfigProvider";
 import logger from "server/base/Logger";
@@ -177,7 +177,6 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   const blend = await blendService.getBlend(
     id as string,
-    BlendVersion.current,
     Boolean(consistentRead)
   );
 
@@ -328,7 +327,7 @@ async function generate(
     body,
     schema: ExportRequestSchema.Blend,
   });
-  const generatedBlend = await blendService.getBlend(blendId, null, true);
+  const generatedBlend = await blendService.getBlend(blendId, true);
   return trim(generatedBlend);
 }
 

@@ -58,7 +58,7 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
   // Need consistent read coz blend might have just been created and not propagated yet
-  const blend = await blendService.getBlend(id, BlendVersion.current, true);
+  const blend = await blendService.getBlend(id, true);
 
   if (!blend) {
     throw new UserError("No such blend exists");

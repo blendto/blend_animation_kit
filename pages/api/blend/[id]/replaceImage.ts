@@ -83,7 +83,7 @@ const replaceImage = async (
     TYPES.HeroImageService
   );
 
-  const blend = await blendService.getBlend(id, null, true);
+  const blend = await blendService.getBlend(id, true);
 
   const imageFileKeyItem = fileKeysService.retrieveFileKeyItemFromBlend(
     blend,

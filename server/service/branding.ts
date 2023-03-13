@@ -31,7 +31,6 @@ import {
 } from "server/helpers/imageUtils";
 import { TYPES } from "server/types";
 import { Repo } from "server/repositories/base";
-import { BlendVersion } from "server/base/models/blend";
 import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
 import { BrandingRecipe } from "server/base/models/brandingRecipe";
 import { ElementSource } from "server/base/models/recipe";
@@ -258,11 +257,7 @@ export default class BrandingService implements IService {
   ) {
     const branding = await this.getOrCreate(userId);
 
-    const blend = await this.blendService.getBlend(
-      sourceBlendId,
-      BlendVersion.generated,
-      true
-    );
+    const blend = await this.blendService.getBlend(sourceBlendId, true);
     if (userId !== blend.createdBy) {
       IllegalBlendAccessError.logIllegalBlendAccess(
         blend.id,
