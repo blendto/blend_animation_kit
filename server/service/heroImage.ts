@@ -30,6 +30,12 @@ import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { HeroImageIdBased } from "server/service/fileKeysProcessingStrategy";
 import { BlendFromHeroImage } from "server/base/models/batch";
+import { ElementSource } from "server/base/models/recipe";
+
+export enum ImagePathFormat {
+  FILEKEY = "fileKey",
+  URL = "url",
+}
 
 @injectable()
 export default class HeroImageService implements IService {
@@ -102,23 +108,40 @@ export default class HeroImageService implements IService {
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       Key: { id },
     })) as HeroImage | null;
-
     const validOwners = returnOnlyOwn ? [uid] : [uid, "DEFAULT_USER"];
     if (
-      heroImage === null ||
-      !validOwners.includes(heroImage.userId) ||
-      heroImage.status === HeroImageStatus.DELETED
+      heroImage &&
+      validOwners.includes(heroImage.userId) &&
+      heroImage.status !== HeroImageStatus.DELETED
     ) {
-      if (heroImage && !validOwners.includes(heroImage.userId)) {
-        logger.error({
-          op: "UNAUTH_HERO_IMAGE_ACCESS",
-          message: `Some user is trying to access another user's hero image!. User id: ${uid}. Image id: ${id}`,
-        });
-        // Don't differentiate response so as to avoid enumeration attacks.
-      }
-      throw new ObjectNotFoundError("Hero image not found");
+      return heroImage;
     }
-    return heroImage;
+    if (heroImage && !validOwners.includes(heroImage?.userId)) {
+      logger.error({
+        op: "UNAUTH_HERO_IMAGE_ACCESS",
+        message: `Some user is trying to access another user's hero image!. User id: ${uid}. Image id: ${id}`,
+      });
+      // Don't differentiate response so as to avoid enumeration attacks.
+    }
+    throw new ObjectNotFoundError("Hero image not found");
+  }
+
+  async getImagePath(args: {
+    id: string;
+    userId: string;
+    format: ImagePathFormat;
+    returnOnlyOwn?: boolean;
+  }) {
+    const { id, userId, format, returnOnlyOwn = false } = args;
+    const heroImage = await this.getImage(id, userId, returnOnlyOwn);
+    return format === ImagePathFormat.FILEKEY
+      ? {
+          source: ElementSource.hero,
+          path: heroImage.withoutBg,
+        }
+      : {
+          url: `${ConfigProvider.HERO_IMAGES_BASE_PATH}/${heroImage.withoutBg}`,
+        };
   }
 
   async markImageUsage(id: string): Promise<void> {

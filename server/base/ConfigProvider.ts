@@ -266,6 +266,7 @@ class ConfigProvider {
   public get CUSTOMER_IO_API_KEY(): string {
     return this.retrieveOrCrash("CUSTOMER_IO_API_KEY");
   }
+
   public get NEXT_PUBLIC_OUTPUT_BASE_PATH(): string {
     return this.retrieveOrCrash("NEXT_PUBLIC_OUTPUT_BASE_PATH");
   }
@@ -297,6 +298,10 @@ class ConfigProvider {
       return null;
     }
     return version;
+  }
+
+  public get HERO_IMAGES_BASE_PATH(): string {
+    return this.retrieveOrCrash("HERO_IMAGES_BASE_PATH");
   }
 
   private retrieveOrCrash(envVar: string): string {
