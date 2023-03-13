@@ -69,7 +69,9 @@ const updateMask = async (
     maskFileKey
   );
 
-  const isHeroImage = blend.heroImages?.original === originalFileKey;
+  const isHeroImage =
+    blend.heroImages?.original === originalFileKey ||
+    blend.heroImages?.withoutBg === originalFileKey;
   await blendService.addOrUpdateImageFileKeys(blend, fileKeyItem, {
     isHeroImage,
   });
