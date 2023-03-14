@@ -91,10 +91,12 @@ export class AIStudioService implements IService {
     const topics = await this.getTopics({ languageCode });
 
     const mergedTopicLists = this.mergeTopicsWithList(topicLists, topics);
-    return mergedTopicLists.map((list) => ({
-      ...list,
-      localisedLabel: list.label[languageCode] ?? list.label.en,
-    }));
+    return mergedTopicLists
+      .map((list) => ({
+        ...list,
+        localisedLabel: list.label[languageCode] ?? list.label.en,
+      }))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
   mergeTopicsWithList(

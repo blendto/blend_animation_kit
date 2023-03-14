@@ -139,6 +139,8 @@ export class AIStudioTopicList {
   isEnabled: boolean;
   label: Record<string, string>;
   topicIds: string[];
+  sortOrder: number;
+  hideLabel: boolean;
 }
 
 export class AIStudioTopicListExternal extends AIStudioTopicList {
