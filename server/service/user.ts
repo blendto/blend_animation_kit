@@ -355,17 +355,6 @@ export class UserService implements IService {
   }
 
   async deleteAccount(id: string): Promise<void> {
-    // TODO: Delete the below fn. and it's calls
-    const debug = (
-      msg: string,
-      additionalInfo: Record<string, unknown> = {}
-    ) => {
-      logger.debug({
-        op: "USER_ACCOUNT_DELETION",
-        msg,
-        additionalInfo,
-      });
-    };
     const appleService = diContainer.get<AppleService>(TYPES.AppleService);
     const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
     const blendService = diContainer.get<BlendService>(TYPES.BlendService);
@@ -376,48 +365,27 @@ export class UserService implements IService {
     const subscriptionService = diContainer.get<SubscriptionService>(
       TYPES.SubscriptionService
     );
-    debug("Loaded services");
 
     const user = (await this.get(id)) as User;
-    debug("Fetched profile");
     if (user?.appleOfflineToken) {
-      debug("Found apple token");
       await appleService.revokeToken(user.appleOfflineToken);
-      debug("Revoked apple token");
     }
     await this.delete(id);
-    debug("Deleted profile");
     try {
       await firebaseService.deleteUser(id);
-      debug("Deleted firebase account");
     } catch (e) {
-      debug("Deleting firebase account failed", {
-        error: e,
-        errorCode: (e as UserError).code,
-      });
       if ((e as UserError).code !== UserErrorCode.USER_NOT_FOUND) {
         throw e;
       }
-      debug("Deleting firebase account failed because it was already deleted");
       // This must be a retry where the firebase account deletion was successful in a previous try.
       // Move on.
     }
     await blendService.cleanupUserBlends(id);
-    debug("Deleted blends");
     await heroImageService.cleanupUserImages(id);
-    debug("Deleted hero images");
     await batchService.cleanupUserBatches(id);
-    debug("Deleted batches");
     try {
       await subscriptionService.delete(id);
-      debug("Deleted credits account");
     } catch (e) {
-      debug("Deleting credits account failed", {
-        error: e,
-        /* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,
-        @typescript-eslint/no-unsafe-argument */
-        errMsg: JSON.parse(e.message || "{}").message as string,
-      });
       if (
         // TODO: Add error codes to credit service and user it to verify
         /* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,
@@ -426,10 +394,8 @@ export class UserService implements IService {
       ) {
         throw e;
       }
-      debug("Deleting credits account failed because it was already deleted");
       // This must be a retry where the credit service account deletion was
       // successful in a previous try. Move on.
     }
-    debug("All done");
   }
 }
