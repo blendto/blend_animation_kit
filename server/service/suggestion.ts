@@ -192,10 +192,10 @@ export class SuggestionService {
   }
 
   async backfillRecipeDetails(
-    recipeVariantId: RecipeVariantId,
-    source = RecipeSource.DEFAULT
+    recipeVariantId: RecipeVariantId
   ): Promise<RecipeVariantId> {
-    const { id, variant } = recipeVariantId;
+    const { id, variant, source = RecipeSource.DEFAULT } = recipeVariantId;
+
     const recipe =
       source === RecipeSource.DEFAULT
         ? ((await this.daxStore.getItem({

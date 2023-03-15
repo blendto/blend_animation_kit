@@ -60,6 +60,7 @@ import {
 import { NonHeroRecipeListService } from "server/service/nonHeroRecipeList";
 import ConfigService from "server/service/config";
 import { PreviewService } from "server/service/preview";
+import { BatchV2Service } from "server/service/batch-v2";
 
 const diContainer = new Container();
 
@@ -68,6 +69,10 @@ diContainer.bind<DaxDB>(TYPES.DaxDB).to(DaxDB).inSingletonScope();
 diContainer
   .bind<BatchService>(TYPES.BatchService)
   .to(BatchService)
+  .inSingletonScope();
+diContainer
+  .bind<BatchV2Service>(TYPES.BatchV2Service)
+  .to(BatchV2Service)
   .inSingletonScope();
 diContainer
   .bind<BlendService>(TYPES.BlendService)

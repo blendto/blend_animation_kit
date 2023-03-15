@@ -2,6 +2,7 @@ export const TYPES = {
   DynamoDB: Symbol.for("DynamoDB"),
   DaxDB: Symbol.for("DaxDB"),
   BatchService: Symbol.for("BatchService"),
+  BatchV2Service: Symbol.for("BatchV2Service"),
   BlendService: Symbol.for("BlendService"),
   UploadService: Symbol.for("UploadService"),
   UserService: Symbol.for("UserService"),

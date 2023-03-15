@@ -39,6 +39,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("BATCH_DYNAMODB_TABLE");
   }
 
+  public get BATCH_V2_DYNAMODB_TABLE(): string {
+    return this.retrieveOrCrash("BATCH_V2_DYNAMODB_TABLE");
+  }
+
   public get CONFIG_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("CONFIG_DYNAMODB_TABLE");
   }

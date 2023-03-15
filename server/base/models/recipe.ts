@@ -301,6 +301,7 @@ export class RecipeUtils {
 
 export class ChooseRecipeRequest {
   recipeId: string;
+  retainAssetSource: boolean;
   variant?: string;
   fileKeys?: { original: string; withoutBg: string };
   encoderVersion: number;

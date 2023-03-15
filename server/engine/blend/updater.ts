@@ -100,10 +100,13 @@ export class BlendUpdater {
       fileKey: string;
     }
     // The mobile apps use "fileKey" attribute instead of uri
-    const imageObjects = images.map((image: ClientStoredImage) => ({
-      uri: image.uri || image.fileKey,
-      uid: image.uid,
-    }));
+    const imageObjects = images.map(
+      (image: ClientStoredImage): StoredImage => ({
+        uri: image.uri || image.fileKey,
+        uid: image.uid,
+        source: image.source,
+      })
+    );
 
     const filename = this.existingBlend.fileName;
     if (!filename || BlendUpdater.isDefaultFileNameFormat(filename)) {

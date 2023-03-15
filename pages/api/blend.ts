@@ -34,8 +34,9 @@ export default withReqHandler(
 
 const initBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+  const options = req.body as { batchId: string };
   try {
-    const blend = await blendService.initBlend(req.uid);
+    const blend = await blendService.initBlend(req.uid, options);
     return res.send(blend);
   } catch (err) {
     logger.error(err);

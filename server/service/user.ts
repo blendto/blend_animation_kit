@@ -304,13 +304,11 @@ export class UserService implements IService {
     );
     const promises = favouriteRecipes.map(async (favourite) => {
       const { recipeId: id, recipeVariant: variant, source } = favourite;
-      const fullRecipe = await suggestionService.backfillRecipeDetails(
-        {
-          id,
-          variant,
-        },
-        source
-      );
+      const fullRecipe = await suggestionService.backfillRecipeDetails({
+        id,
+        variant,
+        source,
+      });
       return { ...favourite, fullRecipe };
     });
     return Promise.all(promises);
