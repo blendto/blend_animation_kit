@@ -27,7 +27,7 @@ export default withReqHandler(
 );
 
 export const RECIPE_VARIANT_ID_SCHEMA = Joi.object({
-  recipeId: Joi.string().required(),
+  id: Joi.string().required(),
   variant: Joi.string(),
   source: Joi.string()
     .valid(...Object.values(RecipeSource))

@@ -36,7 +36,7 @@ const BATCH_UPDATE_SCHEMA = Joi.object({
       })
     )
     .required(),
-  baseRecipe: Joi.object(RECIPE_VARIANT_ID_SCHEMA).required(),
+  baseRecipe: RECIPE_VARIANT_ID_SCHEMA.required(),
 });
 
 const updateBlendsInBatch = async (
@@ -53,7 +53,11 @@ const updateBlendsInBatch = async (
     baseRecipe: RecipeVariantId;
   };
 
-  validate(req.query, requestComponentToValidate.body, BATCH_UPDATE_SCHEMA);
+  validate(
+    { blends, baseRecipe },
+    requestComponentToValidate.body,
+    BATCH_UPDATE_SCHEMA
+  );
 
   const batchService = diContainer.get<BatchV2Service>(TYPES.BatchV2Service);
   const batch = await batchService.updateBatch(
