@@ -241,14 +241,12 @@ export default class SubscriptionService implements IService {
       return { can: true, noWatermarkReason, creditServiceActivityLogId };
     } catch (err) {
       if (
-        !(err instanceof UserError) ||
         // TODO: Add error codes to credit service and use it to verify
-        !["Expired/Insufficient credits", "Subscription not found"].includes(
-          /* eslint-disable-next-line
-                @typescript-eslint/no-unsafe-argument,
-                @typescript-eslint/no-unsafe-member-access
-            */
-          JSON.parse(err.message).message
+        !(
+          err instanceof UserError &&
+          ["Expired/Insufficient credits", "Subscription not found"].includes(
+            err.message
+          )
         )
       ) {
         throw err;

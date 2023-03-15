@@ -1,7 +1,7 @@
 // noinspection JSMethodCanBeStatic
 
 import axios from "axios";
-import { handleInternalAxiosCall } from "server/helpers/network";
+import { handleAxiosCall } from "server/helpers/network";
 import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import qs from "qs";
@@ -33,14 +33,14 @@ export default class CreditServiceApi {
   ): Promise<Record<string, unknown>> {
     const data = { source: Source.FIREBASE, subject: userId, metadata };
     return (
-      await handleInternalAxiosCall<Record<string, unknown>>(
+      await handleAxiosCall<Record<string, unknown>>(
         async () => await this.httpClient.post(`/v1/subscriptions/renew`, data)
       )
     ).data;
   }
 
   async delete(userId: string): Promise<void> {
-    await handleInternalAxiosCall<Record<string, unknown>>(
+    await handleAxiosCall<Record<string, unknown>>(
       async () =>
         await this.httpClient.delete(
           `/v1/subscriptions?source=${Source.FIREBASE}&subject=${userId}`
@@ -60,7 +60,7 @@ export default class CreditServiceApi {
       metadata,
     };
     return (
-      await handleInternalAxiosCall<Record<string, unknown>>(
+      await handleAxiosCall<Record<string, unknown>>(
         async () =>
           await this.httpClient.post(`/v1/subscriptions/credits`, data)
       )
@@ -72,9 +72,8 @@ export default class CreditServiceApi {
     pageToken: string
   ): Promise<ListingResponse> {
     const url = this.listingURL("/v1/transactions", userId, pageToken);
-    return (
-      await handleInternalAxiosCall(async () => await this.httpClient.get(url))
-    ).data as ListingResponse;
+    return (await handleAxiosCall(async () => await this.httpClient.get(url)))
+      .data as ListingResponse;
   }
 
   async fetchActivityLogs(
@@ -82,9 +81,8 @@ export default class CreditServiceApi {
     pageToken: string
   ): Promise<ListingResponse> {
     const url = this.listingURL("/v1/activity_logs", userId, pageToken);
-    return (
-      await handleInternalAxiosCall(async () => await this.httpClient.get(url))
-    ).data as ListingResponse;
+    return (await handleAxiosCall(async () => await this.httpClient.get(url)))
+      .data as ListingResponse;
   }
 
   private listingURL(path: string, userId: string, pageToken: string) {

@@ -18,7 +18,9 @@ export async function handleAxiosCall<ResponseDataType>(
       if (status >= 400 && status < 500) {
         let errMessage: unknown = (error as AxiosError).response.data;
         if (typeof errMessage === "object") {
-          errMessage = JSON.stringify(errMessage);
+          errMessage =
+            (errMessage as { message: string })?.message ??
+            JSON.stringify(errMessage);
         }
         throw new UserError(errMessage as string);
       }

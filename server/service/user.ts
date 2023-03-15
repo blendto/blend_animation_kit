@@ -384,12 +384,8 @@ export class UserService implements IService {
     try {
       await subscriptionService.delete(id);
     } catch (e) {
-      if (
-        // TODO: Add error codes to credit service and user it to verify
-        /* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,
-        @typescript-eslint/no-unsafe-argument */
-        !(JSON.parse(e.message || "{}").message === "Subscription not found")
-      ) {
+      // TODO: Add error codes to credit service and use it to verify
+      if (!(e instanceof UserError && e.message === "Subscription not found")) {
         throw e;
       }
       // This must be a retry where the credit service account deletion was
