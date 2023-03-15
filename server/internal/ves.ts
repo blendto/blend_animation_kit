@@ -3,7 +3,10 @@ import axios, { AxiosInstance } from "axios";
 
 import ConfigProvider from "server/base/ConfigProvider";
 import { Recipe } from "server/base/models/recipe";
-import { handleAxiosCall } from "server/helpers/network";
+import {
+  axiosRetryCondition as retryCondition,
+  handleAxiosCall,
+} from "server/helpers/network";
 import axiosRetry from "axios-retry";
 import { Blend } from "server/base/models/blend";
 
@@ -62,7 +65,7 @@ export default class VesApi {
       baseURL: VES_SERVICE_BASE_URL,
     });
 
-    axiosRetry(this.httpClient, { retries: 3 });
+    axiosRetry(this.httpClient, { retries: 3, retryCondition });
   }
 
   preview = async (params: PreviewRequestParams) =>

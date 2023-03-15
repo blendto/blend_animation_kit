@@ -4,6 +4,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import logger from "server/base/Logger";
 import ExternalHTTPError from "server/base/errors/ExternalHTTPError";
 import { pick } from "lodash";
+import { isNetworkError } from "axios-retry";
 
 export async function handleAxiosCall<ResponseDataType>(
   axiosCall: () => Promise<AxiosResponse<ResponseDataType>>
@@ -66,4 +67,12 @@ export async function passthrough(
     logger.error(err);
     res.status(500).json({ message: "Something went wrong!" });
   }
+}
+
+export function axiosRetryCondition(error: AxiosError): boolean {
+  return (
+    isNetworkError(error) &&
+    (!error.response ||
+      (error.response.status >= 500 && error.response.status <= 599))
+  );
 }
