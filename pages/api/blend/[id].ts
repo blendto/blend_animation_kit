@@ -175,10 +175,9 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     query: { id, format, target, consistentRead },
   } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const blend = await blendService.getBlend(
-    id as string,
-    Boolean(consistentRead)
-  );
+  const blend = await blendService.getBlend(id as string, {
+    consistentRead: Boolean(consistentRead),
+  });
 
   if (!blend || blend?.status === BlendStatus.Deleted) {
     throw new ObjectNotFoundError("Blend not found");
@@ -232,7 +231,7 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
       throw new UserError("This blend cannot be retrieved as a recipe.");
     }
 
-    if (metadata.source.version >= 2.0 && target == null) {
+    if (metadata.source.version >= 2.0 && !target) {
       throw new UserError(
         "This recipe cannot be remixed on this app version. Please upgrade the app."
       );
@@ -327,7 +326,9 @@ async function generate(
     body,
     schema: ExportRequestSchema.Blend,
   });
-  const generatedBlend = await blendService.getBlend(blendId, true);
+  const generatedBlend = await blendService.getBlend(blendId, {
+    consistentRead: true,
+  });
   return trim(generatedBlend);
 }
 
@@ -349,6 +350,21 @@ const submitBlend = async (
   const { recipe, updatedAt } = extractSubmitBlendBody(req.body, bodyVersion);
   const { uid, buildVersion, clientType, isUserAnonymous } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+
+  if (buildVersion >= ConfigProvider.CLIENT_SIDE_GENERATION_BUILD_VERSION) {
+    // HACK: Lot of users have cl-empty-square ids in their drafts, this is to clear that out.
+    // Lie to the users that everything is fine.
+    if (id === "cl-empty-square") {
+      res.send({
+        id: "cl-empty-square",
+        status: "GENERATED",
+        isStatic: true,
+        isWatermarked: false,
+        fileName: "foobar",
+      });
+      return;
+    }
+  }
 
   if (buildVersion < ConfigProvider.CLIENT_SIDE_GENERATION_BUILD_VERSION) {
     await blendService.verifyExport(

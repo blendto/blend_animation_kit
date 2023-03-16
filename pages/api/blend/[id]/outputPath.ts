@@ -48,7 +48,9 @@ const getBlendOutputPath = async (
     userId: string;
   };
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const blend: Blend = await blendService.getBlend(id, true);
+  const blend: Blend = await blendService.getBlend(id, {
+    consistentRead: true,
+  });
   if (!blend) {
     throw new ObjectNotFoundError();
   }

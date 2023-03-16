@@ -31,7 +31,7 @@ const reTriggerExport = async (
   const { id } = req.query as { id: string };
 
   const service = diContainer.get<BlendService>(TYPES.BlendService);
-  const currentBlend = await service.getBlend(id, true);
+  const currentBlend = await service.getBlend(id, { consistentRead: true });
 
   const { uid, buildVersion, clientType, isUserAnonymous } = req;
   const { blend } = await service.verifyExport(

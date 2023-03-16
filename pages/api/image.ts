@@ -1,5 +1,9 @@
 /* eslint-disable import/no-unresolved */
-import { MethodNotAllowedError, UserError } from "server/base/errors";
+import {
+  MethodNotAllowedError,
+  ObjectNotFoundError,
+  UserError,
+} from "server/base/errors";
 import {
   createSignedUploadUrl,
   GetSignedUrlOperation,
@@ -8,20 +12,23 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
-import { withReqHandler } from "server/helpers/request";
-import { NextApiRequest, NextApiResponse } from "next";
-import { BlendVersion } from "server/base/models/blend";
+import {
+  ensureAuth,
+  NextApiRequestExtended,
+  withReqHandler,
+} from "server/helpers/request";
+import { NextApiResponse } from "next";
 import { ALL_SUPPORTED_EXTENSIONS } from "server/helpers/constants";
 import { extractCorrectedFileName } from "server/helpers/fileKeyUtils";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //  20 MB
 
 export default withReqHandler(
-  async (req: NextApiRequest, res: NextApiResponse) => {
+  async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
-        await uploadImage(req, res);
+        await ensureAuth(uploadImage, req, res);
         break;
       default:
         throw new MethodNotAllowedError();
@@ -41,7 +48,10 @@ export interface UploadFileRequest {
   method?: UploadFileMethod;
 }
 
-const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
+const uploadImage = async (
+  req: NextApiRequestExtended,
+  res: NextApiResponse
+) => {
   const {
     collabId,
     blendId,
@@ -58,10 +68,13 @@ const uploadImage = async (req: NextApiRequest, res: NextApiResponse) => {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
   // Need consistent read coz blend might have just been created and not propagated yet
-  const blend = await blendService.getBlend(id, true);
+  const blend = await blendService.getBlend(id, {
+    consistentRead: true,
+    userId: req.uid,
+  });
 
   if (!blend) {
-    throw new UserError("No such blend exists");
+    throw new ObjectNotFoundError("Blend not found");
   }
   const fileNameCorrected = extractCorrectedFileName(fileName);
 

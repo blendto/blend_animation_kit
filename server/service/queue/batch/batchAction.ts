@@ -66,7 +66,9 @@ export class BatchActionService implements IService {
   }
 
   async processOperations(message: BatchTaskMessage): Promise<void> {
-    const blend = await this.blendService.getBlend(message.blendId, true);
+    const blend = await this.blendService.getBlend(message.blendId, {
+      consistentRead: true,
+    });
     const batch = await this.batchService.getBatch(
       blend.batchId,
       blend.createdBy,

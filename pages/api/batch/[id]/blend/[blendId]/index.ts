@@ -49,7 +49,9 @@ const updateBatchBlend = async (
   const updater = new BatchBlendUpdater(batch);
   updater.validate(blendId);
 
-  const dbBlend = await blendService.getBlend(blendId, true);
+  const dbBlend = await blendService.getBlend(blendId, {
+    consistentRead: true,
+  });
   const updatedBlend = updater.updatedBlend(
     uid,
     dbBlend,

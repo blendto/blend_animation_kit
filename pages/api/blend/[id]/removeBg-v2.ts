@@ -313,7 +313,9 @@ const removeBgAndStore = async (
 ) => {
   const { id } = req.query;
 
-  const blend: Blend = await blendService.getBlend(id as string, true);
+  const blend: Blend = await blendService.getBlend(id as string, {
+    consistentRead: true,
+  });
 
   if (!blend) {
     throw new UserError("Blend not found");

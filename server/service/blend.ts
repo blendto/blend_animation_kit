@@ -76,6 +76,18 @@ export interface BlendPatchBody {
   value?: unknown;
 }
 
+interface GetBlendParams {
+  /**
+   * retrieve only if this user has access
+   */
+  userId?: string;
+
+  /**
+   * Should read the latest version of the blend, ensure db consistency
+   */
+  consistentRead?: boolean;
+}
+
 @injectable()
 export class BlendService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
@@ -162,7 +174,9 @@ export class BlendService implements IService {
     return blend;
   }
 
-  async getBlend(id: string, consistentRead = false): Promise<Blend> {
+  async getBlend(id: string, options: GetBlendParams = {}): Promise<Blend> {
+    const { userId, consistentRead } = { consistentRead: false, ...options };
+
     const blend = await this.dataStore.getItem({
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
       Key: {
@@ -175,11 +189,17 @@ export class BlendService implements IService {
       return null;
     }
 
+    if (!!userId && blend.createdBy !== userId) {
+      return null;
+    }
+
     return this.backfillBlendOutput(<Blend>blend);
   }
 
   async getOrCreateBlend(blendId: string, uid: string) {
-    const existingBlend = await this.getBlend(blendId, true);
+    const existingBlend = await this.getBlend(blendId, {
+      consistentRead: true,
+    });
     if (existingBlend) {
       return existingBlend;
     }
@@ -702,7 +722,7 @@ export class BlendService implements IService {
         createdAt,
         updatedAt,
         status,
-      } = await this.getBlend(blend.id, true);
+      } = await this.getBlend(blend.id, { consistentRead: true });
 
       return {
         id,

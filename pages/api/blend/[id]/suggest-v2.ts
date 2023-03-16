@@ -87,7 +87,7 @@ const suggestRecipesV2 = async (
 
   const blend: Blend = await diContainer
     .get<BlendService>(TYPES.BlendService)
-    .getBlend(id as string, true);
+    .getBlend(id as string, { consistentRead: true });
 
   if (!blend) {
     res.status(400).send({ message: "Blend not found!" });

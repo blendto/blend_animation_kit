@@ -7,7 +7,11 @@ import {
 import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
-import { MethodNotAllowedError, UserError } from "server/base/errors";
+import {
+  MethodNotAllowedError,
+  ObjectNotFoundError,
+  UserError,
+} from "server/base/errors";
 import Joi from "joi";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import FileKeysService from "server/service/fileKeys";
@@ -62,7 +66,14 @@ const updateMask = async (
     TYPES.HeroImageService
   );
 
-  const blend = await blendService.getBlend(id, true);
+  const blend = await blendService.getBlend(id, {
+    userId: req.uid,
+    consistentRead: true,
+  });
+
+  if (!blend) {
+    throw new ObjectNotFoundError("Blend not found");
+  }
 
   const fileKeyItem = await removeBgService.applyMaskAndUpload(
     originalFileKey,

@@ -402,7 +402,9 @@ export class BatchService implements IService {
     blendId: string,
     uid: string
   ): Promise<void> {
-    const blend = await this.blendService.getBlend(blendId, true);
+    const blend = await this.blendService.getBlend(blendId, {
+      consistentRead: true,
+    });
     if (
       blend.batchLevelEditStatus === BatchLevelEditStatus.INDIVIDUALLY_EDITED
     ) {

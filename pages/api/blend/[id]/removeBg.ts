@@ -3,7 +3,11 @@ import type { NextApiResponse } from "next";
 import Joi from "joi";
 
 import { Blend } from "server/base/models/blend";
-import { MethodNotAllowedError, UserError } from "server/base/errors";
+import {
+  MethodNotAllowedError,
+  ObjectNotFoundError,
+  UserError,
+} from "server/base/errors";
 import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import { RemoveBgService } from "server/internal/remove-bg-service";
@@ -70,11 +74,12 @@ const removeBgAndStore = async (
 
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
-  const blend: Blend = await blendService.getBlend(id as string);
+  const blend: Blend = await blendService.getBlend(id as string, {
+    userId: req.uid,
+  });
 
   if (!blend) {
-    res.status(400).send({ message: "Blend not found!" });
-    return;
+    throw new ObjectNotFoundError("Blend not found");
   }
 
   const { error } = RemoveBgRequestSchema.validate(body);

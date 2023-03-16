@@ -257,7 +257,9 @@ export default class BrandingService implements IService {
   ) {
     const branding = await this.getOrCreate(userId);
 
-    const blend = await this.blendService.getBlend(sourceBlendId, true);
+    const blend = await this.blendService.getBlend(sourceBlendId, {
+      consistentRead: true,
+    });
     if (userId !== blend.createdBy) {
       IllegalBlendAccessError.logIllegalBlendAccess(
         blend.id,

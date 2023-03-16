@@ -1,5 +1,5 @@
 diff --git a/node_modules/next/dist/server/lib/start-server.js b/node_modules/next/dist/server/lib/start-server.js
-index bec14c4..c48cf41 100755
+index bec14c4..c47a13b 100755
 --- a/node_modules/next/dist/server/lib/start-server.js
 +++ b/node_modules/next/dist/server/lib/start-server.js
 @@ -46,6 +46,14 @@ function startServer(opts) {
