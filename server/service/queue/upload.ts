@@ -78,6 +78,10 @@ export class UploadService implements IService {
     }
 
     const batch = await this.batchService.getBatch(batchId, blend.createdBy);
+    // batch could be part of BATCHES_v2 table
+    if (!batch) {
+      return;
+    }
     if (!batch.pendingUploads[blendId]) {
       logger.info({
         op: "BLEND_UPLOAD_NOT_PENDING",
