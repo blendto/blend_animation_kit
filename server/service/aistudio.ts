@@ -58,15 +58,21 @@ export class AIStudioService implements IService {
     languageCode: string;
     legacyOnly?: boolean;
   }): Promise<Partial<AIBlendPhotoTopic>[]> {
-    const itemList = (await this.daxStore.scanItems({
-      TableName: ConfigProvider.AI_BLEND_PHOTO_TOPICS_TABLE,
-      ProjectionExpression: "topicId, isPremium, thumbnail, label",
-      FilterExpression:
-        "isEnabled = :true" + (legacyOnly ? " and isLegacyTopic = :true" : ""),
-      ExpressionAttributeValues: {
-        ":true": true,
-      },
-    })) as AIBlendPhotoTopic[];
+    const itemList = (
+      await this.daxStore.queryItems({
+        TableName: ConfigProvider.AI_BLEND_PHOTO_TOPICS_TABLE,
+        IndexName: "userId-topicId-index",
+        KeyConditionExpression: "userId = :systemUserId",
+        ProjectionExpression: "topicId, isPremium, thumbnail, label",
+        FilterExpression:
+          "isEnabled = :true" +
+          (legacyOnly ? " and isLegacyTopic = :true" : ""),
+        ExpressionAttributeValues: {
+          ":systemUserId": "blend",
+          ":true": true,
+        },
+      })
+    ).Items as AIBlendPhotoTopic[];
     return itemList.map((item) => ({
       topicId: item.topicId,
       isPremium: item.isPremium,
@@ -76,13 +82,18 @@ export class AIStudioService implements IService {
   }
 
   async getAllTopicLists(): Promise<AIStudioTopicList[]> {
-    const itemList = (await this.daxStore.scanItems({
-      TableName: ConfigProvider.AI_STUDIO_TOPIC_LISTS_TABLE,
-      FilterExpression: "isEnabled = :true",
-      ExpressionAttributeValues: {
-        ":true": true,
-      },
-    })) as AIStudioTopicList[];
+    const itemList = (
+      await this.daxStore.queryItems({
+        TableName: ConfigProvider.AI_STUDIO_TOPIC_LISTS_TABLE,
+        IndexName: "userId-listId-index",
+        KeyConditionExpression: "userId = :systemUserId",
+        FilterExpression: "isEnabled = :true",
+        ExpressionAttributeValues: {
+          ":systemUserId": "blend",
+          ":true": true,
+        },
+      })
+    ).Items as AIStudioTopicList[];
     return itemList;
   }
 
