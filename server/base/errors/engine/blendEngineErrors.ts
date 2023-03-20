@@ -23,10 +23,7 @@ export class IllegalBlendAccessError extends Error {
       blendOwner,
       trierUid,
     };
-    if (isTrierAnonymous) {
-      logger.warn(loggable);
-      return;
-    }
-    logger.error(loggable);
+    logger.warn(loggable);
+   
   }
 }
