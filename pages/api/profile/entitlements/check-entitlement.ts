@@ -2,7 +2,7 @@ import { diContainer } from "inversify.config";
 import { MethodNotAllowedError } from "server/base/errors";
 import { NextApiResponse } from "next";
 import {
-  ensureAuth,
+  ensureServiceAuth,
   NextApiRequestExtended,
   requestComponentToValidate,
   validate,
@@ -12,13 +12,19 @@ import SubscriptionService from "server/service/subscription";
 import { TYPES } from "server/types";
 import { Entitlement } from "server/base/models/revenue-cat";
 import Joi from "joi";
+import { BlendMicroServices } from "server/internal/inter-service-auth";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse): Promise<void> => {
     const { method } = req;
     switch (method) {
       case "GET":
-        return await ensureAuth(checkEntitlement, req, res);
+        return await ensureServiceAuth(
+          BlendMicroServices.CataloguesService,
+          checkEntitlement,
+          req,
+          res
+        );
       default:
         throw new MethodNotAllowedError();
     }
