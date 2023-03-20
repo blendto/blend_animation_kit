@@ -26,6 +26,7 @@ import { BlendMicroServices } from "server/internal/inter-service-auth";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
 import { BrandingInfoType } from "server/repositories/branding";
+import { RecipeSource } from "server/base/models/recipeList";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -173,6 +174,9 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
         thumbnail: Joi.string(),
         isPremium: Joi.boolean(),
       }),
+      source: Joi.string()
+        .required()
+        .valid(...Object.values(RecipeSource)),
     }),
     resolution: SIZE_SCHEMA,
     target: Joi.string(),
