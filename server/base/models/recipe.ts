@@ -25,7 +25,7 @@ export interface BrandingDetails {
     data: { uri: string; source: ElementSource };
   };
   info?: {
-    data: { type: BrandingInfoType; value: string }[];
+    data: { type: BrandingInfoType; value: string; link?: string }[];
   };
 }
 

@@ -68,6 +68,7 @@ const IMAGE_FILE_KEY_SCHEMA = Joi.object({
   classificationMetadata: Joi.object({
     productSuperClass: Joi.string().required(),
     userChosenSuperClass: Joi.string(),
+    isAiStudioQualified: Joi.boolean(),
   }),
 });
 
@@ -105,6 +106,7 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
             .valid(...Object.values(BrandingInfoType))
             .required(),
           value: Joi.string().required(),
+          link: Joi.string(),
         })
       ),
     }),
@@ -164,6 +166,7 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
         .valid(...Object.values(SourceMetadataType)),
       version: Joi.number().required(),
     }).required(),
+    externalRecipeSource: Joi.object().unknown(true),
     sourceRecipeId: Joi.string(),
     aspectRatio: SIZE_SCHEMA,
     sourceRecipe: Joi.object({
