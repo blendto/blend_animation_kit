@@ -608,7 +608,7 @@ export class BatchService implements IService {
 
   async getAllUserBatches(uid: string): Promise<Partial<Batch>[]> {
     let batches: Partial<Batch>[] = [];
-    let pageKeyObject: Record<string, unknown>;
+    let pageKeyObject: Record<string, unknown> = null;
     do {
       // eslint-disable-next-line no-await-in-loop
       const data = await this.dataStore.queryItems({

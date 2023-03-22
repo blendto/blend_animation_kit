@@ -21,6 +21,12 @@ export abstract class RecipeSourceHandler {
       ? new DefaultRecipeSourceHandler()
       : new BrandingRecipeSourceHandler();
   }
+
+  static fromElementSource(source: ElementSource): RecipeSourceHandler {
+    return source === ElementSource.branding
+      ? new BrandingRecipeSourceHandler()
+      : new DefaultRecipeSourceHandler();
+  }
 }
 
 export class DefaultRecipeSourceHandler implements RecipeSourceHandler {

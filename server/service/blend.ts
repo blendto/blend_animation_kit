@@ -18,6 +18,7 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import UserError from "server/base/errors/UserError";
 import {
+  AssetType,
   ElementSource,
   FlowType,
   ImageMetadata,
@@ -47,6 +48,7 @@ import { BlendUpdater } from "server/engine/blend/updater";
 import { diContainer } from "inversify.config";
 import { CreditsService } from "server/service/credits";
 import SubscriptionService from "server/service/subscription";
+import { RecipeSourceHandler } from "server/service/recipeSourceHandler";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -759,7 +761,7 @@ export class BlendService implements IService {
 
   async getAllUserBlends(uid: string): Promise<Partial<Blend>[]> {
     let blends: Partial<Blend>[] = [];
-    let pageKeyObject: Record<string, unknown>;
+    let pageKeyObject: Record<string, unknown> = null;
     do {
       // eslint-disable-next-line no-await-in-loop
       const data = await this.dataStore.queryItems({
@@ -818,6 +820,58 @@ export class BlendService implements IService {
     );
   }
 
+  async copyRecipeToBlendWithSource(
+    blendId: string,
+    heroImages: ImageFileKeys,
+    recipe: Recipe,
+    isWatermarked?: boolean
+  ): Promise<Blend> {
+    const blendImagePromises = recipe.images.map(async (image) => {
+      if (image.uid === recipe.recipeDetails.elements.hero?.uid) {
+        const interaction = recipe.interactions.find(
+          // eslint-disable-next-line eqeqeq
+          (_) => _.assetType == AssetType.IMAGE && _.assetUid == image.uid
+        );
+        // Starting from 2.5, we only show the cropped area in the mobile_app
+        // instead of actually cropping the image and uploading it.
+        // The hero image should not have cropRect property in a recipe as it
+        // will get replaced.
+        (interaction.metadata as ImageMetadata).cropRect = null;
+        if ((interaction.metadata as ImageMetadata).hasBgRemoved) {
+          await adjustSizeToFit(interaction, heroImages.withoutBg);
+          return {
+            ...image,
+            uri: heroImages.withoutBg,
+            source: ElementSource.blend,
+          };
+        }
+        await adjustSizeToFit(interaction, heroImages.original);
+        return {
+          ...image,
+          uri: heroImages.original,
+          source: ElementSource.blend,
+        };
+      }
+      return { ...image, source: ElementSource.recipe };
+    });
+
+    const blendImages = await Promise.all(blendImagePromises);
+
+    const modifiedBlend = {
+      ...recipe,
+      metadata: {
+        ...recipe.metadata,
+        sourceRecipeId: recipe.id,
+        sourceRecipe: { id: recipe.id, variant: recipe.variant },
+      },
+      id: blendId,
+      images: blendImages,
+      isWatermarked: isWatermarked || false,
+    } as Blend;
+
+    return await this.updateBlend(modifiedBlend);
+  }
+
   async copyRecipeToBlend(
     blendId: string,
     heroImages: ImageFileKeys,
@@ -862,9 +916,13 @@ export class BlendService implements IService {
       const uriParts = image.uri.split("/");
       uriParts[0] = blendId;
       const targetUri = uriParts.join("/");
+
+      const sourceHandler = RecipeSourceHandler.fromElementSource(
+        image.source ?? ElementSource.recipe
+      );
       copyFilePromises.push(
         copyObject(
-          ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
+          sourceHandler.getStorageBucket(),
           image.uri,
           ConfigProvider.BLEND_INGREDIENTS_BUCKET,
           targetUri

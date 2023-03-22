@@ -44,7 +44,7 @@ const chooseRecipeAndExportSync = async (
     req.buildVersion,
     req.clientType,
     async (shouldWatermark) => {
-      const body = await service.copyRecipeToBlend(
+      const body = await service.copyRecipeToBlendWithSource(
         id,
         fileKeys,
         recipe,
