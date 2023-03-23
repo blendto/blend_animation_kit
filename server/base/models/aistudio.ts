@@ -10,7 +10,8 @@ export abstract class GenerateSamplesRequest {
 
   abstract updatePrompts(
     blendId: string,
-    existingPrompts: Prompt[]
+    existingPrompts: Prompt[],
+    countOfImagesToGenerate: number
   ): {
     prompts: Prompt[];
     aiStudioRequest: AiStudioGenerateSamplesRequest;
@@ -42,7 +43,8 @@ export class TopicBasedGenerationRequest extends GenerateSamplesRequest {
 
   updatePrompts(
     blendId: string,
-    existingPrompts: Prompt[]
+    existingPrompts: Prompt[],
+    countOfImagesToGenerate: number
   ): {
     prompts: Prompt[];
     aiStudioRequest: AiStudioGenerateSamplesRequest;
@@ -53,6 +55,7 @@ export class TopicBasedGenerationRequest extends GenerateSamplesRequest {
         blendId,
         productSuperCategory: this.productSuperCategory,
         topicId: this.topicId,
+        imagesToGenerate: countOfImagesToGenerate,
       },
     };
   }
@@ -63,7 +66,8 @@ export class PromptBasedGenerationRequest extends GenerateSamplesRequest {
 
   updatePrompts(
     blendId: string,
-    existingPrompts: Prompt[]
+    existingPrompts: Prompt[],
+    countOfImagesToGenerate: number
   ): {
     prompts: Prompt[];
     aiStudioRequest: AiStudioGenerateSamplesRequest;
@@ -82,6 +86,7 @@ export class PromptBasedGenerationRequest extends GenerateSamplesRequest {
         blendId,
         productSuperCategory: this.productSuperCategory,
         promptId,
+        imagesToGenerate: countOfImagesToGenerate,
       },
     };
   }
@@ -92,7 +97,8 @@ export class PromptIdBasedGenerationRequest extends GenerateSamplesRequest {
 
   updatePrompts(
     blendId: string,
-    existingPrompts: Prompt[]
+    existingPrompts: Prompt[],
+    countOfImagesToGenerate: number
   ): {
     prompts: Prompt[];
     aiStudioRequest: AiStudioGenerateSamplesRequest;
@@ -109,6 +115,7 @@ export class PromptIdBasedGenerationRequest extends GenerateSamplesRequest {
         blendId,
         productSuperCategory: this.productSuperCategory,
         promptId: this.promptId,
+        imagesToGenerate: countOfImagesToGenerate,
       },
     };
   }
@@ -152,7 +159,7 @@ export class AIBlendPhoto implements Entity {
   blendId: string;
   fileKeys: ImageFileKeys;
   prompts: Prompt[];
-  generatedImages: GeneratedImages[];
+  generatedImages: GeneratedImage[];
   createdAt: number;
   updatedAt: number;
   createdOn: string;
@@ -160,7 +167,7 @@ export class AIBlendPhoto implements Entity {
   status: AIBlendPhotoGenerationStatus;
 }
 
-export class GeneratedImages {
+export class GeneratedImage {
   id: string;
   thumbnail: string;
   metadata: Record<string, unknown>;

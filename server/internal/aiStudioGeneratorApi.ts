@@ -2,15 +2,18 @@ import axios, { AxiosInstance } from "axios";
 import axiosRetry from "axios-retry";
 import { handleAxiosCall } from "server/helpers/network";
 import ConfigProvider from "server/base/ConfigProvider";
+import { GeneratedImage } from "server/base/models/aistudio";
 
 export interface AiStudioGenerateSamplesRequest {
   blendId: string;
   productSuperCategory: string;
   topicId?: string;
   promptId?: string;
+  imagesToGenerate: number;
 }
 
 const { AI_STUDIO_BASE_URL } = ConfigProvider;
+type GenerateSamplesResponse = { GeneratedImages: GeneratedImage[] };
 
 export default class AiStudioGeneratorApi {
   httpClient: AxiosInstance;
@@ -21,11 +24,15 @@ export default class AiStudioGeneratorApi {
     axiosRetry(this.httpClient, { retries: 3 });
   }
 
-  async generateSamples(params: AiStudioGenerateSamplesRequest) {
+  async generateSamples(
+    params: AiStudioGenerateSamplesRequest
+  ): Promise<GeneratedImage[]> {
     return (
-      await handleAxiosCall(
-        async () => await this.httpClient.post("/generate-samples", params)
-      )
-    ).data;
+      (
+        await handleAxiosCall(
+          async () => await this.httpClient.post("/generate-samples", params)
+        )
+      ).data as GenerateSamplesResponse
+    ).GeneratedImages;
   }
 }

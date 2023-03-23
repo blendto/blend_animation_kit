@@ -10,6 +10,7 @@ import {
   AIBlendPhotoTopic,
   AIStudioTopicList,
   AIStudioTopicListExternal,
+  GeneratedImage,
   GenerateSamplesRequest,
   Prompt,
 } from "server/base/models/aistudio";
@@ -35,6 +36,20 @@ export class AIStudioService implements IService {
       TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
       Key: { blendId },
     })) as AIBlendPhoto;
+  }
+
+  async createAIBlendPhoto(
+    blendId: string,
+    createdBy: string
+  ): Promise<AIBlendPhoto> {
+    const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
+    if (aiBlendPhoto) {
+      return aiBlendPhoto;
+    }
+
+    const heroImages = await this.fetchBlendHero(blendId, createdBy);
+    await this.createAIBlendPhotoInternal(blendId, heroImages, createdBy, []);
+    return await this.getAIBlendPhoto(blendId);
   }
 
   async getAIBlendPhotoForUser(
@@ -82,7 +97,7 @@ export class AIStudioService implements IService {
   }
 
   async getAllTopicLists(): Promise<AIStudioTopicList[]> {
-    const itemList = (
+    return (
       await this.daxStore.queryItems({
         TableName: ConfigProvider.AI_STUDIO_TOPIC_LISTS_TABLE,
         IndexName: "userId-listId-index",
@@ -94,7 +109,6 @@ export class AIStudioService implements IService {
         },
       })
     ).Items as AIStudioTopicList[];
-    return itemList;
   }
 
   async fetchTopicsWithList(languageCode: string) {
@@ -120,6 +134,47 @@ export class AIStudioService implements IService {
     }));
   }
 
+  private async fetchBlendHero(blendId: string, createdBy: string) {
+    const blend = await this.blendService.getUserBlend(blendId, createdBy);
+    const { heroImages } = blend;
+    if (!heroImages) {
+      throw new UserError("Blend does not have `heroImages`");
+    }
+    return heroImages;
+  }
+
+  async syncGenerateImage(
+    blendId: string,
+    generateSamplesRequest: GenerateSamplesRequest,
+    createdBy: string
+  ): Promise<{
+    generatedImage: GeneratedImage;
+    activeSampleGenerationRequest: AiStudioGenerateSamplesRequest;
+  }> {
+    const heroImages = await this.fetchBlendHero(blendId, createdBy);
+    const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
+
+    const { prompts, aiStudioRequest } = generateSamplesRequest.updatePrompts(
+      blendId,
+      aiBlendPhoto?.prompts || [],
+      1
+    );
+    await this.updateBlendPhoto(
+      blendId,
+      aiBlendPhoto,
+      heroImages,
+      prompts,
+      createdBy
+    );
+    const generatedImage = (
+      await this.requestImageGeneration(aiStudioRequest)
+    )[0];
+    return {
+      generatedImage,
+      activeSampleGenerationRequest: aiStudioRequest,
+    };
+  }
+
   async requestGenerationSample(
     blendId: string,
     generateSamplesRequest: GenerateSamplesRequest,
@@ -128,16 +183,13 @@ export class AIStudioService implements IService {
     aiBlendPhoto: AIBlendPhoto;
     activeSampleGenerationRequest: AiStudioGenerateSamplesRequest;
   }> {
-    const blend = await this.blendService.getUserBlend(blendId, createdBy);
-    const { heroImages } = blend;
-    if (!heroImages) {
-      throw new UserError("Blend does not have `heroImages`");
-    }
-
+    const heroImages = await this.fetchBlendHero(blendId, createdBy);
     const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
+
     const { prompts, aiStudioRequest } = generateSamplesRequest.updatePrompts(
       blendId,
-      aiBlendPhoto?.prompts || []
+      aiBlendPhoto?.prompts || [],
+      4
     );
     await this.updateBlendPhoto(
       blendId,
@@ -188,6 +240,20 @@ export class AIStudioService implements IService {
         ReturnValues: "NONE",
       });
     }
+    await this.createAIBlendPhotoInternal(
+      blendId,
+      heroImages,
+      createdBy,
+      prompts
+    );
+  }
+
+  private async createAIBlendPhotoInternal(
+    blendId: string,
+    heroImages: ImageFileKeys,
+    createdBy: string,
+    prompts: Prompt[]
+  ) {
     const photo = AIStudioService.createEntity(
       blendId,
       heroImages,
@@ -224,7 +290,7 @@ export class AIStudioService implements IService {
 
   async requestImageGeneration(
     aiStudioRequest: AiStudioGenerateSamplesRequest
-  ) {
-    await new AiStudioGeneratorApi().generateSamples(aiStudioRequest);
+  ): Promise<GeneratedImage[]> {
+    return await new AiStudioGeneratorApi().generateSamples(aiStudioRequest);
   }
 }
