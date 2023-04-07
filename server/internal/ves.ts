@@ -84,7 +84,8 @@ export default class VesApi {
         async () =>
           await this.httpClient.post("/preview-v2", params, {
             responseType: "stream",
-          })
+          }),
+        "warn" // This sometimes fails coz of scaling delays, lets not log it as an error
       )
     ).data;
 

@@ -87,13 +87,15 @@ export function withReqHandler(
           op: "USER_ERROR",
           details: {
             req: pick(extendedReq, ["url", "method", "uid", "query", "body"]),
-            /* eslint-disable-next-line
+            /*
+              eslint-disable-next-line
               @typescript-eslint/no-unsafe-assignment,
               @typescript-eslint/no-unsafe-member-access,
               @typescript-eslint/no-unsafe-call
             */
             desc: err.toString(),
-            /* eslint-disable-next-line
+            /*
+              eslint-disable-next-line
               @typescript-eslint/no-unsafe-assignment,
               @typescript-eslint/no-unsafe-member-access
             */
@@ -115,17 +117,46 @@ export function withReqHandler(
       if (err instanceof MethodNotAllowedError) {
         return res.status(405).send({ message: err.message });
       }
+      if (err instanceof ExternalHTTPError) {
+        let logWithLevel = logger.error;
+        if (err.level === "warn") {
+          logWithLevel = logger.warn;
+        }
+        logWithLevel({
+          op: "EXTERNAL_HTTP_ERROR",
+          details: {
+            req: pick(extendedReq, ["url", "method", "uid", "query", "body"]),
+            /*
+              eslint-disable-next-line
+              @typescript-eslint/no-unsafe-assignment,
+              @typescript-eslint/no-unsafe-member-access,
+              @typescript-eslint/no-unsafe-call
+            */
+            desc: err.toString(),
+            /*
+              eslint-disable-next-line
+              @typescript-eslint/no-unsafe-assignment,
+              @typescript-eslint/no-unsafe-member-access
+            */
+            trace: err.stack,
+            extra: err.extra || {},
+          },
+        });
+        return res.status(500).send({ message: "Something went wrong!" });
+      }
       logger.error({
         op: "SERVER_ERROR",
         details: {
           req: pick(extendedReq, ["url", "method", "uid", "query", "body"]),
-          /* eslint-disable-next-line
+          /*
+            eslint-disable-next-line
             @typescript-eslint/no-unsafe-assignment,
             @typescript-eslint/no-unsafe-member-access,
             @typescript-eslint/no-unsafe-call
           */
           desc: err.toString(),
-          /* eslint-disable-next-line
+          /*
+            eslint-disable-next-line
             @typescript-eslint/no-unsafe-assignment,
             @typescript-eslint/no-unsafe-member-access
           */

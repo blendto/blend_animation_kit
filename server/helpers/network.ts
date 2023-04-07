@@ -7,7 +7,8 @@ import { pick } from "lodash";
 import { isNetworkError } from "axios-retry";
 
 export async function handleAxiosCall<ResponseDataType>(
-  axiosCall: () => Promise<AxiosResponse<ResponseDataType>>
+  axiosCall: () => Promise<AxiosResponse<ResponseDataType>>,
+  logLevel: "warn" | "error" = "error"
 ) {
   try {
     return await axiosCall();
@@ -30,7 +31,7 @@ export async function handleAxiosCall<ResponseDataType>(
       "url",
       "data",
     ]);
-    throw new ExternalHTTPError((error as Error).message, extra);
+    throw new ExternalHTTPError((error as Error).message, extra, logLevel);
   }
 }
 
@@ -48,7 +49,7 @@ export async function handleInternalAxiosCall<ResponseDataType>(
     throw error;
   }
 }
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PassThroughableFn = (query: any, body: any) => Promise<any>;
 
 export async function passthrough(
