@@ -4,9 +4,12 @@ import { plainToInstance } from "class-transformer";
 import UserError from "server/base/errors/UserError";
 import { nanoid } from "nanoid";
 import { AiStudioGenerateSamplesRequest } from "server/internal/aiStudioGeneratorApi";
+import { Size } from "server/base/models/recipe";
 
 export abstract class GenerateSamplesRequest {
   productSuperCategory: string;
+  requestIndex?: number;
+  aspect?: Size;
 
   abstract updatePrompts(
     blendId: string,
@@ -38,6 +41,20 @@ export abstract class GenerateSamplesRequest {
   }
 }
 
+function convertAspectToResolution(aspect?: Size): [number, number] {
+  if (!aspect) return null;
+  const aspectString = `${aspect.width}:${aspect.height}`;
+  if (aspectString === "1:1") return [512, 512];
+  if (aspectString === "9:16") return [432, 768];
+  if (aspectString === "16:9") return [768, 432];
+  if (aspectString === "3:4") return [576, 768];
+  if (aspectString === "4:3") return [768, 576];
+  if (aspectString === "3:2") return [768, 512];
+  if (aspectString === "2:3") return [512, 768];
+  if (aspectString === "4:5") return [512, 640];
+  throw new UserError("Invalid aspect");
+}
+
 export class TopicBasedGenerationRequest extends GenerateSamplesRequest {
   topicId: string;
 
@@ -56,6 +73,10 @@ export class TopicBasedGenerationRequest extends GenerateSamplesRequest {
         productSuperCategory: this.productSuperCategory,
         topicId: this.topicId,
         imagesToGenerate: countOfImagesToGenerate,
+        requestIndex: this.requestIndex,
+        parameters: {
+          canvas: convertAspectToResolution(this.aspect),
+        },
       },
     };
   }
@@ -87,6 +108,10 @@ export class PromptBasedGenerationRequest extends GenerateSamplesRequest {
         productSuperCategory: this.productSuperCategory,
         promptId,
         imagesToGenerate: countOfImagesToGenerate,
+        requestIndex: this.requestIndex,
+        parameters: {
+          canvas: convertAspectToResolution(this.aspect),
+        },
       },
     };
   }
@@ -116,6 +141,10 @@ export class PromptIdBasedGenerationRequest extends GenerateSamplesRequest {
         productSuperCategory: this.productSuperCategory,
         promptId: this.promptId,
         imagesToGenerate: countOfImagesToGenerate,
+        requestIndex: this.requestIndex,
+        parameters: {
+          canvas: convertAspectToResolution(this.aspect),
+        },
       },
     };
   }

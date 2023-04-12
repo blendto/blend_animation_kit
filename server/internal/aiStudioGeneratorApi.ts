@@ -10,6 +10,10 @@ export interface AiStudioGenerateSamplesRequest {
   topicId?: string;
   promptId?: string;
   imagesToGenerate: number;
+  requestIndex?: number;
+  parameters?: {
+    canvas: [number, number];
+  };
 }
 
 const { AI_STUDIO_BASE_URL } = ConfigProvider;
