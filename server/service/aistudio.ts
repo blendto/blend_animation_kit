@@ -16,7 +16,7 @@ import {
 } from "server/base/models/aistudio";
 import { DateTime } from "luxon";
 import UserError from "server/base/errors/UserError";
-import { ImageFileKeys } from "server/base/models/heroImage";
+import { BlendHeroImage, ImageFileKeys } from "server/base/models/heroImage";
 import AiStudioGeneratorApi, {
   AiStudioGenerateSamplesRequest,
 } from "server/internal/aiStudioGeneratorApi";
@@ -35,6 +35,7 @@ export class AIStudioService implements IService {
     return (await this.dataStore.getItem({
       TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
       Key: { blendId },
+      ConsistentRead: true,
     })) as AIBlendPhoto;
   }
 
@@ -43,11 +44,12 @@ export class AIStudioService implements IService {
     createdBy: string
   ): Promise<AIBlendPhoto> {
     const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
+    const heroImages = await this.fetchBlendHero(blendId, createdBy);
     if (aiBlendPhoto) {
-      return aiBlendPhoto;
+      await this.updateHeroInBlendPhoto(blendId, heroImages);
+      return this.getAIBlendPhoto(blendId);
     }
 
-    const heroImages = await this.fetchBlendHero(blendId, createdBy);
     await this.createAIBlendPhotoInternal(blendId, heroImages, createdBy, []);
     return await this.getAIBlendPhoto(blendId);
   }
@@ -292,5 +294,19 @@ export class AIStudioService implements IService {
     aiStudioRequest: AiStudioGenerateSamplesRequest
   ): Promise<GeneratedImage[]> {
     return await new AiStudioGeneratorApi().generateSamples(aiStudioRequest);
+  }
+
+  private async updateHeroInBlendPhoto(
+    blendId: string,
+    heroImages: BlendHeroImage
+  ): Promise<void> {
+    await this.dataStore.updateItem({
+      TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
+      UpdateExpression: "set fileKeys=:fileKeys",
+      ExpressionAttributeValues: {
+        ":fileKeys": heroImages,
+      },
+      Key: { blendId },
+    });
   }
 }
