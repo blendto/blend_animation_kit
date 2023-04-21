@@ -14,10 +14,14 @@ export enum ElementSource {
   blend_output = "BLEND_OUTPUT",
 }
 
-export interface StoredImage {
+export class StoredImage {
   uid: string;
   uri: string;
   source?: ElementSource;
+
+  static isSourceBlend(this: void, image: StoredImage): boolean {
+    return !image.source || image.source === ElementSource.blend;
+  }
 }
 
 export interface BrandingDetails {

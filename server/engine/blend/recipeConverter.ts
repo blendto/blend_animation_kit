@@ -6,6 +6,7 @@ import {
   ElementSource,
   InteractionLayerTypes,
   Recipe,
+  StoredImage,
 } from "server/base/models/recipe";
 import { replaceUriPrefix } from "server/helpers/fileKeyUtils";
 
@@ -111,20 +112,21 @@ export class BlendToRecipeConverter {
   }
 
   static imageDestinationURIs(
-    recipe: Recipe,
+    images: StoredImage[],
     destinationKind: ElementSource.recipe | ElementSource.branding,
+    recipeId: string,
     brandingId?: string
   ) {
     if (destinationKind === ElementSource.branding && !brandingId) {
       throw new Error("Branding id is necessary to formulate paths");
     }
     const info: Record<string, string> = {};
-    recipe.images.forEach((i) => {
+    images.forEach((i) => {
       info[i.uid] = replaceUriPrefix(
         i.uri,
         destinationKind === ElementSource.recipe
-          ? recipe.id
-          : `${brandingId}/recipes/${recipe.id}`
+          ? recipeId
+          : `${brandingId}/recipes/${recipeId}`
       );
     });
     return info;

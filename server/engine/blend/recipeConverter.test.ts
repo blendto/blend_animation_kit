@@ -123,8 +123,9 @@ describe("BlendToRecipeConverter", () => {
     it("returns a mapping of a converted recipe's image uids to their new s3 paths", () => {
       expect(
         BlendToRecipeConverter.imageDestinationURIs(
-          recipe,
-          ElementSource.recipe
+          recipe.images,
+          ElementSource.recipe,
+          recipe.id
         )
       ).toMatchObject({
         [recipe.images[0].uid]: "G3QXwY-Q/OEGlqniwhs7IUewTDf3aT.webp",
@@ -137,8 +138,9 @@ describe("BlendToRecipeConverter", () => {
       const brandingId = "brandingId";
       expect(
         BlendToRecipeConverter.imageDestinationURIs(
-          recipe,
+          recipe.images,
           ElementSource.branding,
+          recipe.id,
           brandingId
         )
       ).toMatchObject({
@@ -154,8 +156,9 @@ describe("BlendToRecipeConverter", () => {
     it("breaks if branding id isn't passed in case of a branding-recipe", () => {
       expect(() =>
         BlendToRecipeConverter.imageDestinationURIs(
-          recipe,
-          ElementSource.branding
+          recipe.images,
+          ElementSource.branding,
+          recipe.id
         )
       ).toThrow(new Error("Branding id is necessary to formulate paths"));
     });

@@ -33,7 +33,7 @@ import { TYPES } from "server/types";
 import { Repo } from "server/repositories/base";
 import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
 import { BrandingRecipe } from "server/base/models/brandingRecipe";
-import { ElementSource } from "server/base/models/recipe";
+import { ElementSource, StoredImage } from "server/base/models/recipe";
 import { RecipeList, RecipeSource } from "server/base/models/recipeList";
 import { RemoveBGSource } from "server/base/models/removeBg";
 import { fireAndForget } from "server/helpers/async-runner";
@@ -280,25 +280,34 @@ export default class BrandingService implements IService {
     brandingRecipe.brandingId = branding.id;
 
     const imageDestinationURIs = BlendToRecipeConverter.imageDestinationURIs(
-      brandingRecipe,
+      brandingRecipe.images.filter(StoredImage.isSourceBlend),
       ElementSource.branding,
+      brandingRecipe.id,
       branding.id
     );
     await Promise.all(
-      brandingRecipe.images.map((i) =>
-        copyObject(
-          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-          i.uri,
-          ConfigProvider.BRANDING_BUCKET,
-          imageDestinationURIs[i.uid]
-        )
-      )
+      brandingRecipe.images.map((image) => {
+        if (StoredImage.isSourceBlend(image)) {
+          return copyObject(
+            ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+            image.uri,
+            ConfigProvider.BRANDING_BUCKET,
+            imageDestinationURIs[image.uid]
+          );
+        }
+        return Promise.resolve();
+      })
     );
-    brandingRecipe.images = brandingRecipe.images.map((i) => ({
-      ...i,
-      uri: imageDestinationURIs[i.uid],
-      source: ElementSource.branding,
-    }));
+    brandingRecipe.images = brandingRecipe.images.map((image) => {
+      if (StoredImage.isSourceBlend(image)) {
+        return {
+          ...image,
+          uri: imageDestinationURIs[image.uid],
+          source: ElementSource.branding,
+        };
+      }
+      return image;
+    });
     brandingRecipe.thumbnail = await this.generateRecipeThumbnail(
       brandingRecipe
     );

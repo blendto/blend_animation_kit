@@ -11,7 +11,6 @@ import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 import {
   BrandingInfoMetadata,
-  BrandingInfoTransformType,
   ElementSource,
   Interaction,
   Recipe,
@@ -29,7 +28,6 @@ import logger from "server/base/Logger";
 import { DateTime } from "luxon";
 import { BlendToRecipeConverter } from "server/engine/blend/recipeConverter";
 import { BrandingEntity, BrandingInfoType } from "server/repositories/branding";
-import { isEmpty } from "lodash";
 import ConfigService from "./config";
 
 export const MAX_FILE_SIZE = 20 * 1024 * 1024;
@@ -41,13 +39,16 @@ export class RecipeService implements IService {
 
   async create(recipe: Recipe): Promise<void> {
     const imageDestinationURIs = BlendToRecipeConverter.imageDestinationURIs(
-      recipe,
-      ElementSource.recipe
+      recipe.images,
+      ElementSource.recipe,
+      recipe.id
     );
     await Promise.all(
       recipe.images.map((i) =>
         copyObject(
-          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+          i.source === ElementSource.recipe
+            ? ConfigProvider.RECIPE_INGREDIENTS_BUCKET
+            : ConfigProvider.BLEND_INGREDIENTS_BUCKET,
           i.uri,
           ConfigProvider.RECIPE_INGREDIENTS_BUCKET,
           imageDestinationURIs[i.uid]
