@@ -4,12 +4,14 @@ import { plainToInstance } from "class-transformer";
 import UserError from "server/base/errors/UserError";
 import { nanoid } from "nanoid";
 import { AiStudioGenerateSamplesRequest } from "server/internal/aiStudioGeneratorApi";
-import { Size } from "server/base/models/recipe";
+import { Rect, Size } from "server/base/models/recipe";
 
 export abstract class GenerateSamplesRequest {
   productSuperCategory: string;
   requestIndex?: number;
   aspect?: Size;
+  heroRect?: Rect;
+  sourceGeneratedImageId?: string;
 
   abstract updatePrompts(
     blendId: string,
@@ -41,7 +43,7 @@ export abstract class GenerateSamplesRequest {
   }
 }
 
-function convertAspectToResolution(aspect?: Size): [number, number] {
+function convertAspectToResolution(aspect?: Size): [number, number] | null {
   if (!aspect) return null;
   const aspectString = `${aspect.width}:${aspect.height}`;
   if (aspectString === "1:1") return [512, 512];
@@ -53,6 +55,22 @@ function convertAspectToResolution(aspect?: Size): [number, number] {
   if (aspectString === "2:3") return [512, 768];
   if (aspectString === "4:5") return [512, 640];
   throw new UserError("Invalid aspect");
+}
+
+function heroToRPosition(
+  rect?: Rect,
+  aspect?: Size
+): [number, number, number, number] {
+  const size = convertAspectToResolution(aspect);
+  if (!size) return null;
+  if (!rect) return null;
+  const [width, height] = size;
+  return [
+    rect.left * width,
+    rect.top * height,
+    (rect.left + rect.width) * width,
+    (rect.top + rect.height) * height,
+  ];
 }
 
 export class TopicBasedGenerationRequest extends GenerateSamplesRequest {
@@ -76,7 +94,9 @@ export class TopicBasedGenerationRequest extends GenerateSamplesRequest {
         requestIndex: this.requestIndex,
         parameters: {
           canvas: convertAspectToResolution(this.aspect),
+          position: heroToRPosition(this.heroRect, this.aspect),
         },
+        sourceGeneratedImageId: this.sourceGeneratedImageId,
       },
     };
   }
@@ -111,7 +131,9 @@ export class PromptBasedGenerationRequest extends GenerateSamplesRequest {
         requestIndex: this.requestIndex,
         parameters: {
           canvas: convertAspectToResolution(this.aspect),
+          position: heroToRPosition(this.heroRect, this.aspect),
         },
+        sourceGeneratedImageId: this.sourceGeneratedImageId,
       },
     };
   }
@@ -144,7 +166,9 @@ export class PromptIdBasedGenerationRequest extends GenerateSamplesRequest {
         requestIndex: this.requestIndex,
         parameters: {
           canvas: convertAspectToResolution(this.aspect),
+          position: heroToRPosition(this.heroRect, this.aspect),
         },
+        sourceGeneratedImageId: this.sourceGeneratedImageId,
       },
     };
   }
