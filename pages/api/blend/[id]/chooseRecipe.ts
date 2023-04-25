@@ -118,7 +118,10 @@ const useRecipeForBlend = async (
       return image;
     }
     if (retainAssetSource) {
-      return { ...image, source: recipeSrcHandler.getElementSource() };
+      return {
+        ...image,
+        source: image.source ?? recipeSrcHandler.getElementSource(),
+      };
     }
     const uriParts = image.uri.split("/");
     uriParts[0] = blendId as string;
