@@ -220,6 +220,10 @@ export interface SourceMetadata {
   version: number;
 }
 
+interface ExternalRecipeSource extends Record<string, any> {
+  $: string;
+}
+
 export interface RecipeMetadata {
   sourceBlendId: string;
   source: SourceMetadata;
@@ -228,6 +232,7 @@ export interface RecipeMetadata {
   sourceRecipe?: RecipeVariantId;
   resolution?: Size;
   target?: string;
+  externalRecipeSource?: ExternalRecipeSource;
 }
 
 export interface Recipe {
@@ -319,10 +324,26 @@ export class RecipeWrapper {
     this.recipe = recipe;
   }
 
+  private backfillExternalRecipeSource() {
+    if (!this.recipe.metadata?.externalRecipeSource) return;
+    const { externalRecipeSource } = this.recipe.metadata;
+
+    if (externalRecipeSource.$ !== "AiStudioRecipeSource") return;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const imageSize = externalRecipeSource?.image?.metadata?.imageSize as
+      | Array<number>
+      | undefined;
+    if (!imageSize || imageSize.length < 2) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      externalRecipeSource.image.metadata.imageSize = [512, 512];
+    }
+  }
+
   clean() {
     if (!this.recipe.heroImages?.original) {
       this.recipe.heroImages = null;
     }
+    this.backfillExternalRecipeSource();
   }
 
   replaceHero(
