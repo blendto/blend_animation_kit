@@ -38,6 +38,10 @@ export enum FlowType {
   BATCH = "BATCH",
   ASSISTED_WEB = "ASSISTED_WEB",
   ASSISTED_MOBILE = "ASSISTED_MOBILE",
+  // TODO: Cleanup
+  // HACK: This is a temporary flow demoing org specific templates to a potential client
+  ONLINE_SALES_1 = "ONLINE_SALES_1",
+  ONLINE_SALES_2 = "ONLINE_SALES_2",
 }
 
 export interface ElementRef {
