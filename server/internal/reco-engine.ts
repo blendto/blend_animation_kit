@@ -43,7 +43,7 @@ export default class RecoEngineApi {
   }
 
   private dedicatedClassToSuperClassMapping: Record<string, string> = {
-    vechicles: "automobile",
+    vehicles: "automobile",
     bikes: "automobile",
     bags: "bag",
     beverages: "beverage",
@@ -66,7 +66,7 @@ export default class RecoEngineApi {
     packaged_food_products: "food",
     gift_bouquet: "furnishing",
     books: "furnishing",
-    décor: "furnishing",
+    decor: "furnishing",
     furniture: "furnishing",
     graphic: "graphics",
     jewellery: "jewellery",
