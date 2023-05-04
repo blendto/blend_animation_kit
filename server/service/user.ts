@@ -385,7 +385,7 @@ export class UserService implements IService {
       await subscriptionService.delete(id);
     } catch (e) {
       // TODO: Add error codes to credit service and use it to verify
-      if (!(e instanceof UserError && e.message === "Subscription not found")) {
+      if ((e as UserError)?.message !== "Subscription not found") {
         throw e;
       }
       // This must be a retry where the credit service account deletion was
