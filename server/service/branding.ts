@@ -477,13 +477,9 @@ export default class BrandingService implements IService {
       // - logo got deleted immediately
       return;
     }
-    if (
-      [BrandingLogoStatus.UPLOADED, BrandingLogoStatus.PROCESSED].includes(
-        logoData.status
-      )
-    ) {
+    if (logoData.status === BrandingLogoStatus.PROCESSED) {
       logger.debug(
-        "Logo has already been marked as uploaded/processed. Duplicate trigger?"
+        "Logo has already been marked as processed. Duplicate trigger?"
       );
       return;
     }
@@ -498,7 +494,9 @@ export default class BrandingService implements IService {
     let logo = await this.getObject(ConfigProvider.BRANDING_BUCKET, fileKey);
     const [fileNameWithExt] = fileKey.split("/").slice(-1);
     const [fileExtension] = fileNameWithExt.split(".").slice(-1);
-    logo = await (await sharpInstance(logo, {}, fileExtension)).toBuffer();
+    logo = await (
+      await sharpInstance(logo, { failOnError: false }, fileExtension)
+    ).toBuffer();
     let bgRemovedFileKey: string;
     if (logoData.removeBg) {
       ({ bgRemovedFileKey, bgRemovegLogo: logo } = await this.removeBg(

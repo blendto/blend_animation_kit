@@ -564,14 +564,14 @@ describe("BrandingService", () => {
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);
     });
 
-    it("Ignores request if the corresponding logo is seen as already uploaded", async () => {
+    it("Ignores request if the corresponding logo is seen as already processed", async () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce({
           ...brandingDoc,
           logos: {
             primaryEntry: fileKey,
-            entries: [{ fileKey, status: BrandingLogoStatus.UPLOADED }],
+            entries: [{ fileKey, status: BrandingLogoStatus.PROCESSED }],
           },
         } as BrandingEntity);
       await brandingService.completeLogoUpload(fileKey);
