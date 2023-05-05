@@ -549,7 +549,7 @@ describe("BrandingService", () => {
         .spyOn(brandingService.repo, "get")
         .mockImplementation(() => Promise.resolve(null as BrandingEntity));
       await expect(brandingService.completeLogoUpload(fileKey)).rejects.toThrow(
-        new UserError("Invalid fileKey")
+        new UserError("Branding profile with the id in the fileKey not found")
       );
       expect(getSpy.mock.calls.length).toBe(1);
       expect(getSpy.mock.calls[0]).toMatchObject([{ id }]);

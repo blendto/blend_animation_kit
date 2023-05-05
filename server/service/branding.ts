@@ -465,7 +465,9 @@ export default class BrandingService implements IService {
     }
     const brandingProfile = await this.repo.get({ id });
     if (!brandingProfile) {
-      throw new UserError("Invalid fileKey");
+      throw new UserError(
+        "Branding profile with the id in the fileKey not found"
+      );
     }
 
     const logoData = brandingProfile.logos?.entries?.find(
