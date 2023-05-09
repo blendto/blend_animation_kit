@@ -121,7 +121,10 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
       hero: ELEMENT_SCHEMA.allow(null),
       heroes: Joi.array().items(ELEMENT_SCHEMA),
       background: ELEMENT_SCHEMA.required().allow(null),
-      title: Joi.string().required().allow(null),
+      title: ELEMENT_SCHEMA.allow(null),
+      subtitle: ELEMENT_SCHEMA.allow(null),
+      ctatext: ELEMENT_SCHEMA.allow(null),
+      offertext: ELEMENT_SCHEMA.allow(null),
     }).required(),
     assets: Joi.object({
       images: Joi.object({

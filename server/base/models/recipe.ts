@@ -54,6 +54,9 @@ export interface Elements {
   heroes?: ElementRef[];
   background?: ElementRef;
   title?: ElementRef;
+  subtitle?: ElementRef;
+  ctatext?: ElementRef;
+  offertext?: ElementRef;
 }
 
 export interface RecipeDetails {
