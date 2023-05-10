@@ -12,6 +12,7 @@ import {
   getObject,
   GetSignedUrlOperation,
   uploadObject,
+  doesObjectExist,
 } from "server/external/s3";
 import logger from "server/base/Logger";
 import { IService } from "server/service";
@@ -67,6 +68,7 @@ export default class BrandingService implements IService {
   deleteObject = deleteObject;
   uploadObject = uploadObject;
   getObject = getObject;
+  doesObjectExist = doesObjectExist;
 
   async get(userId: string): Promise<BrandingEntity> {
     return (await this.repo.query({ userId }))[0];
@@ -459,10 +461,16 @@ export default class BrandingService implements IService {
   }
 
   async completeLogoUpload(fileKey: string): Promise<void> {
-    const id = fileKey.split("/")[0];
-    if (!id) {
-      throw new UserError("Invalid fileKey");
+    if (
+      !(await this.doesObjectExist(ConfigProvider.BRANDING_BUCKET, fileKey))
+    ) {
+      // Ignore. Possibly an edge case where either
+      // - the asset explicitly got deleted immediately after upload
+      // - or the asset was migrated from a anonymous branding profile to a user branding profile
+      return;
     }
+
+    const id = fileKey.split("/")[0];
     const brandingProfile = await this.repo.get({ id });
     if (!brandingProfile) {
       throw new UserError(

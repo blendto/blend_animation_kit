@@ -538,13 +538,18 @@ describe("BrandingService", () => {
   describe("Logo update as uploaded on s3 trigger", () => {
     const fileKey = `${id}/avsDCf2bQ_MVjSKaR9IvN.jpeg`;
     const webpFileKey = `${fileKey.split(".")[0]}-optimized.webp`;
-    it("Rejects request if the file key is missing blend id", async () => {
-      await expect(brandingService.completeLogoUpload("")).rejects.toThrow(
-        new UserError("Invalid fileKey")
-      );
+
+    it("Ignores request if the there is no such asset in s3", async () => {
+      jest
+        .spyOn(brandingService, "doesObjectExist")
+        .mockResolvedValueOnce(false);
+      await brandingService.completeLogoUpload(fileKey);
     });
 
     it("Rejects request if the file key has invalid blend id", async () => {
+      jest
+        .spyOn(brandingService, "doesObjectExist")
+        .mockResolvedValueOnce(true);
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockImplementation(() => Promise.resolve(null as BrandingEntity));
@@ -556,6 +561,9 @@ describe("BrandingService", () => {
     });
 
     it("Ignores request if the corresponding blend has no such fileKey", async () => {
+      jest
+        .spyOn(brandingService, "doesObjectExist")
+        .mockResolvedValueOnce(true);
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce(brandingDoc);
@@ -565,6 +573,9 @@ describe("BrandingService", () => {
     });
 
     it("Ignores request if the corresponding logo is seen as already processed", async () => {
+      jest
+        .spyOn(brandingService, "doesObjectExist")
+        .mockResolvedValueOnce(true);
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce({
@@ -597,6 +608,9 @@ describe("BrandingService", () => {
       const getSpy = jest
         .spyOn(brandingService.repo, "get")
         .mockResolvedValueOnce(currentData);
+      jest
+        .spyOn(brandingService, "doesObjectExist")
+        .mockResolvedValueOnce(true);
       const logoImage = readFileSync("__tests__/assets/small-png.png");
       jest.spyOn(brandingService, "getObject").mockResolvedValueOnce(logoImage);
       jest

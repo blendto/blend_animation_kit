@@ -8,6 +8,7 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import Firebase from "server/external/firebase";
+import logger from "server/base/Logger";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -36,6 +37,17 @@ const migrateOwnership = async (
     ownerMigrationRequest.sourceUserAccessToken
   );
   const sourceUid = decodedIdToken.uid;
+
+  if (sourceUid === req.uid) {
+    logger.warn({
+      op: "SAME_USER_MIGRATION_ATTEMPT",
+      message: "Attempted to migrate ownership to the same user",
+      sourceUid,
+      targetUid: req.uid,
+    });
+    return res.status(200).json({ migratedBlends: [], migratedBatches: [] });
+  }
+
   const brandingPromise = userService.migrateBranding(sourceUid, req.uid);
   const blendsPromise = userService.migrateUserBlends(sourceUid, req.uid);
   const batchesPromise = userService.migrateUserBatches(sourceUid, req.uid);
