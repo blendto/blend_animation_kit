@@ -168,14 +168,14 @@ export default class BrandingService implements IService {
           op: "replace",
           value: {
             entries: [
-              // If there are initialized logos, their upload probably failed in between.
-              // Assume so and delete them from the profile.
-              ...uploadedLogos,
               {
                 status: BrandingLogoStatus.INITIALIZED,
                 fileKey,
                 removeBg,
               },
+              // If there are initialized logos, their upload probably failed in between.
+              // Assume so and delete them from the profile.
+              ...uploadedLogos,
             ],
             // If no uploaded logos exist, mark this as primary
             primaryEntry:
@@ -214,13 +214,13 @@ export default class BrandingService implements IService {
           op: "replace",
           value: {
             entries: [
-              ...uploadedLogos,
               {
                 status: BrandingLogoStatus.PROCESSED,
                 fileKey: optimizedFileKey,
                 size: { width: info.width, height: info.height },
                 removeBg: false,
               },
+              ...uploadedLogos,
             ],
             // If no uploaded logos exist, mark this as primary
             primaryEntry:

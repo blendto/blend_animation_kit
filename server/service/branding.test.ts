@@ -364,11 +364,11 @@ describe("BrandingService", () => {
         logos: {
           ...brandingDocWithLogos.logos,
           entries: [
-            ...brandingDocWithLogos.logos.entries,
             {
               fileKey: "THE-NEWLY-GENERATED-KEY",
               status: BrandingLogoStatus.INITIALIZED,
             },
+            ...brandingDocWithLogos.logos.entries,
           ],
         },
       } as BrandingEntity;
@@ -416,12 +416,12 @@ describe("BrandingService", () => {
             value: {
               ...brandingDocWithLogos.logos,
               entries: [
-                ...brandingDocWithLogos.logos.entries,
                 {
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                   fileKey: createDestinationFileKeySpy.mock.results[0].value,
                   status: BrandingLogoStatus.INITIALIZED,
                 },
+                ...brandingDocWithLogos.logos.entries,
               ],
             },
           },
