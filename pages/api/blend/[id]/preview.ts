@@ -12,6 +12,7 @@ import { TYPES } from "server/types";
 import { RecipeSource } from "server/base/models/recipeList";
 import { PreviewService } from "server/service/preview";
 import { ImageFileKeys } from "server/base/models/heroImage";
+import { ReplacementTexts } from "server/base/models/recipe";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -35,6 +36,12 @@ const GEN_PREV_SCHEMA = Joi.object({
   source: Joi.string()
     .valid(...Object.values(RecipeSource))
     .default(RecipeSource.DEFAULT),
+  replacementTexts: Joi.object({
+    title: Joi.string(),
+    subtitle: Joi.string(),
+    ctaText: Joi.string(),
+    offerText: Joi.string(),
+  }),
 });
 
 const generatePreview = async (
@@ -52,6 +59,7 @@ const generatePreview = async (
     variant?: string;
     fileKeys: ImageFileKeys;
     source: RecipeSource;
+    replacementTexts?: ReplacementTexts;
   };
 
   const previewService = diContainer.get<PreviewService>(TYPES.PreviewService);

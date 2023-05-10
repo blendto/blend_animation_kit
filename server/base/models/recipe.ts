@@ -55,8 +55,8 @@ export interface Elements {
   background?: ElementRef;
   title?: ElementRef;
   subtitle?: ElementRef;
-  ctatext?: ElementRef;
-  offertext?: ElementRef;
+  ctaText?: ElementRef;
+  offerText?: ElementRef;
 }
 
 export interface RecipeDetails {
@@ -315,13 +315,21 @@ export class RecipeUtils {
   }
 }
 
+export interface ReplacementTexts {
+  title?: string;
+  subtitle?: string;
+  ctaText?: string;
+  offerText?: string;
+}
+
 export class ChooseRecipeRequest {
   recipeId: string;
   retainAssetSource: boolean;
   variant?: string;
   fileKeys?: { original: string; withoutBg: string };
   encoderVersion: number;
-  source: RecipeSource;
+  source?: RecipeSource;
+  replacementTexts: ReplacementTexts;
 }
 
 export class RecipeWrapper {
@@ -457,6 +465,21 @@ export class RecipeWrapper {
   cleanupBranding() {
     delete this.recipe.branding;
     this.filterOutBrandingInteractions();
+  }
+
+  replaceTexts(replacementTexts: ReplacementTexts): void {
+    Object.keys(replacementTexts).forEach((key) => {
+      if (this.recipe.recipeDetails?.elements[key]) {
+        const matchingText = this.recipe.texts.find(
+          (t) =>
+            t.uid ===
+            (this.recipe.recipeDetails.elements[key] as ElementRef).uid
+        );
+        if (matchingText) {
+          matchingText.value = replacementTexts[key];
+        }
+      }
+    });
   }
 
   replaceId(id: string) {

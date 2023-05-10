@@ -2,7 +2,11 @@ import { inject, injectable } from "inversify";
 import { isEmpty } from "lodash";
 import { BrandingRecipe } from "server/base/models/brandingRecipe";
 import { ImageFileKeys } from "server/base/models/heroImage";
-import { Recipe, RecipeWrapper } from "server/base/models/recipe";
+import {
+  ReplacementTexts,
+  Recipe,
+  RecipeWrapper,
+} from "server/base/models/recipe";
 import { RecipeSource } from "server/base/models/recipeList";
 import { fireAndForget } from "server/helpers/async-runner";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
@@ -30,6 +34,7 @@ export class PreviewService implements IService {
     source: RecipeSource;
     ip: string;
     uid?: string;
+    replacementTexts?: ReplacementTexts;
   }) {
     const recipe =
       args.source === RecipeSource.DEFAULT
@@ -60,6 +65,10 @@ export class PreviewService implements IService {
           recipeWrapper.cleanupBranding();
         }
       }
+    }
+
+    if (args.replacementTexts) {
+      recipeWrapper.replaceTexts(args.replacementTexts);
     }
 
     return await this.vesapi.previewV2({
