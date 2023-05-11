@@ -290,7 +290,6 @@ export interface Recipe {
   createdAt?: number;
   updatedAt?: number;
   createdBy?: string;
-  isWatermarked?: boolean;
 }
 
 interface BackgroundInfo {

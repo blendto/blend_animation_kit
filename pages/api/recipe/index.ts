@@ -240,7 +240,6 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
   createdAt: Joi.number().required(),
   updatedAt: Joi.number().required(),
   createdBy: Joi.string().required(),
-  isWatermarked: Joi.boolean().required(),
 });
 
 const createRecipe = async (
