@@ -59,10 +59,13 @@ const chooseHeroImage = async (
   const blend = await blendService.getBlend(id);
 
   const recoEngineApi = new RecoEngineApi();
-  const classificationMetadata = await recoEngineApi.detectProductCategory({
-    original: fileKeys.original,
-    withoutBg: fileKeys.withoutBg,
-  });
+  const classificationMetadata = await recoEngineApi.detectProductCategory(
+    req,
+    {
+      original: fileKeys.original,
+      withoutBg: fileKeys.withoutBg,
+    }
+  );
 
   const blendHeroImage = plainToClass(BlendHeroImage, {
     ...fileKeys,

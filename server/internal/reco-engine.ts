@@ -3,13 +3,14 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
-import { SearchRecipeResponse, FlowType } from "server/base/models/recipe";
+import { FlowType, SearchRecipeResponse } from "server/base/models/recipe";
 import { DetectProductCategoryResponse } from "server/base/models/recoEngine";
 import {
-  ClassificationMetadata,
   BgRemovedFileKeys,
+  ClassificationMetadata,
 } from "server/base/models/removeBg";
 import { instanceToPlain, plainToClass } from "class-transformer";
+import { NextApiRequestExtended } from "../helpers/request";
 
 export interface RecipeListSuggestions {
   suggestedRecipeCategories: RecipeList[];
@@ -42,7 +43,7 @@ export default class RecoEngineApi {
     });
   }
 
-  private dedicatedClassToSuperClassMapping: Record<string, string> = {
+  private static dedicatedClassToSuperClassMappingV1: Record<string, string> = {
     vehicles: "automobile",
     bikes: "automobile",
     bags: "bag",
@@ -82,6 +83,61 @@ export default class RecoEngineApi {
     group_of_people: "person",
     shoes: "shoes",
   };
+
+  private static dedicatedClassToSuperClassMappingV2: Record<string, string> = {
+    vehicles: "automobile",
+    bikes: "automobile",
+    beverages: "beverage",
+    clothes_on_flat_surfaces: "clothing",
+    clothing_on_hanger: "clothing",
+    clothing_on_mannequin: "clothing",
+    lingerie: "clothing",
+    personal_care: "cosmetics",
+    mobile_phone: "electronics",
+    mobile_phone_accessories: "electronics",
+    electronics: "electronics",
+    hardware: "electronics",
+    bags: "fashion_accessories",
+    accessories: "fashion_accessories",
+    caps: "fashion_accessories",
+    socks: "fashion_accessories",
+    eyewear: "fashion_accessories",
+    food: "food",
+    food_bowl: "food",
+    plated_food: "food",
+    packaged_food_products: "food",
+    furniture: "furniture",
+    graphic: "graphics",
+    jewellery: "jewellery",
+    gift_bouquet: "others",
+    books: "others",
+    portrait: "person",
+    above_waist_portrait: "person",
+    profile_pic: "person",
+    group_of_people: "person",
+    shoes: "shoes",
+    kitchen: "household",
+    pet_supplies: "pets",
+    toys: "toys",
+    decor: "decor",
+    plants: "decor",
+    //   Only Used for migration
+    furnishing: "furniture",
+  };
+
+  static v1ToV2ProductClassMigration(productClass: string) {
+    if (
+      Object.values(RecoEngineApi.dedicatedClassToSuperClassMappingV2).includes(
+        productClass
+      )
+    ) {
+      return productClass;
+    }
+    return (
+      RecoEngineApi.dedicatedClassToSuperClassMappingV2[productClass] ??
+      "others"
+    );
+  }
 
   async suggestRecipeLists(
     heroImageKey: string,
@@ -146,8 +202,14 @@ export default class RecoEngineApi {
     ).data;
   }
 
-  private getDedicatedClassToSuperClassMapping(className: string): string {
-    return this.dedicatedClassToSuperClassMapping[className] ?? "others";
+  private static getDedicatedClassToSuperClassMapping(
+    className: string,
+    buildVersion: number
+  ): string {
+    if (buildVersion < 614) {
+      return this.dedicatedClassToSuperClassMappingV1[className] ?? "others";
+    }
+    return this.dedicatedClassToSuperClassMappingV2[className] ?? "others";
   }
 
   async searchRecipes(
@@ -162,6 +224,7 @@ export default class RecoEngineApi {
   }
 
   async detectProductCategory(
+    req: NextApiRequestExtended,
     fileKeys: BgRemovedFileKeys
   ): Promise<ClassificationMetadata> {
     const categoryResponse = (
@@ -174,12 +237,15 @@ export default class RecoEngineApi {
     ).data as DetectProductCategoryResponse;
 
     const { detectedClass, isAiStudioQualified } = categoryResponse;
-    const classificationMetadata = plainToClass(ClassificationMetadata, {
-      productSuperClass:
-        this.getDedicatedClassToSuperClassMapping(detectedClass),
+
+    const productSuperClass =
+      RecoEngineApi.getDedicatedClassToSuperClassMapping(
+        detectedClass,
+        req.buildVersion
+      );
+    return plainToClass(ClassificationMetadata, {
+      productSuperClass,
       isAiStudioQualified,
     });
-
-    return classificationMetadata;
   }
 }

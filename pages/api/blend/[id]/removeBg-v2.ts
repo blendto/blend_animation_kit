@@ -193,6 +193,7 @@ async function compressImageToWebp(
 }
 
 async function removeBgAndClassifyIfHero(
+  req: NextApiRequestExtended,
   originalImage: Buffer,
   fileKeys: BgRemovedFileKeys,
   options: RemoveBgRequest
@@ -223,7 +224,7 @@ async function removeBgAndClassifyIfHero(
     Promise.resolve(undefined) as Promise<undefined>;
 
   if (isHeroImage) {
-    identifyCategoryFuture = recoEngineApi.detectProductCategory(fileKeys);
+    identifyCategoryFuture = recoEngineApi.detectProductCategory(req, fileKeys);
   }
   const promises = await Promise.all([bgRemovalFuture, identifyCategoryFuture]);
   return { bgRemovalOutput: promises[0], classificationMetadata: promises[1] };
@@ -426,6 +427,7 @@ const removeBgAndStore = async (
 
   originalImage = await compressImageToWebp(originalImage, metadata);
   const bgRemovalAndClassifyOutput = await removeBgAndClassifyIfHero(
+    req,
     originalImage,
     fileKeys,
     body

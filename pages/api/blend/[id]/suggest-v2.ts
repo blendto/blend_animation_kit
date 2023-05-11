@@ -22,6 +22,7 @@ import { MethodNotAllowedError } from "server/base/errors";
 import { plainToClass } from "class-transformer";
 import { ClassificationMetadata } from "server/base/models/removeBg";
 import Joi from "joi";
+import RecoEngineApi from "server/internal/reco-engine";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -114,14 +115,17 @@ const suggestRecipesV2 = async (
     TYPES.SuggestionService
   );
 
+  const productClass = RecoEngineApi.v1ToV2ProductClassMigration(
+    userChosenSuperClass ?? classificationMetadata?.superClass
+  );
+
   const suggestions = await suggestionService.suggestRecipesPaginated({
     buildVersion: req.buildVersion,
     uid: req.uid,
     fileKey: finalisedFileKeys.withoutBg,
     ip,
     pageKey,
-    productSuperCategory:
-      userChosenSuperClass ?? classificationMetadata?.superClass,
+    productSuperCategory: productClass,
     filters,
     flow,
   });
