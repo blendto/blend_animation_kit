@@ -20,6 +20,7 @@ export abstract class RevenueCatEvent {
     "UNCANCELLATION",
     "PRODUCT_CHANGE",
     "EXPIRATION",
+    "BILLING_ISSUE",
   ];
 
   static from(request: Record<string, unknown>): RevenueCatEvent {
