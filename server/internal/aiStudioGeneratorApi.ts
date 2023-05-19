@@ -16,6 +16,7 @@ export interface AiStudioGenerateSamplesRequest {
     position?: [number, number, number, number];
   };
   sourceGeneratedImageId?: string;
+  generationMetadata?: Record<string, unknown>;
 }
 
 const { AI_STUDIO_BASE_URL } = ConfigProvider;

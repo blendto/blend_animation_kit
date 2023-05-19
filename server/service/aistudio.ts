@@ -10,6 +10,7 @@ import {
   AIBlendPhotoTopic,
   AIStudioTopicList,
   AIStudioTopicListExternal,
+  FeedItem,
   GeneratedImage,
   GenerateSamplesRequest,
   Prompt,
@@ -97,6 +98,16 @@ export class AIStudioService implements IService {
       thumbnail: item.thumbnail,
       localisedLabel: item.label[languageCode] ?? item.label.en,
     }));
+  }
+
+  async getFeedItems(): Promise<FeedItem[]> {
+    const { feedItems } = (await this.daxStore.getItem({
+      TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
+      Key: { key: "ai_studio_feed", version: "1" },
+    })) as {
+      feedItems: FeedItem[];
+    };
+    return feedItems;
   }
 
   async getAllTopicLists(): Promise<AIStudioTopicList[]> {

@@ -39,6 +39,11 @@ export abstract class GenerateSamplesRequest {
         enableImplicitConversion: true,
       });
     }
+    if ($ === "MetadataBasedGenerationRequest") {
+      return plainToInstance(MetadataBasedGenerationRequest, obj, {
+        enableImplicitConversion: true,
+      });
+    }
     throw Error(`Invalid value: ${$} in attribute '$'`);
   }
 }
@@ -174,6 +179,35 @@ export class PromptIdBasedGenerationRequest extends GenerateSamplesRequest {
   }
 }
 
+export class MetadataBasedGenerationRequest extends GenerateSamplesRequest {
+  generationMetadata: Record<string, unknown>;
+
+  updatePrompts(
+    blendId: string,
+    existingPrompts: Prompt[],
+    countOfImagesToGenerate: number
+  ): {
+    prompts: Prompt[];
+    aiStudioRequest: AiStudioGenerateSamplesRequest;
+  } {
+    return {
+      prompts: existingPrompts,
+      aiStudioRequest: {
+        blendId,
+        productSuperCategory: this.productSuperCategory,
+        imagesToGenerate: countOfImagesToGenerate,
+        requestIndex: this.requestIndex,
+        parameters: {
+          canvas: convertAspectToResolution(this.aspect),
+          position: heroToRPosition(this.heroRect, this.aspect),
+        },
+        sourceGeneratedImageId: this.sourceGeneratedImageId,
+        generationMetadata: this.generationMetadata,
+      },
+    };
+  }
+}
+
 export enum AIBlendPhotoGenerationStatus {
   INITIALIZED = "INITIALIZED",
   GENERATING = "GENERATING",
@@ -238,4 +272,11 @@ export class SceneConfig {
   perspective: ScenePerspective;
   surface: string;
   background: string;
+}
+
+export class FeedItem {
+  id: string;
+  thumbnail: string;
+  metadata: Record<string, unknown>;
+  aspect: Size;
 }
