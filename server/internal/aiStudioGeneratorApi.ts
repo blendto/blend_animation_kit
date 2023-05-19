@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import axiosRetry from "axios-retry";
 import { handleAxiosCall } from "server/helpers/network";
 import ConfigProvider from "server/base/ConfigProvider";
-import { GeneratedImage } from "server/base/models/aistudio";
+import { GeneratedImage, SceneConfig } from "server/base/models/aistudio";
 
 export interface AiStudioGenerateSamplesRequest {
   blendId: string;
@@ -40,5 +40,14 @@ export default class AiStudioGeneratorApi {
         )
       ).data as GenerateSamplesResponse
     ).GeneratedImages;
+  }
+
+  async generateImagePrompt(sceneConfig: SceneConfig) {
+    return (
+      await handleAxiosCall(
+        async () =>
+          await this.httpClient.post("/generate-image-prompt", sceneConfig)
+      )
+    ).data as { prompt: string };
   }
 }

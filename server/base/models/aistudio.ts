@@ -228,3 +228,14 @@ export class GeneratedImage {
   topicId: string;
   createdAt: number;
 }
+
+export enum ScenePerspective {
+  SIDE_VIEW = "side_view",
+  TOP_VIEW = "top_view",
+}
+
+export class SceneConfig {
+  perspective: ScenePerspective;
+  surface: string;
+  background: string;
+}

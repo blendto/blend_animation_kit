@@ -13,6 +13,7 @@ import {
   GeneratedImage,
   GenerateSamplesRequest,
   Prompt,
+  SceneConfig,
 } from "server/base/models/aistudio";
 import { DateTime } from "luxon";
 import UserError from "server/base/errors/UserError";
@@ -308,5 +309,9 @@ export class AIStudioService implements IService {
       },
       Key: { blendId },
     });
+  }
+
+  async constructPrompt(sceneConfig: SceneConfig): Promise<{ prompt: string }> {
+    return await new AiStudioGeneratorApi().generateImagePrompt(sceneConfig);
   }
 }
