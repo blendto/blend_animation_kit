@@ -220,6 +220,27 @@ export class Prompt {
   text: string;
 }
 
+export class SceneConfigOptions {
+  backgroundList: SceneConfigOption[];
+  surfaceList: SceneConfigOption[];
+}
+
+export class SceneConfigOptionsExternal extends SceneConfigOptions {
+  backgroundList: SceneConfigOptionExternal[];
+  surfaceList: SceneConfigOptionExternal[];
+  perspective: ScenePerspective;
+}
+
+export class SceneConfigOption {
+  id: string;
+  thumbnail: string;
+  label: Record<string, string>;
+}
+
+export class SceneConfigOptionExternal extends SceneConfigOption {
+  localisedLabel: string;
+}
+
 export class AIBlendPhotoTopic {
   topicId: string;
   isPremium: boolean;
