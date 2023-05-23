@@ -29,6 +29,7 @@ import {
   FetchEntitlementResponse,
 } from "server/base/models/revenue-cat";
 import { DaxDB } from "server/external/dax";
+import { fireAndForget } from "server/helpers/async-runner";
 
 export interface SubscriptionEntity {
   adhocCredits: number;
@@ -167,8 +168,11 @@ export default class SubscriptionService implements IService {
     userId: string
   ): Promise<FetchEntitlementResponse> {
     const record = await this.getCachedEntitlements(userId);
-
-    if (record) return record;
+    if (record) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      fireAndForget(() => this.fetchAndUpdateUserEntitlementsCache(userId));
+      return record;
+    }
     await this.fetchAndUpdateUserEntitlementsCache(userId);
     return await this.getCachedEntitlements(userId);
   }
