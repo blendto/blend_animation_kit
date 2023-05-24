@@ -128,7 +128,11 @@ export interface GeometricPositionable extends InteractionMetadata {
   rotationX: number;
   rotationY: number;
   zIndex: number;
-  cropRect?: Rect;
+  cropRect?: CropRect;
+}
+
+export interface CropRect extends Rect {
+  imageSize?: Size;
 }
 
 export interface ImageMetadata extends GeometricPositionable {

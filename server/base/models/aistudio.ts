@@ -299,5 +299,5 @@ export class FeedItem {
   id: string;
   thumbnail: string;
   metadata: Record<string, unknown>;
-  aspect: Size;
+  aspectRatio: Size;
 }
