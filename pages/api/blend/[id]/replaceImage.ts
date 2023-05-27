@@ -15,6 +15,7 @@ import HeroImageService from "server/service/heroImage";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import { listObjectsInFolder } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
+import logger from "server/base/Logger";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -108,7 +109,17 @@ const replaceImage = async (
   }
 
   if (!imageFileKeyItem.mask) {
-    throw new UserError("FileKeyItem does not have mask");
+    /** If still not able to find the mask filekey to generate new bg removed image
+     *  return existing filekeys
+     */
+    logger.warning({
+      op: "NO_MASK_FOUND_IN_BLEND",
+      message: "Mask not found when replacing image",
+      blendId: blend.id,
+      targetOriginalFileKey,
+      replacementOriginalFileKey,
+    });
+    return res.send(imageFileKeyItem);
   }
 
   const fileKeyItem = await removeBgService.applyMaskAndUpload(
