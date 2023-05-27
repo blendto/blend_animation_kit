@@ -107,6 +107,10 @@ const replaceImage = async (
     return res.send(queriedFileKeyItem);
   }
 
+  if (!imageFileKeyItem.mask) {
+    throw new UserError("FileKeyItem does not have mask");
+  }
+
   const fileKeyItem = await removeBgService.applyMaskAndUpload(
     replacementOriginalFileKey,
     imageFileKeyItem.mask
