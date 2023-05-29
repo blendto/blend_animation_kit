@@ -23,6 +23,10 @@ import { extractCorrectedFileName } from "server/helpers/fileKeyUtils";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; //  20 MB
 
+/**
+ * @deprecated Use /api/blend/[id]/image-upload instead
+ */
+
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;

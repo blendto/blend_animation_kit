@@ -28,8 +28,10 @@ import {
 import { adjustSizeToFit } from "server/helpers/imageUtils";
 import {
   copyObject,
+  createSignedUploadUrl,
   deleteMultipleObjects,
   listObjectsInFolder,
+  GetSignedUrlOperation,
 } from "server/external/s3";
 import { IService } from "server/service";
 import FileKeysService from "server/service/fileKeys";
@@ -49,11 +51,15 @@ import { diContainer } from "inversify.config";
 import { CreditsService } from "server/service/credits";
 import SubscriptionService from "server/service/subscription";
 import { RecipeSourceHandler } from "server/service/recipeSourceHandler";
+import { ObjectNotFoundError } from "server/base/errors";
+import { extractCorrectedFileName } from "server/helpers/fileKeyUtils";
+import { ALL_SUPPORTED_EXTENSIONS } from "server/helpers/constants";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
 const FALLBACK_OUTPUT_RESOLUTION = { width: 720, height: 1280 };
 const FALLBACK_OUTPUT_THUMBNAIL_RESOLUTION = { width: 628, height: 1200 };
+const MAX_IMAGE_UPLOAD_SIZE = 20 * 1024 * 1024; //  20 MB
 type BlendsPage = { blends: Blend[]; nextPageKey: string };
 const PAGE_SIZE = 15;
 
@@ -196,6 +202,28 @@ export class BlendService implements IService {
     }
 
     return this.backfillBlendOutput(<Blend>blend);
+  }
+
+  async initImageUpload(id: string, userId: string, fileName: string) {
+    // Need consistent read as blend might have just been created and not propagated yet
+    const blend = await this.getBlend(id, {
+      consistentRead: true,
+      userId,
+    });
+    if (!blend) {
+      throw new ObjectNotFoundError("Blend not found");
+    }
+    const fileNameCorrected = extractCorrectedFileName(fileName);
+    return await createSignedUploadUrl(
+      fileNameCorrected,
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      ALL_SUPPORTED_EXTENSIONS,
+      {
+        keyPrefix: id + "/",
+        maxSize: MAX_IMAGE_UPLOAD_SIZE,
+        operation: GetSignedUrlOperation.putObject,
+      }
+    );
   }
 
   async getOrCreateBlend(blendId: string, uid: string) {
