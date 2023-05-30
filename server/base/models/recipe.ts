@@ -12,6 +12,7 @@ export enum ElementSource {
   blend_assets = "BLEND_ASSETS",
   hero = "HERO",
   blend_output = "BLEND_OUTPUT",
+  web = "WEB",
 }
 
 export class StoredImage {
@@ -333,6 +334,7 @@ export class ChooseRecipeRequest {
   encoderVersion: number;
   source?: RecipeSource;
   replacementTexts: ReplacementTexts;
+  replacementBrandingLogo?: string;
 }
 
 export class RecipeWrapper {

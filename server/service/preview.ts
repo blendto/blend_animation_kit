@@ -35,6 +35,7 @@ export class PreviewService implements IService {
     ip: string;
     uid?: string;
     replacementTexts?: ReplacementTexts;
+    replacementBrandingLogo?: string;
   }) {
     const recipe =
       args.source === RecipeSource.DEFAULT
@@ -59,7 +60,8 @@ export class PreviewService implements IService {
           await this.recipeService.replaceBrandingInfo(
             recipe,
             brandingProfile,
-            args.ip
+            args.ip,
+            args.replacementBrandingLogo
           );
         } else {
           recipeWrapper.cleanupBranding();

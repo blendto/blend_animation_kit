@@ -1,3 +1,4 @@
+import { isEmpty } from "lodash";
 import type { NextApiResponse } from "next";
 import Joi from "joi";
 import {
@@ -14,6 +15,8 @@ import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
 import { RecipeService } from "server/service/recipe";
 import { CreditsService } from "server/service/credits";
+import BrandingService from "server/service/branding";
+import { RecipeSource } from "server/base/models/recipeList";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -36,12 +39,16 @@ const CHOOSE_AND_EXPORT_SCHEMA = Joi.object({
     original: Joi.string().required(),
     withoutBg: Joi.string().required(),
   }).required(),
+  source: Joi.string()
+    .valid(...Object.values(RecipeSource))
+    .default(RecipeSource.DEFAULT),
   replacementTexts: Joi.object({
     title: Joi.string(),
     subtitle: Joi.string(),
     ctaText: Joi.string(),
     offerText: Joi.string(),
   }),
+  replacementBrandingLogo: Joi.string(),
 });
 
 const chooseRecipeAndExportSync = async (
@@ -54,11 +61,25 @@ const chooseRecipeAndExportSync = async (
     requestComponentToValidate.body,
     CHOOSE_AND_EXPORT_SCHEMA
   ) as ChooseRecipeRequest;
-  const { recipeId, variant, fileKeys, replacementTexts } = body;
+  const {
+    recipeId,
+    variant,
+    fileKeys,
+    source,
+    replacementTexts,
+    replacementBrandingLogo,
+  } = body;
 
   const service = diContainer.get<BlendService>(TYPES.BlendService);
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
-  const recipe = await recipeService.getRecipe(recipeId, variant);
+  const brandingService = diContainer.get<BrandingService>(
+    TYPES.BrandingService
+  );
+  const recipe =
+    source === RecipeSource.DEFAULT
+      ? await recipeService.getRecipeOrFail(recipeId, variant)
+      : await brandingService.getRecipeOrFail(recipeId, variant);
+  const recipeWrapper = new RecipeWrapper(recipe);
 
   const creditsService = diContainer.get<CreditsService>(TYPES.CreditsService);
   await creditsService.runWithCreditAndWatermarkCheck(
@@ -67,8 +88,21 @@ const chooseRecipeAndExportSync = async (
     req.buildVersion,
     req.clientType,
     async (shouldWatermark) => {
+      if (!isEmpty(recipe.branding)) {
+        const brandingProfile = await brandingService.get(req.uid);
+        if (brandingProfile) {
+          await recipeService.replaceBrandingInfo(
+            recipe,
+            brandingProfile,
+            req.ip,
+            replacementBrandingLogo
+          );
+        } else {
+          recipeWrapper.cleanupBranding();
+        }
+      }
       if (replacementTexts) {
-        new RecipeWrapper(recipe).replaceTexts(replacementTexts);
+        recipeWrapper.replaceTexts(replacementTexts);
       }
 
       const body = await service.copyRecipeToBlendWithSource(

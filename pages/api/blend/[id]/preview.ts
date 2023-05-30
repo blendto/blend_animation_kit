@@ -42,6 +42,7 @@ const GEN_PREV_SCHEMA = Joi.object({
     ctaText: Joi.string(),
     offerText: Joi.string(),
   }),
+  replacementBrandingLogo: Joi.string(),
 });
 
 const generatePreview = async (
@@ -60,6 +61,7 @@ const generatePreview = async (
     fileKeys: ImageFileKeys;
     source: RecipeSource;
     replacementTexts?: ReplacementTexts;
+    replacementBrandingLogo?: string;
   };
 
   const previewService = diContainer.get<PreviewService>(TYPES.PreviewService);
