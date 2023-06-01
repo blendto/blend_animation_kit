@@ -107,10 +107,6 @@ class ConfigProvider {
     return this.retrieveOrCrash("RECIPE_INGREDIENTS_BUCKET");
   }
 
-  public get WEB_USER_ASSETS_BUCKET(): string {
-    return this.retrieveOrCrash("WEB_USER_ASSETS_BUCKET");
-  }
-
   public get OUTPUT_BASE_PATH(): string {
     // Can't use retrieveOrCrash fn. because variables starting with "NEXT_PUBLIC_" are removed
     // from process.env by nextjs during build, replacing their usages with the values instead.
