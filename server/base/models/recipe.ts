@@ -159,6 +159,7 @@ export interface TextMetadata extends GeometricPositionable {
   textScaleFactor: number;
   alignment?: TextAlignment;
   background?: TextBackground;
+  forceFit?: boolean;
 }
 
 enum BrandingInfoLayout {
@@ -483,6 +484,11 @@ export class RecipeWrapper {
         if (matchingText) {
           matchingText.value = replacementTexts[key];
         }
+        const textInteraction = this.recipe.interactions.find(
+          (i) =>
+            i.assetUid === matchingText.uid && i.assetType === AssetType.TEXT
+        );
+        (textInteraction.metadata as TextMetadata).forceFit = true;
       }
     });
   }
