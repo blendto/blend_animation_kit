@@ -163,7 +163,6 @@ describe("ReferralService", () => {
           type: referral.reward.referee.type,
           quantity: referral.reward.referee.quantity,
         },
-        updatedSubscription: updatedRefereeSubscription,
       });
     });
   });

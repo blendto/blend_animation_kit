@@ -40,6 +40,7 @@
   "AI_BLEND_PHOTOS_TABLE",
   "AI_BLEND_PHOTO_TOPICS_TABLE",
   "CUSTOMER_IO_API_KEY",
+  "CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID"
 ].forEach((envVar) => {
   process.env[envVar] = "whatever";
 });

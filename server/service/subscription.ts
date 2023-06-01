@@ -31,16 +31,15 @@ import {
 import { DaxDB } from "server/external/dax";
 import { fireAndForget } from "server/helpers/async-runner";
 
-export interface SubscriptionEntity {
+export interface CreditsEntity {
+  count: number;
+}
+
+export interface NativeCreditsEntity {
   adhocCredits: number;
   planCredits: number;
   expiry: number;
   updatedAt: number;
-}
-
-interface TransactionEntity {
-  doneAt: number;
-  blend: MinimalBlend;
 }
 
 export enum NoWatermarkReason {
@@ -84,11 +83,6 @@ interface CanDoWatermarkFreeExportResponse {
   creditServiceActivityLogId?: string;
 }
 
-interface GetTransactionsResponse {
-  items: TransactionEntity[];
-  nextPageToken?: string;
-}
-
 interface GetLedgerResponse {
   items: LedgerItem[];
   nextPageToken?: string;
@@ -109,10 +103,15 @@ export default class SubscriptionService implements IService {
   });
   creditServiceApi = new CreditServiceApi();
 
-  private async get(
-    userId: string,
-    createIfMissing = false
-  ): Promise<Record<string, unknown>> {
+  private async get({
+    userId,
+    createIfMissing = false,
+    awardFreeCoins = true,
+  }: {
+    userId: string;
+    createIfMissing?: boolean;
+    awardFreeCoins?: boolean;
+  }): Promise<Record<string, unknown>> {
     const params: {
       source: Source;
       subject: string;
@@ -125,6 +124,10 @@ export default class SubscriptionService implements IService {
     if (createIfMissing) {
       params.createIfMissing = true;
       params.planId = ConfigProvider.CREDIT_SERVICE_PLAN_ID;
+      if (!awardFreeCoins) {
+        params.planId =
+          ConfigProvider.CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID;
+      }
     }
     return (
       await handleAxiosCall<Record<string, unknown>>(
@@ -137,7 +140,15 @@ export default class SubscriptionService implements IService {
     await this.creditServiceApi.delete(userId);
   }
 
-  private transform(original: Record<string, unknown>): SubscriptionEntity {
+  private transform(original: Record<string, unknown>): CreditsEntity {
+    return {
+      count: original.adhocCredits as number,
+    };
+  }
+
+  private transformNative(
+    original: Record<string, unknown>
+  ): NativeCreditsEntity {
     return {
       adhocCredits: original.adhocCredits as number,
       planCredits: original.planCredits as number,
@@ -146,18 +157,16 @@ export default class SubscriptionService implements IService {
     };
   }
 
-  private createTxnEntity(
-    transaction: Record<string, unknown>,
-    blendMap: Record<string, MinimalBlend>
-  ): TransactionEntity {
-    const { blendId } = transaction.metadata as { blendId: string };
-    const doneAt = transaction.doneAt as number;
-    const blend = blendMap[blendId];
-    return { doneAt, blend };
+  async getOrCreate(userId: string): Promise<CreditsEntity> {
+    return this.transform(
+      await this.get({ userId, createIfMissing: true, awardFreeCoins: false })
+    );
   }
 
-  async getOrCreate(userId: string): Promise<SubscriptionEntity> {
-    return this.transform(await this.get(userId, true));
+  async getOrCreateDeprecated(userId: string): Promise<NativeCreditsEntity> {
+    return this.transformNative(
+      await this.get({ userId, createIfMissing: true })
+    );
   }
 
   getWaterMarkBuildVersion(): number {
@@ -284,21 +293,12 @@ export default class SubscriptionService implements IService {
     );
   }
 
-  async renew(
-    userId: string,
-    reason: RenewReason
-  ): Promise<SubscriptionEntity> {
-    return this.transform(
-      await this.creditServiceApi.renew(userId, { reason })
-    );
-  }
-
   async addCredits(
     userId: string,
     count: number,
     reason = CreditAdditionReason.PURCHASE
-  ): Promise<SubscriptionEntity> {
-    return this.transform(
+  ): Promise<NativeCreditsEntity> {
+    return this.transformNative(
       // This is sometimes called concurrently to creation of a credits account.
       // Wait out eventual creation with retries as necessary
       await withExponentialBackoffRetries(
@@ -307,37 +307,6 @@ export default class SubscriptionService implements IService {
         { fnArgs: [userId, count, reason], backOffFactorInMS: 100 }
       )
     );
-  }
-
-  async getTransactions(
-    userId: string,
-    pageToken?: string
-  ): Promise<GetTransactionsResponse> {
-    const transactions = await this.creditServiceApi.fetchTransactions(
-      userId,
-      pageToken
-    );
-
-    const blendIds = new Set(
-      transactions.items.map(
-        (original) => (original.metadata as { blendId: string }).blendId
-      )
-    );
-
-    const service = diContainer.get<BlendService>(TYPES.BlendService);
-    const minimalBlends = await service.getMinimalBlends(Array.from(blendIds));
-    const items = this.createTxnEntities(transactions, minimalBlends);
-
-    const { lastItemId, lastItemDoneAt } = transactions;
-    if (!lastItemId) {
-      return { items };
-    }
-
-    const nextPageToken = EncodedPageKey.fromObject({
-      lastItemId,
-      lastItemDoneAt,
-    })?.key;
-    return { items, nextPageToken };
   }
 
   async getLedger(
@@ -373,18 +342,6 @@ export default class SubscriptionService implements IService {
     return { items, nextPageToken };
   }
 
-  private createTxnEntities(
-    transactions: ListingResponse,
-    minimalBlends: MinimalBlend[]
-  ): TransactionEntity[] {
-    const blendMap: Record<string, MinimalBlend> = {};
-    minimalBlends.forEach((blend) => {
-      blendMap[blend.id] = blend;
-    });
-
-    return transactions.items.map((t) => this.createTxnEntity(t, blendMap));
-  }
-
   private generateLedgerItems(
     logs: ListingResponse,
     minimalBlends: MinimalBlend[]
@@ -394,33 +351,40 @@ export default class SubscriptionService implements IService {
       blendMap[blend.id] = blend;
     });
 
-    return logs.items.map((i) => {
-      let transformedItem: LedgerItem;
-      switch (i.activity) {
-        case "SUBSCRIBE":
-          transformedItem = this.generateWelcomeRewardItem(i);
-          break;
-        case "ADD_CREDITS":
-          transformedItem = this.generateCreditAdditionBasedItem(i);
-          break;
-        case "TRANSACT":
-          transformedItem = this.generateExportItem(i, blendMap);
-          break;
-        default:
-          throw new Error(
-            `UNKNOWN_CREDIT_SERVICE_ACTIVITY. Activity: ${i.activity}`
-          );
-      }
-      return transformedItem;
-    });
+    return logs.items
+      .map((i) => {
+        let transformedItem: LedgerItem;
+        switch (i.activity) {
+          case "SUBSCRIBE":
+            transformedItem = this.generateWelcomeRewardItem(i);
+            break;
+          case "ADD_CREDITS":
+            transformedItem = this.generateCreditAdditionBasedItem(i);
+            break;
+          case "TRANSACT":
+            transformedItem = this.generateExportItem(i, blendMap);
+            break;
+          default:
+            throw new Error(
+              `UNKNOWN_CREDIT_SERVICE_ACTIVITY. Activity: ${i.activity}`
+            );
+        }
+        return transformedItem;
+      })
+      .filter((i) => !!i);
   }
 
-  private generateWelcomeRewardItem(log: Record<string, unknown>): LedgerItem {
+  private generateWelcomeRewardItem(
+    log: Record<string, unknown>
+  ): undefined | LedgerItem {
     const coinsCount = (
       log.postStateOfSubscription as {
         planCredits: number;
       }
     ).planCredits;
+    if (!coinsCount) {
+      return undefined;
+    }
     return {
       activity: CreditAdditionReason.WELCOME_REWARD,
       doneAt: log.doneAt as number,

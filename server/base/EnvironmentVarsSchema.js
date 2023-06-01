@@ -53,6 +53,7 @@ module.exports = {
       FAILED_WEBHOOK_CALLS_TABLE: Joi.string().required(),
       CUSTOMER_IO_SITE_ID: Joi.string().required(),
       CUSTOMER_IO_API_KEY: Joi.string().required(),
+      CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID: Joi.string().required(),
     })
     .unknown(true),
 };

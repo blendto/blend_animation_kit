@@ -235,6 +235,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("CREDIT_SERVICE_PLAN_ID");
   }
 
+  public get CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID(): string {
+    return this.retrieveOrCrash("CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID");
+  }
+
   public get CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID(): string {
     return this.retrieveOrCrash("CREDIT_SERVICE_EXPORT_TRANSACTION_TYPE_ID");
   }

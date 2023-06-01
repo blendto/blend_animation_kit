@@ -14,7 +14,7 @@ import { TYPES } from "server/types";
 import { IService } from ".";
 import SubscriptionService, {
   CreditAdditionReason,
-  SubscriptionEntity,
+  NativeCreditsEntity,
 } from "./subscription";
 import { UserService } from "./user";
 
@@ -84,7 +84,6 @@ export default class ReferralService implements IService {
       type: RewardType;
       quantity: number;
     };
-    updatedSubscription: SubscriptionEntity;
   }> {
     const referral = await this.createReferralEntity(
       this.generateReferralEntity(refereeUserId, referrerUserId, deviceId)
@@ -99,7 +98,7 @@ export default class ReferralService implements IService {
       { refereeUserId },
       this.generateSuccessfulRewardDelta({ refereeRewarded: false })
     );
-    const updatedSubscription = await this.subscriptionService.addCredits(
+    await this.subscriptionService.addCredits(
       refereeUserId,
       referral.reward.referee.quantity,
       CreditAdditionReason.REFEREE_REWARD
@@ -124,7 +123,6 @@ export default class ReferralService implements IService {
         type: referral.reward.referee.type,
         quantity: referral.reward.referee.quantity,
       },
-      updatedSubscription,
     };
   }
 

@@ -9,6 +9,10 @@ import {
 import SubscriptionService from "server/service/subscription";
 import { TYPES } from "server/types";
 
+/**
+ * @deprecated Use /api/profile/coins instead
+ */
+
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse): Promise<void> => {
     const { method } = req;
@@ -28,5 +32,5 @@ async function getSubscription(
   const subscriptionService = diContainer.get<SubscriptionService>(
     TYPES.SubscriptionService
   );
-  res.send(await subscriptionService.getOrCreate(req.uid));
+  res.send(await subscriptionService.getOrCreateDeprecated(req.uid));
 }

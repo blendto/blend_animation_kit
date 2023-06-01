@@ -14,7 +14,7 @@ import {
 import { BlendMicroServices } from "server/internal/inter-service-auth";
 import SubscriptionService, {
   CreditAdditionReason,
-  SubscriptionEntity,
+  NativeCreditsEntity,
 } from "server/service/subscription";
 import { TYPES } from "server/types";
 
@@ -55,7 +55,7 @@ type Reward = {
   userId: string;
   count: number;
   reason: CreditAdditionReason;
-  subscriptionAfterUpdate?: SubscriptionEntity;
+  subscriptionAfterUpdate?: NativeCreditsEntity;
 };
 
 async function registerCreditRewards(

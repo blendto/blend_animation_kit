@@ -24,11 +24,14 @@ describe("SubscriptionService", () => {
     subscribedAt: 1655138064,
     updatedAt: 1655138064,
   };
-  const transformedRes = {
+  const nativeTransformedRes = {
     adhocCredits: 0,
     planCredits: 10,
     expiry: 1686674064,
     updatedAt: 1655138064,
+  };
+  const transformedRes = {
+    count: 0,
   };
   const creditServiceActivityLogId = "08894d85-ce8b-49db-993d-4c6e47170d13";
 
@@ -38,13 +41,22 @@ describe("SubscriptionService", () => {
 
   describe("Get", () => {
     it("Fetches the subscription", async () => {
-      jest.spyOn(subscriptionService.httpClient, "get").mockResolvedValueOnce({
-        data: subscriptionRes,
-        status: 200,
-      });
+      jest
+        .spyOn(subscriptionService.httpClient, "get")
+        .mockResolvedValueOnce({
+          data: subscriptionRes,
+          status: 200,
+        })
+        .mockResolvedValueOnce({
+          data: subscriptionRes,
+          status: 200,
+        });
 
-      const res = await subscriptionService.getOrCreate(userId);
-      expect(res).toMatchObject(transformedRes);
+      const res = await subscriptionService.getOrCreateDeprecated(userId);
+      expect(res).toMatchObject(nativeTransformedRes);
+
+      const res2 = await subscriptionService.getOrCreate(userId);
+      expect(res2).toMatchObject(transformedRes);
     });
   });
 

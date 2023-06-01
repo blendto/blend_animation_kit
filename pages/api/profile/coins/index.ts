@@ -1,6 +1,6 @@
 import { diContainer } from "inversify.config";
-import { NextApiResponse } from "next";
 import { MethodNotAllowedError } from "server/base/errors";
+import { NextApiResponse } from "next";
 import {
   ensureAuth,
   NextApiRequestExtended,
@@ -14,24 +14,19 @@ export default withReqHandler(
     const { method } = req;
     switch (method) {
       case "GET":
-        return await ensureAuth(getTransactions, req, res);
+        return await ensureAuth(get, req, res);
       default:
         throw new MethodNotAllowedError();
     }
   }
 );
 
-async function getTransactions(
+async function get(
   req: NextApiRequestExtended,
   res: NextApiResponse
 ): Promise<void> {
-  const query = req.query as {
-    nextPageToken?: string;
-  };
   const subscriptionService = diContainer.get<SubscriptionService>(
     TYPES.SubscriptionService
   );
-  res.send(
-    await subscriptionService.getTransactions(req.uid, query.nextPageToken)
-  );
+  res.send(await subscriptionService.getOrCreate(req.uid));
 }
