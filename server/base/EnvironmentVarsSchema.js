@@ -54,6 +54,8 @@ module.exports = {
       CUSTOMER_IO_SITE_ID: Joi.string().required(),
       CUSTOMER_IO_API_KEY: Joi.string().required(),
       CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID: Joi.string().required(),
+      CATALOGUE_SERVICE_BASE_PATH: Joi.string().required(),
+      INTER_SERVICE_API_KEY: Joi.string().required(),
     })
     .unknown(true),
 };

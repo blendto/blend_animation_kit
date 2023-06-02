@@ -9,6 +9,7 @@ import {
 } from "server/helpers/request";
 import Firebase from "server/external/firebase";
 import logger from "server/base/Logger";
+import CatalogueServiceApi from "server/internal/catalogue-service-api";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -31,6 +32,9 @@ const migrateOwnership = async (
   res: NextApiResponse
 ) => {
   const userService = diContainer.get<UserService>(TYPES.UserService);
+  const catalogueServiceApi = diContainer.get<CatalogueServiceApi>(
+    TYPES.CatalogueServiceApi
+  );
   const ownerMigrationRequest = req.body as BlendOwnerMigrationRequest;
   const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
   const decodedIdToken = await firebaseService.verifyAndDecodeToken(
@@ -51,8 +55,18 @@ const migrateOwnership = async (
   const brandingPromise = userService.migrateBranding(sourceUid, req.uid);
   const blendsPromise = userService.migrateUserBlends(sourceUid, req.uid);
   const batchesPromise = userService.migrateUserBatches(sourceUid, req.uid);
+  const cataloguesPromise = catalogueServiceApi.migrate(sourceUid, req.uid);
 
-  const [brandingPromiseRes, migratedBlends, migratedBatches] =
-    await Promise.all([brandingPromise, blendsPromise, batchesPromise]);
+  const [
+    brandingPromiseRes,
+    migratedBlends,
+    migratedBatches,
+    cataloguesPromiseRes,
+  ] = await Promise.all([
+    brandingPromise,
+    blendsPromise,
+    batchesPromise,
+    cataloguesPromise,
+  ]);
   return res.status(200).json({ migratedBlends, migratedBatches });
 };

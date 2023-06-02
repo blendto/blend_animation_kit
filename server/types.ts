@@ -35,4 +35,5 @@ export const TYPES = {
   AIBlendPhotoRepo: Symbol.for("AIBlendPhotoRepo"),
   ConfigService: Symbol.for("ConfigService"),
   PreviewService: Symbol.for("PreviewService"),
+  CatalogueServiceApi: Symbol.for("CatalogueServiceApi"),
 };

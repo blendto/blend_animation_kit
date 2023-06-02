@@ -61,6 +61,7 @@ import { NonHeroRecipeListService } from "server/service/nonHeroRecipeList";
 import ConfigService from "server/service/config";
 import { PreviewService } from "server/service/preview";
 import { BatchV2Service } from "server/service/batch-v2";
+import CatalogueServiceApi from "server/internal/catalogue-service-api";
 
 const diContainer = new Container();
 
@@ -85,6 +86,10 @@ diContainer
 diContainer
   .bind<UserService>(TYPES.UserService)
   .to(UserService)
+  .inSingletonScope();
+diContainer
+  .bind<CatalogueServiceApi>(TYPES.CatalogueServiceApi)
+  .to(CatalogueServiceApi)
   .inSingletonScope();
 diContainer
   .bind<BatchActionService>(TYPES.BatchActionService)

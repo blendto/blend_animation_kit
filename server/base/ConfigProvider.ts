@@ -231,6 +231,14 @@ class ConfigProvider {
     return this.retrieveOrCrash("CREDIT_SERVICE_API_KEY");
   }
 
+  public get CATALOGUE_SERVICE_BASE_PATH(): string {
+    return this.retrieveOrCrash("CATALOGUE_SERVICE_BASE_PATH");
+  }
+
+  public get INTER_SERVICE_API_KEY(): string {
+    return this.retrieveOrCrash("INTER_SERVICE_API_KEY");
+  }
+
   public get CREDIT_SERVICE_PLAN_ID(): string {
     return this.retrieveOrCrash("CREDIT_SERVICE_PLAN_ID");
   }
