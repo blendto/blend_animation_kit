@@ -112,7 +112,7 @@ const replaceImage = async (
     /** If still not able to find the mask filekey to generate new bg removed image
      *  return existing filekeys
      */
-    logger.warning({
+    logger.warn({
       op: "NO_MASK_FOUND_IN_BLEND",
       message: "Mask not found when replacing image",
       blendId: blend.id,
