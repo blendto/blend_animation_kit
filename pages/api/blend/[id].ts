@@ -146,9 +146,17 @@ export function trim(blend: Blend) {
     output,
     isWatermarked,
     gifsOrStickers,
-    heroImages,
-    fileName,
   } = blend;
+
+  let { heroImages, fileName } = blend;
+
+  if (!heroImages?.original) {
+    heroImages = null;
+  }
+
+  if (!fileName) {
+    fileName = BlendUpdater.generateDefaultFileName(Date.now());
+  }
 
   return {
     id,
