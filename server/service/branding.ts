@@ -504,9 +504,7 @@ export default class BrandingService implements IService {
     let logo = await this.getObject(ConfigProvider.BRANDING_BUCKET, fileKey);
     const [fileNameWithExt] = fileKey.split("/").slice(-1);
     const [fileExtension] = fileNameWithExt.split(".").slice(-1);
-    logo = await (
-      await sharpInstance(logo, { failOnError: false }, fileExtension)
-    ).toBuffer();
+    logo = await (await sharpInstance(logo, {}, fileExtension)).toBuffer();
     let bgRemovedFileKey: string;
     if (logoData.removeBg) {
       ({ bgRemovedFileKey, bgRemovegLogo: logo } = await this.removeBg(

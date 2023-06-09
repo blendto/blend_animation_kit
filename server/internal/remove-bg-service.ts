@@ -213,9 +213,7 @@ export class RemoveBgService implements IService {
       fileKey
     );
 
-    const sharpInst = await sharpInstance(originalImage, {
-      failOnError: false,
-    });
+    const sharpInst = await sharpInstance(originalImage);
 
     const { width, height } = await sharpInst.metadata();
     const webp = await sharpInst

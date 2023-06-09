@@ -8,6 +8,8 @@ export async function sharpInstance(
   options?: sharp.SharpOptions,
   fileExtension?: string
 ): Promise<sharp.Sharp> {
+  options = options ?? {};
+  options.failOnError = false;
   if (!input) {
     return sharp(options);
   }

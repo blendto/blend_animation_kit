@@ -174,12 +174,7 @@ async function createBgRemovedImage(
   ) {
     logger.info({ format: metadata.format });
 
-    // failOnError: false helps blow past errors like
-    // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
-    // https://github.com/lovell/sharp/issues/1578
-    const sharpInst = await sharpInstance(originalImage, {
-      failOnError: false,
-    });
+    const sharpInst = await sharpInstance(originalImage);
     originalImage = await sharpInst
       .resize({
         width: 3840,

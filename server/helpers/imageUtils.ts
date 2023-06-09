@@ -102,10 +102,7 @@ export const applyMask = async (
 
 // Keep default quality same as sharp, 80
 export const convertImageToWebp = async (image: Buffer, quality = 80) => {
-  // failOnError: false helps blow past errors like
-  // "VipsJpeg: Invalid SOS parameters for sequential JPEG"
-  // https://github.com/lovell/sharp/issues/1578
-  const sharpInst = await sharpInstance(image, { failOnError: false });
+  const sharpInst = await sharpInstance(image);
   return await sharpInst.toFormat("webp", { quality }).toBuffer();
 };
 
