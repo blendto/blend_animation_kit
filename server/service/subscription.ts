@@ -142,7 +142,8 @@ export default class SubscriptionService implements IService {
 
   private transform(original: Record<string, unknown>): CreditsEntity {
     return {
-      count: original.adhocCredits as number,
+      count:
+        (original.adhocCredits as number) + (original.planCredits as number),
     };
   }
 

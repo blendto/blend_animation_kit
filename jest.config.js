@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // jest.config.js
 const nextJest = require("next/jest");
 

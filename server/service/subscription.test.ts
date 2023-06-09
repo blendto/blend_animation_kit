@@ -31,7 +31,7 @@ describe("SubscriptionService", () => {
     updatedAt: 1655138064,
   };
   const transformedRes = {
-    count: 0,
+    count: 10,
   };
   const creditServiceActivityLogId = "08894d85-ce8b-49db-993d-4c6e47170d13";
 
