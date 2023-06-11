@@ -21,6 +21,7 @@ import { SuggestionService } from "server/service/suggestion";
 import { withExponentialBackoffRetries } from "server/helpers/general";
 import AppleService from "server/external/apple";
 import { UserError, UserErrorCode } from "server/base/errors";
+import CatalogueServiceApi from "server/internal/catalogue-service-api";
 import HeroImageService from "./heroImage";
 import { BatchService } from "./batch";
 import SubscriptionService from "./subscription";
@@ -227,6 +228,48 @@ export class UserService implements IService {
       }
       throw e;
     }
+  }
+
+  async migrateData(
+    sourceUserAccessToken: string,
+    targetUid: string
+  ): Promise<{ migratedBlends: string[]; migratedBatches: string[] }> {
+    const catalogueServiceApi = diContainer.get<CatalogueServiceApi>(
+      TYPES.CatalogueServiceApi
+    );
+    const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
+    const decodedIdToken = await firebaseService.verifyAndDecodeToken(
+      sourceUserAccessToken
+    );
+    const sourceUid = decodedIdToken.uid;
+
+    if (sourceUid === targetUid) {
+      logger.warn({
+        op: "SAME_USER_MIGRATION_ATTEMPT",
+        message: "Attempted to migrate ownership to the same user",
+        sourceUid,
+        targetUid,
+      });
+      return { migratedBlends: [], migratedBatches: [] };
+    }
+
+    const brandingPromise = this.migrateBranding(sourceUid, targetUid);
+    const blendsPromise = this.migrateUserBlends(sourceUid, targetUid);
+    const batchesPromise = this.migrateUserBatches(sourceUid, targetUid);
+    const cataloguesPromise = catalogueServiceApi.migrate(sourceUid, targetUid);
+
+    const [
+      _brandingPromiseRes,
+      migratedBlends,
+      migratedBatches,
+      _cataloguesPromiseRes,
+    ] = await Promise.all([
+      brandingPromise,
+      blendsPromise,
+      batchesPromise,
+      cataloguesPromise,
+    ]);
+    return { migratedBlends, migratedBatches };
   }
 
   async migrateBranding(sourceUid: string, targetUid: string): Promise<void> {

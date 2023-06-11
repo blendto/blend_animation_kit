@@ -5,11 +5,11 @@ import { TYPES } from "server/types";
 import {
   ensureAuth,
   NextApiRequestExtended,
+  requestComponentToValidate,
+  validate,
   withReqHandler,
 } from "server/helpers/request";
-import Firebase from "server/external/firebase";
-import logger from "server/base/Logger";
-import CatalogueServiceApi from "server/internal/catalogue-service-api";
+import Joi from "joi";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -27,46 +27,24 @@ interface BlendOwnerMigrationRequest {
   sourceUserAccessToken: string;
 }
 
+const REQUEST_SCHEMA = Joi.object({
+  sourceUserAccessToken: Joi.string().optional(),
+});
+
 const migrateOwnership = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
   const userService = diContainer.get<UserService>(TYPES.UserService);
-  const catalogueServiceApi = diContainer.get<CatalogueServiceApi>(
-    TYPES.CatalogueServiceApi
+  const ownerMigrationRequest = validate(
+    req.body as object,
+    requestComponentToValidate.body,
+    REQUEST_SCHEMA
+  ) as BlendOwnerMigrationRequest;
+
+  const { migratedBlends, migratedBatches } = await userService.migrateData(
+    ownerMigrationRequest.sourceUserAccessToken,
+    req.uid
   );
-  const ownerMigrationRequest = req.body as BlendOwnerMigrationRequest;
-  const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
-  const decodedIdToken = await firebaseService.verifyAndDecodeToken(
-    ownerMigrationRequest.sourceUserAccessToken
-  );
-  const sourceUid = decodedIdToken.uid;
-
-  if (sourceUid === req.uid) {
-    logger.warn({
-      op: "SAME_USER_MIGRATION_ATTEMPT",
-      message: "Attempted to migrate ownership to the same user",
-      sourceUid,
-      targetUid: req.uid,
-    });
-    return res.status(200).json({ migratedBlends: [], migratedBatches: [] });
-  }
-
-  const brandingPromise = userService.migrateBranding(sourceUid, req.uid);
-  const blendsPromise = userService.migrateUserBlends(sourceUid, req.uid);
-  const batchesPromise = userService.migrateUserBatches(sourceUid, req.uid);
-  const cataloguesPromise = catalogueServiceApi.migrate(sourceUid, req.uid);
-
-  const [
-    brandingPromiseRes,
-    migratedBlends,
-    migratedBatches,
-    cataloguesPromiseRes,
-  ] = await Promise.all([
-    brandingPromise,
-    blendsPromise,
-    batchesPromise,
-    cataloguesPromise,
-  ]);
   return res.status(200).json({ migratedBlends, migratedBatches });
 };
