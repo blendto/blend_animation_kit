@@ -4,7 +4,6 @@ import logger from "server/base/Logger";
 import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
 import { IDataStore } from "./datastore";
 import AWS from "./aws";
-import ConfigProvider from "../base/ConfigProvider";
 import { jsonPatchToDynamoExp } from "../helpers/db";
 import { JsonPatchBody } from "../helpers/request";
 
@@ -150,7 +149,6 @@ export default class DynamoDB implements IDataStore {
     do {
       const keysBatch = keys.splice(0, 25);
       if (keysBatch.length > 0) {
-        // eslint-disable-next-line no-await-in-loop
         const res = await this.getClient()
           .batchWrite({
             RequestItems: {

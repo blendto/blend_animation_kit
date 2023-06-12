@@ -297,18 +297,15 @@ async function generate(
         );
         if (!convertedObjectExists) {
           // fetch, convert, upload if the converted Object doesn't already exist
-          // eslint-disable-next-line no-await-in-loop
           const fetchedBuffer = await getObject(
             ConfigProvider.BLEND_INGREDIENTS_BUCKET,
             fileKey
           );
-          // eslint-disable-next-line no-await-in-loop
           const convertedBuffer = await convertUnspportedFormatToWebp(
             fetchedBuffer,
             fileKeyParts[1],
             fileKeyParts[0]
           );
-          // eslint-disable-next-line no-await-in-loop
           await uploadObject(
             ConfigProvider.BLEND_INGREDIENTS_BUCKET,
             convertedFileKey,

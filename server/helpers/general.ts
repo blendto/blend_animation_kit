@@ -12,11 +12,9 @@ export async function withExponentialBackoffRetries<T>(
   let error: Error;
   while (retriesDone <= maxRetries) {
     try {
-      // eslint-disable-next-line no-await-in-loop
       return await fn(...fnArgs);
     } catch (e) {
       error = e as Error;
-      // eslint-disable-next-line no-await-in-loop, no-loop-func
       await new Promise((resolve) => {
         setTimeout(resolve, backOffFactorInMS * 2 ** retriesDone);
       });

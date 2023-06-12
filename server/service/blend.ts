@@ -29,9 +29,8 @@ import { adjustSizeToFit } from "server/helpers/imageUtils";
 import {
   copyObject,
   createSignedUploadUrl,
-  deleteMultipleObjects,
-  listObjectsInFolder,
   GetSignedUrlOperation,
+  listAndDeleteObjectsInFolder,
 } from "server/external/s3";
 import { IService } from "server/service";
 import FileKeysService from "server/service/fileKeys";
@@ -267,7 +266,6 @@ export class BlendService implements IService {
     let blendRequestId: string;
     do {
       blendRequestId = nanoid(8);
-      /* eslint-disable no-await-in-loop */
       const item = await this.dataStore.getItem({
         TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
         Key: {
@@ -510,6 +508,32 @@ export class BlendService implements IService {
         Limit: 20,
       })
     ).Items;
+  }
+
+  async getUnusedBlendIds(uid: string, unusedForOffset: number) {
+    let pageKeyObject: Record<string, unknown> = null;
+    let blends: Blend[] = [];
+    do {
+      const data = await this.dataStore.queryItems({
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+        KeyConditionExpression:
+          "#createdBy = :createdBy AND #updatedAt <= :unusedForOffset",
+        IndexName: "createdBy-updatedAt-idx",
+        ExpressionAttributeNames: {
+          "#createdBy": "createdBy",
+          "#updatedAt": "updatedAt",
+        },
+        ExpressionAttributeValues: {
+          ":createdBy": uid,
+          ":unusedForOffset": unusedForOffset,
+        },
+        ProjectionExpression: "id",
+        ExclusiveStartKey: pageKeyObject,
+      });
+      blends = blends.concat(data.Items as Blend[]);
+      pageKeyObject = data.LastEvaluatedKey;
+    } while (pageKeyObject);
+    return blends.map((i) => i.id);
   }
 
   async updateBlendbyDelta(
@@ -787,11 +811,35 @@ export class BlendService implements IService {
     });
   }
 
+  async deleteBlends(blendIds: string[]) {
+    for (const blendId of blendIds) {
+      const blend = (await this.dataStore.getItem({
+        Key: { id: blendId },
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      })) as Blend;
+      if (blend) {
+        await this.cleanupBlendAssets(blend);
+        await this.dataStore.deleteItem({
+          Key: { id: blendId },
+          TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+        });
+      }
+    }
+  }
+
+  private async cleanupBlendAssets(blend: Partial<Blend>): Promise<void> {
+    await Promise.all(
+      [
+        ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+        ConfigProvider.BLEND_OUTPUT_BUCKET,
+      ].map((bucket) => listAndDeleteObjectsInFolder(bucket, blend.id))
+    );
+  }
+
   async getAllUserBlends(uid: string): Promise<Partial<Blend>[]> {
     let blends: Partial<Blend>[] = [];
     let pageKeyObject: Record<string, unknown> = null;
     do {
-      // eslint-disable-next-line no-await-in-loop
       const data = await this.dataStore.queryItems({
         TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
         KeyConditionExpression: "#createdBy = :createdBy",
@@ -814,34 +862,9 @@ export class BlendService implements IService {
 
   async cleanupUserBlends(uid: string): Promise<void> {
     const blends = await this.getAllUserBlends(uid);
-    const deleteS3ObjectsPromises: Promise<void>[] = blends.map(
-      (b) =>
-        new Promise((resolve, reject) => {
-          listObjectsInFolder(ConfigProvider.BLEND_INGREDIENTS_BUCKET, b.id)
-            .then((ingredientObjects) => {
-              if (ingredientObjects.length) {
-                return deleteMultipleObjects(
-                  ConfigProvider.BLEND_INGREDIENTS_BUCKET,
-                  ingredientObjects.map((o) => o.Key)
-                );
-              }
-            })
-            .then(() =>
-              listObjectsInFolder(ConfigProvider.BLEND_OUTPUT_BUCKET, b.id)
-            )
-            .then((outputObjects) => {
-              if (outputObjects.length) {
-                return deleteMultipleObjects(
-                  ConfigProvider.BLEND_OUTPUT_BUCKET,
-                  outputObjects.map((o) => o.Key)
-                );
-              }
-            })
-            .then(() => resolve())
-            .catch((err) => reject(err));
-        })
-    );
-    await Promise.all(deleteS3ObjectsPromises);
+    for (const blend of blends) {
+      await this.cleanupBlendAssets(blend);
+    }
     await this.dataStore.batchDeleteItems(
       ConfigProvider.BLEND_DYNAMODB_TABLE,
       blends

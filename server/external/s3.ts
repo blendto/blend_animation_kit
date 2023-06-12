@@ -320,3 +320,44 @@ export const listObjectsInFolder = async (
       })
       .promise()
   )?.Contents || [];
+
+export const listAndDeleteObjectsInFolder = async (
+  bucketName: string,
+  folderPrefix: string
+) => {
+  const objects = await listObjectsInFolder(bucketName, folderPrefix);
+  if (objects.length) {
+    await deleteMultipleObjects(
+      bucketName,
+      objects.map((o) => o.Key)
+    );
+  }
+};
+
+export const appendTagsToObject = async (
+  bucketName: string,
+  fileKey: string,
+  tagSet: { Key: string; Value: string }[]
+) => {
+  const s3 = await getS3();
+  const currentTagging = await s3
+    .getObjectTagging({
+      Bucket: bucketName,
+      Key: fileKey,
+    })
+    .promise();
+  for (const currentTag of currentTagging.TagSet) {
+    if (!tagSet.find((newTag) => newTag.Key === currentTag.Key)) {
+      tagSet.push(currentTag);
+    }
+  }
+  await s3
+    .putObjectTagging({
+      Bucket: bucketName,
+      Key: fileKey,
+      Tagging: {
+        TagSet: tagSet,
+      },
+    })
+    .promise();
+};

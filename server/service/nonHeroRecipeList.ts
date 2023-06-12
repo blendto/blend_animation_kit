@@ -114,7 +114,6 @@ export class NonHeroRecipeListService implements IService {
     let fetched: NonHeroRecipeListPage;
     const countryCode = await this.getCountryCodeFromIP(ip);
     do {
-      // eslint-disable-next-line no-await-in-loop
       fetched = await this.getRecipeListPage(recipeListsPage.nextPageKey);
       // filter the page result based on IP
       if (countryCode) {

@@ -4,6 +4,7 @@ export const TYPES = {
   BatchService: Symbol.for("BatchService"),
   BatchV2Service: Symbol.for("BatchV2Service"),
   BlendService: Symbol.for("BlendService"),
+  ProjectsFrictionService: Symbol.for("ProjectsFrictionService"),
   UploadService: Symbol.for("UploadService"),
   UserService: Symbol.for("UserService"),
   BatchActionService: Symbol.for("BatchActionService"),

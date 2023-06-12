@@ -209,6 +209,10 @@ export default class SubscriptionService implements IService {
     return await this.userHasEntitlement(userId, Entitlement.HD_EXPORT);
   }
 
+  async isUserPro(userId: string): Promise<boolean> {
+    return await this.userHasEntitlement(userId, Entitlement.PRO);
+  }
+
   async ensureEntitlement(userId: string, entitlement: Entitlement) {
     if (!(await this.userHasEntitlement(userId, entitlement))) {
       throw new ForbiddenError(`User doesn't have ${entitlement} entitlement`);

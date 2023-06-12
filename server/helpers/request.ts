@@ -184,10 +184,8 @@ export async function composeMiddlewares(
   let currentReq = req;
   let currentRes = res;
   const lastMiddleware = middlewares.pop();
-  /* eslint-disable no-await-in-loop */
   for (let i = 0; i < middlewares.length; i++) {
     await middlewares[i](
-      /* eslint-disable no-loop-func */
       (req, res) => {
         currentReq = req;
         currentRes = res;

@@ -316,6 +316,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("HERO_IMAGES_BASE_PATH");
   }
 
+  public get DELETION_PLANS_DYNAMODB_TABLE(): string {
+    return this.retrieveOrCrash("DELETION_PLANS_DYNAMODB_TABLE");
+  }
+
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
     if (!variable || variable.trim().length === 0) {

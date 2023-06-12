@@ -20,9 +20,8 @@ import { BatchLevelEditStatus, Blend } from "server/base/models/blend";
 import {
   createDestinationFileKey,
   createSignedUploadUrl,
-  deleteMultipleObjects,
   GetSignedUrlOperation,
-  listObjectsInFolder,
+  listAndDeleteObjectsInFolder,
 } from "server/external/s3";
 import { customAlphabet } from "nanoid";
 import { inject, injectable } from "inversify";
@@ -610,7 +609,6 @@ export class BatchService implements IService {
     let batches: Partial<Batch>[] = [];
     let pageKeyObject: Record<string, unknown> = null;
     do {
-      // eslint-disable-next-line no-await-in-loop
       const data = await this.dataStore.queryItems({
         TableName: ConfigProvider.BATCH_DYNAMODB_TABLE,
         KeyConditionExpression: "#createdBy = :createdBy",
@@ -633,26 +631,14 @@ export class BatchService implements IService {
 
   async cleanupUserBatches(uid: string): Promise<void> {
     const batches = await this.getAllUserBatches(uid);
-    const deleteS3ObjectsPromises: Promise<void>[] = batches.map(
-      (b) =>
-        new Promise((resolve, reject) => {
-          listObjectsInFolder(
-            ConfigProvider.BLEND_OUTPUT_BUCKET,
-            `batch/${b.id}`
-          )
-            .then((batchObjects) => {
-              if (batchObjects.length) {
-                return deleteMultipleObjects(
-                  ConfigProvider.BLEND_OUTPUT_BUCKET,
-                  batchObjects.map((o) => o.Key)
-                );
-              }
-            })
-            .then(() => resolve())
-            .catch((err) => reject(err));
-        })
+    await Promise.all(
+      batches.map((b) =>
+        listAndDeleteObjectsInFolder(
+          ConfigProvider.BLEND_OUTPUT_BUCKET,
+          `batch/${b.id}`
+        )
+      )
     );
-    await Promise.all(deleteS3ObjectsPromises);
     await this.dataStore.batchDeleteItems(
       ConfigProvider.BATCH_DYNAMODB_TABLE,
       batches

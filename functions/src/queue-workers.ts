@@ -15,6 +15,7 @@ import {
 } from "server/base/models/queue-messages";
 import { UserService } from "server/service/user";
 import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
+import { ProjectsFrictionService } from "server/service/projects-friction-service";
 
 const SIMULTANEOUS_QUEUE_COUNT = 10;
 
@@ -32,6 +33,9 @@ const userService = diContainer.get<UserService>(TYPES.UserService);
 const userAccountActionQueue = diContainer.get<
   UserAccountActionQueue<QueueConfig>
 >(TYPES.UserAccountActionQueue);
+const projectsFrictionService = diContainer.get<ProjectsFrictionService>(
+  TYPES.ProjectsFrictionService
+);
 
 function logError(op: string, qMessage: object, e: unknown): Promise<void> {
   const { name, message: errMsg, stack } = e as Error;
@@ -71,6 +75,11 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
       switch (message.action) {
         case UserAccountActionType.DELETE:
           await userService.deleteAccount(message.userId);
+          break;
+        case UserAccountActionType.DELETE_FREE_RESOURCES:
+          await projectsFrictionService.executeScheduledDeletionPlans(
+            message.date
+          );
           break;
         default:
           logger.error({

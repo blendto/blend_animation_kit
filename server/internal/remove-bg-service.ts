@@ -349,7 +349,6 @@ export class RemoveBgService implements IService {
           message: ex.message,
         });
         let data = "";
-        // eslint-disable-next-line no-restricted-syntax
         for await (const chunk of ex.response.data) {
           data += chunk;
         }

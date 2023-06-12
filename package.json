@@ -31,6 +31,7 @@
     "aws-sdk": "^2.814.0",
     "axios": "^0.21.2",
     "axios-retry": "^3.2.4",
+    "bottleneck": "^2.19.5",
     "class-transformer": "^0.5.1",
     "cors": "^2.8.5",
     "dd-trace": "^1.5.0",

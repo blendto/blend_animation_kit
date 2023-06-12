@@ -62,6 +62,7 @@ import ConfigService from "server/service/config";
 import { PreviewService } from "server/service/preview";
 import { BatchV2Service } from "server/service/batch-v2";
 import CatalogueServiceApi from "server/internal/catalogue-service-api";
+import { ProjectsFrictionService } from "server/service/projects-friction-service";
 
 const diContainer = new Container();
 
@@ -78,6 +79,10 @@ diContainer
 diContainer
   .bind<BlendService>(TYPES.BlendService)
   .to(BlendService)
+  .inSingletonScope();
+diContainer
+  .bind<ProjectsFrictionService>(TYPES.ProjectsFrictionService)
+  .to(ProjectsFrictionService)
   .inSingletonScope();
 diContainer
   .bind<UploadService>(TYPES.UploadService)

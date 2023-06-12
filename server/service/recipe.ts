@@ -397,7 +397,6 @@ export class RecipeService implements IService {
           handleTypesIndex < orderedHandleTypes.length
         ) {
           const matchingHandle = brandingProfile.info.find(
-            // eslint-disable-next-line no-loop-func
             (i) => i.type === orderedHandleTypes[handleTypesIndex]
           );
           if (matchingHandle) {

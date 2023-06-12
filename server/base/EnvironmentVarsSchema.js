@@ -51,6 +51,7 @@ module.exports = {
       CLIENT_SIDE_GENERATION_BUILD_VERSION: Joi.string().required(),
       REVENUECAT_CREDIT_OFFERINGS: Joi.string().required(),
       FAILED_WEBHOOK_CALLS_TABLE: Joi.string().required(),
+      DELETION_PLANS_DYNAMODB_TABLE: Joi.string().required(),
       CUSTOMER_IO_SITE_ID: Joi.string().required(),
       CUSTOMER_IO_API_KEY: Joi.string().required(),
       CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID: Joi.string().required(),

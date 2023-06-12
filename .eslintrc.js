@@ -71,5 +71,8 @@ module.exports = {
     "no-multi-assign": "off",
     "space-before-function-paren": "off",
     "no-promise-executor-return": "off",
+    "no-await-in-loop": "off",
+    "no-restricted-syntax": ["error", "ForInStatement"],
+    "no-loop-func": "off"
   },
 };
