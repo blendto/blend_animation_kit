@@ -8,13 +8,22 @@ import {
 import { BlendService } from "server/service/blend";
 import { inject, injectable } from "inversify";
 import { TYPES } from "server/types";
-import { UserError } from "server/base/errors";
+import { ObjectNotFoundError, UserError } from "server/base/errors";
 import RecoEngineApi, { StyleSuggestions } from "server/internal/reco-engine";
-import { FlowType, Recipe } from "server/base/models/recipe";
+import { FlowType, Recipe, ReplacementTexts } from "server/base/models/recipe";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
+import { sampleSize } from "lodash";
+import { ChatOpenAI } from "langchain/chat_models/openai";
+import { StructuredOutputParser } from "langchain/output_parsers";
+import {
+  SystemMessagePromptTemplate,
+  HumanMessagePromptTemplate,
+  ChatPromptTemplate,
+} from "langchain/prompts";
+
 import BrandingService from "./branding";
 
 @injectable()
@@ -215,6 +224,104 @@ export class SuggestionService {
 
     return recipeVariantId;
   }
+
+  async prompt2design(req: Prompt2DesignRequestBody) {
+    const blend = await this.blendService.getBlend(req.id, {
+      consistentRead: true,
+    });
+
+    if (!blend) {
+      throw new ObjectNotFoundError(`Blend ${req.id} not found`);
+    }
+    const fileKeys = blend.heroImages;
+
+    const suggestions = await this.suggestRecipesPaginated({
+      buildVersion: req.buildVersion,
+      uid: req.uid,
+      fileKey: fileKeys.withoutBg,
+      ip: req.ip,
+      flow: FlowType.PROMPT_TO_DESIGN,
+    });
+
+    const allRecipes = suggestions.recipeLists.flatMap(
+      (recipeList) => recipeList.recipes
+    );
+
+    // Choose 4 random from allRecipes
+    const randomRecipes = sampleSize(allRecipes, 4);
+
+    const suggestionPromises = randomRecipes.map(async (recipe) => {
+      const chat = new ChatOpenAI({
+        openAIApiKey: ConfigProvider.OPENAI_API_KEY,
+        temperature: 0.7,
+        maxTokens: 256,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+      });
+
+      const parser = StructuredOutputParser.fromNamesAndDescriptions({
+        title: "Title of the design",
+        subtitle: "Subtitle of the design",
+        ctaText: "Text on the CTA button",
+        offerText:
+          "If any offer mentioned like sale or new, write a text describing that here, else leave it blank, maxLength: 12",
+      });
+
+      const systemPrompt = SystemMessagePromptTemplate.fromTemplate(
+        "You are creating the texts that goes into a design that user is trying to create." +
+          "\n User will provide with an instruction on what kind of template they are trying to create. You are supposed to generate the values for the keys mentioned." +
+          "\n {formatInstructions}"
+      );
+
+      const designPrompt = ChatPromptTemplate.fromPromptMessages([
+        systemPrompt,
+        HumanMessagePromptTemplate.fromTemplate("{text}"),
+      ]);
+
+      const response = await chat.generatePrompt([
+        await designPrompt.formatPromptValue({
+          formatInstructions: parser.getFormatInstructions(),
+          text: req.prompt,
+        }),
+      ]);
+
+      try {
+        return {
+          ...recipe,
+          replacementTexts: this.cleanReplacementTexts(
+            await parser.parse(response.generations[0][0].text)
+          ),
+        };
+      } catch (e) {
+        // Ignoring the failure, expect to provide 1 less design
+        return null;
+      }
+    });
+
+    const validSuggestions = (await Promise.all(suggestionPromises)).filter(
+      (suggestion) => !!suggestion
+    );
+
+    return validSuggestions;
+  }
+
+  cleanReplacementTexts = (texts: ReplacementTexts) => {
+    // Clean all the values, if they are empty, return null
+    const cleanedTexts = Object.entries(texts).reduce(
+      (acc, [key, value]: [string, string]) => {
+        if (value.trim().length === 0) {
+          return acc;
+        }
+        return {
+          ...acc,
+          [key]: value.trim(),
+        };
+      },
+      {} as ReplacementTexts
+    );
+    return cleanedTexts;
+  };
 }
 
 interface SuggestRecipePaginatedRequestBody {
@@ -226,4 +333,12 @@ interface SuggestRecipePaginatedRequestBody {
   productSuperCategory?: string;
   filters?: Record<string, unknown>;
   flow: FlowType;
+}
+
+interface Prompt2DesignRequestBody {
+  buildVersion: number;
+  uid: string;
+  ip: string;
+  id: string;
+  prompt: string;
 }

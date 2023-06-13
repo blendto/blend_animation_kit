@@ -39,6 +39,7 @@ export enum FlowType {
   BATCH = "BATCH",
   ASSISTED_WEB = "ASSISTED_WEB",
   ASSISTED_MOBILE = "ASSISTED_MOBILE",
+  PROMPT_TO_DESIGN = "PROMPT_TO_DESIGN",
   // TODO: Cleanup
   // HACK: This is a temporary flow demoing org specific templates to a potential client
   ONLINE_SALES_1 = "ONLINE_SALES_1",
@@ -233,6 +234,7 @@ export interface SourceMetadata {
   version: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ExternalRecipeSource extends Record<string, any> {
   $: string;
 }

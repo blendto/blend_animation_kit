@@ -316,6 +316,14 @@ class ConfigProvider {
     return this.retrieveOrCrash("HERO_IMAGES_BASE_PATH");
   }
 
+  public get OPENAI_ORG_ID(): string {
+    return this.retrieveOrCrash("OPENAI_ORG_ID");
+  }
+
+  public get OPENAI_API_KEY(): string {
+    return this.retrieveOrCrash("OPENAI_API_KEY");
+  }
+
   public get DELETION_PLANS_DYNAMODB_TABLE(): string {
     return this.retrieveOrCrash("DELETION_PLANS_DYNAMODB_TABLE");
   }

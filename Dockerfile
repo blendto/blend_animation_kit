@@ -1,12 +1,12 @@
 # Install dependencies only when needed
-FROM public.ecr.aws/bitnami/node:16-prod AS deps
+FROM public.ecr.aws/bitnami/node:18.16.0 AS deps
 WORKDIR /app
 COPY package.json yarn.lock ./
 ADD patches patches/
 RUN yarn install --frozen-lockfile
 
 # Rebuild the source code only when needed
-FROM public.ecr.aws/bitnami/node:16-prod AS builder
+FROM public.ecr.aws/bitnami/node:18.16.0 AS builder
 ARG ENV_VARS
 ENV ENV_VARS ${ENV_VARS}
 WORKDIR /app
@@ -15,7 +15,7 @@ COPY --from=deps /app/node_modules ./node_modules
 RUN yarn build
 
 # Production image, copy all the files and run next
-FROM public.ecr.aws/bitnami/node:16-prod AS runner
+FROM public.ecr.aws/bitnami/node:18.16.0 AS runner
 
 # Install and use libjemalloc to prevent sharp memory leaks, install darktable
 # ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
@@ -44,11 +44,7 @@ COPY --from=builder /app/.env ./.env
 ARG BRANCH_NAME
 ENV DD_VERSION ${BRANCH_NAME}
 
-USER nextjs
-
 RUN npm install pm2 -g
-
-USER root
 
 # Change memory allocator to avoid leaks
 # ref: https://github.com/lovell/sharp/issues/955#issuecomment-475532037
