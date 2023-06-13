@@ -220,21 +220,20 @@ export class Prompt {
   text: string;
 }
 
-export class SceneConfigOptions {
-  backgroundList: SceneConfigOption[];
-  surfaceList: SceneConfigOption[];
-}
-
-export class SceneConfigOptionsExternal extends SceneConfigOptions {
-  backgroundList: SceneConfigOptionExternal[];
-  surfaceList: SceneConfigOptionExternal[];
+export class SceneConfigOptionsExternal {
+  sideViewBackgroundList: SceneConfigOptionExternal[];
+  sideViewSurfaceList: SceneConfigOptionExternal[];
+  topViewSurfaceList: SceneConfigOptionExternal[];
   perspective: ScenePerspective;
 }
 
 export class SceneConfigOption {
   id: string;
-  thumbnail: string;
-  label: Record<string, string>;
+  locale: Record<string, Locale>;
+}
+
+export class Locale {
+  text: string;
 }
 
 export class SceneConfigOptionExternal extends SceneConfigOption {

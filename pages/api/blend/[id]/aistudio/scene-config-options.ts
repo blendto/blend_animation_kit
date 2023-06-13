@@ -6,10 +6,10 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import { MethodNotAllowedError } from "server/base/errors";
-import {
-  SceneConfigOptionsExternal,
-  ScenePerspective,
-} from "server/base/models/aistudio";
+import { diContainer } from "inversify.config";
+import { AIStudioService } from "server/service/aistudio";
+import { TYPES } from "server/types";
+import { extractLocale } from "server/helpers/localisation";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -23,40 +23,13 @@ export default withReqHandler(
   }
 );
 
-const getSceneConfigOptions = (
+const getSceneConfigOptions = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const out: SceneConfigOptionsExternal = {
-    perspective: ScenePerspective.TOP_VIEW,
-    backgroundList: [
-      {
-        id: "bg-kitchen",
-        thumbnail: "",
-        label: {},
-        localisedLabel: "Kitchen",
-      },
-      {
-        id: "bg-studio",
-        thumbnail: "",
-        label: {},
-        localisedLabel: "Studio",
-      },
-    ],
-    surfaceList: [
-      {
-        id: "surface-table",
-        thumbnail: "",
-        label: {},
-        localisedLabel: "Wooden Table",
-      },
-      {
-        id: "surface-platform",
-        thumbnail: "",
-        label: {},
-        localisedLabel: "Wooden Platform",
-      },
-    ],
-  };
+  const { language } = extractLocale(req.headers["accept-language"]);
+  const { id } = req.query as { id: string };
+  const service = diContainer.get<AIStudioService>(TYPES.AIStudioService);
+  const out = await service.fetchSceneConfigOptions(id, language);
   res.send(out);
 };

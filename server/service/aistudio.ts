@@ -15,6 +15,9 @@ import {
   GenerateSamplesRequest,
   Prompt,
   SceneConfig,
+  SceneConfigOption,
+  SceneConfigOptionExternal,
+  SceneConfigOptionsExternal,
 } from "server/base/models/aistudio";
 import { DateTime } from "luxon";
 import UserError from "server/base/errors/UserError";
@@ -324,5 +327,69 @@ export class AIStudioService implements IService {
 
   async constructPrompt(sceneConfig: SceneConfig): Promise<{ prompt: string }> {
     return await new AiStudioGeneratorApi().generateImagePrompt(sceneConfig);
+  }
+
+  async fetchSceneConfigOptions(
+    blendId: string,
+    languageCode: string
+  ): Promise<SceneConfigOptionsExternal> {
+    const backgrounds = (
+      await this.daxStore.getItem({
+        TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
+        Key: { key: "scene_creator_backgrounds", version: "1" },
+      })
+    ).data as SceneConfigOption[];
+
+    const surfaces = (
+      await this.daxStore.getItem({
+        TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
+        Key: { key: "scene_creator_surfaces", version: "1" },
+      })
+    ).data as SceneConfigOption[];
+
+    const backgroundMapping = this.doMap(backgrounds, languageCode);
+    const surfaceMapping = this.doMap(surfaces, languageCode);
+
+    const {
+      inferredPerspective: perspective,
+      sideViewBackgroundIds,
+      sideViewSurfaceIds,
+      topViewSurfaceIds,
+    } = await new AiStudioGeneratorApi().provideSceneConfig(blendId);
+
+    const sideViewBackgroundList = sideViewBackgroundIds.map((id) =>
+      backgroundMapping.get(id)
+    );
+    const sideViewSurfaceList = sideViewSurfaceIds.map((id) =>
+      surfaceMapping.get(id)
+    );
+
+    const topViewSurfaceList = topViewSurfaceIds.map((id) =>
+      surfaceMapping.get(id)
+    );
+
+    return {
+      sideViewBackgroundList,
+      sideViewSurfaceList,
+      topViewSurfaceList,
+      perspective,
+    };
+  }
+
+  private doMap(
+    configOptions: SceneConfigOption[],
+    languageCode: string
+  ): Map<string, SceneConfigOptionExternal> {
+    const map: [string, SceneConfigOptionExternal][] = configOptions.map(
+      (c) => [
+        c.id,
+        {
+          id: c.id,
+          locale: {},
+          localisedLabel: (c.locale[languageCode] ?? c.locale.en).text,
+        },
+      ]
+    );
+    return new Map<string, SceneConfigOptionExternal>(map);
   }
 }

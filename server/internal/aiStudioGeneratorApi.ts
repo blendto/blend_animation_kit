@@ -2,7 +2,11 @@ import axios, { AxiosInstance } from "axios";
 import axiosRetry from "axios-retry";
 import { handleAxiosCall } from "server/helpers/network";
 import ConfigProvider from "server/base/ConfigProvider";
-import { GeneratedImage, SceneConfig } from "server/base/models/aistudio";
+import {
+  GeneratedImage,
+  SceneConfig,
+  ScenePerspective,
+} from "server/base/models/aistudio";
 
 export interface AiStudioGenerateSamplesRequest {
   blendId: string;
@@ -21,6 +25,13 @@ export interface AiStudioGenerateSamplesRequest {
 
 const { AI_STUDIO_BASE_URL } = ConfigProvider;
 type GenerateSamplesResponse = { GeneratedImages: GeneratedImage[] };
+
+export interface AiStudioSceneConfigResponse {
+  inferredPerspective: ScenePerspective;
+  sideViewSurfaceIds: string[];
+  sideViewBackgroundIds: string[];
+  topViewSurfaceIds: string[];
+}
 
 export default class AiStudioGeneratorApi {
   httpClient: AxiosInstance;
@@ -50,5 +61,16 @@ export default class AiStudioGeneratorApi {
           await this.httpClient.post("/generate-image-prompt", sceneConfig)
       )
     ).data as { prompt: string };
+  }
+
+  async provideSceneConfig(
+    blendId: string
+  ): Promise<AiStudioSceneConfigResponse> {
+    return (
+      await handleAxiosCall(
+        async () =>
+          await this.httpClient.post("/provide-scene-config", { blendId })
+      )
+    ).data as AiStudioSceneConfigResponse;
   }
 }
