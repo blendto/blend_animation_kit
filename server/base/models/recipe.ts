@@ -240,7 +240,7 @@ interface ExternalRecipeSource extends Record<string, any> {
 }
 
 export interface RecipeMetadata {
-  sourceBlendId: string;
+  sourceBlendId?: string;
   source: SourceMetadata;
   sourceRecipeId?: string;
   aspectRatio?: Size;

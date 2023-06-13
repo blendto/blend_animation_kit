@@ -24,6 +24,7 @@ import {
   ImageMetadata,
   Recipe,
   RecipeUtils,
+  SourceMetadata,
 } from "server/base/models/recipe";
 import { adjustSizeToFit } from "server/helpers/imageUtils";
 import {
@@ -261,7 +262,11 @@ export class BlendService implements IService {
 
   async initBlend(
     uid: string,
-    options?: { batchId: string; heroFileName?: string }
+    options?: {
+      batchId?: string;
+      sourceMetadata?: SourceMetadata;
+      heroFileName?: string;
+    }
   ): Promise<Blend> {
     let blendRequestId: string;
     do {
@@ -287,13 +292,18 @@ export class BlendService implements IService {
     return await this.addBlendToDB(blendRequestId, uid, {
       batchId: options?.batchId,
       heroImages,
+      sourceMetadata: options?.sourceMetadata,
     });
   }
 
   async addBlendToDB(
     id: string,
     userId?: string,
-    options?: { batchId: string; heroImages: ImageFileKeys }
+    options?: {
+      batchId?: string;
+      heroImages?: ImageFileKeys;
+      sourceMetadata: SourceMetadata;
+    }
   ): Promise<Blend> {
     const currentTime = Date.now();
     const currentDate = DateTime.utc().toISODate();
@@ -320,6 +330,9 @@ export class BlendService implements IService {
       updatedOn: currentDate,
       heroImages: options?.heroImages,
       ...(userId !== null && { createdBy: userId }),
+      ...(options?.sourceMetadata
+        ? { metadata: { source: options.sourceMetadata } }
+        : {}),
     };
 
     await this.dataStore.putItem({

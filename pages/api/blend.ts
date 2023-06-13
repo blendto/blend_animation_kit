@@ -1,3 +1,4 @@
+import Joi from "joi";
 import type { NextApiResponse } from "next";
 import { Blend } from "server/base/models/blend";
 import logger from "server/base/Logger";
@@ -9,8 +10,11 @@ import {
   ensureAuth,
   ensureSupportedClient,
   NextApiRequestExtended,
+  requestComponentToValidate,
+  validate,
   withReqHandler,
 } from "server/helpers/request";
+import { SourceMetadata, SourceMetadataType } from "server/base/models/recipe";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -32,11 +36,26 @@ export default withReqHandler(
   }
 );
 
+const INIT_REQUEST_SCHEMA = Joi.object({
+  batchId: Joi.string(),
+  sourceMetadata: {
+    type: Joi.string().valid(...Object.values(SourceMetadataType)),
+    version: Joi.number(),
+  },
+});
+
 const initBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const options = req.body as { batchId: string };
+  const body = validate(
+    req.body as object,
+    requestComponentToValidate.body,
+    INIT_REQUEST_SCHEMA
+  ) as {
+    batchId?: string;
+    sourceMetadata?: SourceMetadata;
+  };
   try {
-    const blend = await blendService.initBlend(req.uid, options);
+    const blend = await blendService.initBlend(req.uid, body);
     return res.send(blend);
   } catch (err) {
     logger.error(err);
