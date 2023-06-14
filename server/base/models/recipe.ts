@@ -502,19 +502,20 @@ export class RecipeWrapper {
   addWatermark() {
     const waterMark = {
       source: ElementSource.blend_assets,
-      uri: "ext-services/blend/watermark.png",
-      size: { width: 616, height: 172 },
+      uri: "ext-services/blend/watermark-2.png",
+      size: { width: 512, height: 187 },
     };
     const blendMetadata = this.recipe.metadata as unknown as {
       resolution: Size;
     };
     const { width, height } = blendMetadata.resolution;
+    const padding = 50;
 
-    const interactionWidth = width * 0.5;
+    const interactionWidth = width * 0.3;
     const interactionHeight =
       (interactionWidth / waterMark.size.width) * waterMark.size.height;
-    const dx = 0;
-    const dy = height - interactionHeight;
+    const dx = width - interactionWidth - padding;
+    const dy = height - interactionHeight - padding;
 
     const assetUid = "@@watermark";
     const watermarkInteraction = {
