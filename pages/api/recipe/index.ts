@@ -121,6 +121,7 @@ const CREATE_RECIPE_SCHEMA = Joi.object({
       hero: ELEMENT_SCHEMA.allow(null),
       heroes: Joi.array().items(ELEMENT_SCHEMA),
       background: ELEMENT_SCHEMA.required().allow(null),
+      primaryIllustration: ELEMENT_SCHEMA.allow(null),
       title: ELEMENT_SCHEMA.allow(null),
       subtitle: ELEMENT_SCHEMA.allow(null),
       ctaText: ELEMENT_SCHEMA.allow(null),
