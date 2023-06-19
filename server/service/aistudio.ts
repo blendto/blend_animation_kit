@@ -67,6 +67,7 @@ export class AIStudioService implements IService {
     const aiBlendPhoto = (await this.dataStore.getItem({
       TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
       Key: { blendId },
+      ConsistentRead: true,
     })) as AIBlendPhoto;
     if (aiBlendPhoto?.createdBy !== createdBy) {
       throw new UserError("No such AI Blend Photo exists");
@@ -423,5 +424,28 @@ export class AIStudioService implements IService {
       ]
     );
     return new Map<string, SceneConfigOptionExternal>(map);
+  }
+
+  async resetAIBlendPhoto(blendId: string, uid: string): Promise<AIBlendPhoto> {
+    await this.getAIBlendPhotoForUser(blendId, uid);
+    await this.resetBlendPhotoInDB(blendId);
+    return await this.getAIBlendPhoto(blendId);
+  }
+
+  private async resetBlendPhotoInDB(blendId: string) {
+    await this.dataStore.updateItem({
+      TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
+      UpdateExpression:
+        "set #status=:status, #generatedImages=:generatedImages",
+      ExpressionAttributeNames: {
+        "#status": "status",
+        "#generatedImages": "generatedImages",
+      },
+      ExpressionAttributeValues: {
+        ":status": AIBlendPhotoGenerationStatus.INITIALIZED,
+        ":generatedImages": [],
+      },
+      Key: { blendId },
+    });
   }
 }
