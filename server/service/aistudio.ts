@@ -29,6 +29,7 @@ import { DaxDB } from "server/external/dax";
 import ConfigProvider from "server/base/ConfigProvider";
 import { fireAndForget } from "server/helpers/async-runner";
 import logger from "server/base/Logger";
+import { nanoid } from "nanoid";
 
 @injectable()
 export class AIStudioService implements IService {
@@ -158,6 +159,37 @@ export class AIStudioService implements IService {
       throw new UserError("Blend does not have `heroImages`");
     }
     return heroImages;
+  }
+
+  async updatePrompt(
+    blendId: string,
+    promptText: string
+  ): Promise<{ promptId: string }> {
+    const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
+
+    const prompts = aiBlendPhoto.prompts ?? [];
+    const promptId = nanoid();
+    prompts.push({
+      id: promptId,
+      text: promptText,
+    });
+
+    await this.dataStore.updateItem({
+      UpdateExpression: "SET #updatedAt = :updatedAt, #prompts = :prompts",
+      ExpressionAttributeNames: {
+        "#updatedAt": "updatedAt",
+        "#prompts": "prompts",
+      },
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":prompts": prompts,
+      },
+      Key: { blendId },
+      TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
+      ReturnValues: "NONE",
+    });
+
+    return { promptId };
   }
 
   async syncGenerateImage(
