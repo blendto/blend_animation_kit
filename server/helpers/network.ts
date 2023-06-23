@@ -5,6 +5,7 @@ import logger from "server/base/Logger";
 import ExternalHTTPError from "server/base/errors/ExternalHTTPError";
 import { pick } from "lodash";
 import { isNetworkError } from "axios-retry";
+import { IncomingMessage } from "node:http";
 
 export async function handleAxiosCall<ResponseDataType>(
   axiosCall: () => Promise<AxiosResponse<ResponseDataType>>,
@@ -16,8 +17,17 @@ export async function handleAxiosCall<ResponseDataType>(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (error.isAxiosError) {
       const { status } = (error as AxiosError).response;
+      let errMessage: unknown;
+      if ((error as AxiosError)?.response?.data instanceof IncomingMessage) {
+        errMessage = "";
+        for await (const chunk of error.response!.data) {
+          errMessage += chunk;
+        }
+      } else {
+        errMessage = (error as AxiosError).response.data;
+      }
+
       if (status >= 400 && status < 500) {
-        let errMessage: unknown = (error as AxiosError).response.data;
         if (typeof errMessage === "object") {
           errMessage =
             (errMessage as { message: string })?.message ??

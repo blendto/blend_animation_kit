@@ -12,7 +12,11 @@ import { TYPES } from "server/types";
 import { RecipeSource } from "server/base/models/recipeList";
 import { PreviewService } from "server/service/preview";
 import { ImageFileKeys } from "server/base/models/heroImage";
-import { ReplacementTexts } from "server/base/models/recipe";
+import {
+  RecipeMutations,
+  RecipeMutationsSchema,
+  ReplacementTexts,
+} from "server/base/models/recipe";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -28,14 +32,15 @@ export default withReqHandler(
 
 const GEN_PREV_SCHEMA = Joi.object({
   recipeId: Joi.string().required(),
-  variant: Joi.string(),
+  variant: Joi.string().required(),
   fileKeys: Joi.object({
     original: Joi.string().required(),
     withoutBg: Joi.string().required(),
-  }).required(),
+  }).optional(),
   source: Joi.string()
     .valid(...Object.values(RecipeSource))
     .default(RecipeSource.DEFAULT),
+  // TODO: Deprecate replacementTexts and replacementBrandingLogo
   replacementTexts: Joi.object({
     title: Joi.string(),
     subtitle: Joi.string(),
@@ -43,6 +48,7 @@ const GEN_PREV_SCHEMA = Joi.object({
     offerText: Joi.string(),
   }),
   replacementBrandingLogo: Joi.string(),
+  mutations: RecipeMutationsSchema,
 });
 
 const generatePreview = async (
@@ -57,12 +63,31 @@ const generatePreview = async (
     GEN_PREV_SCHEMA
   ) as {
     recipeId: string;
-    variant?: string;
+    variant: string;
     fileKeys: ImageFileKeys;
     source: RecipeSource;
     replacementTexts?: ReplacementTexts;
     replacementBrandingLogo?: string;
+    mutations: RecipeMutations;
   };
+
+  // TODO: This is for temporary backward compatibility
+  // Remove it after DaaS and delete bg is updated
+  const { replacementTexts, replacementBrandingLogo } = body;
+
+  let { mutations } = body;
+
+  if (replacementTexts) {
+    if (!mutations) mutations = {};
+    mutations.texts = replacementTexts;
+  }
+
+  if (replacementBrandingLogo) {
+    if (!mutations) mutations = {};
+    mutations.branding = {
+      logo: replacementBrandingLogo,
+    };
+  }
 
   const previewService = diContainer.get<PreviewService>(TYPES.PreviewService);
   const previewStream = await previewService.generate({ ip, uid, ...body });

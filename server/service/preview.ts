@@ -1,16 +1,19 @@
 import { inject, injectable } from "inversify";
+import { IncomingMessage } from "node:http";
 import { isEmpty } from "lodash";
 import { BrandingRecipe } from "server/base/models/brandingRecipe";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import {
-  ReplacementTexts,
   Recipe,
   RecipeWrapper,
+  RecipeMutations,
 } from "server/base/models/recipe";
 import { RecipeSource } from "server/base/models/recipeList";
 import { fireAndForget } from "server/helpers/async-runner";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
+import { RecipePrepAgent } from "server/engine/blend/recipeAgents";
 import { TYPES } from "server/types";
+
 import { IService } from ".";
 import BrandingService from "./branding";
 import { RecipeService } from "./recipe";
@@ -29,48 +32,44 @@ export class PreviewService implements IService {
 
   async generate(args: {
     recipeId: string;
-    variant?: string;
-    fileKeys: ImageFileKeys;
+    variant: string;
+    fileKeys?: ImageFileKeys;
     source: RecipeSource;
     ip: string;
     uid?: string;
-    replacementTexts?: ReplacementTexts;
-    replacementBrandingLogo?: string;
-  }) {
+    mutations?: RecipeMutations;
+  }): Promise<IncomingMessage> {
+    const { source, fileKeys, recipeId, variant, ip, uid, mutations } = args;
     const recipe =
-      args.source === RecipeSource.DEFAULT
-        ? await this.recipeService.getRecipeOrFail(args.recipeId, args.variant)
-        : await this.brandingService.getRecipeOrFail(
-            args.recipeId,
-            args.variant
-          );
+      source === RecipeSource.DEFAULT
+        ? await this.recipeService.getRecipeOrFail(recipeId, variant)
+        : await this.brandingService.getRecipeOrFail(recipeId, variant);
     const recipeWrapper = new RecipeWrapper(recipe);
-    if (!recipe.thumbnail && args.source === RecipeSource.DEFAULT) {
+    if (!recipe.thumbnail && source === RecipeSource.DEFAULT) {
       // Deprecated. Newer recipe previews are generated synchronously during creation.
       this.saveRecipeThumbnailAsync(
         JSON.parse(JSON.stringify(recipe)) as Recipe | BrandingRecipe
       );
     }
 
-    recipeWrapper.replaceHero(args.fileKeys);
-    if (args.uid) {
+    if (fileKeys) {
+      recipeWrapper.replaceHero(fileKeys);
+    }
+
+    const recipePrepAgent = new RecipePrepAgent({
+      recipe,
+      brandingService: this.brandingService,
+      recipeService: this.recipeService,
+    });
+
+    if (uid) {
       if (!isEmpty(recipe.branding)) {
-        const brandingProfile = await this.brandingService.get(args.uid);
-        if (brandingProfile) {
-          await this.recipeService.replaceBrandingInfo(
-            recipe,
-            brandingProfile,
-            args.ip,
-            args.replacementBrandingLogo
-          );
-        } else {
-          recipeWrapper.cleanupBranding();
-        }
+        await recipePrepAgent.applyBranding(uid, ip);
       }
     }
 
-    if (args.replacementTexts) {
-      recipeWrapper.replaceTexts(args.replacementTexts);
+    if (mutations) {
+      await recipePrepAgent.applyMutations(mutations);
     }
 
     return await this.vesapi.previewV2({

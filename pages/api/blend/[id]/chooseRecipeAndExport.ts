@@ -9,7 +9,12 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import VesApi, { ExportRequestSchema } from "server/internal/ves";
-import { ChooseRecipeRequest, RecipeWrapper } from "server/base/models/recipe";
+import {
+  ChooseRecipeRequest,
+  RecipeMutationsSchema,
+  RecipeWrapper,
+  ReplacementTexts,
+} from "server/base/models/recipe";
 import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
@@ -17,6 +22,7 @@ import { RecipeService } from "server/service/recipe";
 import { CreditsService } from "server/service/credits";
 import BrandingService from "server/service/branding";
 import { RecipeSource } from "server/base/models/recipeList";
+import { RecipeChoosePrepAgent } from "server/engine/blend/recipeAgents";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -38,7 +44,7 @@ const CHOOSE_AND_EXPORT_SCHEMA = Joi.object({
   fileKeys: Joi.object({
     original: Joi.string().required(),
     withoutBg: Joi.string().required(),
-  }).required(),
+  }),
   source: Joi.string()
     .valid(...Object.values(RecipeSource))
     .default(RecipeSource.DEFAULT),
@@ -48,6 +54,7 @@ const CHOOSE_AND_EXPORT_SCHEMA = Joi.object({
     ctaText: Joi.string(),
     offerText: Joi.string(),
   }),
+  mutations: RecipeMutationsSchema,
   replacementBrandingLogo: Joi.string(),
 });
 
@@ -60,7 +67,10 @@ const chooseRecipeAndExportSync = async (
     req.body as object,
     requestComponentToValidate.body,
     CHOOSE_AND_EXPORT_SCHEMA
-  ) as ChooseRecipeRequest;
+  ) as ChooseRecipeRequest & {
+    replacementTexts: ReplacementTexts;
+    replacementBrandingLogo: string;
+  };
   const {
     recipeId,
     variant,
@@ -69,6 +79,20 @@ const chooseRecipeAndExportSync = async (
     replacementTexts,
     replacementBrandingLogo,
   } = body;
+
+  let { mutations } = body;
+
+  if (replacementTexts) {
+    if (!mutations) mutations = {};
+    mutations.texts = replacementTexts;
+  }
+
+  if (replacementBrandingLogo) {
+    if (!mutations) mutations = {};
+    mutations.branding = {
+      logo: replacementBrandingLogo,
+    };
+  }
 
   const service = diContainer.get<BlendService>(TYPES.BlendService);
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
@@ -79,7 +103,6 @@ const chooseRecipeAndExportSync = async (
     source === RecipeSource.DEFAULT
       ? await recipeService.getRecipeOrFail(recipeId, variant)
       : await brandingService.getRecipeOrFail(recipeId, variant);
-  const recipeWrapper = new RecipeWrapper(recipe);
 
   const creditsService = diContainer.get<CreditsService>(TYPES.CreditsService);
   await creditsService.runWithCreditAndWatermarkCheck(
@@ -88,21 +111,20 @@ const chooseRecipeAndExportSync = async (
     req.buildVersion,
     req.clientType,
     async (shouldWatermark) => {
+      const recipePrepAgent = new RecipeChoosePrepAgent({
+        recipe,
+        blendService: service,
+        blendId: id,
+        recipeService,
+        brandingService,
+      });
+
       if (!isEmpty(recipe.branding)) {
-        const brandingProfile = await brandingService.get(req.uid);
-        if (brandingProfile) {
-          await recipeService.replaceBrandingInfo(
-            recipe,
-            brandingProfile,
-            req.ip,
-            replacementBrandingLogo
-          );
-        } else {
-          recipeWrapper.cleanupBranding();
-        }
+        await recipePrepAgent.applyBranding(req.uid, req.ip);
       }
-      if (replacementTexts) {
-        recipeWrapper.replaceTexts(replacementTexts);
+
+      if (mutations) {
+        await recipePrepAgent.applyMutations(mutations);
       }
 
       const body = await service.copyRecipeToBlendWithSource(
@@ -111,11 +133,12 @@ const chooseRecipeAndExportSync = async (
         recipe,
         shouldWatermark
       );
+
       if (shouldWatermark) {
         new RecipeWrapper(body).addWatermark();
       }
 
-      const output = await new VesApi().saveExport({
+      const output: object = await new VesApi().saveExport({
         body,
         schema: ExportRequestSchema.Blend,
       });

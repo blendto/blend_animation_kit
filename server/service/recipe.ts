@@ -347,14 +347,10 @@ export class RecipeService implements IService {
   async replaceBrandingInfo(
     recipe: Recipe,
     brandingProfile: BrandingEntity,
-    ip: string,
-    replacementBrandingLogo?: string
+    ip: string
   ) {
     if (recipe.branding?.logo) {
-      if (replacementBrandingLogo) {
-        recipe.branding.logo.data.source = ElementSource.web;
-        recipe.branding.logo.data.uri = replacementBrandingLogo;
-      } else if (brandingProfile.logos.primaryEntry) {
+      if (brandingProfile.logos.primaryEntry) {
         recipe.branding.logo.data.uri = brandingProfile.logos.primaryEntry;
       } else {
         delete recipe.branding.logo;

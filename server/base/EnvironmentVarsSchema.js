@@ -57,6 +57,7 @@ module.exports = {
       CREDIT_SERVICE_PLAN_WITHOUT_FREE_COINS_ID: Joi.string().required(),
       CATALOGUE_SERVICE_BASE_PATH: Joi.string().required(),
       INTER_SERVICE_API_KEY: Joi.string().required(),
+      REPLICATE_API_TOKEN: Joi.string().required(),
     })
     .unknown(true),
 };

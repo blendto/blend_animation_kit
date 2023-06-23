@@ -45,7 +45,7 @@ const generatePreview = async (
     GEN_PREV_SCHEMA
   ) as {
     recipeId: string;
-    variant?: string;
+    variant: string;
     source: RecipeSource;
   };
   const { recipeId, variant, source } = body;

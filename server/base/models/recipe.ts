@@ -1,4 +1,6 @@
 import { v4 } from "uuid";
+import Joi from "joi";
+
 import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
 import { BrandingInfoType } from "server/repositories/branding";
 import { UserError } from "../errors";
@@ -59,6 +61,7 @@ export interface Elements {
   subtitle?: ElementRef;
   ctaText?: ElementRef;
   offerText?: ElementRef;
+  primaryIllustration?: ElementRef;
 }
 
 export interface RecipeDetails {
@@ -185,6 +188,12 @@ interface BrandingInfoTransform {
   position: Offset;
   type: BrandingInfoTransformType;
   size: Size;
+}
+
+export interface TextUpdate {
+  text: string;
+  fontSize: number;
+  assetUid: string;
 }
 
 export interface BrandingInfoMetadata extends GeometricPositionable {
@@ -322,6 +331,25 @@ export class RecipeUtils {
   }
 }
 
+export interface RecipeMutations {
+  texts?: ReplacementTexts;
+  images?: ImageReplacements;
+  branding?: BrandingReplacements;
+}
+
+export interface BrandingReplacements {
+  logo?: string;
+}
+
+export interface ImageReplacements {
+  primaryIllustration?: ImageReplacement;
+}
+
+export interface ImageReplacement {
+  uri: string;
+  source: ElementSource | "WEB";
+}
+
 export interface ReplacementTexts {
   title?: string;
   subtitle?: string;
@@ -336,8 +364,7 @@ export class ChooseRecipeRequest {
   fileKeys?: { original: string; withoutBg: string };
   encoderVersion: number;
   source?: RecipeSource;
-  replacementTexts: ReplacementTexts;
-  replacementBrandingLogo?: string;
+  mutations: RecipeMutations;
 }
 
 export class RecipeWrapper {
@@ -475,8 +502,93 @@ export class RecipeWrapper {
     this.filterOutBrandingInteractions();
   }
 
-  replaceTexts(replacementTexts: ReplacementTexts): void {
-    Object.keys(replacementTexts).forEach((key) => {
+  mutateImages(images: ImageReplacements): void {
+    const { primaryIllustration } = images;
+
+    if (primaryIllustration) {
+      const { primaryIllustration: primaryIllustrationElement } =
+        this.recipe.recipeDetails.elements ?? {};
+
+      if (primaryIllustrationElement) {
+        const { uid, assetType } = primaryIllustrationElement;
+        this.removeImage(primaryIllustrationElement);
+
+        const matchingInteraction = this.recipe.interactions.find(
+          (i) => i.assetUid === uid && i.assetType === assetType
+        );
+        if (!matchingInteraction) {
+          throw new Error(
+            "No matching interaction found for primaryIllustration: " +
+              primaryIllustrationElement.uid
+          );
+        }
+
+        if (primaryIllustration.source === "WEB") {
+          this.recipe.externalImages.push({
+            id: uid,
+            url: primaryIllustration.uri,
+            source: "WEB",
+          });
+          matchingInteraction.assetType = AssetType.EXT_IMAGE;
+          matchingInteraction.assetUid = "WEB-" + uid;
+        } else if (primaryIllustration.source === ElementSource.blend) {
+          this.recipe.images.push({
+            uid,
+            uri: primaryIllustration.uri,
+            source: ElementSource.blend,
+          });
+
+          matchingInteraction.assetType = AssetType.IMAGE;
+          matchingInteraction.assetUid = uid;
+        }
+      }
+    }
+  }
+
+  removeImage(primaryIllustrationElement: ElementRef) {
+    const { assetType } = primaryIllustrationElement;
+
+    switch (assetType) {
+      case AssetType.IMAGE: {
+        const matchingImage = this.recipe.images.find(
+          (i) => i.uid === primaryIllustrationElement.uid
+        );
+        if (!matchingImage) {
+          throw new Error(
+            "No matching image found for primaryIllustration: " +
+              primaryIllustrationElement.uid
+          );
+        }
+        this.recipe.images = this.recipe.images.filter(
+          (i) => i.uid !== matchingImage.uid
+        );
+        return matchingImage;
+      }
+      case AssetType.EXT_IMAGE: {
+        const matchingExtImage = this.recipe.externalImages.find(
+          (i) => i.uid === primaryIllustrationElement.uid
+        );
+        if (!matchingExtImage) {
+          throw new Error(
+            "No matching external image found for primaryIllustration: " +
+              primaryIllustrationElement.uid
+          );
+        }
+        this.recipe.externalImages = this.recipe.externalImages.filter(
+          (i) => i.uid !== matchingExtImage.uid
+        );
+        return matchingExtImage;
+      }
+      default:
+        throw new Error(
+          "Unexpected assetType for primaryIllustration: " +
+            primaryIllustrationElement.uid
+        );
+    }
+  }
+
+  mutateTexts(texts: ReplacementTexts, textUpdates?: TextUpdate[]): void {
+    Object.keys(texts).forEach((key) => {
       if (this.recipe.recipeDetails?.elements[key]) {
         const matchingText = this.recipe.texts.find(
           (t) =>
@@ -484,7 +596,7 @@ export class RecipeWrapper {
             (this.recipe.recipeDetails.elements[key] as ElementRef).uid
         );
         if (matchingText) {
-          matchingText.value = replacementTexts[key];
+          matchingText.value = texts[key];
         }
         const textInteraction = this.recipe.interactions.find(
           (i) =>
@@ -492,6 +604,20 @@ export class RecipeWrapper {
         );
         (textInteraction.metadata as TextMetadata).forceFit = true;
       }
+    });
+    textUpdates?.forEach((textUpdate) => {
+      const matchingText = this.recipe.texts.find(
+        (t) => t.uid === textUpdate.assetUid
+      );
+      if (matchingText) {
+        matchingText.value = textUpdate.text;
+      }
+      const textInteraction = this.recipe.interactions.find(
+        (i) => i.assetUid === matchingText.uid && i.assetType === AssetType.TEXT
+      );
+      (textInteraction.metadata as TextMetadata).fontSize = textUpdate.fontSize;
+      // No more need to forceFit as its adjusted to the new font size
+      (textInteraction.metadata as TextMetadata).forceFit = false;
     });
   }
 
@@ -573,3 +699,22 @@ export interface SuggestRecipesPaginatedRequestBody {
   filters: Record<string, unknown>;
   flow: FlowType;
 }
+
+// Joi Types
+export const RecipeMutationsSchema = Joi.object({
+  texts: Joi.object({
+    title: Joi.string(),
+    subtitle: Joi.string(),
+    ctaText: Joi.string(),
+    offerText: Joi.string(),
+  }).allow(null),
+  images: Joi.object({
+    primaryIllustration: Joi.object({
+      uri: Joi.string(),
+      source: Joi.string().valid("WEB"),
+    }),
+  }).allow(null),
+  branding: Joi.object({
+    logo: Joi.string(),
+  }).allow(null),
+}).optional();

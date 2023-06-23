@@ -2,13 +2,14 @@ import { PresignedPost } from "aws-sdk/lib/s3/presigned_post";
 import axios, { AxiosInstance } from "axios";
 
 import ConfigProvider from "server/base/ConfigProvider";
-import { Recipe } from "server/base/models/recipe";
+import { Recipe, TextUpdate } from "server/base/models/recipe";
 import {
   axiosRetryCondition as retryCondition,
   handleAxiosCall,
 } from "server/helpers/network";
 import axiosRetry from "axios-retry";
 import { Blend } from "server/base/models/blend";
+import { IncomingMessage } from "node:http";
 
 const VES_SERVICE_BASE_URL = ConfigProvider.VES_API_BASE_PATH;
 
@@ -57,6 +58,10 @@ export interface SaveThumbnailRequest {
   uploadDetails: PresignedPost;
 }
 
+export interface FitTextResponse {
+  textUpdates: TextUpdate[];
+}
+
 export default class VesApi {
   httpClient: AxiosInstance;
 
@@ -76,7 +81,7 @@ export default class VesApi {
             responseType: "stream",
           })
       )
-    ).data;
+    ).data as IncomingMessage;
 
   previewV2 = async (params: PreviewRequestParamsV2) =>
     (
@@ -87,14 +92,21 @@ export default class VesApi {
           }),
         "warn" // This sometimes fails coz of scaling delays, lets not log it as an error
       )
-    ).data;
+    ).data as IncomingMessage;
+
+  fitText = async (params: PreviewRequestParamsV2) =>
+    (
+      await handleAxiosCall(
+        async () => await this.httpClient.post("/fit-text", params)
+      )
+    ).data as FitTextResponse;
 
   async savePreview(params: SavePreviewRequest) {
     return (
       await handleAxiosCall(
         async () => await this.httpClient.post("/savePreview", params)
       )
-    ).data;
+    ).data as Record<string, string>;
   }
 
   async generateBatchThumbnail(params: SaveThumbnailRequest) {
@@ -102,15 +114,15 @@ export default class VesApi {
       await handleAxiosCall(
         async () => await this.httpClient.post("/saveStackedImages", params)
       )
-    ).data;
+    ).data as Record<string, string>;
   }
 
-  async saveExport(params: SaveExportRequest) {
+  async saveExport(params: SaveExportRequest): Promise<object> {
     return (
       await handleAxiosCall(
         async () => await this.httpClient.post("/saveExport", params)
       )
-    ).data;
+    ).data as object;
   }
 
   async generateFFmpegCommands(

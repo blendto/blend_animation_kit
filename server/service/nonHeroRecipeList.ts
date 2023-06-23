@@ -28,6 +28,14 @@ export class NonHeroRecipeListService implements IService {
   @inject(TYPES.NonHeroRecipeListRepo) repo: Repo<NonHeroRecipeListEntity>;
   ipApi = new IpApi();
 
+  async get(recipeListId: string): Promise<NonHeroRecipeListEntity> {
+    const recipeList = await this.repo.get({ id: recipeListId });
+    if (!recipeList) {
+      throw new UserError(`Recipe list ${recipeListId} not found`);
+    }
+    return recipeList;
+  }
+
   async getRecipeListPage(pageKey: string): Promise<NonHeroRecipeListPage> {
     const encodedPageKey = new EncodedPageKey(pageKey);
     if (encodedPageKey.exists() && !encodedPageKey.isValid()) {

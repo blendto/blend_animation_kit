@@ -328,6 +328,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("DELETION_PLANS_DYNAMODB_TABLE");
   }
 
+  public get REPLICATE_API_TOKEN(): string {
+    return this.retrieveOrCrash("REPLICATE_API_TOKEN");
+  }
+
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
     if (!variable || variable.trim().length === 0) {

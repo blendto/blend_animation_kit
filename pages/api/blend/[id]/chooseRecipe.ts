@@ -13,10 +13,16 @@ import Joi from "joi";
 import { diContainer } from "inversify.config";
 import { RecipeService } from "server/service/recipe";
 import { TYPES } from "server/types";
-import { MethodNotAllowedError, UserError } from "server/base/errors";
+import {
+  MethodNotAllowedError,
+  ObjectNotFoundError,
+  UnauthorizedError,
+  UserError,
+} from "server/base/errors";
 import {
   ChooseRecipeRequest,
   ElementSource,
+  RecipeMutationsSchema,
   RecipeWrapper,
   StoredImage,
 } from "server/base/models/recipe";
@@ -25,6 +31,8 @@ import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
 import { isEmpty } from "lodash";
 import SubscriptionService from "server/service/subscription";
 import { RecipeSourceHandler } from "server/service/recipeSourceHandler";
+import { BlendService } from "server/service/blend";
+import { RecipeChoosePrepAgent } from "server/engine/blend/recipeAgents";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -45,6 +53,7 @@ const CHOOSE_RECIPE_SCHEMA = Joi.object({
     original: Joi.string().required(),
     withoutBg: Joi.string().required(),
   }),
+  mutations: RecipeMutationsSchema,
   retainAssetSource: Joi.boolean().default(false),
   encoderVersion: Joi.number().required(),
   source: Joi.string()
@@ -57,7 +66,7 @@ const useRecipeForBlend = async (
   res: NextApiResponse
 ) => {
   const { ip } = req;
-  const { id: blendId } = req.query;
+  const { id: blendId } = req.query as { id: string };
   const body = validate(
     req.body as object,
     requestComponentToValidate.body,
@@ -67,10 +76,12 @@ const useRecipeForBlend = async (
     recipeId,
     variant,
     fileKeys,
+    mutations,
     encoderVersion,
     source,
     retainAssetSource,
   } = body;
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   const brandingService = diContainer.get<BrandingService>(
     TYPES.BrandingService
@@ -79,19 +90,36 @@ const useRecipeForBlend = async (
     TYPES.SubscriptionService
   );
 
+  const blend = await blendService.getBlend(blendId);
+
+  if (!blend) {
+    throw new ObjectNotFoundError("Blend not found");
+  }
+
+  if (blend.createdBy !== req.uid) {
+    throw new UnauthorizedError("You are not authorized to use this blend");
+  }
+
   const recipeSrcHandler = RecipeSourceHandler.from(source);
 
   const recipe = await recipeSrcHandler.getRecipe(req.uid, recipeId, variant);
   const recipeWrapper = new RecipeWrapper(recipe);
-
   if (!checkCompatibilityWithElements(recipe, encoderVersion)) {
     throw new UserError(
       "This recipe cannot be used on this app version. Please upgrade the app."
     );
   }
 
+  const recipePrepAgent = new RecipeChoosePrepAgent({
+    recipe,
+    blendService,
+    blendId,
+    brandingService,
+    recipeService,
+  });
+
   const copyFilePromises = [];
-  let interactionUpdatePromise;
+  let interactionUpdatePromise: Promise<void>;
 
   if (req.uid) {
     if (encoderVersion < 3.0) {
@@ -100,13 +128,12 @@ const useRecipeForBlend = async (
     }
     await subService.ensureBrandingEntitlement(recipe, source, req.uid);
     if (!isEmpty(recipe.branding)) {
-      const brandingProfile = await brandingService.get(req.uid);
-      if (brandingProfile) {
-        await recipeService.replaceBrandingInfo(recipe, brandingProfile, ip);
-      } else {
-        recipeWrapper.cleanupBranding();
-      }
+      await recipePrepAgent.applyBranding(req.uid, ip);
     }
+  }
+
+  if (mutations) {
+    await recipePrepAgent.applyMutations(mutations);
   }
 
   if (fileKeys) {
@@ -124,7 +151,7 @@ const useRecipeForBlend = async (
       };
     }
     const uriParts = image.uri.split("/");
-    uriParts[0] = blendId as string;
+    uriParts[0] = blendId;
     const targetUri = uriParts.join("/");
     copyFilePromises.push(
       copyObject(
@@ -137,7 +164,12 @@ const useRecipeForBlend = async (
     return { ...image, uri: targetUri, source: ElementSource.blend };
   });
 
-  await Promise.all(copyFilePromises.concat([interactionUpdatePromise]));
+  await Promise.all(
+    copyFilePromises.concat(
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      interactionUpdatePromise ? [interactionUpdatePromise] : []
+    )
+  );
 
   const sourceRecipe: RecipeVariantId = {
     id: recipeId,

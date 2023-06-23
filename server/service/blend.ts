@@ -54,6 +54,9 @@ import { RecipeSourceHandler } from "server/service/recipeSourceHandler";
 import { ObjectNotFoundError } from "server/base/errors";
 import { extractCorrectedFileName } from "server/helpers/fileKeyUtils";
 import { ALL_SUPPORTED_EXTENSIONS } from "server/helpers/constants";
+import axios, { AxiosResponse } from "axios";
+import path from "path";
+import { v4 } from "uuid";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -96,11 +99,19 @@ interface GetBlendParams {
   consistentRead?: boolean;
 }
 
+interface UploadFileToBlendParams {
+  blendId: string;
+
+  fileUrl: string;
+}
+
 @injectable()
 export class BlendService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
   @inject(TYPES.DaxDB) daxStore: DaxDB;
   @inject(TYPES.FileKeysService) fileKeysService: FileKeysService;
+
+  httpClient = axios.create({});
 
   async getBlendIdsForBatch(batchId: string): Promise<string[]> {
     const data = await this.dataStore.queryItems({
@@ -224,6 +235,46 @@ export class BlendService implements IService {
         operation: GetSignedUrlOperation.putObject,
       }
     );
+  }
+
+  async uploadFileToBlend(params: UploadFileToBlendParams): Promise<string> {
+    const { blendId, fileUrl } = params;
+
+    const fileDownloadResponse: AxiosResponse<ArrayBuffer> = await axios.get(
+      fileUrl,
+      {
+        responseType: "arraybuffer",
+      }
+    );
+
+    const uint8Array = new Uint8Array(fileDownloadResponse.data);
+    const fileBuffer = Buffer.from(uint8Array);
+
+    const fileExtension = path.extname(fileUrl);
+
+    const fileName = `${v4()}${fileExtension}`;
+
+    const outFileKey = `${blendId}/${fileName}`;
+    const signedUploadUrl = (await createSignedUploadUrl(
+      fileName,
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      ALL_SUPPORTED_EXTENSIONS,
+      {
+        outFileKey,
+        maxSize: MAX_IMAGE_UPLOAD_SIZE,
+        operation: GetSignedUrlOperation.putObject,
+      }
+    )) as string;
+
+    await axios.put(signedUploadUrl, fileBuffer, {
+      headers: {
+        "Content-Type": (
+          fileDownloadResponse.headers as Record<string, string>
+        )["content-type"],
+      },
+    });
+
+    return outFileKey;
   }
 
   async getOrCreateBlend(blendId: string, uid: string) {
@@ -916,7 +967,7 @@ export class BlendService implements IService {
           source: ElementSource.blend,
         };
       }
-      return { ...image, source: ElementSource.recipe };
+      return { ...image, source: image.source ?? ElementSource.recipe };
     });
 
     const blendImages = await Promise.all(blendImagePromises);
