@@ -57,7 +57,7 @@ const REQUEST_SCHEMA = Joi.object({
       otherwise: Joi.forbidden(),
     }),
   }),
-  sourceUserAccessToken: Joi.string().optional(),
+  sourceUserAccessToken: Joi.string().optional().allow(null),
 });
 
 interface Credential {
