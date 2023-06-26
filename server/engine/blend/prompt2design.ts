@@ -208,6 +208,7 @@ export default class Prompt2DesignGenerator {
     const systemPrompt = SystemMessagePromptTemplate.fromTemplate(
       "You are creating the texts that goes into a design that user is trying to create." +
         "\n User will provide with an instruction on what kind of template they are trying to create. You are supposed to generate the values for the keys mentioned. " +
+        "Generate Text in the same language that user's instruction is in." +
         "Avoid redundancy. Use a Creative tone and write catchy lines." +
         "\n {formatInstructions}"
     );
