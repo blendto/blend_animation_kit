@@ -3,32 +3,35 @@ import { UserService } from "server/service/user";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import {
-  ensureAuth,
+  ensureServiceAuth,
   NextApiRequestExtended,
   requestComponentToValidate,
   validate,
   withReqHandler,
 } from "server/helpers/request";
 import Joi from "joi";
+import { BlendMicroServices } from "server/internal/inter-service-auth";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
     const { method } = req;
     switch (method) {
       case "POST":
-        return ensureAuth(migrateOwnership, req, res);
+        return ensureServiceAuth(
+          BlendMicroServices.Retool,
+          migrateOwnership,
+          req,
+          res
+        );
       default:
         res.status(405).end();
     }
   }
 );
 
-interface BlendOwnerMigrationRequest {
-  sourceUserAccessToken: string;
-}
-
 const REQUEST_SCHEMA = Joi.object({
-  sourceUserAccessToken: Joi.string().optional(),
+  sourceUserId: Joi.string().required(),
+  targetUserId: Joi.string().required(),
 });
 
 const migrateOwnership = async (
@@ -36,16 +39,17 @@ const migrateOwnership = async (
   res: NextApiResponse
 ) => {
   const userService = diContainer.get<UserService>(TYPES.UserService);
-  const ownerMigrationRequest = validate(
+  const { sourceUserId, targetUserId } = validate(
     req.body as object,
     requestComponentToValidate.body,
     REQUEST_SCHEMA
-  ) as BlendOwnerMigrationRequest;
-
-  const { migratedBlends, migratedBatches } =
-    await userService.getSourceUserIdAndMigrateData(
-      ownerMigrationRequest.sourceUserAccessToken,
-      req.uid
-    );
+  ) as {
+    sourceUserId: string;
+    targetUserId: string;
+  };
+  const { migratedBlends, migratedBatches } = await userService.migrateData(
+    sourceUserId,
+    targetUserId
+  );
   return res.status(200).json({ migratedBlends, migratedBatches });
 };

@@ -230,19 +230,22 @@ export class UserService implements IService {
     }
   }
 
-  async migrateData(
+  async getSourceUserIdAndMigrateData(
     sourceUserAccessToken: string,
     targetUid: string
   ): Promise<{ migratedBlends: string[]; migratedBatches: string[] }> {
-    const catalogueServiceApi = diContainer.get<CatalogueServiceApi>(
-      TYPES.CatalogueServiceApi
-    );
     const firebaseService = diContainer.get<Firebase>(TYPES.Firebase);
     const decodedIdToken = await firebaseService.verifyAndDecodeToken(
       sourceUserAccessToken
     );
     const sourceUid = decodedIdToken.uid;
+    return this.migrateData(sourceUid, targetUid);
+  }
 
+  async migrateData(
+    sourceUid: string,
+    targetUid: string
+  ): Promise<{ migratedBlends: string[]; migratedBatches: string[] }> {
     if (sourceUid === targetUid) {
       logger.warn({
         op: "SAME_USER_MIGRATION_ATTEMPT",
@@ -252,6 +255,10 @@ export class UserService implements IService {
       });
       return { migratedBlends: [], migratedBatches: [] };
     }
+
+    const catalogueServiceApi = diContainer.get<CatalogueServiceApi>(
+      TYPES.CatalogueServiceApi
+    );
 
     const brandingPromise = this.migrateBranding(sourceUid, targetUid);
     const blendsPromise = this.migrateUserBlends(sourceUid, targetUid);

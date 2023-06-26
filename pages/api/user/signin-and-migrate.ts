@@ -114,10 +114,8 @@ const signInAndMigrate = async (
   }
 
   const userService = diContainer.get<UserService>(TYPES.UserService);
-  const { migratedBlends, migratedBatches } = await userService.migrateData(
-    sourceUserAccessToken,
-    uid
-  );
+  const { migratedBlends, migratedBatches } =
+    await userService.getSourceUserIdAndMigrateData(sourceUserAccessToken, uid);
   return res.status(200).json({ token, migratedBlends, migratedBatches });
 };
 function prepareCredential(credential: Credential) {

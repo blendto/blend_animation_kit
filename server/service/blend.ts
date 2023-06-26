@@ -169,20 +169,30 @@ export class BlendService implements IService {
   }
 
   async getBlendIdsForUser(uid: string): Promise<string[]> {
-    const data = await this.dataStore.queryItems({
-      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      KeyConditionExpression: "#createdBy = :createdBy",
-      IndexName: "createdBy-updatedAt-idx",
-      ExpressionAttributeNames: {
-        "#createdBy": "createdBy",
-      },
-      ExpressionAttributeValues: {
-        ":createdBy": uid,
-      },
-      ProjectionExpression: "id",
-      ScanIndexForward: true,
-    });
-    return data.Items.map((entry) => entry.id as string);
+    let ids: string[] = [];
+    let nextPageKey: AWS.DynamoDB.Key;
+    do {
+      const queryInput: AWS.DynamoDB.DocumentClient.QueryInput = {
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+        KeyConditionExpression: "#createdBy = :createdBy",
+        IndexName: "createdBy-updatedAt-idx",
+        ExpressionAttributeNames: {
+          "#createdBy": "createdBy",
+        },
+        ExpressionAttributeValues: {
+          ":createdBy": uid,
+        },
+        ProjectionExpression: "id",
+        ScanIndexForward: true,
+      };
+      if (nextPageKey) {
+        queryInput.ExclusiveStartKey = nextPageKey;
+      }
+      const data = await this.dataStore.queryItems(queryInput);
+      ids = ids.concat(data.Items.map((entry) => entry.id as string));
+      nextPageKey = data.LastEvaluatedKey;
+    } while (nextPageKey);
+    return ids;
   }
 
   async getUserBlend(blendId: string, createdBy: string): Promise<Blend> {
