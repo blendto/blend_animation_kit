@@ -81,7 +81,7 @@ export class RecipeService implements IService {
   async getRecipeOrFail(id: string, variant?: string): Promise<Recipe> {
     const recipe = await this.getRecipe(id, variant);
     if (!recipe) {
-      throw new UserError("Invalid recipe id and/or variant");
+      throw new UserError(`Invalid recipe id: ${id} variant: ${variant}`);
     }
     return recipe;
   }
