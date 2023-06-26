@@ -1,7 +1,8 @@
+/* eslint-disable import/no-extraneous-dependencies */
 const path = require("path");
 // const nodeExternals = require("webpack-node-externals");
-// eslint-disable-next-line import/no-extraneous-dependencies
 const glob = require("glob");
+const TerserPlugin = require("terser-webpack-plugin");
 
 const { NODE_ENV = "production" } = process.env;
 function getEntries(pattern) {
@@ -18,6 +19,10 @@ module.exports = {
   entry: getEntries("./functions/**/*.ts"),
   mode: NODE_ENV,
   target: "node",
+  optimization: {
+    minimize: true,
+    minimizer: [new TerserPlugin()],
+  },
   output: {
     path: path.resolve(__dirname, "build"),
     filename: "[name]/index.js",
