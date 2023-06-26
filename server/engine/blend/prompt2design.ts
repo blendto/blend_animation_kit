@@ -18,6 +18,7 @@ import { RecipeList, RecipeVariantId } from "server/base/models/recipeList";
 import { RecipeService } from "server/service/recipe";
 import { NonHeroRecipeListService } from "server/service/nonHeroRecipeList";
 import { BlendHeroImage } from "server/base/models/heroImage";
+import logger from "server/base/Logger";
 
 import { ImageGenerator } from "./imageGenerator";
 
@@ -91,6 +92,7 @@ export default class Prompt2DesignGenerator {
         recipeVariantId.id,
         recipeVariantId.variant
       );
+
       let result: LLMGenerationReturnType;
       try {
         result = await this.generateWithLLM(recipe, prompt);

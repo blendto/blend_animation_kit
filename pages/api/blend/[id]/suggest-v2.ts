@@ -4,7 +4,10 @@ import { ImageFileKeys } from "server/base/models/heroImage";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { BlendService } from "server/service/blend";
-import { SuggestionService } from "server/service/suggestion";
+import {
+  SuggestInclusions,
+  SuggestionService,
+} from "server/service/suggestion";
 import {
   FlowType,
   SuggestRecipesPaginatedRequestBody,
@@ -128,6 +131,7 @@ const suggestRecipesV2 = async (
     productSuperCategory: productClass,
     filters,
     flow,
+    include: [SuggestInclusions.RECENTS, SuggestInclusions.BRANDING],
   });
 
   const promises = suggestions.recipeLists.map((recipeList) =>

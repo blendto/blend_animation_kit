@@ -132,6 +132,7 @@ export class SuggestionService {
       productSuperCategory,
       filters,
       flow,
+      include,
     } = requestBody;
     const suggestions = await this.recoEngineApi.suggestRecipeListsPaginated({
       heroImageKey: fileKey,
@@ -151,15 +152,19 @@ export class SuggestionService {
     );
 
     if (!pageKey) {
-      recipeLists = await this.blendService.addRecentsToRecipeLists(
-        uid,
-        recipeLists
-      );
-      recipeLists = await this.brandingService.addToRecipeLists(
-        buildVersion,
-        uid,
-        recipeLists
-      );
+      if (include.includes(SuggestInclusions.RECENTS)) {
+        recipeLists = await this.blendService.addRecentsToRecipeLists(
+          uid,
+          recipeLists
+        );
+      }
+      if (include.includes(SuggestInclusions.BRANDING)) {
+        recipeLists = await this.brandingService.addToRecipeLists(
+          buildVersion,
+          uid,
+          recipeLists
+        );
+      }
     }
 
     return { recipeLists, nextPageKey: suggestions.nextPageKey };
@@ -247,6 +252,7 @@ export class SuggestionService {
         fileKey: fileKeys?.withoutBg,
         ip: req.ip,
         flow: FlowType.PROMPT_TO_DESIGN,
+        include: [],
       }) as SuggestFunction,
     });
 
@@ -263,6 +269,12 @@ interface SuggestRecipePaginatedRequestBody {
   productSuperCategory?: string;
   filters?: Record<string, unknown>;
   flow: FlowType;
+  include: SuggestInclusions[];
+}
+
+export enum SuggestInclusions {
+  RECENTS = "RECENTS",
+  BRANDING = "BRANDING",
 }
 
 interface Prompt2DesignRequestBody {
