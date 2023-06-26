@@ -7,11 +7,11 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
 import DynamoDB from "server/external/dynamodb";
+import Firebase from "server/external/firebase";
 import { IService } from ".";
 import { BlendService } from "./blend";
 import HeroImageService from "./heroImage";
 import SubscriptionService from "./subscription";
-import { UserService } from "./user";
 
 export enum DeletionPlanStatus {
   PENDING = "PENDING",
@@ -35,7 +35,7 @@ const ENCODER_VERSION = 4.2;
 @injectable()
 export class ProjectsFrictionService implements IService {
   @inject(TYPES.DynamoDB) dataStore: DynamoDB;
-  @inject(TYPES.UserService) userService: UserService;
+  @inject(TYPES.Firebase) firebase: Firebase;
   @inject(TYPES.SubscriptionService) subscriptionService: SubscriptionService;
   @inject(TYPES.BlendService) blendService: BlendService;
   @inject(TYPES.HeroImageService) heroImageService: HeroImageService;
@@ -47,7 +47,9 @@ export class ProjectsFrictionService implements IService {
     if (encoderVersion < ENCODER_VERSION) {
       return;
     }
-    if (!(await this.userService.get(userId))) {
+    try {
+      await this.firebase.getUserById(userId);
+    } catch (err) {
       throw new Error("Attempted to create deletion plan with invalid user id");
     }
     if (await this.subscriptionService.isUserPro(userId)) {
