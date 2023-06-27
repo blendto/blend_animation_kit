@@ -1,5 +1,6 @@
 import { ChatOpenAI } from "langchain/chat_models/openai";
-import { StructuredOutputParser } from "langchain/output_parsers";
+import { ZodAny, ZodType, z } from "zod";
+
 import {
   ChatPromptTemplate,
   HumanMessagePromptTemplate,
@@ -18,9 +19,9 @@ import { RecipeList, RecipeVariantId } from "server/base/models/recipeList";
 import { RecipeService } from "server/service/recipe";
 import { NonHeroRecipeListService } from "server/service/nonHeroRecipeList";
 import { BlendHeroImage } from "server/base/models/heroImage";
-import logger from "server/base/Logger";
 
 import { ImageGenerator } from "./imageGenerator";
+import { MinimalOutputParser } from "./outputparser";
 
 const TEXT_ONLY_RECIPE_LIST_ID = "p2d-text-only";
 const WITH_IMAGE_RECIPE_LIST_ID = "p2d-with-image";
@@ -30,7 +31,6 @@ type LLMGenerationReturnType = {
   subtitle: string;
   ctaText: string;
   offerText: string;
-  imageDesc?: string;
 };
 
 export type SuggestFunction = () => Promise<{
@@ -104,18 +104,21 @@ export default class Prompt2DesignGenerator {
         recipe.recipeDetails.elements;
 
       let imageMutations: object = null;
-      if (illustrativeImageOne && result.imageDesc) {
-        const imageGenResult = await this.generateIllustration(
-          recipe,
-          illustrativeImageOne,
-          result.imageDesc
-        );
-        imageMutations = {
-          primaryIllustration: {
-            uri: imageGenResult,
-            source: "WEB",
-          },
-        };
+      if (illustrativeImageOne) {
+        const imageDesc = await this.generateImageDescptionWithLLM(prompt);
+        if (imageDesc) {
+          const imageGenResult = await this.generateIllustration(
+            recipe,
+            illustrativeImageOne,
+            imageDesc
+          );
+          imageMutations = {
+            primaryIllustration: {
+              uri: imageGenResult,
+              source: "WEB",
+            },
+          };
+        }
       }
 
       return {
@@ -152,13 +155,45 @@ export default class Prompt2DesignGenerator {
     });
   }
 
+  async generateImageDescptionWithLLM(prompt: string): Promise<string> {
+    const chat = new ChatOpenAI({
+      openAIApiKey: ConfigProvider.OPENAI_API_KEY,
+      temperature: 0.5,
+      maxTokens: 15,
+      topP: 1,
+      frequencyPenalty: 0,
+      presencePenalty: 0,
+      modelName: "gpt-3.5-turbo",
+    });
+
+    const systemPrompt = SystemMessagePromptTemplate.fromTemplate(
+      "User is trying to create a design for something. " +
+        "Your job is to point out what they can use as a feature image or background image" +
+        " for the graphic design they are trying to create. " +
+        "Limited words. No verb. less than 8 words."
+    );
+
+    const imageDescPrompt = ChatPromptTemplate.fromPromptMessages([
+      systemPrompt,
+      HumanMessagePromptTemplate.fromTemplate("{text}"),
+    ]);
+
+    const response = await chat.generatePrompt([
+      await imageDescPrompt.formatPromptValue({
+        text: prompt,
+      }),
+    ]);
+
+    return response.generations[0][0].text;
+  }
+
   async generateWithLLM(
     recipe: Recipe,
     prompt: string
   ): Promise<LLMGenerationReturnType> {
     const chat = new ChatOpenAI({
       openAIApiKey: ConfigProvider.OPENAI_API_KEY,
-      temperature: 0.7,
+      temperature: 0.4,
       maxTokens: 256,
       topP: 1,
       frequencyPenalty: 0,
@@ -166,46 +201,50 @@ export default class Prompt2DesignGenerator {
       modelName: "gpt-3.5-turbo",
     });
 
-    const { title, subtitle, offerText, ctaText, primaryIllustration } =
+    const { title, subtitle, offerText, ctaText } =
       recipe.recipeDetails.elements;
 
-    const thingsToGenerate: Record<string, string> = {};
+    const thingsToGenerate: Record<string, ZodType> = {};
 
     if (title) {
-      const length = Math.ceil(
-        getTextValueFromElement(recipe, title).length * 1.1
-      );
-      thingsToGenerate.title = `Title of the design, maxLength: ${length}`;
+      const length = Math.ceil(getTextValueFromElement(recipe, title).length);
+      thingsToGenerate.title = z
+        .string()
+        .optional()
+        .describe(`Title of the design, under ${length} chars`);
     }
 
     if (subtitle) {
       const length = Math.ceil(
-        getTextValueFromElement(recipe, subtitle).length * 1.2
+        getTextValueFromElement(recipe, subtitle).length
       );
-      thingsToGenerate.subtitle = `Subtitle of the design, maxLength: ${length}`;
+      thingsToGenerate.subtitle = z
+        .string()
+        .optional()
+        .describe(`Subtitle of the design, under ${length} chars`);
     }
 
     if (offerText) {
       const length = Math.ceil(
-        getTextValueFromElement(recipe, offerText).length * 1.4
+        getTextValueFromElement(recipe, offerText).length
       );
-      thingsToGenerate.offerText = `If any offer mentioned like sale or new, write a text describing that here, else leave it blank, maxLength: ${length}`;
+      thingsToGenerate.offerText = z
+        .string()
+        .optional()
+        .describe(`The offer mentioned by the user, under ${length} chars`);
     }
 
     if (ctaText) {
-      const length = Math.ceil(
-        getTextValueFromElement(recipe, ctaText).length * 1.4
-      );
-      thingsToGenerate.ctaText = `Text on the CTA button, maxLength: ${length}`;
+      const length = Math.ceil(getTextValueFromElement(recipe, ctaText).length);
+      thingsToGenerate.ctaText = z
+        .string()
+        .optional()
+        .describe(`Text on the CTA button, under ${length} chars`);
     }
 
-    if (primaryIllustration) {
-      thingsToGenerate.imageDesc =
-        "Description of an illustrative image to include in the design, in english, less than 8 words";
-    }
-
-    const parser =
-      StructuredOutputParser.fromNamesAndDescriptions(thingsToGenerate);
+    const parser = MinimalOutputParser.fromZodSchema(
+      z.object(thingsToGenerate)
+    );
 
     const systemPrompt = SystemMessagePromptTemplate.fromTemplate(
       "You are creating the texts that goes into a design that user is trying to create." +
