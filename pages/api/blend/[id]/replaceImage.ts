@@ -91,6 +91,18 @@ const replaceImage = async (
     targetOriginalFileKey
   );
 
+  const blendIdFromFileKey = targetOriginalFileKey.split("/")[0];
+
+  if (id !== blendIdFromFileKey) {
+    const fileKeys = await handle(
+      id,
+      targetOriginalFileKey,
+      replacementOriginalFileKey
+    );
+    res.send(fileKeys);
+    return;
+  }
+
   if (!imageFileKeyItem) {
     /**
      * Assuming that this api is getting called again
@@ -140,3 +152,46 @@ const replaceImage = async (
 
   return res.send(fileKeyItem);
 };
+
+async function handle(
+  currentBlendId: string,
+  targetOriginalFileKey: string,
+  replacementOriginalFileKey: string
+): Promise<ImageFileKeys> {
+  const blendService = diContainer.get<BlendService>(TYPES.BlendService);
+  const fileKeysService = diContainer.get<FileKeysService>(
+    TYPES.FileKeysService
+  );
+
+  const fileKeyParts = targetOriginalFileKey.split("/");
+  const blendIdFromFileKey = fileKeyParts[0];
+
+  const blend = await blendService.getBlend(blendIdFromFileKey, {
+    consistentRead: true,
+  });
+
+  const imageFileKeyItem = fileKeysService.retrieveFileKeyItemFromBlend(
+    blend,
+    targetOriginalFileKey
+  );
+
+  if (imageFileKeyItem) {
+    return fileKeysService.copyFileKeysToNewBlend(
+      currentBlendId,
+      imageFileKeyItem
+    );
+  }
+
+  const queriedFileKeyItem = await queryBucketForFileKeyItem(
+    blendIdFromFileKey,
+    replacementOriginalFileKey,
+    blend.imageFileKeys
+  );
+  if (!queriedFileKeyItem) {
+    throw new Error("FileKeyItem not found in blend retrieved from file key");
+  }
+  return fileKeysService.copyFileKeysToNewBlend(
+    currentBlendId,
+    queriedFileKeyItem
+  );
+}

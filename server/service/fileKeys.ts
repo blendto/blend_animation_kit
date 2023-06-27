@@ -2,7 +2,7 @@ import { IService } from "server/service";
 import { injectable } from "inversify";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import { Blend } from "server/base/models/blend";
-import { getObject, uploadObject } from "server/external/s3";
+import { copyObject, getObject, uploadObject } from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import { extractAlphaMaskFromImage } from "server/helpers/imageUtils";
 import { addSuffixToFileKey } from "server/helpers/fileKeyUtils";
@@ -64,5 +64,48 @@ export default class FileKeysService implements IService {
     return imageFileKeys?.find((fileKeysItem) =>
       [fileKeysItem.withoutBg, fileKeysItem.original].includes(fileKey)
     );
+  }
+
+  async copyFileKeysToNewBlend(
+    newBlendId: string,
+    oldBlendFileKeys: ImageFileKeys
+  ): Promise<ImageFileKeys> {
+    const originalBlendId = oldBlendFileKeys.original.split("/")[0];
+    const destinationImageFileKeys: ImageFileKeys = {
+      original: oldBlendFileKeys.original.replaceAll(
+        originalBlendId,
+        newBlendId
+      ),
+      withoutBg: oldBlendFileKeys.withoutBg.replaceAll(
+        originalBlendId,
+        newBlendId
+      ),
+      mask: oldBlendFileKeys.mask.replaceAll(originalBlendId, newBlendId),
+      trimLTWH: oldBlendFileKeys.trimLTWH,
+    };
+
+    const copyOriginalFile: Promise<unknown> = copyObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      oldBlendFileKeys.original,
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      destinationImageFileKeys.original
+    );
+
+    const copyBgRemovedFile: Promise<unknown> = copyObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      oldBlendFileKeys.withoutBg,
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      destinationImageFileKeys.withoutBg
+    );
+
+    const copyMaskFile: Promise<unknown> = copyObject(
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      oldBlendFileKeys.mask,
+      ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+      destinationImageFileKeys.withoutBg
+    );
+
+    await Promise.all([copyOriginalFile, copyBgRemovedFile, copyMaskFile]);
+    return destinationImageFileKeys;
   }
 }
