@@ -199,7 +199,7 @@ export default class Prompt2DesignGenerator {
       "User is trying to create a design for something. " +
         "Your job is to point out what they can use as a feature image or background image" +
         " for the graphic design they are trying to create. " +
-        "Limited words. No verb. Provide a object with array of 5 suggestions each less than 8 words as mentioned below" +
+        "Limited words. No verb. Provide a object with array of 5 suggestions in english each less than 8 words as mentioned below" +
         "\n {formatInstructions}"
     );
 
