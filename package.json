@@ -80,6 +80,7 @@
     "@testing-library/react": "^12.1.2",
     "@types/amazon-dax-client": "^1.2.3",
     "@types/archiver": "^5.3.1",
+    "@types/async": "^3.2.20",
     "@types/cors": "^2.8.12",
     "@types/joi": "^17.2.3",
     "@types/jsonwebtoken": "^8.5.9",

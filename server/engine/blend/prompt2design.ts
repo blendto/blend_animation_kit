@@ -1,12 +1,13 @@
 import { ChatOpenAI } from "langchain/chat_models/openai";
-import { ZodAny, ZodType, z } from "zod";
+import { ZodType, z } from "zod";
+import * as async from "async";
 
 import {
   ChatPromptTemplate,
   HumanMessagePromptTemplate,
   SystemMessagePromptTemplate,
 } from "langchain/prompts";
-import { concat, sampleSize } from "lodash";
+import { concat, sample, sampleSize, some } from "lodash";
 import ConfigProvider from "server/base/ConfigProvider";
 import { Blend } from "server/base/models/blend";
 import {
@@ -31,6 +32,10 @@ type LLMGenerationReturnType = {
   subtitle: string;
   ctaText: string;
   offerText: string;
+};
+
+type ImageDescriptionsLLMGenerationReturnType = {
+  descriptions: string[];
 };
 
 export type SuggestFunction = () => Promise<{
@@ -85,14 +90,29 @@ export default class Prompt2DesignGenerator {
   async generate(prompt: string) {
     const fileKeys = this.blend.heroImages;
 
-    const chosenRecipes: RecipeVariantId[] = await this.pickRecipes(fileKeys);
+    const chosenRecipeIds: RecipeVariantId[] = await this.pickRecipes(fileKeys);
 
-    const suggestionPromises = chosenRecipes.map(async (recipeVariantId) => {
-      const recipe = await this.recipeService.getRecipeOrFail(
-        recipeVariantId.id,
-        recipeVariantId.variant
-      );
+    const chosenRecipes = await async.map(
+      chosenRecipeIds,
+      async (recipeVariantId: RecipeVariantId) =>
+        await this.recipeService.getRecipeOrFail(
+          recipeVariantId.id,
+          recipeVariantId.variant
+        )
+    );
 
+    const someRecipesNeedsImages = some(
+      chosenRecipes,
+      (recipe) => !!recipe.recipeDetails?.elements?.primaryIllustration
+    );
+
+    let descriptions: string[] = [];
+    if (someRecipesNeedsImages) {
+      descriptions =
+        (await this.generateImageDescptionWithLLM(prompt))?.descriptions ?? [];
+    }
+
+    const suggestionPromises = chosenRecipes.map(async (recipe: Recipe) => {
       let result: LLMGenerationReturnType;
       try {
         result = await this.generateWithLLM(recipe, prompt);
@@ -105,7 +125,7 @@ export default class Prompt2DesignGenerator {
 
       let imageMutations: object = null;
       if (illustrativeImageOne) {
-        const imageDesc = await this.generateImageDescptionWithLLM(prompt);
+        const imageDesc = sample(descriptions);
         if (imageDesc) {
           const imageGenResult = await this.generateIllustration(
             recipe,
@@ -122,7 +142,8 @@ export default class Prompt2DesignGenerator {
       }
 
       return {
-        ...recipeVariantId,
+        id: recipe.id,
+        variant: recipe.variant,
         replacementTexts: this.cleanReplacementTexts(result),
         mutations: {
           texts: this.cleanReplacementTexts(result),
@@ -155,22 +176,31 @@ export default class Prompt2DesignGenerator {
     });
   }
 
-  async generateImageDescptionWithLLM(prompt: string): Promise<string> {
+  async generateImageDescptionWithLLM(
+    prompt: string
+  ): Promise<ImageDescriptionsLLMGenerationReturnType> {
     const chat = new ChatOpenAI({
       openAIApiKey: ConfigProvider.OPENAI_API_KEY,
       temperature: 0.5,
-      maxTokens: 15,
+      maxTokens: 256,
       topP: 1,
       frequencyPenalty: 0,
       presencePenalty: 0,
       modelName: "gpt-3.5-turbo",
     });
 
+    const parser = MinimalOutputParser.fromZodSchema(
+      z.object({
+        descriptions: z.array(z.string()),
+      })
+    );
+
     const systemPrompt = SystemMessagePromptTemplate.fromTemplate(
       "User is trying to create a design for something. " +
         "Your job is to point out what they can use as a feature image or background image" +
         " for the graphic design they are trying to create. " +
-        "Limited words. No verb. less than 8 words."
+        "Limited words. No verb. Provide a object with array of 5 suggestions each less than 8 words as mentioned below" +
+        "\n {formatInstructions}"
     );
 
     const imageDescPrompt = ChatPromptTemplate.fromPromptMessages([
@@ -181,10 +211,13 @@ export default class Prompt2DesignGenerator {
     const response = await chat.generatePrompt([
       await imageDescPrompt.formatPromptValue({
         text: prompt,
+        formatInstructions: parser.getFormatInstructions(),
       }),
     ]);
 
-    return response.generations[0][0].text;
+    return (await parser.parse(
+      response.generations[0][0].text
+    )) as ImageDescriptionsLLMGenerationReturnType;
   }
 
   async generateWithLLM(
@@ -193,7 +226,7 @@ export default class Prompt2DesignGenerator {
   ): Promise<LLMGenerationReturnType> {
     const chat = new ChatOpenAI({
       openAIApiKey: ConfigProvider.OPENAI_API_KEY,
-      temperature: 0.4,
+      temperature: 0.5,
       maxTokens: 256,
       topP: 1,
       frequencyPenalty: 0,

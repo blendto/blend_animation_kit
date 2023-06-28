@@ -10,7 +10,7 @@ const AspectRatioToSizes: Record<string, Size> = {
   "4:3": { width: 768, height: 576 },
   "2:3": { width: 512, height: 768 },
   "3:2": { width: 768, height: 512 },
-  "4:15": { width: 512, height: 640 },
+  "4:5": { width: 512, height: 640 },
 };
 
 interface ImageGenerationOptions {
