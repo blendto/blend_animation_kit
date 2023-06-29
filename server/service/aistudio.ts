@@ -112,7 +112,9 @@ export class AIStudioService implements IService {
     })) as {
       feedItems: FeedItem[];
     };
-    return feedItems;
+    return feedItems
+      .filter((item) => item.isEnabled)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
   async getAllTopicLists(): Promise<AIStudioTopicList[]> {

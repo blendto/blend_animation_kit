@@ -299,4 +299,6 @@ export class FeedItem {
   thumbnail: string;
   metadata: Record<string, unknown>;
   aspectRatio: Size;
+  isEnabled: boolean;
+  sortOrder: number;
 }
