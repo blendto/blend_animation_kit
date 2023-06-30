@@ -63,6 +63,7 @@ import { PreviewService } from "server/service/preview";
 import { BatchV2Service } from "server/service/batch-v2";
 import CatalogueServiceApi from "server/internal/catalogue-service-api";
 import { ProjectsFrictionService } from "server/service/projects-friction-service";
+import { P2DCreationLogRepository } from "server/repositories/p2d-creation-log";
 
 const diContainer = new Container();
 
@@ -215,4 +216,8 @@ diContainer
 diContainer
   .bind<Repo<AIBlendPhoto>>(TYPES.AIBlendPhotoRepo)
   .toDynamicValue(() => new AiBlendPhotoDynamooseRepo());
+diContainer
+  .bind<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo)
+  .to(P2DCreationLogRepository)
+  .inSingletonScope();
 export { diContainer };

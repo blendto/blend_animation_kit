@@ -23,6 +23,9 @@ import { CreditsService } from "server/service/credits";
 import BrandingService from "server/service/branding";
 import { RecipeSource } from "server/base/models/recipeList";
 import { RecipeChoosePrepAgent } from "server/engine/blend/recipeAgents";
+import { P2DCreationLogAction } from "server/base/models/p2d";
+import { P2DCreationLogRepository } from "server/repositories/p2d-creation-log";
+import { fireAndForget } from "server/helpers/async-runner";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -125,9 +128,22 @@ const chooseRecipeAndExportSync = async (
 
       if (mutations) {
         await recipePrepAgent.applyMutations(mutations);
+        // HACK: In the future if we use mutations for anything other than P2D,
+        // this log would be wrong
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        fireAndForget(() =>
+          diContainer
+            .get<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo)
+            .log({
+              suggestions: [{ ...body, id: recipeId, variant }],
+              blendId: id,
+              action: P2DCreationLogAction.CHOOSE,
+              userId: req.uid,
+            })
+        );
       }
 
-      const body = await service.copyRecipeToBlendWithSource(
+      const recipeBody = await service.copyRecipeToBlendWithSource(
         id,
         fileKeys,
         recipe,
@@ -135,11 +151,11 @@ const chooseRecipeAndExportSync = async (
       );
 
       if (shouldWatermark) {
-        new RecipeWrapper(body).addWatermark();
+        new RecipeWrapper(recipeBody).addWatermark();
       }
 
       const output: object = await new VesApi().saveExport({
-        body,
+        body: recipeBody,
         schema: ExportRequestSchema.Blend,
       });
 

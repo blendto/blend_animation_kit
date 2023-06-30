@@ -332,6 +332,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("REPLICATE_API_TOKEN");
   }
 
+  public get P2D_CREATION_LOG_TABLE(): string {
+    return this.retrieveOrCrash("P2D_CREATION_LOG_TABLE");
+  }
+
   private retrieveOrCrash(envVar: string): string {
     const variable = process.env[envVar];
     if (!variable || variable.trim().length === 0) {

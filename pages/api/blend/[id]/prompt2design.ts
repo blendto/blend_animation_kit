@@ -12,6 +12,9 @@ import {
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { SuggestionService } from "server/service/suggestion";
+import { P2DCreationLogAction } from "server/base/models/p2d";
+import { P2DCreationLogRepository } from "server/repositories/p2d-creation-log";
+import { fireAndForget } from "server/helpers/async-runner";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -59,6 +62,17 @@ const createCustomTemplates = async (
     uid: req.uid,
     buildVersion: req.buildVersion,
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  fireAndForget(() =>
+    diContainer.get<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo).log({
+      userId: req.uid,
+      prompt: validatedBody.textPrompt,
+      suggestions: validSuggestions,
+      blendId: id,
+      action: P2DCreationLogAction.SUGGEST,
+    })
+  );
 
   res.send({
     id: "custom",
