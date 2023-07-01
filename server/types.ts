@@ -28,7 +28,6 @@ export const TYPES = {
   ReferralRepo: Symbol.for("ReferralRepo"),
   AnalyticsRepo: Symbol.for("AnalyticsRepo"),
   AppleService: Symbol.for("AppleService"),
-  CustomerIOService: Symbol.for("CustomerIOService"),
   AnalyticsService: Symbol.for("AnalyticsService"),
   FileKeysService: Symbol.for("FileKeysService"),
   CreditsService: Symbol.for("CreditsService"),

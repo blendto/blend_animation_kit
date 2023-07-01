@@ -37,7 +37,6 @@ import { Analytics } from "server/base/models/analytics";
 import { NewAnalyticsService } from "server/service/newAnalytics";
 import { DaxDB } from "server/external/dax";
 import FileKeysService from "server/service/fileKeys";
-import CustomerIOService from "server/external/customerio";
 import { CreditsService } from "server/service/credits";
 import AppleService from "server/external/apple";
 import {
@@ -194,9 +193,6 @@ diContainer
 diContainer
   .bind<AppleService>(TYPES.AppleService)
   .toDynamicValue(() => new AppleService());
-diContainer
-  .bind<CustomerIOService>(TYPES.CustomerIOService)
-  .toDynamicValue(() => new CustomerIOService());
 diContainer
   .bind<NewAnalyticsService>(TYPES.AnalyticsService)
   .to(NewAnalyticsService)
