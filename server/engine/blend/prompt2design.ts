@@ -81,9 +81,10 @@ export default class Prompt2DesignGenerator {
 
     const suggestions = await this.suggestFn();
 
-    const allRecipes = suggestions.recipeLists.flatMap(
-      (recipeList) => recipeList.recipes
-    );
+    const allRecipes = suggestions.recipeLists
+      .slice(0, 2)
+      .flatMap((recipeList) => recipeList.recipes);
+
     return sampleSize(allRecipes, 4);
   }
 
@@ -284,6 +285,7 @@ export default class Prompt2DesignGenerator {
         "\n User will provide with an instruction on what kind of template they are trying to create. You are supposed to generate the values for the keys mentioned. " +
         "Generate Text in the same language that user's instruction is in." +
         "Avoid redundancy. Use a Creative tone and write catchy lines." +
+        `Random seed: ${Math.random()}` +
         "\n {formatInstructions}"
     );
 
