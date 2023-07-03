@@ -82,7 +82,7 @@ export default class Prompt2DesignGenerator {
     const suggestions = await this.suggestFn();
 
     const allRecipes = suggestions.recipeLists
-      .slice(0, 2)
+      .slice(0, 4)
       .flatMap((recipeList) => recipeList.recipes);
 
     return sampleSize(allRecipes, 4);

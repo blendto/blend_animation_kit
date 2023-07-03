@@ -194,6 +194,8 @@ export interface TextUpdate {
   text: string;
   fontSize: number;
   assetUid: string;
+  size: Size;
+  position: Offset;
 }
 
 export interface BrandingInfoMetadata extends GeometricPositionable {
@@ -616,6 +618,8 @@ export class RecipeWrapper {
         (i) => i.assetUid === matchingText.uid && i.assetType === AssetType.TEXT
       );
       (textInteraction.metadata as TextMetadata).fontSize = textUpdate.fontSize;
+      (textInteraction.metadata as TextMetadata).size = textUpdate.size;
+      (textInteraction.metadata as TextMetadata).position = textUpdate.position;
       // No more need to forceFit as its adjusted to the new font size
       (textInteraction.metadata as TextMetadata).forceFit = false;
     });

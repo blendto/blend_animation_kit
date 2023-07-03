@@ -23,6 +23,10 @@ export interface RecipeChoosePrepParams extends RecipePrepParams {
   blendService: BlendService;
 }
 
+interface ApplyMutationsOptions {
+  dryRun?: boolean;
+}
+
 export class RecipePrepAgent {
   recipe: Recipe;
   recipeService: RecipeService;
@@ -48,10 +52,13 @@ export class RecipePrepAgent {
     }
   }
 
-  protected async applyTextMutations(texts: ReplacementTexts) {
+  protected async applyTextMutations(texts: ReplacementTexts, dryRun: boolean) {
     const recipeWrapper = new RecipeWrapper(this.recipe);
     // Initial mutation to fit the text
     recipeWrapper.mutateTexts(texts);
+    if (dryRun) {
+      return;
+    }
     const response = await new VesApi().fitText({
       body: this.recipe,
       schema: ExportRequestSchema.Recipe,
@@ -79,10 +86,13 @@ export class RecipePrepAgent {
     await Promise.resolve();
   }
 
-  async applyMutations(mutations: RecipeMutations) {
+  async applyMutations(
+    mutations: RecipeMutations,
+    opts?: ApplyMutationsOptions
+  ) {
     const { texts, images, branding } = mutations;
     if (texts) {
-      await this.applyTextMutations(texts);
+      await this.applyTextMutations(texts, opts?.dryRun ?? false);
     }
 
     if (images) {

@@ -69,7 +69,7 @@ export class PreviewService implements IService {
     }
 
     if (mutations) {
-      await recipePrepAgent.applyMutations(mutations);
+      await recipePrepAgent.applyMutations(mutations, { dryRun: true });
     }
 
     return await this.vesapi.previewV2({
