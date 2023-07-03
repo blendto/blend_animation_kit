@@ -50,7 +50,8 @@ export class ProjectsFrictionService implements IService {
     try {
       await this.firebase.getUserById(userId);
     } catch (err) {
-      throw new Error("Attempted to create deletion plan with invalid user id");
+      // These were happening as a race condition when a user deletes their account
+      return;
     }
     if (await this.subscriptionService.isUserPro(userId)) {
       return;
