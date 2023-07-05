@@ -6,6 +6,7 @@ import { Stream } from "node:stream";
 import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
 import { ObjectList } from "aws-sdk/clients/s3";
+import { AWSError } from "aws-sdk";
 
 class S3 {
   private s3: AWS.S3;
@@ -340,24 +341,35 @@ export const appendTagsToObject = async (
   tagSet: { Key: string; Value: string }[]
 ) => {
   const s3 = await getS3();
-  const currentTagging = await s3
-    .getObjectTagging({
-      Bucket: bucketName,
-      Key: fileKey,
-    })
-    .promise();
-  for (const currentTag of currentTagging.TagSet) {
-    if (!tagSet.find((newTag) => newTag.Key === currentTag.Key)) {
-      tagSet.push(currentTag);
+  try {
+    const currentTagging = await s3
+      .getObjectTagging({
+        Bucket: bucketName,
+        Key: fileKey,
+      })
+      .promise();
+    for (const currentTag of currentTagging.TagSet) {
+      if (!tagSet.find((newTag) => newTag.Key === currentTag.Key)) {
+        tagSet.push(currentTag);
+      }
+    }
+    await s3
+      .putObjectTagging({
+        Bucket: bucketName,
+        Key: fileKey,
+        Tagging: {
+          TagSet: tagSet,
+        },
+      })
+      .promise();
+  } catch (e) {
+    if ((e as AWSError).code === "NoSuchKey") {
+      logger.warn({
+        op: "RECIEVED_REQUEST_TO_UPDATE_TAGS_OF_NON_EXISTENT_S3_ASSET",
+        fileKey,
+      });
+    } else {
+      throw e;
     }
   }
-  await s3
-    .putObjectTagging({
-      Bucket: bucketName,
-      Key: fileKey,
-      Tagging: {
-        TagSet: tagSet,
-      },
-    })
-    .promise();
 };
