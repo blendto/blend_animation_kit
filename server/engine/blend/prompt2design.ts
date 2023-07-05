@@ -24,7 +24,7 @@ import { NonHeroRecipeListService } from "server/service/nonHeroRecipeList";
 import { BlendHeroImage } from "server/base/models/heroImage";
 
 import { ImageGenerator } from "./imageGenerator";
-import { MinimalOutputParser } from "./outputparser";
+import { MinimalOutputParser, OutputParserException } from "./outputparser";
 
 const TEXT_ONLY_RECIPE_LIST_ID = "p2d-text-only";
 const WITH_IMAGE_RECIPE_LIST_ID = "p2d-with-image";
@@ -135,8 +135,14 @@ export default class Prompt2DesignGenerator {
 
     let descriptions: string[] = [];
     if (someRecipesNeedsImages) {
-      descriptions =
-        (await this.generateImageDescptionWithLLM(prompt))?.descriptions ?? [];
+      try {
+        descriptions =
+          (await this.generateImageDescptionWithLLM(prompt))?.descriptions ??
+          [];
+      } catch (e) {
+        // Ignoring the failure, we will just use stock images
+        return null;
+      }
     }
 
     const suggestionPromises = chosenRecipes.map(async (recipe: Recipe) => {
@@ -242,9 +248,39 @@ export default class Prompt2DesignGenerator {
       }),
     ]);
 
-    return (await parser.parse(
-      response.generations[0][0].text
-    )) as ImageDescriptionsLLMGenerationReturnType;
+    try {
+      const results = (await parser.parse(
+        response.generations[0][0].text
+      )) as ImageDescriptionsLLMGenerationReturnType;
+
+      return results;
+    } catch (e) {
+      if (e instanceof OutputParserException) {
+        // Make another call to try and repair it
+        const repairPrompt = SystemMessagePromptTemplate.fromTemplate(
+          "Format the user provided list into the below schema." +
+            "\n {formatInstructions}"
+        );
+
+        const imageDescPrompt = ChatPromptTemplate.fromPromptMessages([
+          repairPrompt,
+          HumanMessagePromptTemplate.fromTemplate("{text}"),
+        ]);
+
+        const repairResponse = await chat.generatePrompt([
+          await imageDescPrompt.formatPromptValue({
+            text: response.generations[0][0].text,
+            formatInstructions: parser.getFormatInstructions(),
+          }),
+        ]);
+
+        const output = (await parser.parse(
+          repairResponse.generations[0][0].text
+        )) as ImageDescriptionsLLMGenerationReturnType;
+
+        return output;
+      }
+    }
   }
 
   async generateWithLLM(
