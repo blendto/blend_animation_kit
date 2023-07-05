@@ -356,20 +356,7 @@ const submitBlend = async (
   const { uid, buildVersion, clientType, isUserAnonymous } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
-  if (buildVersion >= ConfigProvider.CLIENT_SIDE_GENERATION_BUILD_VERSION) {
-    // HACK: Lot of users have cl-empty-square ids in their drafts, this is to clear that out.
-    // Lie to the users that everything is fine.
-    if (id === "cl-empty-square") {
-      res.send({
-        id: "cl-empty-square",
-        status: "GENERATED",
-        isStatic: true,
-        isWatermarked: false,
-        fileName: "foobar",
-      });
-      return;
-    }
-  }
+  new RecipeWrapper(recipe).cleanDamagedInteractions();
 
   if (buildVersion < ConfigProvider.CLIENT_SIDE_GENERATION_BUILD_VERSION) {
     await blendService.verifyExport(

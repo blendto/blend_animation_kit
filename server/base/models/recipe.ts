@@ -398,6 +398,16 @@ export class RecipeWrapper {
     this.backfillExternalRecipeSource();
   }
 
+  cleanDamagedInteractions() {
+    // remove interactions that have faulty position
+    // TODO: Remove this, once occurence of NaN issues come down
+    this.recipe.interactions = this.recipe.interactions.filter(
+      (i) =>
+        Number.isFinite((i.metadata as GeometricPositionable).position.dx) &&
+        Number.isFinite((i.metadata as GeometricPositionable).position.dy)
+    );
+  }
+
   replaceHero(
     fileKeys: ImageFileKeys,
     image?: StoredImage,
