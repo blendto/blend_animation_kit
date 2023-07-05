@@ -16,6 +16,7 @@ import { UserService } from "server/service/user";
 import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
 import Prompt2DesignGenerator, {
+  Prompt2DesignAutocompleter,
   SuggestFunction,
 } from "server/engine/blend/prompt2design";
 
@@ -231,6 +232,10 @@ export class SuggestionService {
     return recipeVariantId;
   }
 
+  async autocompletePrompt({ prompt }: AutocompletePromptParams) {
+    return new Prompt2DesignAutocompleter().complete(prompt);
+  }
+
   async prompt2design(req: Prompt2DesignRequestBody) {
     const blend = await this.blendService.getBlend(req.id, {
       consistentRead: true,
@@ -282,5 +287,9 @@ interface Prompt2DesignRequestBody {
   uid: string;
   ip: string;
   id: string;
+  prompt: string;
+}
+
+interface AutocompletePromptParams {
   prompt: string;
 }

@@ -1,10 +1,12 @@
 import { ChatOpenAI } from "langchain/chat_models/openai";
+import { OpenAI } from "langchain";
 import { ZodType, z } from "zod";
 import * as async from "async";
 
 import {
   ChatPromptTemplate,
   HumanMessagePromptTemplate,
+  PromptTemplate,
   SystemMessagePromptTemplate,
 } from "langchain/prompts";
 import { concat, sample, sampleSize, some } from "lodash";
@@ -42,6 +44,30 @@ export type SuggestFunction = () => Promise<{
   recipeLists: RecipeList[];
   nextPageKey?: number;
 }>;
+
+export class Prompt2DesignAutocompleter {
+  async complete(promptInput: string) {
+    const model = new OpenAI({
+      openAIApiKey: ConfigProvider.OPENAI_API_KEY,
+      temperature: 0.7,
+      modelName: "davinci:ft-blend-2023-07-04-15-49-08",
+      maxTokens: 100,
+      stop: ["\n"],
+    });
+
+    const template = "Input: {input}\n Output:";
+    const prompt = new PromptTemplate({
+      template,
+      inputVariables: ["input"],
+    });
+
+    const formattedPrompt = await prompt.format({ input: promptInput });
+
+    const res = await model.call(formattedPrompt);
+
+    return res;
+  }
+}
 
 export default class Prompt2DesignGenerator {
   recipeService: RecipeService;
