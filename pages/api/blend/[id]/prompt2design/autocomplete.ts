@@ -26,22 +26,24 @@ export default withReqHandler(
 );
 
 const REQUEST_SCHEMA = Joi.object({
-  textPrompt: Joi.string().required().trim(),
+  id: Joi.string().required().trim(),
+  prompt: Joi.string().required().trim(),
 });
 
 const autocomplete = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const requestBody = req.body as {
-    textPrompt: string;
+  const requestQuery = req.query as {
+    id: string;
+    prompt: string;
   };
 
-  const validatedBody = validate(
-    requestBody,
-    requestComponentToValidate.body,
+  const validatedQuery = validate(
+    requestQuery,
+    requestComponentToValidate.query,
     REQUEST_SCHEMA
-  ) as { textPrompt: string };
+  ) as { id: string; prompt: string };
 
   const suggestionService = diContainer.get<SuggestionService>(
     TYPES.SuggestionService
@@ -50,7 +52,7 @@ const autocomplete = async (
   res.send({
     options: [
       await suggestionService.autocompletePrompt({
-        prompt: validatedBody.textPrompt,
+        prompt: validatedQuery.prompt,
       }),
     ],
   });
