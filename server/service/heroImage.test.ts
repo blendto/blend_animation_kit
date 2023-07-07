@@ -311,48 +311,25 @@ describe("HeroImageService", () => {
       const getImageSpy = jest
         .spyOn(heroImageService, "getImage")
         .mockResolvedValueOnce(image as unknown as HeroImage);
-      const deleteObjectSpy = jest
-        .spyOn(heroImageService, "deleteObject")
+      const tagS3AssetsSpy = jest
+        .spyOn(heroImageService, "tagS3AssetsToBeArchived")
         .mockResolvedValueOnce();
-      const updateItemSpy = jest
-        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "updateItem")
+      const deleteItemSpy = jest
+        .spyOn(diContainer.get<DynamoDB>(TYPES.DynamoDB), "deleteItem")
         .mockResolvedValueOnce({});
-      jest.spyOn(Date, "now").mockReturnValueOnce(now);
 
       await expect(
         heroImageService.deleteImage(imageId, userId)
       ).resolves.not.toThrow();
       expect(getImageSpy.mock.calls.length).toBe(1);
       expect(getImageSpy.mock.calls[0]).toMatchObject([imageId, userId, true]);
-      expect(deleteObjectSpy.mock.calls.length).toBe(1);
-      expect(deleteObjectSpy.mock.calls[0]).toMatchObject([
-        ConfigProvider.HERO_IMAGES_BUCKET,
-        image.original,
-      ]);
-      expect(updateItemSpy.mock.calls.length).toBe(1);
-      const status = HeroImageStatus.DELETED;
-      expect(updateItemSpy.mock.calls[0]).toMatchObject([
+      expect(tagS3AssetsSpy.mock.calls.length).toBe(1);
+      expect(tagS3AssetsSpy.mock.calls[0]).toMatchObject([image]);
+      expect(deleteItemSpy.mock.calls.length).toBe(1);
+      expect(deleteItemSpy.mock.calls[0]).toMatchObject([
         {
-          UpdateExpression:
-            "SET updatedAt = :updatedAt, #status = :status, #statusHistory = list_append(if_not_exists(#statusHistory, :empty_list), :statusUpdate)",
-          ExpressionAttributeNames: {
-            "#status": "status",
-            "#statusHistory": "statusHistory",
-          },
-          ExpressionAttributeValues: {
-            ":updatedAt": now,
-            ":status": status,
-            ":empty_list": [],
-            ":statusUpdate": [
-              {
-                status,
-                updatedAt: now,
-              } as HeroImageStatusUpdate,
-            ],
-          },
           Key: { id: imageId },
           TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
-          ReturnValues: "NONE",
         },
       ]);
     });

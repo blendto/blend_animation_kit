@@ -31,6 +31,7 @@ import { BlendService } from "server/service/blend";
 import { HeroImageIdBased } from "server/service/fileKeysProcessingStrategy";
 import { BlendFromHeroImage } from "server/base/models/batch";
 import { ElementSource } from "server/base/models/recipe";
+import { AWSError } from "aws-sdk";
 
 export enum ImagePathFormat {
   FILEKEY = "fileKey",
@@ -266,32 +267,10 @@ export default class HeroImageService implements IService {
 
   async deleteImage(id: string, uid: string): Promise<void> {
     const heroImage = await this.getImage(id, uid, true);
-    await this.deleteObject(
-      ConfigProvider.HERO_IMAGES_BUCKET,
-      heroImage.original
-    );
-    const updatedAt = Date.now();
-    const status = HeroImageStatus.DELETED;
-    const updateExpressions = [
-      "updatedAt = :updatedAt",
-      "#status = :status",
-      "#statusHistory = list_append(if_not_exists(#statusHistory, :empty_list), :statusUpdate)",
-    ];
-    await this.dataStore.updateItem({
-      UpdateExpression: `SET ${updateExpressions.join(", ")}`,
-      ExpressionAttributeNames: {
-        "#status": "status",
-        "#statusHistory": "statusHistory",
-      },
-      ExpressionAttributeValues: {
-        ":updatedAt": updatedAt,
-        ":status": status,
-        ":empty_list": [],
-        ":statusUpdate": [{ status, updatedAt } as HeroImageStatusUpdate],
-      },
+    await this.tagS3AssetsToBeArchived(heroImage);
+    await this.dataStore.deleteItem({
       Key: { id },
       TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
-      ReturnValues: "NONE",
     });
   }
 
@@ -337,11 +316,7 @@ export default class HeroImageService implements IService {
 
   async cleanupUserImages(uid: string): Promise<void> {
     const images = await this.getAllUserImages(uid);
-    await Promise.all(
-      images.map((i) =>
-        listAndDeleteObjectsInFolder(ConfigProvider.HERO_IMAGES_BUCKET, i.id)
-      )
-    );
+    await Promise.all(images.map((i) => this.tagS3AssetsToBeArchived(i)));
     await this.dataStore.batchDeleteItems(
       ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       images
@@ -381,7 +356,7 @@ export default class HeroImageService implements IService {
         TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
       })) as HeroImage;
       if (image) {
-        await this.cleanupHeroImageAssets(image);
+        await this.tagS3AssetsToBeArchived(image);
         await this.dataStore.deleteItem({
           Key: { id: imageId },
           TableName: ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
@@ -390,12 +365,27 @@ export default class HeroImageService implements IService {
     }
   }
 
-  private async cleanupHeroImageAssets(image: HeroImage): Promise<void> {
+  async tagS3AssetsToBeArchived(image: Partial<HeroImage>): Promise<void> {
     await Promise.all(
       [image.original, image.thumbnail, image.withoutBg].map((key) =>
         appendTagsToObject(ConfigProvider.HERO_IMAGES_BUCKET, key, [
           { Key: "archive", Value: "true" },
-        ])
+        ]).catch((e) => {
+          if (
+            (e as AWSError).code === "NoSuchKey" &&
+            image.status === HeroImageStatus.DELETED
+          ) {
+            // This is because when a user deleted a hero image, we used to just update status.
+            // Ignore
+          } else {
+            logger.error({
+              op: "FAILED_TAGGING_HERO_IMAGE_ASSET",
+              key,
+              e: e as AWSError,
+            });
+            throw e;
+          }
+        })
       )
     );
   }
