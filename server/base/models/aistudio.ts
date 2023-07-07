@@ -179,8 +179,13 @@ export class PromptIdBasedGenerationRequest extends GenerateSamplesRequest {
   }
 }
 
+export interface RecentStudioGenerationId {
+  blendId: string;
+  generatedImageId: string;
+}
 export class MetadataBasedGenerationRequest extends GenerateSamplesRequest {
   generationMetadata: Record<string, unknown>;
+  recentsStudioGenerationId?: RecentStudioGenerationId;
 
   updatePrompts(
     blendId: string,
@@ -277,10 +282,14 @@ export class AIBlendPhoto implements Entity {
 export class GeneratedImage {
   id: string;
   thumbnail: string;
-  metadata: Record<string, unknown>;
+  metadata: GeneratedImageMetadata;
   promptId?: string;
   topicId: string;
   createdAt: number;
+}
+
+export interface GeneratedImageMetadata extends Record<string, unknown> {
+  imageSize: [number, number];
 }
 
 export enum ScenePerspective {
@@ -301,4 +310,15 @@ export class FeedItem {
   aspectRatio: Size;
   isEnabled: boolean;
   sortOrder: number;
+}
+
+export class AiStudioRecentGeneration {
+  generatedImageId: string;
+  generationMetadata: GeneratedImageMetadata;
+  blendId: string;
+  thumbnail: string;
+  createdBy: string;
+  createdAt: number;
+  lastUsedAt: number;
+  aspectRatio: Size;
 }

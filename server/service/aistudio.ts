@@ -8,12 +8,15 @@ import {
   AIBlendPhoto,
   AIBlendPhotoGenerationStatus,
   AIBlendPhotoTopic,
+  AiStudioRecentGeneration,
   AIStudioTopicList,
   AIStudioTopicListExternal,
   FeedItem,
   GeneratedImage,
+  GeneratedImageMetadata,
   GenerateSamplesRequest,
   Prompt,
+  RecentStudioGenerationId,
   SceneConfig,
   SceneConfigOption,
   SceneConfigOptionExternal,
@@ -30,6 +33,9 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { fireAndForget } from "server/helpers/async-runner";
 import logger from "server/base/Logger";
 import { nanoid } from "nanoid";
+import { EncodedPageKey } from "server/helpers/paginationUtils";
+import { reduceFraction } from "server/helpers/mathUtils";
+import AWS from "server/external/aws";
 
 @injectable()
 export class AIStudioService implements IService {
@@ -448,6 +454,148 @@ export class AIStudioService implements IService {
         ":generatedImages": [],
       },
       Key: { blendId },
+    });
+  }
+
+  async fetchRecents(
+    uid: string,
+    pageKey?: string
+  ): Promise<{
+    recents: Array<AiStudioRecentGeneration>;
+    nextPageKey: string;
+  }> {
+    const encodedPageKey = new EncodedPageKey(pageKey);
+    if (encodedPageKey.exists() && !encodedPageKey.isValid()) {
+      throw new UserError("pageKey should be a string");
+    }
+    const pageKeyObject = encodedPageKey.decode();
+
+    const data = await this.dataStore.queryItems({
+      TableName: ConfigProvider.AI_STUDIO_RECENTS_DYNAMODB_TABLE,
+      KeyConditionExpression: "#createdBy = :createdBy",
+      IndexName: "createdBy-lastUsedAt-idx",
+      ExpressionAttributeNames: {
+        "#createdBy": "createdBy",
+      },
+      ExpressionAttributeValues: {
+        ":createdBy": uid,
+      },
+      ScanIndexForward: false,
+      ExclusiveStartKey: pageKeyObject,
+      Limit: 10,
+    });
+
+    const nextPageKey = EncodedPageKey.fromObject(data.LastEvaluatedKey)?.key;
+
+    return {
+      recents: data.Items as Array<AiStudioRecentGeneration>,
+      nextPageKey,
+    };
+  }
+
+  async addRecent(
+    uid: string,
+    blendId: string,
+    generatedImageId: string,
+    generationMetadata: GeneratedImageMetadata,
+    thumbnail: string
+  ): Promise<AiStudioRecentGeneration> {
+    const dateNow = Date.now();
+    const { imageSize } = generationMetadata;
+    const aspectRatio = reduceFraction(imageSize[0], imageSize[1]);
+    const recentGeneration: AiStudioRecentGeneration = {
+      createdBy: uid,
+      blendId,
+      generatedImageId,
+      generationMetadata,
+      thumbnail,
+      createdAt: dateNow,
+      lastUsedAt: dateNow,
+      aspectRatio: {
+        width: aspectRatio.numerator,
+        height: aspectRatio.denominator,
+      },
+    };
+
+    await this.dataStore.putItem({
+      TableName: ConfigProvider.AI_STUDIO_RECENTS_DYNAMODB_TABLE,
+      Item: recentGeneration,
+    });
+    return recentGeneration;
+  }
+
+  async markRecentsImageUsage(
+    recentsStudioGenerationId: RecentStudioGenerationId
+  ): Promise<void> {
+    const { generatedImageId, blendId } = recentsStudioGenerationId;
+    const params = {
+      UpdateExpression: "SET lastUsedAt = :lastUsedAt",
+      ExpressionAttributeValues: {
+        ":lastUsedAt": Date.now(),
+      },
+      Key: { generatedImageId, blendId },
+      TableName: ConfigProvider.AI_STUDIO_RECENTS_DYNAMODB_TABLE,
+    };
+    await this.dataStore.updateItem(params);
+  }
+
+  async migrateRecents(sourceUid: string, targetUid: string): Promise<void> {
+    const recentsIds = await this.getAllRecentsIdsForUser(sourceUid);
+    const updates = recentsIds.map(async (recentGenerationId) => {
+      await this.changeRecentsOwnership(recentGenerationId, targetUid);
+    });
+    await Promise.all(updates);
+  }
+
+  private async getAllRecentsIdsForUser(
+    uid: string
+  ): Promise<RecentStudioGenerationId[]> {
+    let ids: RecentStudioGenerationId[] = [];
+    let nextPageKey: AWS.DynamoDB.Key;
+    do {
+      const queryInput: AWS.DynamoDB.DocumentClient.QueryInput = {
+        TableName: ConfigProvider.AI_STUDIO_RECENTS_DYNAMODB_TABLE,
+        KeyConditionExpression: "#createdBy = :createdBy",
+        IndexName: "createdBy-lastUsedAt-idx",
+        ExpressionAttributeNames: {
+          "#createdBy": "createdBy",
+        },
+        ExpressionAttributeValues: {
+          ":createdBy": uid,
+        },
+        ProjectionExpression: "blendId, generatedImageId",
+        ScanIndexForward: true,
+      };
+      if (nextPageKey) {
+        queryInput.ExclusiveStartKey = nextPageKey;
+      }
+      const data = await this.dataStore.queryItems(queryInput);
+      ids = ids.concat(
+        data.Items.map((entry) => entry as RecentStudioGenerationId)
+      );
+      nextPageKey = data.LastEvaluatedKey;
+    } while (nextPageKey);
+    return ids;
+  }
+
+  private async changeRecentsOwnership(
+    recentsStudioGenerationId: RecentStudioGenerationId,
+    newUid: string
+  ) {
+    const { generatedImageId, blendId } = recentsStudioGenerationId;
+    await this.dataStore.updateItem({
+      UpdateExpression: "SET #updatedAt = :updatedAt, #createdBy = :createdBy",
+      ExpressionAttributeNames: {
+        "#updatedAt": "updatedAt",
+        "#createdBy": "createdBy",
+      },
+      ExpressionAttributeValues: {
+        ":updatedAt": Date.now(),
+        ":createdBy": newUid,
+      },
+      Key: { generatedImageId, blendId },
+      TableName: ConfigProvider.AI_STUDIO_RECENTS_DYNAMODB_TABLE,
+      ReturnValues: "NONE",
     });
   }
 }

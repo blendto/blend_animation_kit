@@ -6,10 +6,14 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import { MethodNotAllowedError } from "server/base/errors";
-import { GenerateSamplesRequest } from "server/base/models/aistudio";
+import {
+  GenerateSamplesRequest,
+  MetadataBasedGenerationRequest,
+} from "server/base/models/aistudio";
 import { diContainer } from "inversify.config";
 import { AIStudioService } from "server/service/aistudio";
 import { TYPES } from "server/types";
+import { fireAndForget } from "server/helpers/async-runner";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -34,6 +38,19 @@ const generateImage = async (
   const aiStudioService = diContainer.get<AIStudioService>(
     TYPES.AIStudioService
   );
+
+  if (
+    generateSamplesRequest instanceof MetadataBasedGenerationRequest &&
+    generateSamplesRequest.recentsStudioGenerationId
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    fireAndForget(() =>
+      aiStudioService.markRecentsImageUsage(
+        generateSamplesRequest.recentsStudioGenerationId
+      )
+    );
+  }
+
   const out = await aiStudioService.syncGenerateImage(
     id,
     generateSamplesRequest,

@@ -20,7 +20,8 @@ export async function handleAxiosCall<ResponseDataType>(
       let errMessage: unknown;
       if ((error as AxiosError)?.response?.data instanceof IncomingMessage) {
         errMessage = "";
-        for await (const chunk of error.response!.data) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        for await (const chunk of error.response.data) {
           errMessage += chunk;
         }
       } else {

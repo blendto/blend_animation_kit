@@ -343,6 +343,14 @@ class ConfigProvider {
     }
     return variable;
   }
+
+  public get AI_STUDIO_RECENTS_DYNAMODB_TABLE(): string {
+    return this.retrieveOrCrash("AI_STUDIO_RECENTS_DYNAMODB_TABLE");
+  }
+
+  public get AI_STUDIO_RECENTS_BUCKET(): string {
+    return this.retrieveOrCrash("AI_STUDIO_RECENTS_BUCKET");
+  }
 }
 
 export default new ConfigProvider();

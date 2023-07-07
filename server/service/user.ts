@@ -26,6 +26,7 @@ import HeroImageService from "./heroImage";
 import { BatchService } from "./batch";
 import SubscriptionService from "./subscription";
 import BrandingService from "./branding";
+import { AIStudioService } from "./aistudio";
 
 export type UserJSONUpdate = {
   path: UserUpdatePaths;
@@ -259,11 +260,18 @@ export class UserService implements IService {
     const catalogueServiceApi = diContainer.get<CatalogueServiceApi>(
       TYPES.CatalogueServiceApi
     );
+    const aiStudioServiceApi = diContainer.get<AIStudioService>(
+      TYPES.AIStudioService
+    );
 
     const brandingPromise = this.migrateBranding(sourceUid, targetUid);
     const blendsPromise = this.migrateUserBlends(sourceUid, targetUid);
     const batchesPromise = this.migrateUserBatches(sourceUid, targetUid);
     const cataloguesPromise = catalogueServiceApi.migrate(sourceUid, targetUid);
+    const aiStudioRecentsPromise = aiStudioServiceApi.migrateRecents(
+      sourceUid,
+      targetUid
+    );
 
     const [
       _brandingPromiseRes,
@@ -275,6 +283,7 @@ export class UserService implements IService {
       blendsPromise,
       batchesPromise,
       cataloguesPromise,
+      aiStudioRecentsPromise,
     ]);
     return { migratedBlends, migratedBatches };
   }
