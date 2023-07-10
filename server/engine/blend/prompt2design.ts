@@ -9,7 +9,7 @@ import {
   PromptTemplate,
   SystemMessagePromptTemplate,
 } from "langchain/prompts";
-import { concat, sample, sampleSize, some } from "lodash";
+import { concat, sample, sampleSize, shuffle, some } from "lodash";
 import ConfigProvider from "server/base/ConfigProvider";
 import { Blend } from "server/base/models/blend";
 import {
@@ -99,9 +99,11 @@ export default class Prompt2DesignGenerator {
         this.nonHeroRecipeListService.get(TEXT_ONLY_RECIPE_LIST_ID),
         this.nonHeroRecipeListService.get(WITH_IMAGE_RECIPE_LIST_ID),
       ]);
-      return concat(
-        sampleSize(textOnlyRecipeList.recipes, 2),
-        sampleSize(withImageRecipeList.recipes, 2)
+      return shuffle(
+        concat(
+          sampleSize(textOnlyRecipeList.recipes, 4),
+          sampleSize(withImageRecipeList.recipes, 4)
+        )
       );
     }
 
@@ -111,7 +113,7 @@ export default class Prompt2DesignGenerator {
       .slice(0, 4)
       .flatMap((recipeList) => recipeList.recipes);
 
-    return sampleSize(allRecipes, 4);
+    return sampleSize(allRecipes, 8);
   }
 
   async generate(prompt: string) {
