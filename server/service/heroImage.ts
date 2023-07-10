@@ -300,11 +300,12 @@ export default class HeroImageService implements IService {
         IndexName: "userId-lastUsedAt-index",
         ExpressionAttributeNames: {
           "#userId": "userId",
+          "#status": "status",
         },
         ExpressionAttributeValues: {
           ":userId": uid,
         },
-        ProjectionExpression: "id",
+        ProjectionExpression: "id, #status, original, thumbnail, withoutBg",
         ExclusiveStartKey: pageKeyObject,
       });
       images = images.concat(data.Items);
@@ -319,7 +320,7 @@ export default class HeroImageService implements IService {
     await Promise.all(images.map((i) => this.tagS3AssetsToBeArchived(i)));
     await this.dataStore.batchDeleteItems(
       ConfigProvider.HERO_IMAGES_DYNAMODB_TABLE,
-      images
+      images.map((i) => ({ id: i.id }))
     );
   }
 
