@@ -567,17 +567,15 @@ export class BlendService implements IService {
         ExpressionAttributeNames: {
           "#createdBy": "createdBy",
           "#status": "status",
-          "#version": "version",
           "#metadata": "metadata",
         },
         ExpressionAttributeValues: {
           ":createdBy": uid,
           ":generatedStatus": "GENERATED",
-          ":generatedVersion": "GENERATED",
         },
         ProjectionExpression: "id, metadata",
         FilterExpression:
-          "#version = :generatedVersion AND #status = :generatedStatus AND attribute_exists(#metadata)",
+          "#status = :generatedStatus AND attribute_exists(#metadata)",
         ScanIndexForward: false,
         Limit: 20,
       })
