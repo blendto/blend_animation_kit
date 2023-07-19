@@ -11,6 +11,7 @@ import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 import {
   BrandingInfoMetadata,
+  BrandingReplacements,
   ElementSource,
   Interaction,
   Recipe,
@@ -347,9 +348,10 @@ export class RecipeService implements IService {
   async replaceBrandingInfo(
     recipe: Recipe,
     brandingProfile: BrandingEntity,
-    ip: string
+    ip: string,
+    brandingMutations?: BrandingReplacements
   ) {
-    if (recipe.branding?.logo) {
+    if (recipe.branding?.logo && !brandingMutations?.logo) {
       if (brandingProfile.logos.primaryEntry) {
         recipe.branding.logo.data.uri = brandingProfile.logos.primaryEntry;
       } else {

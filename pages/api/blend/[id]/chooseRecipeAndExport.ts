@@ -123,7 +123,11 @@ const chooseRecipeAndExportSync = async (
       });
 
       if (!isEmpty(recipe.branding)) {
-        await recipePrepAgent.applyBranding(req.uid, req.ip);
+        await recipePrepAgent.applyBranding(
+          req.uid,
+          req.ip,
+          mutations?.branding
+        );
       }
 
       if (mutations) {

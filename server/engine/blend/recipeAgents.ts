@@ -38,14 +38,19 @@ export class RecipePrepAgent {
     this.brandingService = brandingService;
   }
 
-  async applyBranding(uid: string, ip?: string) {
+  async applyBranding(
+    uid: string,
+    ip?: string,
+    brandingMutations?: BrandingReplacements
+  ) {
     const recipeWrapper = new RecipeWrapper(this.recipe);
     const brandingProfile = await this.brandingService.get(uid);
     if (brandingProfile) {
       await this.recipeService.replaceBrandingInfo(
         this.recipe,
         brandingProfile,
-        ip
+        ip,
+        brandingMutations
       );
     } else {
       recipeWrapper.cleanupBranding();

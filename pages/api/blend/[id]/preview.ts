@@ -73,7 +73,11 @@ const generatePreview = async (
 
   // TODO: This is for temporary backward compatibility
   // Remove it after DaaS and delete bg is updated
-  const { replacementTexts, replacementBrandingLogo } = body;
+  const {
+    replacementTexts,
+    replacementBrandingLogo,
+    ...bodyWithoutDeprecatedFields
+  } = body;
 
   let { mutations } = body;
 
@@ -90,7 +94,12 @@ const generatePreview = async (
   }
 
   const previewService = diContainer.get<PreviewService>(TYPES.PreviewService);
-  const previewStream = await previewService.generate({ ip, uid, ...body });
+  const previewStream = await previewService.generate({
+    ip,
+    uid,
+    ...bodyWithoutDeprecatedFields,
+    mutations,
+  });
   res.setHeader("Content-Type", "image/jpeg");
   res.send(previewStream);
 };
