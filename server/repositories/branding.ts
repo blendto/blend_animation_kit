@@ -11,7 +11,7 @@ import {
   Repo,
 } from "./base";
 
-export const MAX_LOGOS = 3;
+export const MAX_LOGOS = 6;
 
 export enum BrandingLogoStatus {
   INITIALIZED = "INITIALIZED",

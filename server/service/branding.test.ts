@@ -304,7 +304,7 @@ describe("BrandingService", () => {
   });
 
   describe("Logo initiation", () => {
-    it("Rejects request if the profile already already has 3 logos", async () => {
+    it("Rejects request if the profile already already has 6 logos", async () => {
       const primaryKey = "PRIMARY-KEY";
       const brandingDocWithLogos = {
         ...brandingDoc,
@@ -323,6 +323,18 @@ describe("BrandingService", () => {
               fileKey: "THIRD-VALID-KEY",
               status: BrandingLogoStatus.UPLOADED,
             },
+            {
+              fileKey: "FOURTH-VALID-KEY",
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: "FIFTH-VALID-KEY",
+              status: BrandingLogoStatus.UPLOADED,
+            },
+            {
+              fileKey: "SIXTH-VALID-KEY",
+              status: BrandingLogoStatus.UPLOADED,
+            },
           ],
         },
       } as BrandingEntity;
@@ -332,7 +344,7 @@ describe("BrandingService", () => {
         .mockResolvedValueOnce(brandingDocWithLogos);
       await expect(
         brandingService.initLogoUpload(userId, "foo.jpeg", false)
-      ).rejects.toThrow(new UserError("You can't have more than 3 logos"));
+      ).rejects.toThrow(new UserError("You can't have more than 6 logos"));
 
       expect(getMock.mock.calls.length).toBe(1);
       expect(getMock.mock.calls[0]).toMatchObject([userId]);
