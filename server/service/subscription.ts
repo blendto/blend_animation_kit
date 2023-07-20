@@ -180,7 +180,9 @@ export default class SubscriptionService implements IService {
     const record = await this.getCachedEntitlements(userId);
     if (record) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      fireAndForget(() => this.fetchAndUpdateUserEntitlementsCache(userId));
+      fireAndForget(() =>
+        this.fetchAndUpdateUserEntitlementsCache(userId, record)
+      );
       return record;
     }
     await this.fetchAndUpdateUserEntitlementsCache(userId);
@@ -476,9 +478,20 @@ export default class SubscriptionService implements IService {
     });
   }
 
-  async fetchAndUpdateUserEntitlementsCache(userId?: string): Promise<void> {
+  async fetchAndUpdateUserEntitlementsCache(
+    userId?: string,
+    currentRecord?: FetchEntitlementResponse
+  ): Promise<void> {
     if (!userId) return;
     const userEntitlements = await revenueCat.getEntitlements(userId);
+    if (
+      currentRecord &&
+      JSON.stringify(currentRecord.entitlements) ===
+        JSON.stringify(userEntitlements.entitlements) &&
+      currentRecord.expiry === userEntitlements.expiry
+    ) {
+      return;
+    }
     await this.updateUserEntitlementsCache(
       userId,
       userEntitlements.entitlements,
