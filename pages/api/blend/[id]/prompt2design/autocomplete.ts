@@ -50,10 +50,8 @@ const autocomplete = async (
   );
 
   res.send({
-    options: [
-      await suggestionService.autocompletePrompt({
-        prompt: validatedQuery.prompt,
-      }),
-    ],
+    options: await suggestionService.autocompletePrompt({
+      prompt: validatedQuery.prompt,
+    }),
   });
 };

@@ -23,8 +23,15 @@ import { RecipeService } from "server/service/recipe";
 import { NonHeroRecipeListService } from "server/service/nonHeroRecipeList";
 import { BlendHeroImage } from "server/base/models/heroImage";
 
-import { ImageGenerator } from "./imageGenerator";
+import { diContainer } from "inversify.config";
+import { AIStudioService } from "server/service/aistudio";
+import { TYPES } from "server/types";
+
+import { GenericImageGenerator } from "./p2d/genericImageGenerator";
 import { MinimalOutputParser, OutputParserException } from "./outputparser";
+import { BackgroundInfoExtractor } from "./p2d/backgroundInfoExtractor";
+
+import { StudioImageGenerator } from "./p2d/studioImageGenerator";
 
 const TEXT_ONLY_RECIPE_LIST_ID = "p2d-text-only";
 const WITH_IMAGE_RECIPE_LIST_ID = "p2d-with-image";
@@ -53,6 +60,8 @@ export class Prompt2DesignAutocompleter {
       modelName: "davinci:ft-blend-2023-07-04-15-49-08",
       maxTokens: 100,
       stop: ["\n"],
+      n: 2,
+      bestOf: 2,
     });
 
     const template = "Input: {input}\n Output:";
@@ -63,9 +72,11 @@ export class Prompt2DesignAutocompleter {
 
     const formattedPrompt = await prompt.format({ input: promptInput });
 
-    const res = await model.call(formattedPrompt);
+    const res = await model.generate([formattedPrompt]);
 
-    return res;
+    return res.generations.flatMap((generation) =>
+      generation.map((g) => g.text)
+    );
   }
 }
 
@@ -116,7 +127,7 @@ export default class Prompt2DesignGenerator {
     return sampleSize(allRecipes, 8);
   }
 
-  async generate(prompt: string) {
+  async generate({ prompt, reqUid }: { prompt: string; reqUid: string }) {
     const fileKeys = this.blend.heroImages;
 
     const chosenRecipeIds: RecipeVariantId[] = await this.pickRecipes(fileKeys);
@@ -130,22 +141,13 @@ export default class Prompt2DesignGenerator {
         )
     );
 
-    const someRecipesNeedsImages = some(
-      chosenRecipes,
-      (recipe) => !!recipe.recipeDetails?.elements?.primaryIllustration
+    const descriptions: string[] = await this.generateDescriptionsIfNecessary(
+      prompt,
+      chosenRecipes
     );
 
-    let descriptions: string[] = [];
-    if (someRecipesNeedsImages) {
-      try {
-        descriptions =
-          (await this.generateImageDescptionWithLLM(prompt))?.descriptions ??
-          [];
-      } catch (e) {
-        // Ignoring the failure, we will just use stock images
-        return null;
-      }
-    }
+    const backgroundDescription: string =
+      await this.extractBackgroundInformation(prompt);
 
     const suggestionPromises = chosenRecipes.map(async (recipe: Recipe) => {
       let result: LLMGenerationReturnType;
@@ -160,13 +162,15 @@ export default class Prompt2DesignGenerator {
 
       let imageMutations: object = null;
       if (illustrativeImageOne) {
-        const imageDesc = sample(descriptions);
-        if (imageDesc) {
-          const imageGenResult = await this.generateIllustration(
-            recipe,
-            illustrativeImageOne,
-            imageDesc
-          );
+        const imageGenResult = await this.generateIllustration({
+          recipe,
+          imageRef: illustrativeImageOne,
+          descriptions,
+          backgroundDescription,
+          blend: this.blend,
+          reqUid,
+        });
+        if (imageGenResult) {
           imageMutations = {
             primaryIllustration: {
               uri: imageGenResult,
@@ -192,11 +196,25 @@ export default class Prompt2DesignGenerator {
     );
   }
 
-  async generateIllustration(
-    recipe: Recipe,
-    imageRef: ElementRef,
-    prompt: string
-  ): Promise<string> {
+  extractBackgroundInformation(prompt: string): Promise<string | null> {
+    return new BackgroundInfoExtractor().extract(prompt);
+  }
+
+  async generateIllustration({
+    recipe,
+    imageRef,
+    descriptions,
+    backgroundDescription,
+    blend,
+    reqUid,
+  }: {
+    recipe: Recipe;
+    imageRef: ElementRef;
+    descriptions: string[];
+    backgroundDescription: string | null;
+    blend: Blend;
+    reqUid: string;
+  }): Promise<string> {
     const interaction = recipe.interactions.find(
       (interaction) =>
         interaction.assetUid === imageRef.uid &&
@@ -205,13 +223,29 @@ export default class Prompt2DesignGenerator {
 
     const metadata = interaction.metadata as GeometricPositionable;
 
-    return new ImageGenerator().generate({
-      prompt,
+    if (blend.heroImages) {
+      const aiStudioService = diContainer.get<AIStudioService>(
+        TYPES.AIStudioService
+      );
+
+      return new StudioImageGenerator(aiStudioService).generate({
+        promptText: backgroundDescription,
+        aspectRatio: metadata.size,
+        blend,
+        uid: reqUid,
+      });
+    }
+
+    const chosenPrompt = sample(descriptions);
+    if (!chosenPrompt) return null;
+
+    return new GenericImageGenerator().generate({
+      prompt: chosenPrompt,
       aspectRatio: metadata.size,
     });
   }
 
-  async generateImageDescptionWithLLM(
+  async generateImageDescriptionWithLLM(
     prompt: string
   ): Promise<ImageDescriptionsLLMGenerationReturnType> {
     const chat = new ChatOpenAI({
@@ -389,6 +423,28 @@ export default class Prompt2DesignGenerator {
 
     return cleanedTexts;
   };
+
+  async generateDescriptionsIfNecessary(
+    prompt: string,
+    recipes: Recipe[]
+  ): Promise<string[]> {
+    const someRecipesNeedsImages = some(
+      recipes,
+      (recipe) => !!recipe.recipeDetails?.elements?.primaryIllustration
+    );
+
+    if (someRecipesNeedsImages) {
+      try {
+        return (
+          (await this.generateImageDescriptionWithLLM(prompt))?.descriptions ??
+          []
+        );
+      } catch (e) {
+        // Ignoring the failure, we will just use stock images
+        return [];
+      }
+    }
+  }
 }
 
 function getTextValueFromElement(recipe: Recipe, title: ElementRef): string {

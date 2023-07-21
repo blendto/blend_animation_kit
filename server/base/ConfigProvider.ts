@@ -351,6 +351,10 @@ class ConfigProvider {
   public get AI_STUDIO_RECENTS_BUCKET(): string {
     return this.retrieveOrCrash("AI_STUDIO_RECENTS_BUCKET");
   }
+
+  public get AI_BLEND_PHOTOS_CDN_BASE_URL(): string {
+    return this.retrieveOrCrash("AI_BLEND_PHOTOS_CDN_BASE_URL");
+  }
 }
 
 export default new ConfigProvider();

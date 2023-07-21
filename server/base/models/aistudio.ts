@@ -6,6 +6,17 @@ import { nanoid } from "nanoid";
 import { AiStudioGenerateSamplesRequest } from "server/internal/aiStudioGeneratorApi";
 import { Rect, Size } from "server/base/models/recipe";
 
+export const AspectRatioToSizes: Record<string, Size> = {
+  "1:1": { width: 512, height: 512 },
+  "9:16": { width: 432, height: 768 },
+  "16:9": { width: 768, height: 432 },
+  "3:4": { width: 576, height: 768 },
+  "4:3": { width: 768, height: 576 },
+  "2:3": { width: 512, height: 768 },
+  "3:2": { width: 768, height: 512 },
+  "4:5": { width: 512, height: 640 },
+};
+
 export abstract class GenerateSamplesRequest {
   productSuperCategory: string;
   requestIndex?: number;
@@ -51,14 +62,8 @@ export abstract class GenerateSamplesRequest {
 function convertAspectToResolution(aspect?: Size): [number, number] | null {
   if (!aspect) return null;
   const aspectString = `${aspect.width}:${aspect.height}`;
-  if (aspectString === "1:1") return [512, 512];
-  if (aspectString === "9:16") return [432, 768];
-  if (aspectString === "16:9") return [768, 432];
-  if (aspectString === "3:4") return [576, 768];
-  if (aspectString === "4:3") return [768, 576];
-  if (aspectString === "3:2") return [768, 512];
-  if (aspectString === "2:3") return [512, 768];
-  if (aspectString === "4:5") return [512, 640];
+  const size = AspectRatioToSizes[aspectString];
+  if (size) return [size.width, size.height];
   throw new UserError("Invalid aspect");
 }
 
@@ -282,6 +287,7 @@ export class AIBlendPhoto implements Entity {
 export class GeneratedImage {
   id: string;
   thumbnail: string;
+  image: string;
   metadata: GeneratedImageMetadata;
   promptId?: string;
   topicId: string;

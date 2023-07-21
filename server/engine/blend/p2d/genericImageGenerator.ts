@@ -18,7 +18,7 @@ interface ImageGenerationOptions {
   aspectRatio: { width: number; height: number };
 }
 
-export class ImageGenerator {
+export class GenericImageGenerator {
   async generate({
     prompt,
     aspectRatio,

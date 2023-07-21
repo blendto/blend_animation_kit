@@ -261,7 +261,7 @@ export class SuggestionService {
       }) as SuggestFunction,
     });
 
-    return generator.generate(req.prompt);
+    return generator.generate({ prompt: req.prompt, reqUid: req.uid });
   }
 }
 
