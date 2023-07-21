@@ -24,7 +24,7 @@ interface Options {
  * @param options
  */
 export const fireAndForget = async (
-  func: () => Promise<any>,
+  func: () => Promise<unknown>,
   options?: Options
 ) => {
   try {
@@ -32,7 +32,11 @@ export const fireAndForget = async (
   } catch (ex) {
     logger.error({
       op: options?.operationName ?? "UNNAMED_FIRE_AND_FORGET_OP",
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       exception: ex,
+      // eslint-disable-next-line max-len
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
+      message: ex?.message,
     });
   }
 };

@@ -145,12 +145,14 @@ export class HeroImageFileKeysBased extends FileKeysProcessingStrategy {
     } as ImageFileKeys;
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fireAndForget(() =>
-      heroImageService.createNewImage(
-        this.blendId,
-        this.userId,
-        updatedFilekeys
-      )
+    fireAndForget(
+      () =>
+        heroImageService.createNewImage(
+          this.blendId,
+          this.userId,
+          updatedFilekeys
+        ),
+      { operationName: "createNewHeroImage" }
     );
     return updatedFilekeys;
   }

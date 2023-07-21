@@ -180,8 +180,9 @@ export default class SubscriptionService implements IService {
     const record = await this.getCachedEntitlements(userId);
     if (record) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      fireAndForget(() =>
-        this.fetchAndUpdateUserEntitlementsCache(userId, record)
+      fireAndForget(
+        () => this.fetchAndUpdateUserEntitlementsCache(userId, record),
+        { operationName: "fetchAndUpdateUserEntitlementsCache" }
       );
       return record;
     }

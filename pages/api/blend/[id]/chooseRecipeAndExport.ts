@@ -135,15 +135,17 @@ const chooseRecipeAndExportSync = async (
         // HACK: In the future if we use mutations for anything other than P2D,
         // this log would be wrong
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        fireAndForget(() =>
-          diContainer
-            .get<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo)
-            .log({
-              suggestions: [{ ...body, id: recipeId, variant }],
-              blendId: id,
-              action: P2DCreationLogAction.CHOOSE,
-              userId: req.uid,
-            })
+        fireAndForget(
+          () =>
+            diContainer
+              .get<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo)
+              .log({
+                suggestions: [{ ...body, id: recipeId, variant }],
+                blendId: id,
+                action: P2DCreationLogAction.CHOOSE,
+                userId: req.uid,
+              }),
+          { operationName: "chooseRecipeAndExport-P2DLog" }
         );
       }
 

@@ -494,20 +494,24 @@ const removeBgAndStore = async (
   });
 
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  fireAndForget(async () => {
-    const promises = fileKeysToDelete.map((fileKey) => {
-      if (fileKey) {
-        return deleteObject(ConfigProvider.BLEND_INGREDIENTS_BUCKET, fileKey);
-      }
-      return Promise.resolve();
-    });
-    return Promise.all(promises);
-  });
+  fireAndForget(
+    async () => {
+      const promises = fileKeysToDelete.map((fileKey) => {
+        if (fileKey) {
+          return deleteObject(ConfigProvider.BLEND_INGREDIENTS_BUCKET, fileKey);
+        }
+        return Promise.resolve();
+      });
+      return Promise.all(promises);
+    },
+    { operationName: "removeBg-v2-assetsCleanup" }
+  );
 
   if (isHeroImage) {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fireAndForget(() =>
-      saveOrUpdateHeroImageDB(blend, req.uid, imageFileKeysItem)
+    fireAndForget(
+      () => saveOrUpdateHeroImageDB(blend, req.uid, imageFileKeysItem),
+      { operationName: "saveOrUpdateHeroImageDB" }
     );
   }
 

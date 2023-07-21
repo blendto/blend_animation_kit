@@ -44,10 +44,12 @@ const generateImage = async (
     generateSamplesRequest.recentsStudioGenerationId
   ) {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fireAndForget(() =>
-      aiStudioService.markRecentsImageUsage(
-        generateSamplesRequest.recentsStudioGenerationId
-      )
+    fireAndForget(
+      () =>
+        aiStudioService.markRecentsImageUsage(
+          generateSamplesRequest.recentsStudioGenerationId
+        ),
+      { operationName: "markRecentsImageUsage" }
     );
   }
 

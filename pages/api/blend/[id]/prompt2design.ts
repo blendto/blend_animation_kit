@@ -64,14 +64,16 @@ const createCustomTemplates = async (
   });
 
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  fireAndForget(() =>
-    diContainer.get<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo).log({
-      userId: req.uid,
-      prompt: validatedBody.textPrompt,
-      suggestions: validSuggestions,
-      blendId: id,
-      action: P2DCreationLogAction.SUGGEST,
-    })
+  fireAndForget(
+    () =>
+      diContainer.get<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo).log({
+        userId: req.uid,
+        prompt: validatedBody.textPrompt,
+        suggestions: validSuggestions,
+        blendId: id,
+        action: P2DCreationLogAction.SUGGEST,
+      }),
+    { operationName: "prompt2design-suggest" }
   );
 
   res.send({
