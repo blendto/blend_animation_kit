@@ -57,6 +57,7 @@ import { ALL_SUPPORTED_EXTENSIONS } from "server/helpers/constants";
 import axios, { AxiosResponse } from "axios";
 import path from "path";
 import { v4 } from "uuid";
+import AWS from "server/external/aws";
 
 // Resolution to use when output object is not populated
 // When aspect ratio used to be fixed, these were the constant ones.
@@ -201,6 +202,71 @@ export class BlendService implements IService {
       throw new UserError("No such blend for user");
     }
     return blend;
+  }
+
+  async getBlendsCount(
+    userId: string,
+    blendIds: string[]
+  ): Promise<{ blendCount: number }> {
+    let blendCount = 0;
+    let lastEvaluatedKey: AWS.DynamoDB.Key = null;
+    do {
+      const countResponse = await this.paginatedBlendsCount(
+        userId,
+        lastEvaluatedKey
+      );
+      blendCount += countResponse.Count;
+      lastEvaluatedKey = countResponse.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    blendCount += await this.initialisedBlendCount(blendIds);
+    return { blendCount };
+  }
+
+  private async initialisedBlendCount(blendIds: string[]): Promise<number> {
+    const Keys = blendIds.map((id) => ({ id }));
+    const responseMap = await this.dataStore.batchGetItems({
+      RequestItems: {
+        [ConfigProvider.BLEND_DYNAMODB_TABLE]: {
+          Keys,
+          AttributesToGet: ["id", "status"],
+        },
+      },
+    });
+
+    const statuses = responseMap[ConfigProvider.BLEND_DYNAMODB_TABLE] as {
+      status: BlendStatus;
+    }[];
+
+    const filtered = statuses.filter(
+      (item) => item.status === BlendStatus.Initialized
+    );
+    return filtered.length;
+  }
+
+  private async paginatedBlendsCount(
+    userId: string,
+    ExclusiveStartKey: AWS.DynamoDB.Key
+  ): Promise<{ Count: number; LastEvaluatedKey: AWS.DynamoDB.Key }> {
+    const { Count, LastEvaluatedKey } = await this.dataStore.queryItems({
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      KeyConditionExpression: "#createdBy = :createdBy",
+      FilterExpression: "#status = :generated OR #status = :submitted",
+      IndexName: "createdBy-updatedAt-idx",
+      ExpressionAttributeNames: {
+        "#createdBy": "createdBy",
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":createdBy": userId,
+        ":generated": BlendStatus.Generated,
+        ":submitted": BlendStatus.Submitted,
+      },
+      Select: "COUNT",
+      ExclusiveStartKey,
+    });
+
+    return { Count, LastEvaluatedKey };
   }
 
   async getBlend(id: string, options: GetBlendParams = {}): Promise<Blend> {
