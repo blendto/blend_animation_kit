@@ -1,3 +1,4 @@
+import { sample } from "lodash";
 import Replicate from "replicate";
 import ConfigProvider from "server/base/ConfigProvider";
 import { Size } from "server/base/models/recipe";
@@ -19,6 +20,15 @@ interface ImageGenerationOptions {
 }
 
 export class GenericImageGenerator {
+  preparePrompt(promptText: string): string {
+    const effect = sample([
+      "minimal",
+      "monotone",
+      "vibrant product photography",
+    ]);
+    return `RAW photo, ${promptText}, ${effect}, 8k uhd, high quality, film grain, Fujifilm XT3`;
+  }
+
   async generate({
     prompt,
     aspectRatio,
@@ -37,11 +47,12 @@ export class GenericImageGenerator {
       auth: ConfigProvider.REPLICATE_API_TOKEN,
     });
 
+    const preparedPrompt = this.preparePrompt(prompt);
     const imageGenResults = await replicate.run(
       "mcai/realistic-vision-v2.0:bed7774ff9503c3e7971627eb523d7ab2ea12f7b649c9887556747d946d11a73",
       {
         input: {
-          prompt: prompt + ", aesthetic image",
+          prompt: preparedPrompt,
           width: closestSize.width,
           height: closestSize.height,
           scheduler: "EulerAncestralDiscrete",
