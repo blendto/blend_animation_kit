@@ -341,7 +341,7 @@ export default class BrandingService implements IService {
       recipeLists.unshift({
         id: "branding",
         isEnabled: true,
-        title: "💼 Your Brand Templates",
+        title: "💼 My Own Templates",
         recipeIds: [],
         recipes: recipes.map((r) => {
           const { title, thumbnail } = r;
