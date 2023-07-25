@@ -155,8 +155,13 @@ const useRecipeForBlend = async (
   }
 
   if (fileKeys) {
-    const { image, interaction } = recipeWrapper.replaceHero(fileKeys);
-    interactionUpdatePromise = adjustSizeToFit(interaction, image.uri);
+    const replacementDetails = recipeWrapper.replaceHero(fileKeys);
+    if (replacementDetails) {
+      interactionUpdatePromise = adjustSizeToFit(
+        replacementDetails.interaction,
+        replacementDetails.image.uri
+      );
+    }
   }
 
   const blendImages = recipe.images.map((image): StoredImage => {

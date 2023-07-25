@@ -9,11 +9,18 @@ import {
   Recipe,
   RecipeWrapper,
 } from "./recipe";
+import { BrandingRecipe } from "./brandingRecipe";
 
 function getSampleRecipe() {
   return JSON.parse(
     readFileSync("__tests__/resources/sample-recipe.json", "utf8")
   ) as Recipe;
+}
+
+function addBrandingRecipeMockDetails(recipe: BrandingRecipe) {
+  recipe.brandingId = "foobar";
+  recipe.userId = "johndoe";
+  recipe.lastUsedAt = new Date().getUTCMilliseconds();
 }
 
 describe("RecipeWrapper", () => {
@@ -30,7 +37,9 @@ describe("RecipeWrapper", () => {
 
     it("puts a default hero in the absence of hero details", () => {
       delete recipeCopy.recipeDetails.elements.hero;
+      addBrandingRecipeMockDetails(recipeCopy as BrandingRecipe);
       const recipeCopy2 = getSampleRecipe();
+      addBrandingRecipeMockDetails(recipeCopy2 as BrandingRecipe);
       delete recipeCopy2.recipeDetails.elements.hero;
       const wrapper = new RecipeWrapper(recipeCopy);
       wrapper.replaceHero(fileKeys);
