@@ -186,6 +186,40 @@ export class ProjectsFrictionService implements IService {
     return nextPageKeyObject;
   }
 
+  async cleanupOldProjects(userId: string) {
+    if (await this.subscriptionService.isUserPro(userId)) {
+      logger.info({
+        op: "SKIPPED_INACTIVE_USER_PROJECTS_CLEANUP_AS_USER_IS_PRO",
+        userId,
+      });
+      return;
+    }
+    const now = DateTime.utc();
+    const unusedForOffset = now
+      .minus({ days: UNUSED_FOR_OFFSET_IN_DAYS })
+      .valueOf();
+    const unusedBlendIds = await this.blendService.getUnusedBlendIds(
+      userId,
+      unusedForOffset
+    );
+    const unusedImageIds = await this.heroImageService.getUnusedImageIds(
+      userId,
+      unusedForOffset
+    );
+    logger.info({
+      op: "EXECUTING_INACTIVE_USER_PROJECTS_CLEANUP",
+      userId,
+      unusedBlendIds,
+      unusedImageIds,
+    });
+    await this.blendService.deleteBlends(unusedBlendIds);
+    await this.heroImageService.deleteHeroImages(unusedImageIds);
+    logger.info({
+      op: "EXECUTED_INACTIVE_USER_PROJECTS_CLEANUP",
+      userId,
+    });
+  }
+
   private async getNextScheduledDeletionPlan(
     isoDate: string,
     pageKeyObject: Record<string, unknown>
