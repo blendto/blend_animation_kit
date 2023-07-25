@@ -1,5 +1,6 @@
 import { v4 } from "uuid";
 import Joi from "joi";
+import { isNil } from "lodash";
 
 import { RecipeSource, RecipeVariantId } from "server/base/models/recipeList";
 import { BrandingInfoType } from "server/repositories/branding";
@@ -413,6 +414,7 @@ export class RecipeWrapper {
     image?: StoredImage,
     interaction?: Interaction
   ) {
+    const isBrandingRecipe = !isNil((this.recipe as BrandingRecipe).brandingId);
     let heroUid =
       this.recipe.recipeDetails?.elements?.hero?.uid ??
       this.recipe.recipeDetails?.elements?.heroes?.[0]?.uid;
@@ -427,7 +429,7 @@ export class RecipeWrapper {
             interaction.assetUid === heroUid
         );
       }
-    } else {
+    } else if (isBrandingRecipe) {
       // Apply a default hero
       heroUid = v4();
       this.recipe.recipeDetails.elements.hero = {
@@ -448,6 +450,9 @@ export class RecipeWrapper {
       interaction = this.defaultHeroInteraction(heroUid, maxZIndex);
       this.recipe.images.push(image);
       this.recipe.interactions.push(interaction);
+    } else {
+      // Nothing to do here. Skip
+      return;
     }
 
     if (!image || !interaction) {
