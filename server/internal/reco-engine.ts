@@ -11,6 +11,7 @@ import {
 } from "server/base/models/removeBg";
 import { instanceToPlain, plainToClass } from "class-transformer";
 import { NextApiRequestExtended } from "../helpers/request";
+import { ImageFileKeys } from "../base/models/heroImage";
 
 export interface RecipeListSuggestions {
   suggestedRecipeCategories: RecipeList[];
@@ -30,6 +31,21 @@ export interface StyleSuggestions {
     };
   }[];
 }
+
+export interface SearchRecipesClientRequestBody {
+  fileKeys: ImageFileKeys;
+  pageKey: number;
+  parameters: {
+    searchQuery: string;
+  };
+  flow: FlowType;
+}
+
+type SearchRecipesServerRequestBody = SearchRecipesClientRequestBody & {
+  userAgentDetails: {
+    countryCode: string;
+  };
+};
 
 export default class RecoEngineApi {
   httpClient = axios.create({
@@ -213,8 +229,7 @@ export default class RecoEngineApi {
   }
 
   async searchRecipes(
-    query: unknown,
-    body: unknown
+    body: SearchRecipesServerRequestBody
   ): Promise<SearchRecipeResponse> {
     return (
       await handleAxiosCall(
