@@ -3,8 +3,16 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { DaxDB } from "server/external/dax";
 import { BrandingInfoType } from "server/repositories/branding";
 import { TYPES } from "server/types";
+import { Rect, Size, StoredImage } from "server/base/models/recipe";
 import { IService } from ".";
 import { UserService } from "./user";
+
+interface TextBackgroundConfig {
+  backgroundId: string;
+  image: StoredImage;
+  size: Size;
+  textBoxRelativeRect: Rect;
+}
 
 @injectable()
 export default class ConfigService implements IService {
@@ -34,5 +42,18 @@ export default class ConfigService implements IService {
           info.countryWiseSortedHandles.DEFAULT,
       },
     };
+  }
+
+  async textBackgrounds(): Promise<{
+    textBackgroundConfigs: TextBackgroundConfig[];
+  }> {
+    const { data: textBackgroundConfigs } = (await this.daxStore.getItem({
+      TableName: ConfigProvider.CONFIG_DYNAMODB_TABLE,
+      Key: { key: "text_backgrounds", version: "1" },
+    })) as {
+      data: TextBackgroundConfig[];
+    };
+
+    return { textBackgroundConfigs };
   }
 }
