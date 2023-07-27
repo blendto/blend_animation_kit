@@ -29,7 +29,7 @@ async function execute() {
                 if (await hasUserBeenInactive(userId)) {
                     console.log("Found user as inactive. Sending request to cleanup old projects");
                     await httpClient.post('temp/cleanup-inactive-user-old-projects', { userId });
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, 10000));
                 }
                 executedUsers.add(userId);
             }
