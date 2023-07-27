@@ -78,11 +78,17 @@ export class BackgroundInfoExtractor {
           }),
         ]);
 
-        const output = (await this.parser.parse(
-          repairResponse.generations[0][0].text
-        )) as BackgroundInfoLLMResponseType;
-
-        return output.hasUserDescribedImage ? output.userDescribedImage : null;
+        try {
+          const output = (await this.parser.parse(
+            repairResponse.generations[0][0].text
+          )) as BackgroundInfoLLMResponseType;
+          return output.hasUserDescribedImage
+            ? output.userDescribedImage
+            : null;
+        } catch (e) {
+          // Failed to parse
+          return null;
+        }
       }
     }
   }

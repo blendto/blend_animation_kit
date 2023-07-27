@@ -28,10 +28,11 @@ import { AIStudioService } from "server/service/aistudio";
 import { TYPES } from "server/types";
 
 import { GenericImageGenerator } from "./p2d/genericImageGenerator";
-import { MinimalOutputParser, OutputParserException } from "./outputparser";
+import { MinimalOutputParser } from "./outputparser";
 import { BackgroundInfoExtractor } from "./p2d/backgroundInfoExtractor";
 
 import { StudioImageGenerator } from "./p2d/studioImageGenerator";
+import { ImageDescriptionGenerator } from "./p2d/imageDescriptionGenerator";
 
 const TEXT_ONLY_RECIPE_LIST_ID = "p2d-text-only";
 const WITH_IMAGE_RECIPE_LIST_ID = "p2d-with-image";
@@ -41,10 +42,6 @@ type LLMGenerationReturnType = {
   subtitle: string;
   ctaText: string;
   offerText: string;
-};
-
-type ImageDescriptionsLLMGenerationReturnType = {
-  descriptions: string[];
 };
 
 export type SuggestFunction = () => Promise<{
@@ -245,80 +242,6 @@ export default class Prompt2DesignGenerator {
     });
   }
 
-  async generateImageDescriptionWithLLM(
-    prompt: string
-  ): Promise<ImageDescriptionsLLMGenerationReturnType> {
-    const chat = new ChatOpenAI({
-      openAIApiKey: ConfigProvider.OPENAI_API_KEY,
-      temperature: 0.5,
-      maxTokens: 256,
-      topP: 1,
-      frequencyPenalty: 0,
-      presencePenalty: 0,
-      modelName: "gpt-3.5-turbo",
-    });
-
-    const parser = MinimalOutputParser.fromZodSchema(
-      z.object({
-        descriptions: z.array(z.string()),
-      })
-    );
-
-    const systemPrompt = SystemMessagePromptTemplate.fromTemplate(
-      "User is trying to create a design for something. " +
-        "Your job is to point out what they can use as a feature image or background image" +
-        " for the graphic design they are trying to create. " +
-        "Limited words. No verb. Provide a object with array of 5 suggestions in english each less than 8 words as mentioned below" +
-        "\n {formatInstructions}"
-    );
-
-    const imageDescPrompt = ChatPromptTemplate.fromPromptMessages([
-      systemPrompt,
-      HumanMessagePromptTemplate.fromTemplate("{text}"),
-    ]);
-
-    const response = await chat.generatePrompt([
-      await imageDescPrompt.formatPromptValue({
-        text: prompt,
-        formatInstructions: parser.getFormatInstructions(),
-      }),
-    ]);
-
-    try {
-      const results = (await parser.parse(
-        response.generations[0][0].text
-      )) as ImageDescriptionsLLMGenerationReturnType;
-
-      return results;
-    } catch (e) {
-      if (e instanceof OutputParserException) {
-        // Make another call to try and repair it
-        const repairPrompt = SystemMessagePromptTemplate.fromTemplate(
-          "Format the user provided list into the below schema." +
-            "\n {formatInstructions}"
-        );
-
-        const imageDescPrompt = ChatPromptTemplate.fromPromptMessages([
-          repairPrompt,
-          HumanMessagePromptTemplate.fromTemplate("{text}"),
-        ]);
-
-        const repairResponse = await chat.generatePrompt([
-          await imageDescPrompt.formatPromptValue({
-            text: response.generations[0][0].text,
-            formatInstructions: parser.getFormatInstructions(),
-          }),
-        ]);
-
-        const output = (await parser.parse(
-          repairResponse.generations[0][0].text
-        )) as ImageDescriptionsLLMGenerationReturnType;
-
-        return output;
-      }
-    }
-  }
-
   async generateWithLLM(
     recipe: Recipe,
     prompt: string
@@ -331,6 +254,7 @@ export default class Prompt2DesignGenerator {
       frequencyPenalty: 0,
       presencePenalty: 0,
       modelName: "gpt-3.5-turbo",
+      stop: ["<|endoftext|>"],
     });
 
     const { title, subtitle, offerText, ctaText } =
@@ -389,7 +313,7 @@ export default class Prompt2DesignGenerator {
 
     const designPrompt = ChatPromptTemplate.fromPromptMessages([
       systemPrompt,
-      HumanMessagePromptTemplate.fromTemplate("{text}"),
+      HumanMessagePromptTemplate.fromTemplate("{text} <|endoftext|>"),
     ]);
 
     const response = await chat.generatePrompt([
@@ -436,8 +360,8 @@ export default class Prompt2DesignGenerator {
     if (someRecipesNeedsImages) {
       try {
         return (
-          (await this.generateImageDescriptionWithLLM(prompt))?.descriptions ??
-          []
+          (await new ImageDescriptionGenerator().generate({ prompt }))
+            ?.descriptions ?? []
         );
       } catch (e) {
         // Ignoring the failure, we will just use stock images

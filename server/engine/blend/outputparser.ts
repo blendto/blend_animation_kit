@@ -20,7 +20,7 @@ export class MinimalOutputParser<
 
   getFormatInstructions(): string {
     return `
-        Here is the JSON Schema instance your output must adhere to. Generate less than mentioned character limit. Include the enclosing markdown codeblock:
+        Output should conform to below JSON Schema. Generate less than mentioned character limit. Include the enclosing markdown codeblock:
         \`\`\`json
         ${JSON.stringify(zodToJsonSchema(this.schema))}
         \`\`\`
