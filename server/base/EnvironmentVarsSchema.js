@@ -28,6 +28,7 @@ module.exports = {
       NEXT_PUBLIC_FIREBASE_APP_CLIENT_CONFIG: Joi.string().required(),
       USER_DYNAMODB_TABLE: Joi.string().required(),
       AI_BLEND_PHOTOS_TABLE: Joi.string().required(),
+      AI_BLEND_GENERATED_IMAGES_TABLE: Joi.string().required(),
       AI_BLEND_PHOTO_TOPICS_TABLE: Joi.string().required(),
       BATCH_TASK_QUEUE_URL: Joi.string().required(),
       BLEND_UPLOADS_EVENT_QUEUE_URL: Joi.string().required(),

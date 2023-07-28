@@ -32,7 +32,7 @@ const getAIBlendPhoto = async (
   const aiStudioService = diContainer.get<AIStudioService>(
     TYPES.AIStudioService
   );
-  const out = await aiStudioService.getAIBlendPhotoForUser(id, req.uid);
+  const out = await aiStudioService.getExtendedAIBlendPhotos(id, req.uid);
   res.send(out);
 };
 

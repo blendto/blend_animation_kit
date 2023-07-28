@@ -44,8 +44,6 @@ import {
   UserAccountActionSqsConfig,
 } from "server/external/queue/userAccountActionQueue";
 import { AIStudioService } from "server/service/aistudio";
-import { AiBlendPhotoDynamooseRepo } from "server/repositories/ai-blend-photo";
-import { AIBlendPhoto } from "server/base/models/aistudio";
 import {
   BrandingDynamooseRepo,
   BrandingEntity,
@@ -209,9 +207,6 @@ diContainer
   .bind<AIStudioService>(TYPES.AIStudioService)
   .to(AIStudioService)
   .inSingletonScope();
-diContainer
-  .bind<Repo<AIBlendPhoto>>(TYPES.AIBlendPhotoRepo)
-  .toDynamicValue(() => new AiBlendPhotoDynamooseRepo());
 diContainer
   .bind<P2DCreationLogRepository>(TYPES.P2DCreationLogRepo)
   .to(P2DCreationLogRepository)

@@ -1,3 +1,5 @@
+// noinspection JSMethodCanBeStatic
+
 /* eslint-disable
   dot-notation,
   @typescript-eslint/no-unsafe-call,
@@ -85,6 +87,10 @@ class ConfigProvider {
 
   public get AI_BLEND_PHOTOS_TABLE(): string {
     return this.retrieveOrCrash("AI_BLEND_PHOTOS_TABLE");
+  }
+
+  public get AI_BLEND_GENERATED_IMAGES_TABLE(): string {
+    return this.retrieveOrCrash("AI_BLEND_GENERATED_IMAGES_TABLE");
   }
 
   public get AI_BLEND_PHOTO_TOPICS_TABLE(): string {

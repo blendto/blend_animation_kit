@@ -1,3 +1,5 @@
+// noinspection JSMethodCanBeStatic
+
 import "reflect-metadata";
 import DynamoDB from "server/external/dynamodb";
 import { inject, injectable } from "inversify";
@@ -6,6 +8,7 @@ import { BlendService } from "server/service/blend";
 import { IService } from "server/service/index";
 import {
   AIBlendPhoto,
+  AIBlendPhotoExtended,
   AIBlendPhotoGenerationStatus,
   AIBlendPhotoTopic,
   AiStudioRecentGeneration,
@@ -30,8 +33,6 @@ import AiStudioGeneratorApi, {
 } from "server/internal/aiStudioGeneratorApi";
 import { DaxDB } from "server/external/dax";
 import ConfigProvider from "server/base/ConfigProvider";
-import { fireAndForget } from "server/helpers/async-runner";
-import logger from "server/base/Logger";
 import { nanoid } from "nanoid";
 import { EncodedPageKey } from "server/helpers/paginationUtils";
 import { reduceFraction } from "server/helpers/mathUtils";
@@ -54,16 +55,85 @@ export class AIStudioService implements IService {
   async createAIBlendPhoto(
     blendId: string,
     createdBy: string
-  ): Promise<AIBlendPhoto> {
+  ): Promise<AIBlendPhotoExtended> {
     const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
     const heroImages = await this.fetchBlendHero(blendId, createdBy);
     if (aiBlendPhoto) {
       await this.updateHeroInBlendPhoto(blendId, heroImages);
-      return this.getAIBlendPhoto(blendId);
+      return this.withNoGeneratedImages(await this.getAIBlendPhoto(blendId));
     }
 
     await this.createAIBlendPhotoInternal(blendId, heroImages, createdBy, []);
-    return await this.getAIBlendPhoto(blendId);
+    return this.withNoGeneratedImages(await this.getAIBlendPhoto(blendId));
+  }
+
+  private withNoGeneratedImages(
+    aiBlendPhoto: AIBlendPhoto
+  ): AIBlendPhotoExtended {
+    return { ...aiBlendPhoto, generatedImages: [] };
+  }
+
+  async getExtendedAIBlendPhotos(
+    blendId: string,
+    createdBy: string
+  ): Promise<AIBlendPhotoExtended> {
+    const aiBlendPhoto = await this.getAIBlendPhotoForUser(blendId, createdBy);
+
+    const generatedImages: GeneratedImage[] = [];
+    let lastEvaluatedKey: AWS.DynamoDB.Key = null;
+    do {
+      const paginated = await this.paginatedGeneratedImages(
+        blendId,
+        lastEvaluatedKey
+      );
+      generatedImages.push(...paginated.generatedImages);
+      lastEvaluatedKey = paginated.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    return { ...aiBlendPhoto, generatedImages };
+  }
+
+  private async paginatedGeneratedImages(
+    blendId: string,
+    ExclusiveStartKey: AWS.DynamoDB.Key
+  ): Promise<{
+    generatedImages: GeneratedImage[];
+    LastEvaluatedKey: AWS.DynamoDB.Key;
+  }> {
+    const { Items, LastEvaluatedKey } = await this.dataStore.queryItems({
+      TableName: ConfigProvider.AI_BLEND_GENERATED_IMAGES_TABLE,
+      KeyConditionExpression: "#blendId = :blendId",
+      IndexName: "blendId-createdAt-index",
+      ExpressionAttributeNames: {
+        "#blendId": "blendId",
+      },
+      ExpressionAttributeValues: {
+        ":blendId": blendId,
+      },
+      ExclusiveStartKey,
+    });
+
+    return { generatedImages: Items as GeneratedImage[], LastEvaluatedKey };
+  }
+
+  private async paginatedGeneratedImageIds(
+    blendId: string,
+    ExclusiveStartKey: AWS.DynamoDB.Key
+  ): Promise<{
+    ids: Partial<GeneratedImage>[];
+    LastEvaluatedKey: AWS.DynamoDB.Key;
+  }> {
+    const { Items, LastEvaluatedKey } = await this.dataStore.queryItems({
+      TableName: ConfigProvider.AI_BLEND_GENERATED_IMAGES_TABLE,
+      KeyConditionExpression: "#blendId = :blendId",
+      IndexName: "blendId-createdAt-index",
+      ExpressionAttributeNames: { "#blendId": "blendId" },
+      ExpressionAttributeValues: { ":blendId": blendId },
+      ProjectionExpression: "id, blendId",
+      ExclusiveStartKey,
+    });
+
+    return { ids: Items as GeneratedImage[], LastEvaluatedKey };
   }
 
   async getAIBlendPhotoForUser(
@@ -233,45 +303,6 @@ export class AIStudioService implements IService {
     };
   }
 
-  async requestGenerationSample(
-    blendId: string,
-    generateSamplesRequest: GenerateSamplesRequest,
-    createdBy: string
-  ): Promise<{
-    aiBlendPhoto: AIBlendPhoto;
-    activeSampleGenerationRequest: AiStudioGenerateSamplesRequest;
-  }> {
-    const heroImages = await this.fetchBlendHero(blendId, createdBy);
-    const aiBlendPhoto = await this.getAIBlendPhoto(blendId);
-
-    const { prompts, aiStudioRequest } = generateSamplesRequest.updatePrompts(
-      blendId,
-      aiBlendPhoto?.prompts || [],
-      4
-    );
-    await this.updateBlendPhoto(
-      blendId,
-      aiBlendPhoto,
-      heroImages,
-      prompts,
-      createdBy
-    );
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fireAndForget(() => this.requestImageGeneration(aiStudioRequest)).catch(
-      (err) => {
-        logger.error({
-          source: "AI_STUDIO_INTERNAL_API",
-          error: (err as unknown).toString(),
-        });
-      }
-    );
-    const saved = await this.getAIBlendPhotoForUser(blendId, createdBy);
-    return {
-      aiBlendPhoto: saved,
-      activeSampleGenerationRequest: aiStudioRequest,
-    };
-  }
-
   private async updateBlendPhoto(
     blendId: string,
     aiBlendPhoto: AIBlendPhoto,
@@ -336,7 +367,6 @@ export class AIStudioService implements IService {
     return {
       blendId,
       fileKeys,
-      generatedImages: [],
       prompts,
       createdAt: currentTime,
       createdOn: currentDate,
@@ -434,27 +464,46 @@ export class AIStudioService implements IService {
     return new Map<string, SceneConfigOptionExternal>(map);
   }
 
-  async resetAIBlendPhoto(blendId: string, uid: string): Promise<AIBlendPhoto> {
+  async resetAIBlendPhoto(
+    blendId: string,
+    uid: string
+  ): Promise<AIBlendPhotoExtended> {
     await this.getAIBlendPhotoForUser(blendId, uid);
     await this.resetBlendPhotoInDB(blendId);
-    return await this.getAIBlendPhoto(blendId);
+    return this.withNoGeneratedImages(await this.getAIBlendPhoto(blendId));
   }
 
   private async resetBlendPhotoInDB(blendId: string) {
+    await this.deleteGeneratedImages(blendId);
     await this.dataStore.updateItem({
       TableName: ConfigProvider.AI_BLEND_PHOTOS_TABLE,
-      UpdateExpression:
-        "set #status=:status, #generatedImages=:generatedImages",
+      UpdateExpression: "set #status=:status",
       ExpressionAttributeNames: {
         "#status": "status",
-        "#generatedImages": "generatedImages",
       },
       ExpressionAttributeValues: {
         ":status": AIBlendPhotoGenerationStatus.INITIALIZED,
-        ":generatedImages": [],
       },
       Key: { blendId },
     });
+  }
+
+  private async deleteGeneratedImages(blendId: string) {
+    const idsToDelete: Partial<GeneratedImage>[] = [];
+    let lastEvaluatedKey: AWS.DynamoDB.Key = null;
+    do {
+      const paginated = await this.paginatedGeneratedImageIds(
+        blendId,
+        lastEvaluatedKey
+      );
+      idsToDelete.push(...paginated.ids);
+      lastEvaluatedKey = paginated.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    await this.dataStore.batchDeleteItems(
+      ConfigProvider.AI_BLEND_GENERATED_IMAGES_TABLE,
+      idsToDelete
+    );
   }
 
   async fetchRecents(

@@ -1,5 +1,4 @@
 import { ImageFileKeys } from "server/base/models/heroImage";
-import { Entity } from "server/repositories/base";
 import { plainToInstance } from "class-transformer";
 import UserError from "server/base/errors/UserError";
 import { nanoid } from "nanoid";
@@ -272,11 +271,10 @@ export class AIStudioTopicListExternal extends AIStudioTopicList {
   topics: Partial<AIBlendPhotoTopic>[];
 }
 
-export class AIBlendPhoto implements Entity {
+export class AIBlendPhoto {
   blendId: string;
   fileKeys: ImageFileKeys;
   prompts: Prompt[];
-  generatedImages: GeneratedImage[];
   createdAt: number;
   updatedAt: number;
   createdOn: string;
@@ -284,8 +282,13 @@ export class AIBlendPhoto implements Entity {
   status: AIBlendPhotoGenerationStatus;
 }
 
+export class AIBlendPhotoExtended extends AIBlendPhoto {
+  generatedImages: GeneratedImage[];
+}
+
 export class GeneratedImage {
   id: string;
+  blendId: string;
   thumbnail: string;
   image: string;
   metadata: GeneratedImageMetadata;
