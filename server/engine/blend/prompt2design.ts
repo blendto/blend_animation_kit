@@ -103,16 +103,10 @@ export default class Prompt2DesignGenerator {
 
   async pickRecipes(fileKeys: BlendHeroImage) {
     if (!fileKeys) {
-      const [textOnlyRecipeList, withImageRecipeList] = await Promise.all([
-        this.nonHeroRecipeListService.get(TEXT_ONLY_RECIPE_LIST_ID),
+      const [withImageRecipeList] = await Promise.all([
         this.nonHeroRecipeListService.get(WITH_IMAGE_RECIPE_LIST_ID),
       ]);
-      return shuffle(
-        concat(
-          sampleSize(textOnlyRecipeList.recipes, 4),
-          sampleSize(withImageRecipeList.recipes, 4)
-        )
-      );
+      return shuffle(concat(sampleSize(withImageRecipeList.recipes, 4)));
     }
 
     const suggestions = await this.suggestFn();
