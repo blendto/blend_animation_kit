@@ -353,9 +353,8 @@ export class RemoveBgService implements IService {
           data += chunk;
         }
 
-        // avoid JSON parse error, which shadows the actual error
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (ex.response.headers["content-type"] === "text/html") {
+        const { status } = ex.response;
+        if (status >= 500 && status < 600) {
           if (ex.response.status === 502) {
             logger.error({
               op: "POSSIBLE_BG_REMOVAL_TIMEOUT",
@@ -365,9 +364,13 @@ export class RemoveBgService implements IService {
           }
           throw ex;
         }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const error: ToolkitErrorResponse = JSON.parse(data);
 
+        // avoid JSON parse error, which shadows the actual error
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (ex.response.headers["content-type"] === "text/html") {
+          throw ex;
+        }
+        const error = JSON.parse(data) as ToolkitErrorResponse;
         let errorMessage = error.message;
 
         if (error.code === "unknown_foreground") {
