@@ -27,7 +27,8 @@ const computeStatistics = async (
   res: NextApiResponse
 ) => {
   const { draftBlendIds } = req.body as { draftBlendIds: string[] };
+  const uniqueIds = [...new Set(draftBlendIds ?? [])];
   const service = diContainer.get<BlendService>(TYPES.BlendService);
-  const out = await service.getBlendsCount(req.uid, draftBlendIds ?? []);
+  const out = await service.getBlendsCount(req.uid, uniqueIds);
   res.send(out);
 };

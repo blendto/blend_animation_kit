@@ -308,18 +308,25 @@ export const deleteMultipleObjects = async (
 export const listObjectsInFolder = async (
   bucketName: string,
   folderPrefix: string
-): Promise<ObjectList> =>
-  (
-    await (
+): Promise<ObjectList> => {
+  let token: string | undefined;
+  let objectList: AWS.S3.ObjectList = [];
+  do {
+    const res = await (
       await getS3()
     )
       .listObjectsV2({
-        Bucket: bucketName,
         Prefix: folderPrefix,
-        // Delimiter: "/",
+        Bucket: bucketName,
+        ContinuationToken: token,
       })
-      .promise()
-  )?.Contents || [];
+      .promise();
+    token = res.NextContinuationToken;
+    objectList = objectList.concat(res.Contents);
+  } while (token);
+
+  return objectList;
+};
 
 export const listAndDeleteObjectsInFolder = async (
   bucketName: string,
