@@ -82,7 +82,7 @@ export class StudioImageGenerator {
       productSuperCategory:
         blend.heroImages?.classificationMetadata?.productSuperClass,
       requestIndex: sample([1, 2, 3, 4]), // Pick top 4 except minimal (0)
-      topicId: "assorted",
+      topicId: "Assorted-P2D",
     });
   }
 }

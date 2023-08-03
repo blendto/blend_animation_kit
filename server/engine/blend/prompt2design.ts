@@ -1,5 +1,5 @@
 import { ChatOpenAI } from "langchain/chat_models/openai";
-import { OpenAI } from "langchain";
+import { OpenAI } from "langchain/llms/openai";
 import { ZodType, z } from "zod";
 import * as async from "async";
 
