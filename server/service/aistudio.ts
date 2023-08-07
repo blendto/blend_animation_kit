@@ -363,6 +363,10 @@ export class AIStudioService implements IService {
     prompts: Prompt[]
   ): AIBlendPhoto {
     const currentTime = Date.now();
+    const expireAt = DateTime.local()
+      .plus({ days: 1 })
+      .startOf("second")
+      .toSeconds();
     const currentDate = DateTime.utc().toISODate();
     return {
       blendId,
@@ -372,6 +376,7 @@ export class AIStudioService implements IService {
       createdOn: currentDate,
       updatedAt: currentTime,
       createdBy,
+      expireAt,
       status: AIBlendPhotoGenerationStatus.INITIALIZED,
     } as AIBlendPhoto;
   }

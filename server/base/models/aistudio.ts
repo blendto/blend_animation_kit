@@ -279,6 +279,7 @@ export class AIBlendPhoto {
   updatedAt: number;
   createdOn: string;
   createdBy: string;
+  expireAt: number;
   status: AIBlendPhotoGenerationStatus;
 }
 
