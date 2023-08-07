@@ -334,10 +334,19 @@ export const listAndDeleteObjectsInFolder = async (
 ) => {
   const objects = await listObjectsInFolder(bucketName, folderPrefix);
   if (objects.length) {
-    await deleteMultipleObjects(
-      bucketName,
-      objects.map((o) => o.Key)
-    );
+    const batchSize = 1000;
+    let index = 0;
+    while (index < objects.length) {
+      const batch = objects.slice(index, index + batchSize);
+      if (!batch.length) {
+        break;
+      }
+      await deleteMultipleObjects(
+        bucketName,
+        batch.map((o) => o.Key)
+      );
+      index += batchSize;
+    }
   }
 };
 

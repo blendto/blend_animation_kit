@@ -2,6 +2,7 @@ import logger from "server/base/Logger";
 
 interface Options {
   operationName?: string;
+  context?: Record<string, unknown>;
 }
 
 /**
@@ -32,6 +33,7 @@ export const fireAndForget = async (
   } catch (ex) {
     logger.error({
       op: options?.operationName ?? "UNNAMED_FIRE_AND_FORGET_OP",
+      context: options?.context ?? {},
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       exception: ex,
       // eslint-disable-next-line max-len

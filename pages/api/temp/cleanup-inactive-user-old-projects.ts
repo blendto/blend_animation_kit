@@ -26,6 +26,7 @@ function cleanupOldProjects(req: NextApiRequestExtended, res: NextApiResponse) {
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   fireAndForget(() => projectsFrictionService.cleanupOldProjects(userId), {
     operationName: "projectsFrictionService.cleanupOldProjects",
+    context: { userId },
   });
   res.end();
 }
