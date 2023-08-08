@@ -353,15 +353,14 @@ export class BlendService implements IService {
     return outFileKey;
   }
 
-  async getOrCreateBlend(blendId: string, uid: string) {
+  async getBlendOrFail(blendId: string) {
     const existingBlend = await this.getBlend(blendId, {
       consistentRead: true,
     });
     if (existingBlend) {
       return existingBlend;
     }
-    // Blend might have expired, recreate it
-    return await this.addBlendToDB(blendId, uid);
+    throw new ObjectNotFoundError("Blend not found");
   }
 
   async getMinimalBlends(blendIds: string[]): Promise<MinimalBlend[]> {
@@ -744,7 +743,7 @@ export class BlendService implements IService {
     clientType: string,
     isUserAnonymous: boolean
   ): Promise<VerifyExportResponse> {
-    const existingBlend = await this.getOrCreateBlend(blendId, uid);
+    const existingBlend = await this.getBlendOrFail(blendId);
 
     const updater = new BlendUpdater(existingBlend, incomingRecipe);
     updater.validate(uid, isUserAnonymous);

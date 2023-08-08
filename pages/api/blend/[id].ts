@@ -265,7 +265,7 @@ async function generate(
   isUserAnonymous: boolean
 ) {
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const existingBlend = await blendService.getOrCreateBlend(blendId, uid);
+  const existingBlend = await blendService.getBlendOrFail(blendId);
   const { isWatermarked } = existingBlend;
   await Promise.all(
     incomingRecipe.images.map(async (img, i) => {
