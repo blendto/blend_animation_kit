@@ -34,6 +34,8 @@ import {
 } from "server/helpers/imageUtils";
 import { bufferToStream } from "server/helpers/bufferUtils";
 import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
+import { isEmpty } from "lodash";
+import SubscriptionService from "server/service/subscription";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -293,6 +295,18 @@ async function generate(
     updatedAt
   );
   const body = new ExportPrepAgent(savedBlend).prepareForVes(isWatermarked);
+
+  const subscriptionService = diContainer.get<SubscriptionService>(
+    TYPES.SubscriptionService
+  );
+  await subscriptionService.ensureBrandingEntitlement(
+    body,
+    body.metadata?.sourceRecipe?.source,
+    uid
+  );
+  if (isEmpty(body.branding)) {
+    new RecipeWrapper(body).cleanupBranding();
+  }
 
   await new VesApi().saveExport({
     body,

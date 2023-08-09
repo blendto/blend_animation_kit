@@ -134,6 +134,9 @@ const useRecipeForBlend = async (
       await recipePrepAgent.applyBranding(req.uid, ip);
     }
   }
+  if (isEmpty(recipe.branding)) {
+    recipeWrapper.cleanupBranding();
+  }
 
   if (mutations) {
     await recipePrepAgent.applyMutations(mutations);

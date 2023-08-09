@@ -128,6 +128,8 @@ const chooseRecipeAndExportSync = async (
           req.ip,
           mutations?.branding
         );
+      } else {
+        new RecipeWrapper(recipe).cleanupBranding();
       }
 
       if (mutations) {

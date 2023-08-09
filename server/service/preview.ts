@@ -67,6 +67,9 @@ export class PreviewService implements IService {
         await recipePrepAgent.applyBranding(uid, ip, mutations?.branding);
       }
     }
+    if (isEmpty(recipe.branding)) {
+      recipeWrapper.cleanupBranding();
+    }
 
     if (mutations) {
       await recipePrepAgent.applyMutations(mutations, { dryRun: true });
