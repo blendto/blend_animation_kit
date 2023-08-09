@@ -74,20 +74,18 @@ const deleteBlend = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const {
-    query: { id },
-  } = req;
+  const { id } = req.query as { id: string };
 
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
 
-  const blend = await blendService.getBlend(id as string);
+  const blend = await blendService.getBlend(id);
 
   if (!blend) {
     throw new ObjectNotFoundError("Blend not found");
   }
   if (blend.createdBy !== req.uid) {
     IllegalBlendAccessError.logIllegalBlendAccess(
-      id as string,
+      id,
       blend.createdBy,
       req.uid,
       req.isUserAnonymous
@@ -96,43 +94,12 @@ const deleteBlend = async (
     throw new ObjectNotFoundError("Blend not found");
   }
 
-  if (blend.status !== "GENERATED") {
-    await DynamoDB._().deleteItem({
-      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      Key: {
-        id,
-      },
-    });
-  } else {
-    const now = Date.now();
-    const updatedOn = DateTime.utc().toISODate();
-    const params = {
-      UpdateExpression:
-        "SET #st = :s, statusUpdates = list_append(statusUpdates, :update), " +
-        "updatedAt = :updatedAt, updatedOn = :updatedOn",
-      ExpressionAttributeNames: {
-        "#st": "status",
-      },
-      ExpressionAttributeValues: {
-        ":s": BlendStatus.Deleted,
-        ":update": [{ status: BlendStatus.Deleted, on: now }],
-        ":updatedAt": now,
-        ":updatedOn": updatedOn,
-      },
-      Key: { id },
-      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      ReturnValues: "NONE",
-    };
-
-    await DynamoDB._().updateItem(params);
-  }
-
+  await blendService.deleteBlend(id);
   // Hack: To avoid consistency issues coz the app reads /blend immediately after this,
   // We wait 1 second before responding
   await new Promise((r) => {
     setTimeout(r, 1000);
   });
-
   res.send({ status: "Success" });
 };
 

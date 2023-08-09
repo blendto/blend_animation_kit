@@ -933,34 +933,22 @@ export class BlendService implements IService {
   }
 
   async deleteBlend(blendId: string) {
-    await this.dataStore.updateItem({
-      UpdateExpression: `SET #status = :status, updatedAt = :updatedAt`,
-      ExpressionAttributeNames: {
-        "#status": "status",
-      },
-      ExpressionAttributeValues: {
-        ":updatedAt": Date.now(),
-        ":status": BlendStatus.Deleted,
-      },
+    const blend = (await this.dataStore.getItem({
       Key: { id: blendId },
       TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      ReturnValues: "NONE",
-    });
+    })) as Blend;
+    if (blend) {
+      await this.cleanupBlendAssets(blend);
+      await this.dataStore.deleteItem({
+        Key: { id: blendId },
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      });
+    }
   }
 
   async deleteBlends(blendIds: string[]) {
     for (const blendId of blendIds) {
-      const blend = (await this.dataStore.getItem({
-        Key: { id: blendId },
-        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-      })) as Blend;
-      if (blend) {
-        await this.cleanupBlendAssets(blend);
-        await this.dataStore.deleteItem({
-          Key: { id: blendId },
-          TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
-        });
-      }
+      await this.deleteBlend(blendId);
     }
   }
 
