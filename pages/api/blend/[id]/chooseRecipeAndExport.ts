@@ -26,6 +26,7 @@ import { RecipeChoosePrepAgent } from "server/engine/blend/recipeAgents";
 import { P2DCreationLogAction } from "server/base/models/p2d";
 import { P2DCreationLogRepository } from "server/repositories/p2d-creation-log";
 import { fireAndForget } from "server/helpers/async-runner";
+import SubscriptionService from "server/service/subscription";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -122,6 +123,14 @@ const chooseRecipeAndExportSync = async (
         brandingService,
       });
 
+      const subscriptionService = diContainer.get<SubscriptionService>(
+        TYPES.SubscriptionService
+      );
+      await subscriptionService.ensureBrandingEntitlement(
+        recipe,
+        source,
+        req.uid
+      );
       if (!isEmpty(recipe.branding)) {
         await recipePrepAgent.applyBranding(
           req.uid,
