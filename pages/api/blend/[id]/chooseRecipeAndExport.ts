@@ -142,7 +142,6 @@ const chooseRecipeAndExportSync = async (
       }
 
       if (mutations) {
-        await recipePrepAgent.applyMutations(mutations);
         // HACK: In the future if we use mutations for anything other than P2D,
         // this log would be wrong
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -158,6 +157,8 @@ const chooseRecipeAndExportSync = async (
               }),
           { operationName: "chooseRecipeAndExport-P2DLog" }
         );
+
+        await recipePrepAgent.applyMutations(mutations);
       }
 
       const recipeBody = await service.copyRecipeToBlendWithSource(

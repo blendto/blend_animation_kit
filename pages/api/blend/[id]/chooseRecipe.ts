@@ -139,7 +139,6 @@ const useRecipeForBlend = async (
   }
 
   if (mutations) {
-    await recipePrepAgent.applyMutations(mutations);
     // HACK: In the future if we use mutations for anything other than P2D,
     // this log would be wrong
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -155,6 +154,7 @@ const useRecipeForBlend = async (
           }),
       { operationName: "chooseRecipe-P2DLog" }
     );
+    await recipePrepAgent.applyMutations(mutations);
   }
 
   if (fileKeys) {
