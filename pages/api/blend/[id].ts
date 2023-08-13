@@ -1,5 +1,3 @@
-import DynamoDB from "server/external/dynamodb";
-import { DateTime } from "luxon";
 import type { NextApiResponse } from "next";
 import { Recipe, RecipeWrapper } from "server/base/models/recipe";
 import { Blend, BlendStatus } from "server/base/models/blend";
@@ -27,7 +25,12 @@ import { ExportPrepAgent } from "server/engine/blend/export";
 import Joi from "joi";
 import { UpdateOperations } from "server/repositories";
 import { VALID_UPLOAD_IMAGE_EXTENSIONS } from "server/helpers/constants";
-import { doesObjectExist, getObject, uploadObject } from "server/external/s3";
+import {
+  doesObjectExist,
+  getObject,
+  listObjectsInFolder,
+  uploadObject,
+} from "server/external/s3";
 import {
   convertUnspportedFormatToWebp,
   createConvertedFileKey,
@@ -36,6 +39,7 @@ import { bufferToStream } from "server/helpers/bufferUtils";
 import { IllegalBlendAccessError } from "server/base/errors/engine/blendEngineErrors";
 import { isEmpty } from "lodash";
 import SubscriptionService from "server/service/subscription";
+import { DateTime } from "luxon";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -308,10 +312,49 @@ async function generate(
     new RecipeWrapper(body).cleanupBranding();
   }
 
-  await new VesApi().saveExport({
-    body,
-    schema: ExportRequestSchema.Blend,
-  });
+  try {
+    await new VesApi().saveExport({
+      body,
+      schema: ExportRequestSchema.Blend,
+    });
+  } catch (e) {
+    // Temp hack to revert re-creation old cleaned up blends
+    // TODO: Revert this
+    if (
+      e instanceof UserError &&
+      e
+        .toString()
+        .startsWith(
+          `UserError: S3 item missing: bucket=${ConfigProvider.BLEND_INGREDIENTS_BUCKET}`
+        )
+    ) {
+      const timeOfFix = DateTime.utc(2023, 8, 8, 19, 45, 0);
+      const timeOfFixTS = timeOfFix.valueOf();
+      const unusedForOffset = timeOfFix.minus({ days: 90 }).valueOf();
+      const wasRecreated = body.createdAt > updatedAt;
+      const wasCreatedBeforeFix = body.createdAt < timeOfFixTS;
+      const wasLastUpdatedBeforeUnusedOffset = updatedAt < unusedForOffset;
+      if (
+        wasRecreated &&
+        wasCreatedBeforeFix &&
+        wasLastUpdatedBeforeUnusedOffset
+      ) {
+        const s3Assets = await listObjectsInFolder(
+          ConfigProvider.BLEND_INGREDIENTS_BUCKET,
+          blendId
+        );
+        if (!s3Assets.length) {
+          logger.debug({
+            op: "REVERTING_RECREATION_OF_POSSIBLY_CLEANED_UP_BLEND",
+            blendId,
+          });
+          await blendService.deleteBlend(blendId);
+          throw new ObjectNotFoundError("Blend not found");
+        }
+      }
+      throw e;
+    }
+  }
   const generatedBlend = await blendService.getBlend(blendId, {
     consistentRead: true,
   });
