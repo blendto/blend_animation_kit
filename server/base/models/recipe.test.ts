@@ -20,7 +20,7 @@ function getSampleRecipe() {
 function addBrandingRecipeMockDetails(recipe: BrandingRecipe) {
   recipe.brandingId = "foobar";
   recipe.userId = "johndoe";
-  recipe.lastUsedAt = new Date().getUTCMilliseconds();
+  recipe.lastUsedAt = new Date("2020-01-01T00:00:00.000Z").getMilliseconds();
 }
 
 describe("RecipeWrapper", () => {
