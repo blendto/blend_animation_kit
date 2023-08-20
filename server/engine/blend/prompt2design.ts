@@ -1,12 +1,11 @@
 import { ChatOpenAI } from "langchain/chat_models/openai";
-import { OpenAI } from "langchain/llms/openai";
 import { ZodType, z } from "zod";
 import * as async from "async";
+import { SystemMessage, HumanMessage } from "langchain/schema";
 
 import {
   ChatPromptTemplate,
   HumanMessagePromptTemplate,
-  PromptTemplate,
   SystemMessagePromptTemplate,
 } from "langchain/prompts";
 import { concat, sample, sampleSize, shuffle, some } from "lodash";
@@ -34,7 +33,6 @@ import { BackgroundInfoExtractor } from "./p2d/backgroundInfoExtractor";
 import { StudioImageGenerator } from "./p2d/studioImageGenerator";
 import { ImageDescriptionGenerator } from "./p2d/imageDescriptionGenerator";
 
-const TEXT_ONLY_RECIPE_LIST_ID = "p2d-text-only";
 const WITH_IMAGE_RECIPE_LIST_ID = "p2d-with-image";
 
 type LLMGenerationReturnType = {
@@ -50,28 +48,49 @@ export type SuggestFunction = () => Promise<{
 }>;
 
 export class Prompt2DesignAutocompleter {
+  createSystemPrompt() {
+    const examples = [
+      `User: Shoe sale 
+Assistant: starting July 30th at 'The Shoe Mart' on Main Street. Up to 70% off.`,
+      `User: Pesta ulang tahun
+      Assistant: ikut berbagai kegiatan seperti makeup dan pemotretan fotografi. Lokasi: Hotel Alia Tanggal: 15 Agustus`,
+      `User: Bags 20% off 
+      Assistant: this month. Independence day offer.`,
+      `User: Yoga Retreat in Costa Rica
+      Assistant: 7 days, 6 nights. Includes yoga, meditation, and healthy meals. Price: $1,500. Dates: July 1-7`,
+      `User: Игровой ноутбук High-Flyer
+      Assistant: Оснащен процессором Intel i7, 16 ГБ ОЗУ и Nvidia RTX 2070. Идеально подходит для всех ваших игровых потребностей.`,
+    ];
+
+    return new SystemMessage(
+      `Finish the user provided phrase to furnish details of a design to be created. Fill in applicable missing details like date, venue/address, price, discount etc. Output should start where input is left off. Output should be in the input language itself. length of input + output should be around 100 characters.
+
+      Random seed: ${Math.random()}
+
+      Examples:
+      
+      ${shuffle(sampleSize(examples, 3)).join("\n\n")}
+      `
+    );
+  }
   async complete(promptInput: string) {
-    const model = new OpenAI({
+    const chat = new ChatOpenAI({
       openAIApiKey: ConfigProvider.OPENAI_API_KEY,
       temperature: 0.7,
-      modelName: "davinci:ft-blend-2023-07-04-15-49-08",
       maxTokens: 100,
+      topP: 0.85,
+      frequencyPenalty: 0,
+      presencePenalty: 0,
+      modelName: "gpt-3.5-turbo",
       stop: ["\n"],
-      n: 2,
-      bestOf: 2,
     });
 
-    const template = "Input: {input}\n Output:";
-    const prompt = new PromptTemplate({
-      template,
-      inputVariables: ["input"],
-    });
+    const response = await chat.generate([
+      [this.createSystemPrompt(), new HumanMessage(promptInput)],
+      [this.createSystemPrompt(), new HumanMessage(promptInput)],
+    ]);
 
-    const formattedPrompt = await prompt.format({ input: promptInput });
-
-    const res = await model.generate([formattedPrompt]);
-
-    return res.generations.flatMap((generation) =>
+    return response.generations.flatMap((generation) =>
       generation.map((g) => g.text)
     );
   }
@@ -120,7 +139,6 @@ export default class Prompt2DesignGenerator {
 
   async generate({ prompt, reqUid }: { prompt: string; reqUid: string }) {
     const fileKeys = this.blend.heroImages;
-
     const chosenRecipeIds: RecipeVariantId[] = await this.pickRecipes(fileKeys);
 
     const chosenRecipes = await async.map(

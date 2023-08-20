@@ -256,6 +256,8 @@ export class SuggestionService {
         uid: req.uid,
         fileKey: fileKeys?.withoutBg,
         ip: req.ip,
+        productSuperCategory:
+          blend.heroImages?.classificationMetadata?.productSuperClass,
         flow: FlowType.PROMPT_TO_DESIGN,
         include: [],
       }) as SuggestFunction,
