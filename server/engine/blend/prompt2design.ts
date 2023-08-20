@@ -91,7 +91,7 @@ Assistant: starting July 30th at 'The Shoe Mart' on Main Street. Up to 70% off.`
     ]);
 
     return response.generations.flatMap((generation) =>
-      generation.map((g) => g.text)
+      generation.map((g) => " " + g.text)
     );
   }
 }
