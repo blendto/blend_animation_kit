@@ -179,6 +179,7 @@ export default class RecoEngineApi {
     productSuperCategory?: string;
     filters?: Record<string, unknown>;
     flow: FlowType;
+    entriesRequested?: number;
   }): Promise<PaginatedRecipeListSuggestions> {
     const {
       heroImageKey,
@@ -187,6 +188,7 @@ export default class RecoEngineApi {
       productSuperCategory,
       filters,
       flow,
+      entriesRequested,
     } = requestBody;
     return (
       await handleAxiosCall<PaginatedRecipeListSuggestions>(
@@ -198,6 +200,7 @@ export default class RecoEngineApi {
             productSuperCategory,
             filters,
             flow,
+            entriesRequested,
           })
       )
     ).data;

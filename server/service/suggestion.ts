@@ -134,6 +134,7 @@ export class SuggestionService {
       filters,
       flow,
       include,
+      entriesRequested,
     } = requestBody;
     const suggestions = await this.recoEngineApi.suggestRecipeListsPaginated({
       heroImageKey: fileKey,
@@ -142,6 +143,7 @@ export class SuggestionService {
       productSuperCategory,
       filters,
       flow,
+      entriesRequested,
     });
 
     let recipeLists = suggestions.suggestedRecipeCategories;
@@ -260,6 +262,7 @@ export class SuggestionService {
           blend.heroImages?.classificationMetadata?.productSuperClass,
         flow: FlowType.PROMPT_TO_DESIGN,
         include: [],
+        entriesRequested: 10,
       }) as SuggestFunction,
     });
 
@@ -277,6 +280,7 @@ interface SuggestRecipePaginatedRequestBody {
   filters?: Record<string, unknown>;
   flow: FlowType;
   include: SuggestInclusions[];
+  entriesRequested?: number;
 }
 
 export enum SuggestInclusions {
