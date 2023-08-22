@@ -23,6 +23,7 @@ export class SqsQueueConsumer implements QueueConsumer {
       queueUrl: queueConfig.getQueueUrl(),
       sqs,
       handleMessage: onMessage,
+      visibilityTimeout: 60 * 5,
       heartbeatInterval: 60 * 2,
     });
   }
