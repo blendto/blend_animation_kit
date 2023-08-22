@@ -135,6 +135,10 @@ class ConfigProvider {
     return this.retrieveOrCrash("RECO_ENGINE_BASE_URL");
   }
 
+  public get RECIPE_SEARCH_BASE_URL(): string {
+    return this.retrieveOrCrash("RECIPE_SEARCH_BASE_URL");
+  }
+
   public get FIREBASE_SERVICE_KEY(): ServiceAccount {
     let parsedKey = JSON.parse(this.retrieveOrCrash("FIREBASE_SERVICE_KEY"));
     parsedKey = {

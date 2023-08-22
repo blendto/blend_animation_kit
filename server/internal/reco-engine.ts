@@ -47,6 +47,30 @@ type SearchRecipesServerRequestBody = SearchRecipesClientRequestBody & {
   };
 };
 
+export interface ProcessSearchResultsRequestBody {
+  fileKeys: {
+    withoutBg?: string;
+    hero?: string;
+  };
+  filters?: { aspectRatio?: string };
+  flow: FlowType;
+  recipeLists: {
+    id: string;
+    score: number;
+    recipes: {
+      id: string;
+      variant: string;
+    }[];
+  }[];
+}
+
+export interface ProcessSearchResultsResponseBody {
+  suggestedRecipes: {
+    id: string;
+    variant: string;
+  }[];
+}
+
 export default class RecoEngineApi {
   httpClient = axios.create({
     baseURL: ConfigProvider.RECO_API_BASE_PATH,
@@ -239,6 +263,14 @@ export default class RecoEngineApi {
         async () => await this.httpClient.post(`/searchRecipes`, body)
       )
     ).data as SearchRecipeResponse;
+  }
+
+  async processSearchResults(body: ProcessSearchResultsRequestBody) {
+    return (
+      await handleAxiosCall<ProcessSearchResultsResponseBody>(
+        async () => await this.httpClient.post(`/processSearchResults`, body)
+      )
+    ).data;
   }
 
   async detectProductCategory(
