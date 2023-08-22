@@ -488,9 +488,7 @@ export default class BrandingService implements IService {
       return;
     }
     if (logoData.status === BrandingLogoStatus.PROCESSED) {
-      logger.debug(
-        "Logo has already been marked as processed. Duplicate trigger?"
-      );
+      // Uploading processed logo re-triggers this event. Ignore
       return;
     }
 
