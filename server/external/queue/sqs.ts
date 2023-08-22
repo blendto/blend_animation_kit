@@ -50,6 +50,8 @@ export class SqsProvider implements QueueProvider<SqsQueueConfig> {
         {
           QueueUrl: queueConfig.getQueueUrl(),
           MessageBody: JSON.stringify(data),
+          MessageGroupId: messageAttributes?.MessageGroupId,
+          MessageDeduplicationId: messageAttributes?.MessageDeduplicationId,
           MessageAttributes: this.sqsMessageAttributes(messageAttributes),
         },
         (err, data) => {
