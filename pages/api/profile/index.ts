@@ -16,10 +16,8 @@ import { QueueConfig } from "server/external/queue";
 import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
 import { UserAccountActionType } from "server/base/models/queue-messages";
 import BrandingService from "server/service/branding";
-import IpApi from "server/external/ipapi";
 import { FlowType } from "server/base/models/recipe";
 import { FavouriteRecipe } from "server/base/models/user";
-import { fireAndForget } from "server/helpers/async-runner";
 
 const BUILD_V_BEFORE_START_WITH_TEMPLATE = 470;
 export default withReqHandler(
@@ -128,9 +126,17 @@ const deleteProfile = async (
   const userAccountActionQueue = diContainer.get<
     UserAccountActionQueue<QueueConfig>
   >(TYPES.UserAccountActionQueue);
-  await userAccountActionQueue.writeMessage({
-    action: UserAccountActionType.DELETE,
-    userId: req.uid,
-  });
+  const action = UserAccountActionType.DELETE;
+  const userId = req.uid;
+  await userAccountActionQueue.writeMessage(
+    {
+      action,
+      userId,
+    },
+    {
+      MessageDeduplicationId: `${action}-${userId}`,
+      MessageGroupId: action,
+    }
+  );
   res.status(202).end();
 };

@@ -16,6 +16,7 @@ import {
 import { UserService } from "server/service/user";
 import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
 import { ProjectsFrictionService } from "server/service/projects-friction-service";
+import SubscriptionService from "server/service/subscription";
 
 const SIMULTANEOUS_QUEUE_COUNT = 10;
 
@@ -30,6 +31,9 @@ const uploadEventQueue = diContainer.get<ImageUploadEventQueue<QueueConfig>>(
   TYPES.ImageUploadEventQueue
 );
 const userService = diContainer.get<UserService>(TYPES.UserService);
+const subscriptionService = diContainer.get<SubscriptionService>(
+  TYPES.SubscriptionService
+);
 const userAccountActionQueue = diContainer.get<
   UserAccountActionQueue<QueueConfig>
 >(TYPES.UserAccountActionQueue);
@@ -84,6 +88,11 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
         case UserAccountActionType.DELETE_FREE_RESOURCES:
           await projectsFrictionService.executeScheduledDeletionPlans(
             message.date
+          );
+          break;
+        case UserAccountActionType.REVENUE_CAT_SYNC:
+          await subscriptionService.fetchAndUpdateUserEntitlementsCache(
+            message.userId
           );
           break;
         default:

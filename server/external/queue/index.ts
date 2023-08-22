@@ -1,5 +1,8 @@
 abstract class Queue<T extends QueueMessage> {
-  abstract writeMessage(message: T): Promise<any>;
+  abstract writeMessage(
+    message: T,
+    messageAttributes?: { [key: string]: string }
+  ): Promise<unknown>;
 
   abstract createQueueConsumer(
     onMessage: (message: T) => Promise<void>
@@ -9,11 +12,15 @@ abstract class Queue<T extends QueueMessage> {
 export abstract class QueueMessage {}
 
 export abstract class QueueProvider<C extends QueueConfig> {
-  abstract writeToQueue(queueConfig: C, data: any): Promise<any>;
+  abstract writeToQueue(
+    queueConfig: C,
+    data: unknown,
+    messageAttributes?: { [key: string]: string }
+  ): Promise<unknown>;
 
   abstract createQueueConsumer(
     queueConfig: C,
-    onMessage: (message: any) => Promise<void>
+    onMessage: (message: unknown) => Promise<void>
   ): QueueConsumer;
 }
 
@@ -34,8 +41,11 @@ export class BaseQueue<C extends QueueConfig, M extends QueueMessage>
     this.config = config;
   }
 
-  writeMessage(message: M): Promise<any> {
-    return this.queueProvider.writeToQueue(this.config, message);
+  writeMessage(
+    message: M,
+    attributes?: { [key: string]: string }
+  ): Promise<unknown> {
+    return this.queueProvider.writeToQueue(this.config, message, attributes);
   }
 
   createQueueConsumer(onMessage: (message: M) => Promise<void>): QueueConsumer {

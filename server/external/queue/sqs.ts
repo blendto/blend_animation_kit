@@ -6,6 +6,7 @@ import {
 import AWS from "server/external/aws";
 import { Consumer } from "sqs-consumer";
 import { SQSMessage } from "sqs-consumer/dist/consumer";
+import { MessageAttributeValue } from "aws-sdk/clients/sqs";
 
 const sqs = new AWS.SQS({ apiVersion: "2012-11-05" });
 
@@ -15,6 +16,7 @@ export abstract class SqsQueueConfig implements QueueConfig {
 
 export class SqsQueueConsumer implements QueueConsumer {
   private consumer: Consumer;
+
   constructor(
     queueConfig: SqsQueueConfig,
     onMessage: (message: SQSMessage) => Promise<void>
@@ -38,12 +40,17 @@ export class SqsQueueConsumer implements QueueConsumer {
 }
 
 export class SqsProvider implements QueueProvider<SqsQueueConfig> {
-  writeToQueue(queueConfig: SqsQueueConfig, data): Promise<any> {
+  writeToQueue(
+    queueConfig: SqsQueueConfig,
+    data,
+    messageAttributes?: { [key: string]: string }
+  ): Promise<unknown> {
     return new Promise((resolve, reject) => {
       sqs.sendMessage(
         {
           QueueUrl: queueConfig.getQueueUrl(),
           MessageBody: JSON.stringify(data),
+          MessageAttributes: this.sqsMessageAttributes(messageAttributes),
         },
         (err, data) => {
           if (err) {
@@ -55,9 +62,17 @@ export class SqsProvider implements QueueProvider<SqsQueueConfig> {
     });
   }
 
+  private sqsMessageAttributes(messageAttributes: { [key: string]: string }) {
+    const sqsMessageAttributes: { [key: string]: MessageAttributeValue } = {};
+    Object.entries(messageAttributes).forEach(([key, val]) => {
+      sqsMessageAttributes[key] = { DataType: "String", StringValue: val };
+    });
+    return sqsMessageAttributes;
+  }
+
   createQueueConsumer(
     queueConfig: SqsQueueConfig,
-    onMessage: (message: any) => Promise<void>
+    onMessage: (message: unknown) => Promise<void>
   ): QueueConsumer {
     return new SqsQueueConsumer(queueConfig, async (sqsMessage: SQSMessage) => {
       await onMessage(JSON.parse(sqsMessage.Body));

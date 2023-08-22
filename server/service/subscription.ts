@@ -29,7 +29,9 @@ import {
   FetchEntitlementResponse,
 } from "server/base/models/revenue-cat";
 import { DaxDB } from "server/external/dax";
-import { fireAndForget } from "server/helpers/async-runner";
+import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
+import { QueueConfig } from "server/external/queue";
+import { UserAccountActionType } from "server/base/models/queue-messages";
 
 export interface CreditsEntity {
   count: number;
@@ -179,10 +181,19 @@ export default class SubscriptionService implements IService {
   ): Promise<FetchEntitlementResponse> {
     const record = await this.getCachedEntitlements(userId);
     if (record) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      fireAndForget(
-        () => this.fetchAndUpdateUserEntitlementsCache(userId, record),
-        { operationName: "fetchAndUpdateUserEntitlementsCache" }
+      const userAccountActionQueue = diContainer.get<
+        UserAccountActionQueue<QueueConfig>
+      >(TYPES.UserAccountActionQueue);
+      const action = UserAccountActionType.REVENUE_CAT_SYNC;
+      await userAccountActionQueue.writeMessage(
+        {
+          action,
+          userId,
+        },
+        {
+          MessageDeduplicationId: `${action}-${userId}`,
+          MessageGroupId: action,
+        }
       );
       return record;
     }

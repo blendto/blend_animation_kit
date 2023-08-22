@@ -7,7 +7,7 @@ const { default: axios } = require("axios");
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const tableName = process.env.RECIPE_LIST_DYNAMODB_TABLE;
 const httpClient = axios.create({
-  baseURL: process.env.RECIPE_SEARCH_BASE_URL
+  baseURL: process.env.RECIPE_SEARCH_BASE_URL,
 });
 
 let allFailedIds = [];
@@ -22,17 +22,14 @@ async function ingest(exclusiveStartKey = undefined) {
     params.ExclusiveStartKey = exclusiveStartKey;
   }
   const scanRes = await dynamodb.scan(params).promise();
-  const {
-    LastEvaluatedKey,
-    Count,
-  } = scanRes;
+  const { LastEvaluatedKey, Count } = scanRes;
   const recipeLists = scanRes.Items.map((r) => ({
     id: r.id,
     title: r.title,
     searchTerms: r.searchTerms ?? [],
     countryCodes: (r.filters ?? { ccountryCodes: [] }).countryCodes ?? [],
     isEnabled: r.isEnabled,
-    recipes: r.recipes
+    recipes: r.recipes,
   }));
   console.log(`Fetched ${Count} recipe lists`);
   console.log(`lastEvaluatedKey: ${JSON.stringify(LastEvaluatedKey, null, 2)}`);
@@ -49,25 +46,33 @@ async function ingest(exclusiveStartKey = undefined) {
       await httpClient
         .post(`/api/ingest`, reqBody)
         .then((res) => {
-          console.log(JSON.stringify({
-            msg: `Ingested recipe lists of following ids: ${batch.map((r) => r.id)}`,
-            body: res.data
-          }));
+          console.log(
+            JSON.stringify({
+              msg: `Ingested recipe lists of following ids: ${batch.map(
+                (r) => r.id
+              )}`,
+              body: res.data,
+            })
+          );
           if (res.data.err_count > 0) {
-            throw new Error(`Ingestion partially failed. err_count => ${res.data.err_count}`);
+            throw new Error(
+              `Ingestion partially failed. err_count => ${res.data.err_count}`
+            );
           }
         })
         .catch((err) => {
           const failedIds = batch.map((r) => r.id);
-          console.warn(JSON.stringify({
-            msg: `Failed ingesting all or some of recipe lists of following ids: ${failedIds}`,
-            reqBody,
-            err: {
+          console.warn(
+            JSON.stringify({
+              msg: `Failed ingesting all or some of recipe lists of following ids: ${failedIds}`,
+              reqBody,
+              err: {
                 message: err.message,
                 status: err.response?.status,
                 data: err.response?.data,
-            }
-          }));
+              },
+            })
+          );
           allFailedIds = allFailedIds.concat(failedIds);
           // Don't break
         });
@@ -77,5 +82,7 @@ async function ingest(exclusiveStartKey = undefined) {
   if (LastEvaluatedKey) {
     return await ingest(LastEvaluatedKey);
   }
-  console.log(`Done. Failed ingesting all or some of recipe lists of following ids: ${allFailedIds}`);
+  console.log(
+    `Done. Failed ingesting all or some of recipe lists of following ids: ${allFailedIds}`
+  );
 }
