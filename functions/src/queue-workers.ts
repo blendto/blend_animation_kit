@@ -76,6 +76,11 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
         case UserAccountActionType.DELETE:
           await userService.deleteAccount(message.userId);
           break;
+        case UserAccountActionType.CREATE_DELETION_PLANS:
+          await projectsFrictionService.createDeletionPlansForInactiveUsers(
+            message.date
+          );
+          break;
         case UserAccountActionType.DELETE_FREE_RESOURCES:
           await projectsFrictionService.executeScheduledDeletionPlans(
             message.date

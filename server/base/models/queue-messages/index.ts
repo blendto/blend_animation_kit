@@ -27,6 +27,7 @@ export interface ImageUploadMessage extends QueueMessage {
 
 export enum UserAccountActionType {
   DELETE = "DELETE",
+  CREATE_DELETION_PLANS = "CREATE_DELETION_PLANS",
   DELETE_FREE_RESOURCES = "DELETE_FREE_RESOURCES",
 }
 

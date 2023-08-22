@@ -30,7 +30,6 @@ interface DeletionPlan {
 
 const UNUSED_FOR_OFFSET_IN_DAYS = 90;
 const DELETE_AFTER_OFFSET_IN_DAYS = 7;
-const ENCODER_VERSION = 4.2;
 
 @injectable()
 export class ProjectsFrictionService implements IService {
@@ -40,13 +39,90 @@ export class ProjectsFrictionService implements IService {
   @inject(TYPES.BlendService) blendService: BlendService;
   @inject(TYPES.HeroImageService) heroImageService: HeroImageService;
 
-  async createDeletionPlan(
-    userId: string,
-    encoderVersion: number
-  ): Promise<void> {
-    if (encoderVersion < ENCODER_VERSION) {
-      return;
+  async createDeletionPlansForInactiveUsers(date: string): Promise<void> {
+    const dateRightBeforeUnusedOffset = DateTime.fromISO(date)
+      .minus({
+        days: UNUSED_FOR_OFFSET_IN_DAYS + 1,
+      })
+      .toISODate();
+    const userIds = await this.fetchUserIdsWhoCreatedBlendsOn(
+      dateRightBeforeUnusedOffset
+    );
+    let usersFoundInactive = 0;
+    const bottleneck = new Bottleneck({ maxConcurrent: 10 });
+    const createDeletionPlanIfApplicable = async (userId: string) => {
+      if (await this.hasUserBeenInactive(userId)) {
+        usersFoundInactive += 1;
+        await this.createDeletionPlan(userId);
+      }
+    };
+    await Promise.all(
+      Array.from(userIds).map((userId) =>
+        bottleneck.schedule(() => createDeletionPlanIfApplicable(userId))
+      )
+    );
+    logger.info({
+      op: "CREATED_DELETION_PLANS_FOR_INACTIVE_USERS",
+      date,
+      totalUniqueUsers: userIds.size,
+      usersFoundInactive,
+    });
+  }
+
+  async fetchUserIdsWhoCreatedBlendsOn(
+    createdOn: string
+  ): Promise<Set<string>> {
+    const userIds: Set<string> = new Set();
+    let pageKeyObject: Record<string, unknown> = null;
+    do {
+      const data = await this.dataStore.queryItems({
+        TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+        KeyConditionExpression: "#createdOn = :createdOn",
+        IndexName: "created-on-idx",
+        ExpressionAttributeNames: {
+          "#createdOn": "createdOn",
+        },
+        ExpressionAttributeValues: {
+          ":createdOn": createdOn,
+        },
+        ProjectionExpression: "createdBy",
+        ExclusiveStartKey: pageKeyObject,
+      });
+      (data.Items as { createdBy: string }[]).forEach((i) => {
+        userIds.add(i.createdBy);
+      });
+      pageKeyObject = data.LastEvaluatedKey;
+    } while (pageKeyObject);
+    return userIds;
+  }
+
+  async hasUserBeenInactive(userId: string): Promise<boolean> {
+    const res = await this.dataStore.queryItems({
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      IndexName: "createdBy-updatedAt-idx",
+      KeyConditionExpression: "#createdBy = :createdBy",
+      ExpressionAttributeNames: {
+        "#createdBy": "createdBy",
+      },
+      ExpressionAttributeValues: {
+        ":createdBy": userId,
+      },
+      ProjectionExpression: "updatedAt",
+      ScanIndexForward: false,
+      Limit: 1,
+    });
+    if (res.Items[0]) {
+      const unusedForOffset = DateTime.utc()
+        .minus({ days: UNUSED_FOR_OFFSET_IN_DAYS })
+        .valueOf();
+      return (
+        unusedForOffset > (res.Items as { updatedAt: number }[])[0].updatedAt
+      );
     }
+    return true;
+  }
+
+  async createDeletionPlan(userId: string): Promise<void> {
     try {
       await this.firebase.getUserById(userId);
     } catch (err) {
@@ -65,9 +141,9 @@ export class ProjectsFrictionService implements IService {
         TableName: ConfigProvider.DELETION_PLANS_DYNAMODB_TABLE,
         Item: planItem,
       });
-      logger.info({
+      logger.debug({
         op: "CREATED_DELETION_PLAN",
-        planItem,
+        userId,
       });
     }
   }
@@ -128,9 +204,8 @@ export class ProjectsFrictionService implements IService {
   async executeScheduledDeletionPlans(date: string): Promise<void> {
     const now = DateTime.utc();
     if (DateTime.fromISO(date).diff(now, ["days"]).days > 0) {
-      const op = "EARLY_EXECUTION_ATTEMPT_OF_DELETION_PLAN";
       logger.error({
-        op,
+        op: "EARLY_EXECUTION_ATTEMPT_OF_DELETION_PLAN",
         attemptedDate: date,
         currentDate: now.toISODate(),
       });
@@ -138,57 +213,49 @@ export class ProjectsFrictionService implements IService {
         "A deletion plan can't be executed before it's scheduled date"
       );
     }
-    const limiter = new Bottleneck({
-      minTime: 1000,
-      maxConcurrent: 1,
+
+    const plans = await this.getScheduledDeletionPlans(date);
+    const bottleneck = new Bottleneck({ maxConcurrent: 25 });
+    await Promise.all(
+      plans.map((plan) =>
+        bottleneck.schedule(() => this.executeDeletionPlan(plan))
+      )
+    );
+    logger.info({
+      op: "EXECUTED_DELETION_PLANS_FOR_INACTIVE_USERS",
+      date,
     });
-    let pageKeyObject: Record<string, unknown>;
-    do {
-      pageKeyObject = await limiter.schedule(() =>
-        this.executeNextScheduledDeletionPlan(date, pageKeyObject)
-      );
-    } while (pageKeyObject);
   }
 
-  private async executeNextScheduledDeletionPlan(
-    date: string,
-    pageKeyObject: Record<string, unknown>
-  ) {
-    const [plan, nextPageKeyObject] = await this.getNextScheduledDeletionPlan(
-      date,
-      pageKeyObject
-    );
-    if (plan) {
-      if (await this.subscriptionService.isUserPro(plan.userId)) {
-        await this.updateDeletionPlanStatus(
-          plan.userId,
-          plan.createdAt,
-          DeletionPlanStatus.SKIPPED_PRO_USER_DELETION_PLAN
-        );
-        logger.info({
-          op: "SKIPPED_DELETION_PLAN_AS_USER_TURNED_PRO",
-          plan,
-        });
-        return;
-      }
-      await this.blendService.deleteBlends(plan.blendIds);
-      await this.heroImageService.deleteHeroImages(plan.heroImageIds);
+  private async executeDeletionPlan(plan: DeletionPlan) {
+    if (await this.subscriptionService.isUserPro(plan.userId)) {
       await this.updateDeletionPlanStatus(
         plan.userId,
         plan.createdAt,
-        DeletionPlanStatus.COMPLETED
+        DeletionPlanStatus.SKIPPED_PRO_USER_DELETION_PLAN
       );
-      logger.info({
-        op: "EXECUTED_DELETION_PLAN",
+      logger.debug({
+        op: "SKIPPED_DELETION_PLAN_AS_USER_TURNED_PRO",
         plan,
       });
+      return;
     }
-    return nextPageKeyObject;
+    await this.blendService.deleteBlends(plan.blendIds);
+    await this.heroImageService.deleteHeroImages(plan.heroImageIds);
+    await this.updateDeletionPlanStatus(
+      plan.userId,
+      plan.createdAt,
+      DeletionPlanStatus.COMPLETED
+    );
+    logger.debug({
+      op: "EXECUTED_DELETION_PLAN",
+      userId: plan.userId,
+    });
   }
 
   async cleanupOldProjects(userId: string) {
     if (await this.subscriptionService.isUserPro(userId)) {
-      logger.info({
+      logger.debug({
         op: "SKIPPED_INACTIVE_USER_PROJECTS_CLEANUP_AS_USER_IS_PRO",
         userId,
       });
@@ -206,44 +273,41 @@ export class ProjectsFrictionService implements IService {
       userId,
       unusedForOffset
     );
-    logger.info({
-      op: "EXECUTING_INACTIVE_USER_PROJECTS_CLEANUP",
-      userId,
-      unusedBlendIds,
-      unusedImageIds,
-    });
     await this.blendService.deleteBlends(unusedBlendIds);
     await this.heroImageService.deleteHeroImages(unusedImageIds);
     logger.info({
       op: "EXECUTED_INACTIVE_USER_PROJECTS_CLEANUP",
       userId,
+      unusedBlendIds,
+      unusedImageIds,
     });
   }
 
-  private async getNextScheduledDeletionPlan(
-    isoDate: string,
-    pageKeyObject: Record<string, unknown>
-  ): Promise<[DeletionPlan, Record<string, unknown>]> {
-    const queryInput: DocumentClient.QueryInput = {
-      TableName: ConfigProvider.DELETION_PLANS_DYNAMODB_TABLE,
-      KeyConditionExpression: "#deletionDate = :deletionDate",
-      IndexName: "deletionDate-index",
-      FilterExpression: "#status = :status",
-      ExpressionAttributeNames: {
-        "#deletionDate": "deletionDate",
-        "#status": "status",
-      },
-      ExpressionAttributeValues: {
-        ":deletionDate": isoDate,
-        ":status": DeletionPlanStatus.PENDING,
-      },
-      Limit: 1,
-    };
-    if (pageKeyObject) {
-      queryInput.ExclusiveStartKey = pageKeyObject;
-    }
-    const res = await this.dataStore.queryItems(queryInput);
-    return [(res.Items as DeletionPlan[])[0], res.LastEvaluatedKey];
+  private async getScheduledDeletionPlans(
+    date: string
+  ): Promise<DeletionPlan[]> {
+    let plans: DeletionPlan[] = [];
+    let pageKeyObject: Record<string, unknown> = null;
+    do {
+      const data = await this.dataStore.queryItems({
+        TableName: ConfigProvider.DELETION_PLANS_DYNAMODB_TABLE,
+        KeyConditionExpression: "#deletionDate = :deletionDate",
+        IndexName: "deletionDate-index",
+        FilterExpression: "#status = :status",
+        ExpressionAttributeNames: {
+          "#deletionDate": "deletionDate",
+          "#status": "status",
+        },
+        ExpressionAttributeValues: {
+          ":deletionDate": date,
+          ":status": DeletionPlanStatus.PENDING,
+        },
+        ExclusiveStartKey: pageKeyObject,
+      });
+      plans = plans.concat(data.Items as DeletionPlan[]);
+      pageKeyObject = data.LastEvaluatedKey;
+    } while (pageKeyObject);
+    return plans;
   }
 
   private async updateDeletionPlanStatus(

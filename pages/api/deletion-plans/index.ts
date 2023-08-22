@@ -32,24 +32,22 @@ export default withReqHandler(
 
 const CREATE_BODY_SCHEMA = Joi.object({
   userId: Joi.string().required(),
-  encoderVersion: Joi.number().required(),
 });
 
 async function createDeletionPlan(
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) {
-  const { userId, encoderVersion } = validate(
+  const { userId } = validate(
     req.body as object,
     requestComponentToValidate.body,
     CREATE_BODY_SCHEMA
   ) as {
     userId: string;
-    encoderVersion: number;
   };
   const projectsFrictionService = diContainer.get<ProjectsFrictionService>(
     TYPES.ProjectsFrictionService
   );
-  await projectsFrictionService.createDeletionPlan(userId, encoderVersion);
+  await projectsFrictionService.createDeletionPlan(userId);
   res.status(204).end();
 }

@@ -6,6 +6,7 @@ import {
 import AWS from "server/external/aws";
 import { Consumer } from "sqs-consumer";
 import { SQSMessage } from "sqs-consumer/dist/consumer";
+
 const sqs = new AWS.SQS({ apiVersion: "2012-11-05" });
 
 export abstract class SqsQueueConfig implements QueueConfig {
@@ -20,8 +21,9 @@ export class SqsQueueConsumer implements QueueConsumer {
   ) {
     this.consumer = Consumer.create({
       queueUrl: queueConfig.getQueueUrl(),
-      sqs: sqs,
+      sqs,
       handleMessage: onMessage,
+      heartbeatInterval: 60 * 2,
     });
   }
 
