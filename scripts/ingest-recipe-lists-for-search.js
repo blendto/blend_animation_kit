@@ -27,15 +27,15 @@ async function ingest(exclusiveStartKey = undefined) {
     id: r.id,
     title: r.title,
     searchTerms: r.searchTerms ?? [],
-    countryCodes: (r.filters ?? { ccountryCodes: [] }).countryCodes ?? [],
+    countryCodes: (r.filters ?? { countryCodes: [] }).countryCodes ?? [],
     isEnabled: r.isEnabled,
-    recipes: r.recipes,
+    recipes: r.recipes ?? [],
   }));
   console.log(`Fetched ${Count} recipe lists`);
   console.log(`lastEvaluatedKey: ${JSON.stringify(LastEvaluatedKey, null, 2)}`);
 
   if (recipeLists.length) {
-    const batchSize = 10;
+    const batchSize = 100;
     let index = 0;
     while (index < recipeLists.length) {
       const batch = recipeLists.slice(index, index + batchSize);
