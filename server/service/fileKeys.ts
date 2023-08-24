@@ -2,7 +2,13 @@ import { IService } from "server/service";
 import { injectable } from "inversify";
 import { ImageFileKeys } from "server/base/models/heroImage";
 import { Blend } from "server/base/models/blend";
-import { copyObject, getObject, uploadObject } from "server/external/s3";
+import {
+  copyObject,
+  getObject,
+  listAndDeleteObjectsInFolder,
+  listObjectsInFolder,
+  uploadObject,
+} from "server/external/s3";
 import ConfigProvider from "server/base/ConfigProvider";
 import { extractAlphaMaskFromImage } from "server/helpers/imageUtils";
 import { addSuffixToFileKey } from "server/helpers/fileKeyUtils";
@@ -64,6 +70,21 @@ export default class FileKeysService implements IService {
     return imageFileKeys?.find((fileKeysItem) =>
       [fileKeysItem.withoutBg, fileKeysItem.original].includes(fileKey)
     );
+  }
+
+  async copyFolderContents(args: {
+    srcPrefix: string;
+    dstPrefix: string;
+    srcBucket: string;
+    dstBucket: string;
+  }) {
+    const files = await listObjectsInFolder(args.srcBucket, args.srcPrefix);
+
+    for (const file of files) {
+      const regex = new RegExp(`^${args.srcPrefix}`);
+      const newFileKey = file.Key.replace(regex, args.dstPrefix);
+      await copyObject(args.srcBucket, file.Key, args.dstBucket, newFileKey);
+    }
   }
 
   async copyFileKeysToNewBlend(

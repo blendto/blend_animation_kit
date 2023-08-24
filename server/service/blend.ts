@@ -467,6 +467,13 @@ export class BlendService implements IService {
     });
     return blend;
   }
+  async putBlendBody(blendBody: Blend): Promise<Blend> {
+    await this.dataStore.putItem({
+      TableName: ConfigProvider.BLEND_DYNAMODB_TABLE,
+      Item: blendBody,
+    });
+    return blendBody;
+  }
 
   backfillBlendOutput(item: Blend) {
     const { filePath, fileName, imagePath, thumbnail, status } = item;
