@@ -6,7 +6,8 @@ import {
 import AWS from "server/external/aws";
 import { Consumer } from "sqs-consumer";
 import { SQSMessage } from "sqs-consumer/dist/consumer";
-import { MessageAttributeValue } from "aws-sdk/clients/sqs";
+import SQS, { MessageAttributeValue } from "aws-sdk/clients/sqs";
+import { isEmpty } from "lodash";
 
 const sqs = new AWS.SQS({ apiVersion: "2012-11-05" });
 
@@ -45,22 +46,28 @@ export class SqsProvider implements QueueProvider<SqsQueueConfig> {
     data,
     messageAttributes?: { [key: string]: string }
   ): Promise<unknown> {
+    const req: SQS.Types.SendMessageRequest = {
+      QueueUrl: queueConfig.getQueueUrl(),
+      MessageBody: JSON.stringify(data),
+    };
+    const { MessageGroupId, MessageDeduplicationId, ...customAttributes } =
+      messageAttributes;
+    if (MessageGroupId) {
+      req.MessageGroupId = MessageGroupId;
+    }
+    if (MessageDeduplicationId) {
+      req.MessageDeduplicationId = MessageDeduplicationId;
+    }
+    if (!isEmpty(customAttributes)) {
+      req.MessageAttributes = this.sqsMessageAttributes(customAttributes);
+    }
     return new Promise((resolve, reject) => {
-      sqs.sendMessage(
-        {
-          QueueUrl: queueConfig.getQueueUrl(),
-          MessageBody: JSON.stringify(data),
-          MessageGroupId: messageAttributes?.MessageGroupId,
-          MessageDeduplicationId: messageAttributes?.MessageDeduplicationId,
-          MessageAttributes: this.sqsMessageAttributes(messageAttributes),
-        },
-        (err, data) => {
-          if (err) {
-            return reject(err);
-          }
-          resolve(data.MessageId);
+      sqs.sendMessage(req, (err, data) => {
+        if (err) {
+          return reject(err);
         }
-      );
+        resolve(data.MessageId);
+      });
     });
   }
 
