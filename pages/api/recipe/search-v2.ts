@@ -27,11 +27,8 @@ export default withReqHandler(
 const SEARCH_REQ_SCHEMA = Joi.object({
   query: Joi.string().required(),
   fileKeys: Joi.object({
-    withoutBg: Joi.string(),
-    hero: Joi.string(),
-  })
-    .min(1)
-    .required(),
+    withoutBg: Joi.string().required(),
+  }).required(),
   filters: Joi.object({ aspectRatio: Joi.string() }),
   pageNumber: Joi.number().required(),
 });
@@ -50,7 +47,7 @@ const searchRecipes = async (
     SEARCH_REQ_SCHEMA
   ) as {
     query: string;
-    fileKeys: { withoutBg?: string; hero?: string };
+    fileKeys: { withoutBg: string };
     filters?: { aspectRatio?: string };
     pageNumber: number;
   };
