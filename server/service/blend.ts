@@ -763,7 +763,7 @@ export class BlendService implements IService {
       TYPES.SubscriptionService
     );
 
-    await subscriptionService.ensureBrandingEntitlement(
+    await subscriptionService.ensureProEntitlementIfRecipeHasBranding(
       incomingRecipe,
       incomingRecipe.metadata?.sourceRecipe?.source,
       uid

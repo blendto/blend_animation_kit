@@ -219,21 +219,21 @@ export default class SubscriptionService implements IService {
     return entitlements.includes(entitlement) && expiry > Date.now();
   }
 
-  async hasRevenueCatHDExportEntitlement(userId: string): Promise<boolean> {
-    return await this.userHasEntitlement(userId, Entitlement.HD_EXPORT);
-  }
-
-  async isUserPro(userId: string): Promise<boolean> {
+  async hasProEntitlement(userId: string): Promise<boolean> {
     return await this.userHasEntitlement(userId, Entitlement.PRO);
   }
 
-  async ensureEntitlement(userId: string, entitlement: Entitlement) {
+  private async ensureEntitlement(userId: string, entitlement: Entitlement) {
     if (!(await this.userHasEntitlement(userId, entitlement))) {
       throw new ForbiddenError(`User doesn't have ${entitlement} entitlement`);
     }
   }
 
-  async ensureBrandingEntitlement(
+  async ensureProEntitlement(userId: string) {
+    return await this.ensureEntitlement(userId, Entitlement.PRO);
+  }
+
+  async ensureProEntitlementIfRecipeHasBranding(
     recipe: Recipe,
     source: RecipeSource,
     userId: string
@@ -241,7 +241,7 @@ export default class SubscriptionService implements IService {
     const doesRecipeHaveBranding =
       source === RecipeSource.BRANDING || !isEmpty(recipe.branding);
     if (doesRecipeHaveBranding) {
-      await this.ensureEntitlement(userId, Entitlement.BRANDING);
+      await this.ensureProEntitlement(userId);
     }
   }
 
@@ -256,7 +256,7 @@ export default class SubscriptionService implements IService {
       return { can: true, noWatermarkReason };
     }
 
-    const isUserEntitled = await this.hasRevenueCatHDExportEntitlement(userId);
+    const isUserEntitled = await this.hasProEntitlement(userId);
     if (isUserEntitled) {
       const noWatermarkReason = NoWatermarkReason.USER_IS_PRO;
       return { can: true, noWatermarkReason };

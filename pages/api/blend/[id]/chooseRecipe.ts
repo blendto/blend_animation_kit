@@ -129,7 +129,11 @@ const useRecipeForBlend = async (
       // Older apps with lesser encoder version won't know how to handle branding
       recipeWrapper.cleanupBranding();
     }
-    await subService.ensureBrandingEntitlement(recipe, source, req.uid);
+    await subService.ensureProEntitlementIfRecipeHasBranding(
+      recipe,
+      source,
+      req.uid
+    );
     if (!isEmpty(recipe.branding)) {
       await recipePrepAgent.applyBranding(req.uid, ip);
     }

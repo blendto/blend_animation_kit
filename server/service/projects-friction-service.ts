@@ -129,7 +129,7 @@ export class ProjectsFrictionService implements IService {
       // These were happening as a race condition when a user deletes their account
       return;
     }
-    if (await this.subscriptionService.isUserPro(userId)) {
+    if (await this.subscriptionService.hasProEntitlement(userId)) {
       return;
     }
     if (await this.hasPendingDeletionPlan(userId)) {
@@ -228,7 +228,7 @@ export class ProjectsFrictionService implements IService {
   }
 
   private async executeDeletionPlan(plan: DeletionPlan) {
-    if (await this.subscriptionService.isUserPro(plan.userId)) {
+    if (await this.subscriptionService.hasProEntitlement(plan.userId)) {
       await this.updateDeletionPlanStatus(
         plan.userId,
         plan.createdAt,
@@ -254,7 +254,7 @@ export class ProjectsFrictionService implements IService {
   }
 
   async cleanupOldProjects(userId: string) {
-    if (await this.subscriptionService.isUserPro(userId)) {
+    if (await this.subscriptionService.hasProEntitlement(userId)) {
       logger.debug({
         op: "SKIPPED_INACTIVE_USER_PROJECTS_CLEANUP_AS_USER_IS_PRO",
         userId,

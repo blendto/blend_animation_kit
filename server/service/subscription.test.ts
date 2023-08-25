@@ -82,7 +82,7 @@ describe("SubscriptionService", () => {
         .spyOn(subscriptionService, "getWaterMarkBuildVersion")
         .mockReturnValueOnce(282);
       jest
-        .spyOn(subscriptionService, "hasRevenueCatHDExportEntitlement")
+        .spyOn(subscriptionService, "hasProEntitlement")
         .mockResolvedValueOnce(true);
 
       const res = await subscriptionService.canDoWatermarkFreeExport(
@@ -101,7 +101,7 @@ describe("SubscriptionService", () => {
         .spyOn(subscriptionService, "getWaterMarkBuildVersion")
         .mockReturnValueOnce(282);
       jest
-        .spyOn(subscriptionService, "hasRevenueCatHDExportEntitlement")
+        .spyOn(subscriptionService, "hasProEntitlement")
         .mockResolvedValueOnce(false);
       jest.spyOn(subscriptionService.httpClient, "post").mockResolvedValueOnce({
         data: { activityLogId: creditServiceActivityLogId },
@@ -125,7 +125,7 @@ describe("SubscriptionService", () => {
         .spyOn(subscriptionService, "getWaterMarkBuildVersion")
         .mockReturnValueOnce(282);
       jest
-        .spyOn(subscriptionService, "hasRevenueCatHDExportEntitlement")
+        .spyOn(subscriptionService, "hasProEntitlement")
         .mockResolvedValueOnce(false);
       const axiosResData = { message: "Expired/Insufficient credits" };
       const axiosErr: AxiosError = {

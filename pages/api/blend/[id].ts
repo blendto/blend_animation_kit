@@ -303,7 +303,7 @@ async function generate(
   const subscriptionService = diContainer.get<SubscriptionService>(
     TYPES.SubscriptionService
   );
-  await subscriptionService.ensureBrandingEntitlement(
+  await subscriptionService.ensureProEntitlementIfRecipeHasBranding(
     body,
     body.metadata?.sourceRecipe?.source,
     uid

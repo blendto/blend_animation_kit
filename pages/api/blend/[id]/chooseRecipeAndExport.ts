@@ -126,7 +126,7 @@ const chooseRecipeAndExportSync = async (
       const subscriptionService = diContainer.get<SubscriptionService>(
         TYPES.SubscriptionService
       );
-      await subscriptionService.ensureBrandingEntitlement(
+      await subscriptionService.ensureProEntitlementIfRecipeHasBranding(
         recipe,
         source,
         req.uid
