@@ -73,6 +73,7 @@ const userDynamooseSchema = new DynamooseSchema({
   },
   createdAt: Number,
   updatedAt: Number,
+  canAccessInternalTools: Boolean,
 });
 
 interface UserDynamooseEntity extends DynamooseEntity, User {}
