@@ -31,6 +31,7 @@ const resetBlend = async (
 
   const updatedBlend = await blendService.addBlendToDB(id, req.uid, {
     sourceMetadata: blend.metadata?.source,
+    imageFileKeys: blend.imageFileKeys,
   });
 
   res.send(updatedBlend);

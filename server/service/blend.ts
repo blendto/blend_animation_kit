@@ -429,6 +429,7 @@ export class BlendService implements IService {
       batchId?: string;
       heroImages?: ImageFileKeys;
       sourceMetadata: SourceMetadata;
+      imageFileKeys?: Array<ImageFileKeys>;
     }
   ): Promise<Blend> {
     const currentTime = Date.now();
@@ -459,6 +460,7 @@ export class BlendService implements IService {
       ...(options?.sourceMetadata
         ? { metadata: { source: options.sourceMetadata } }
         : {}),
+      imageFileKeys: options?.imageFileKeys ?? [],
     };
 
     await this.dataStore.putItem({
