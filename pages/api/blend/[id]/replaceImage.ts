@@ -7,7 +7,11 @@ import {
 import { diContainer } from "inversify.config";
 import { BlendService } from "server/service/blend";
 import { TYPES } from "server/types";
-import { MethodNotAllowedError, UserError } from "server/base/errors";
+import {
+  MethodNotAllowedError,
+  UserError,
+  ObjectNotFoundError,
+} from "server/base/errors";
 import Joi from "joi";
 import { RemoveBgService } from "server/internal/remove-bg-service";
 import FileKeysService from "server/service/fileKeys";
@@ -48,7 +52,7 @@ const queryBucketForFileKeyItem = async (
   const fileObject = files.find((file) => file.Key === fileKeyAlreadyInBucket);
   const fileEtag = fileObject.ETag;
 
-  return imageFileKeyItems.find((fileKeys) =>
+  return (imageFileKeyItems ?? []).find((fileKeys) =>
     files.find(
       (file) => file.ETag === fileEtag && fileKeys.original === file.Key
     )
@@ -115,7 +119,7 @@ const replaceImage = async (
       blend.imageFileKeys
     );
     if (!queriedFileKeyItem) {
-      throw new Error("FileKeyItem not found in blend");
+      throw new ObjectNotFoundError("FileKeyItem not found in blend");
     }
     return res.send(queriedFileKeyItem);
   }
@@ -188,7 +192,9 @@ async function handle(
     blend.imageFileKeys
   );
   if (!queriedFileKeyItem) {
-    throw new Error("FileKeyItem not found in blend retrieved from file key");
+    throw new ObjectNotFoundError(
+      "FileKeyItem not found in blend retrieved from file key"
+    );
   }
   return fileKeysService.copyFileKeysToNewBlend(
     currentBlendId,
