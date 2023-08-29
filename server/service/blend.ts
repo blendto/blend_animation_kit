@@ -353,11 +353,12 @@ export class BlendService implements IService {
     return outFileKey;
   }
 
-  async getBlendOrFail(blendId: string) {
-    const existingBlend = await this.getBlend(blendId, {
-      consistentRead: true,
-    });
-    if (existingBlend) {
+  async getBlendOrFail(
+    blendId: string,
+    options: GetBlendParams = { consistentRead: true }
+  ) {
+    const existingBlend = await this.getBlend(blendId, options);
+    if (existingBlend && existingBlend.status !== BlendStatus.Deleted) {
       return existingBlend;
     }
     throw new ObjectNotFoundError("Blend not found");

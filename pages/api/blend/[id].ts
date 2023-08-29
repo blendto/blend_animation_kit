@@ -156,13 +156,9 @@ const getBlend = async (req: NextApiRequestExtended, res: NextApiResponse) => {
     query: { id, format, target, consistentRead },
   } = req;
   const blendService = diContainer.get<BlendService>(TYPES.BlendService);
-  const blend = await blendService.getBlend(id as string, {
+  const blend = await blendService.getBlendOrFail(id as string, {
     consistentRead: Boolean(consistentRead),
   });
-
-  if (!blend || blend?.status === BlendStatus.Deleted) {
-    throw new ObjectNotFoundError("Blend not found");
-  }
 
   const recipeWrapper = new RecipeWrapper(blend);
   recipeWrapper.clean();
@@ -355,9 +351,7 @@ async function generate(
       throw e;
     }
   }
-  const generatedBlend = await blendService.getBlend(blendId, {
-    consistentRead: true,
-  });
+  const generatedBlend = await blendService.getBlendOrFail(blendId);
   return trim(generatedBlend);
 }
 
