@@ -52,7 +52,7 @@ class ScaleOpacityCharacterAnimation extends AnimatedText {
 
     _fadeAnimation = Tween(begin: 1.0, end: 0.0).animate(CurvedAnimation(
       parent: controller,
-      curve: Interval(0.75, 1.0, curve: curve),
+      curve: Interval(0.8, 1.0, curve: curve),
     ));
   }
 
@@ -66,11 +66,11 @@ class ScaleOpacityCharacterAnimation extends AnimatedText {
         opacity: _fadeAnimation.value,
         child: Text.rich(
           TextSpan(
-            children: textCharacters.take(count).map((e) {
+            children: text.split('').take(count).map((e) {
               return WidgetSpan(
                 child: ScaleAndOpacityAnimation(
                   duration: const Duration(milliseconds: 70),
-                  scaleTween: Tween(begin: 4, end: 1),
+                  scaleTween: Tween(begin: 2, end: 1),
                   child: Text(e, style: textStyle, textAlign: textAlign),
                 ),
               );
