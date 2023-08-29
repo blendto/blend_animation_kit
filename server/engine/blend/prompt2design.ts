@@ -8,7 +8,7 @@ import {
   HumanMessagePromptTemplate,
   SystemMessagePromptTemplate,
 } from "langchain/prompts";
-import { concat, sample, sampleSize, shuffle, some } from "lodash";
+import { concat, random, sample, sampleSize, shuffle, some } from "lodash";
 import ConfigProvider from "server/base/ConfigProvider";
 import { Blend } from "server/base/models/blend";
 import {
@@ -25,6 +25,7 @@ import { BlendHeroImage } from "server/base/models/heroImage";
 import { diContainer } from "inversify.config";
 import { AIStudioService } from "server/service/aistudio";
 import { TYPES } from "server/types";
+import logger from "server/base/Logger";
 
 import { GenericImageGenerator } from "./p2d/genericImageGenerator";
 import { MinimalOutputParser } from "./outputparser";
@@ -133,6 +134,14 @@ export default class Prompt2DesignGenerator {
     const allRecipes = suggestions.recipeLists.flatMap(
       (recipeList) => recipeList.recipes
     );
+
+    if (allRecipes.length === 0) {
+      logger.error({
+        op: "P2D_NO_RECIPES",
+        message: "No recipes suggested for the blend",
+        blendId: this.blend.id,
+      });
+    }
 
     return sampleSize(allRecipes, 8);
   }
@@ -260,9 +269,9 @@ export default class Prompt2DesignGenerator {
   ): Promise<LLMGenerationReturnType> {
     const chat = new ChatOpenAI({
       openAIApiKey: ConfigProvider.OPENAI_API_KEY,
-      temperature: 0.5,
+      temperature: random(0.5, 1.9),
       maxTokens: 256,
-      topP: 1,
+      topP: random(0.8, 1),
       frequencyPenalty: 0,
       presencePenalty: 0,
       modelName: "gpt-3.5-turbo",
