@@ -13,8 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      theme: ThemeData.dark(
         useMaterial3: true,
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
@@ -24,31 +23,44 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
+
   final String title;
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
   final widgets = [
-    const SunnyMorningAnimation(
-      text: 'Sunny\n Sunny',
-      textStyle: TextStyle(fontSize: 10),
+    const CharacterScaleFadeTextAnimation(
+      text: 'Sunny Sunny',
+      textStyle: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
+    ),
+    const CharacterJumpTextAnimation(
+      text: 'Sunny Sunny',
+      textStyle: TextStyle(fontSize: 40),
     ),
   ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Center(
-          child: GridView.builder(
+          child: ListView.separated(
+            separatorBuilder: (context, index) => const SizedBox(
+              height: 10,
+            ),
             itemCount: widgets.length,
             itemBuilder: (context, index) {
-              return widgets[index];
+              return Center(
+                child: Container(
+                  decoration:
+                      BoxDecoration(border: Border.all(color: Colors.red)),
+                  child: widgets[index],
+                ),
+              );
             },
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-            ),
           ),
         ),
       ),
