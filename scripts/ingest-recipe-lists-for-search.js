@@ -5,18 +5,19 @@ const AWS = require("aws-sdk");
 const { default: axios } = require("axios");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
-const tableName = process.env.RECIPE_LIST_DYNAMODB_TABLE;
 const httpClient = axios.create({
   baseURL: process.env.RECIPE_SEARCH_BASE_URL,
 });
 
 let allFailedIds = [];
-ingest();
+ingest(process.env.RECIPE_LIST_DYNAMODB_TABLE);
+ingest(process.env.NON_HERO_RECIPE_LIST_DYNAMODB_TABLE);
 
-async function ingest(exclusiveStartKey = undefined) {
+async function ingest(tableName, exclusiveStartKey = undefined) {
   const params = {
     TableName: tableName,
-    ProjectionExpression: "id, title, searchTerms, filters, isEnabled, recipes",
+    ProjectionExpression:
+      "id, title, searchTerms, filters, isEnabled, recipes, applicableFor",
   };
   if (exclusiveStartKey) {
     params.ExclusiveStartKey = exclusiveStartKey;
@@ -24,12 +25,13 @@ async function ingest(exclusiveStartKey = undefined) {
   const scanRes = await dynamodb.scan(params).promise();
   const { LastEvaluatedKey, Count } = scanRes;
   const recipeLists = scanRes.Items.map((r) => ({
-    id: r.id,
+    id: `${tableName}/${r.id}`,
     title: r.title,
     searchTerms: r.searchTerms ?? [],
     countryCodes: (r.filters ?? { countryCodes: [] }).countryCodes ?? [],
     isEnabled: r.isEnabled,
     recipes: r.recipes ?? [],
+    applicableFor: r.applicableFor ?? [],
   }));
   console.log(`Fetched ${Count} recipe lists`);
   console.log(`lastEvaluatedKey: ${JSON.stringify(LastEvaluatedKey, null, 2)}`);
@@ -48,10 +50,7 @@ async function ingest(exclusiveStartKey = undefined) {
         .then((res) => {
           console.log(
             JSON.stringify({
-              msg: `Ingested recipe lists of following ids: ${batch.map(
-                (r) => r.id
-              )}`,
-              body: res.data,
+              msg: `Ingested ${batch.length} recipe lists`,
             })
           );
           if (res.data.err_count > 0) {
@@ -80,9 +79,12 @@ async function ingest(exclusiveStartKey = undefined) {
     }
   }
   if (LastEvaluatedKey) {
-    return await ingest(LastEvaluatedKey);
+    return await ingest(tableName, LastEvaluatedKey);
   }
-  console.log(
-    `Done. Failed ingesting all or some of recipe lists of following ids: ${allFailedIds}`
-  );
+  console.log(`Done`);
+  if (allFailedIds.length) {
+    console.error(
+      `Failed ingesting all or some of recipe lists of following ids: ${allFailedIds}`
+    );
+  }
 }

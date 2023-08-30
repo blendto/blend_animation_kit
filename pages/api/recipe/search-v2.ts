@@ -10,7 +10,9 @@ import {
   withReqHandler,
 } from "server/helpers/request";
 import RecipeSearchService from "server/internal/recipe-search";
-import RecoEngineApi from "server/internal/reco-engine";
+import RecoEngineApi, {
+  ProcessSearchResultsResponseBody,
+} from "server/internal/reco-engine";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -26,11 +28,14 @@ export default withReqHandler(
 
 const SEARCH_REQ_SCHEMA = Joi.object({
   query: Joi.string().required(),
-  fileKeys: Joi.object({
-    withoutBg: Joi.string().required(),
-  }).required(),
   filters: Joi.object({ aspectRatio: Joi.string() }),
   pageNumber: Joi.number().required(),
+  flowType: Joi.string()
+    .valid(FlowType.ASSISTED_MOBILE, FlowType.START_WITH_A_TEMPLATE)
+    .default(FlowType.ASSISTED_MOBILE),
+  fileKeys: Joi.object({
+    withoutBg: Joi.string().required(),
+  }).when("flowType", { is: FlowType.ASSISTED_MOBILE, then: Joi.required() }),
 });
 
 const ipApi = new IpApi();
@@ -41,13 +46,14 @@ const searchRecipes = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const { query, fileKeys, filters, pageNumber } = validate(
+  const { query, flowType, fileKeys, filters, pageNumber } = validate(
     req.body as object,
     requestComponentToValidate.body,
     SEARCH_REQ_SCHEMA
   ) as {
     query: string;
-    fileKeys: { withoutBg: string };
+    flowType: FlowType;
+    fileKeys?: { withoutBg: string };
     filters?: { aspectRatio?: string };
     pageNumber: number;
   };
@@ -64,17 +70,37 @@ const searchRecipes = async (
 
   const { matchingRecipeLists, nextPageNumber } = await searchService.search({
     query,
+    flowType,
     countryCode,
     pageNumber,
   });
+  matchingRecipeLists.forEach((l) => {
+    const [tableName, id] = l.id.split("/");
+    l.id = id;
+  });
 
+  let processedResults: ProcessSearchResultsResponseBody = {
+    suggestedRecipes: [],
+  };
+  switch (flowType) {
+    case FlowType.ASSISTED_MOBILE:
+      processedResults = await recoEngine.processSearchResults({
+        fileKeys,
+        filters,
+        flow: FlowType.ASSISTED_MOBILE,
+        recipeLists: matchingRecipeLists,
+      });
+      break;
+    case FlowType.START_WITH_A_TEMPLATE:
+      processedResults.suggestedRecipes = matchingRecipeLists.flatMap(
+        (l) => l.recipes
+      );
+      break;
+    default:
+      throw new Error("UNSUPPORTED_FLOW_TYPE");
+  }
   res.send({
-    ...(await recoEngine.processSearchResults({
-      fileKeys,
-      filters,
-      flow: FlowType.ASSISTED_MOBILE,
-      recipeLists: matchingRecipeLists,
-    })),
+    ...processedResults,
     nextPageNumber,
   });
 };

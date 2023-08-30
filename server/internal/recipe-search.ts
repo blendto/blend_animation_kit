@@ -1,9 +1,11 @@
 import axios from "axios";
 import ConfigProvider from "server/base/ConfigProvider";
+import { FlowType } from "server/base/models/recipe";
 import { handleAxiosCall } from "server/helpers/network";
 
 interface SearchRequestBody {
   query: string;
+  flowType: FlowType;
   countryCode: string;
   pageNumber: number;
 }
