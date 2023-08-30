@@ -70,11 +70,9 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
 for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
   let onMessage = async (message: UserAccountActionMessage) => {
     try {
-      // TODO: Delete the below debug log
       logger.debug({
-        op: "USER_ACCOUNT_DELETION",
-        msg: "Message received",
-        additionalInfo: { message, typeOfMessage: typeof message },
+        op: "MESSAGE_RECEIVED",
+        message,
       });
       switch (message.action) {
         case UserAccountActionType.DELETE:
