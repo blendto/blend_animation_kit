@@ -1,17 +1,20 @@
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import Bottleneck from "bottleneck";
 import { DateTime } from "luxon";
 import { inject, injectable } from "inversify";
+import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
+import { UserAccountActionType } from "server/base/models/queue-messages";
 import DynamoDB from "server/external/dynamodb";
 import Firebase from "server/external/firebase";
-import { IService } from ".";
+import { UserAccountActionQueue } from "server/external/queue/userAccountActionQueue";
+import { QueueConfig } from "server/external/queue";
 import { BlendService } from "./blend";
 import HeroImageService from "./heroImage";
 import SubscriptionService from "./subscription";
+import { IService } from ".";
 
 export enum DeletionPlanStatus {
   PENDING = "PENDING",
@@ -132,7 +135,7 @@ export class ProjectsFrictionService implements IService {
     if (await this.subscriptionService.hasProEntitlement(userId)) {
       return;
     }
-    if (await this.hasPendingDeletionPlan(userId)) {
+    if ((await this.getPendingDeletionPlans(userId)).length) {
       return;
     }
     const planItem = await this.generateDeletionPlan(userId);
@@ -148,27 +151,64 @@ export class ProjectsFrictionService implements IService {
     }
   }
 
-  private async hasPendingDeletionPlan(userId: string): Promise<boolean> {
-    const lastCreated = await this.getLastCreatedDeletionPlan(userId);
-    return lastCreated?.status === DeletionPlanStatus.PENDING;
-  }
-
-  async getLastCreatedDeletionPlan(
+  async getPendingDeletionPlanIfValid(
     userId: string
   ): Promise<DeletionPlan | undefined> {
+    const pendingPlans = await this.getPendingDeletionPlans(userId);
+    for (const pendingPlan of pendingPlans) {
+      const startOfToday = DateTime.utc().startOf("day");
+      const startOfDeletionDate = DateTime.fromISO(pendingPlan.deletionDate, {
+        zone: "utc",
+      }).startOf("day");
+      if (startOfToday <= startOfDeletionDate) {
+        return pendingPlan;
+      }
+      // Shouldn't have happened.
+      // - Delete the user's plan so that UX isn't affected
+      await this.dataStore.deleteItem({
+        TableName: ConfigProvider.DELETION_PLANS_DYNAMODB_TABLE,
+        Key: {
+          userId,
+          createdAt: pendingPlan.createdAt,
+        },
+      });
+      // - Retry plans scheduled on the same date
+      const userAccountActionQueue = diContainer.get<
+        UserAccountActionQueue<QueueConfig>
+      >(TYPES.UserAccountActionQueue);
+      const action = UserAccountActionType.DELETE_FREE_RESOURCES;
+      await userAccountActionQueue.writeMessage(
+        {
+          action,
+          date: pendingPlan.deletionDate,
+        },
+        {
+          MessageDeduplicationId: `${action}-${pendingPlan.deletionDate}`,
+          MessageGroupId: action,
+        }
+      );
+    }
+    return null;
+  }
+
+  private async getPendingDeletionPlans(
+    userId: string
+  ): Promise<DeletionPlan[]> {
     const queryRes = await this.dataStore.queryItems({
       TableName: ConfigProvider.DELETION_PLANS_DYNAMODB_TABLE,
       KeyConditionExpression: "#userId = :userId",
       ScanIndexForward: false,
+      FilterExpression: "#status = :status",
       ExpressionAttributeNames: {
         "#userId": "userId",
+        "#status": "status",
       },
       ExpressionAttributeValues: {
         ":userId": userId,
+        ":status": DeletionPlanStatus.PENDING,
       },
-      Limit: 1,
     });
-    return (queryRes.Items as DeletionPlan[])[0];
+    return queryRes.Items as DeletionPlan[];
   }
 
   private async generateDeletionPlan(

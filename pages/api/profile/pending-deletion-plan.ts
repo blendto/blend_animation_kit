@@ -31,11 +31,9 @@ async function getPendingDeletionPlan(
   const projectsFrictionService = diContainer.get<ProjectsFrictionService>(
     TYPES.ProjectsFrictionService
   );
-  const lastCreated = await projectsFrictionService.getLastCreatedDeletionPlan(
-    req.uid
-  );
   res.send({
-    pendingPlan:
-      lastCreated?.status === DeletionPlanStatus.PENDING ? lastCreated : null,
+    pendingPlan: await projectsFrictionService.getPendingDeletionPlanIfValid(
+      req.uid
+    ),
   });
 }
