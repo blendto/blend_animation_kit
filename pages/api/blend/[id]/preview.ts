@@ -17,6 +17,8 @@ import {
   RecipeMutationsSchema,
   ReplacementTexts,
 } from "server/base/models/recipe";
+import { RecipeService } from "server/service/recipe";
+import { fireAndForget } from "server/helpers/async-runner";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -92,6 +94,13 @@ const generatePreview = async (
       logo: replacementBrandingLogo,
     };
   }
+
+  // TODO: This is for async migration, delete this in the near future
+  const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  fireAndForget(() =>
+    recipeService.migrateBackground(body.recipeId, body.variant)
+  ).catch();
 
   const previewService = diContainer.get<PreviewService>(TYPES.PreviewService);
   const previewStream = await previewService.generate({

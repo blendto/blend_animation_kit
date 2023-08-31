@@ -1,6 +1,8 @@
 export default class ObjectNotFoundError extends Error {
-  constructor(message = "ObjectNotFound") {
+  shouldLogError: boolean;
+  constructor(message = "ObjectNotFound", shouldLogError = false) {
     super(message);
     this.name = "ObjectNotFoundError";
+    this.shouldLogError = shouldLogError;
   }
 }

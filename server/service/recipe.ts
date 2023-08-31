@@ -10,10 +10,14 @@ import DynamoDB from "server/external/dynamodb";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
 import {
+  AssetType,
+  BackgroundType,
   BrandingInfoMetadata,
   BrandingReplacements,
   ElementSource,
+  GeometricPositionable,
   Interaction,
+  InteractionLayerTypes,
   Recipe,
 } from "server/base/models/recipe";
 import { UserError } from "server/base/errors";
@@ -84,6 +88,41 @@ export class RecipeService implements IService {
     if (!recipe) {
       throw new UserError(`Invalid recipe id: ${id} variant: ${variant}`);
     }
+    return recipe;
+  }
+
+  async migrateBackground(id: string, variant?: string): Promise<Recipe> {
+    const recipe = await this.getRecipeOrFail(id, variant);
+    if (recipe.background) {
+      return recipe;
+    }
+    const interaction = recipe.interactions.sort(
+      (a, b) =>
+        (a.metadata as GeometricPositionable).zIndex -
+        (b.metadata as GeometricPositionable).zIndex
+    )[0];
+    const imageTypes = [AssetType.IMAGE, AssetType.EXT_IMAGE];
+    if (imageTypes.includes(interaction?.assetType)) {
+      recipe.background = {
+        $: BackgroundType.ImageBackgroundInfo,
+      };
+      recipe.interactions.forEach((i) => {
+        if (i.assetUid === interaction.assetUid) {
+          i.metadata.layerType = InteractionLayerTypes.Background;
+        }
+      });
+
+      await this.dataStore.putItem({
+        TableName: ConfigProvider.RECIPE_DYNAMODB_TABLE,
+        Item: recipe,
+      });
+
+      logger.debug({
+        op: "MIGRATED_RECIPE_BACKGROUND",
+        recipe: { id, variant },
+      });
+    }
+
     return recipe;
   }
 

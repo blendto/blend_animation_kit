@@ -119,9 +119,7 @@ const replaceImage = async (
       blend.imageFileKeys
     );
     if (!queriedFileKeyItem) {
-      throw logAndThrowError(
-        new ObjectNotFoundError("FileKeyItem not found in blend")
-      );
+      throw new ObjectNotFoundError("FileKeyItem not found in blend", true);
     }
     return res.send(queriedFileKeyItem);
   }
@@ -159,14 +157,6 @@ const replaceImage = async (
   return res.send(fileKeyItem);
 };
 
-const logAndThrowError = (error: Error) => {
-  logger.error({
-    op: "FAILED_REPLACING_IMAGE",
-    message: error.message,
-  });
-  throw error;
-};
-
 async function handle(
   currentBlendId: string,
   targetOriginalFileKey: string,
@@ -202,10 +192,9 @@ async function handle(
     blend.imageFileKeys
   );
   if (!queriedFileKeyItem) {
-    logAndThrowError(
-      new ObjectNotFoundError(
-        "FileKeyItem not found in blend retrieved from file key"
-      )
+    throw new ObjectNotFoundError(
+      "FileKeyItem not found in blend retrieved from file key",
+      true
     );
   }
   return fileKeysService.copyFileKeysToNewBlend(

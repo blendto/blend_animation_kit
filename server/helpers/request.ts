@@ -112,6 +112,16 @@ export function withReqHandler(
         return res.status(403).send({ message: err.message });
       }
       if (err instanceof ObjectNotFoundError) {
+        if (err.shouldLogError) {
+          logger.error({
+            op: "OBJECT_NOT_FOUND_ERROR",
+            details: {
+              req: pick(extendedReq, ["url", "method", "uid", "query", "body"]),
+              desc: err.toString(),
+              trace: err.stack,
+            },
+          });
+        }
         return res.status(404).send({ message: err.message });
       }
       if (err instanceof MethodNotAllowedError) {
