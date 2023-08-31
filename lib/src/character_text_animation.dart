@@ -1,14 +1,21 @@
+import 'package:custom_text_animations/src/helpers/flutter_sequence_animation/flutter_sequence_animation.dart';
 import 'package:custom_text_animations/src/helpers/flutter_sequence_animation/sequence_animation_tag.dart';
 import 'package:flutter/material.dart';
-
-import 'helpers/flutter_sequence_animation/flutter_sequence_animation.dart';
 
 class CharacterScaleFadeTextAnimation extends StatefulWidget {
   final String text;
   final TextStyle? textStyle;
 
-  const CharacterScaleFadeTextAnimation(
-      {super.key, required this.text, this.textStyle});
+  final double initialCharacterScalingFactor;
+  final Curve curve;
+
+  const CharacterScaleFadeTextAnimation({
+    super.key,
+    required this.text,
+    this.textStyle,
+    this.initialCharacterScalingFactor = 4.0,
+    this.curve = Curves.easeOutExpo,
+  });
 
   @override
   State<CharacterScaleFadeTextAnimation> createState() =>
@@ -53,22 +60,23 @@ class _CharacterScaleFadeTextAnimationState
             tag: opacityAnimationTag,
             delay: Duration(milliseconds: 70 * index),
             duration: const Duration(milliseconds: 950),
-            curve: Curves.easeOutExpo,
+            curve: widget.curve,
             lastTag: sequenceStartPositionTag,
           )
           .addAnimatableAfterLastOneWithTag(
-            animatable: Tween(begin: 4.0, end: 1.0),
+            animatable:
+                Tween(begin: widget.initialCharacterScalingFactor, end: 1.0),
             tag: scaleAnimationTag,
             delay: Duration(milliseconds: 70 * index),
             duration: const Duration(milliseconds: 950),
-            curve: Curves.easeOutExpo,
+            curve: widget.curve,
             lastTag: sequenceStartPositionTag,
           );
     }
 
     sequenceAnimation = animationBuilder
         .addAnimatableAfterLastOne(
-          curve: Curves.easeOutExpo,
+          curve: widget.curve,
           animatable: Tween(begin: 1.0, end: 0.0),
           duration: const Duration(seconds: 1),
           delay: const Duration(seconds: 1),

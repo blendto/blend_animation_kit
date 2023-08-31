@@ -31,16 +31,22 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final widgets = [
-    const CharacterScaleFadeTextAnimation(
-      text: 'Char Scale Fade',
-      textStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-    ),
-    const WordScaleTextAnimation(
-      text: 'Word Scale',
-      textStyle: TextStyle(fontSize: 40),
-    ),
-  ];
+  List<Widget> get widgets => [
+        ...CharacterTextAnimation.all(customText),
+        WordScaleTextAnimation(
+          text: customText ?? 'Word Scale',
+          textStyle: const TextStyle(fontSize: 40),
+        ),
+      ];
+
+  String? customText;
+  final textFieldController = TextEditingController();
+
+  @override
+  void dispose() {
+    textFieldController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,21 +55,49 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Center(
           child: Column(
             children: [
-              Expanded(
-                child: ListView.separated(
-                  separatorBuilder: (context, index) => const SizedBox(
-                    height: 10,
+              TextField(
+                controller: textFieldController,
+                decoration: InputDecoration(
+                  hintText: "Enter any text",
+                  suffixIcon: TextButton.icon(
+                    onPressed: () {
+                      if (!mounted) return;
+                      setState(() {
+                        customText = null;
+                      });
+                      textFieldController.clear();
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
+                    icon: const Icon(Icons.cancel),
+                    label: const Text("Cancel"),
                   ),
-                  itemCount: widgets.length,
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: Container(
-                        decoration: BoxDecoration(
-                            border: Border.all(color: Colors.red)),
-                        child: widgets[index],
-                      ),
-                    );
-                  },
+                ),
+                onChanged: (val) {
+                  if (!mounted) return;
+                  setState(() {
+                    customText = val;
+                  });
+                },
+              ),
+              Expanded(
+                child: Scrollbar(
+                  child: ListView.separated(
+                    key: ValueKey(customText),
+                    padding: const EdgeInsets.all(10),
+                    separatorBuilder: (context, index) => const SizedBox(
+                      height: 10,
+                    ),
+                    itemCount: widgets.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Container(
+                          decoration: BoxDecoration(
+                              border: Border.all(color: Colors.red)),
+                          child: widgets[index],
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
