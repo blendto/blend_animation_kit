@@ -33,12 +33,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final widgets = [
     const CharacterScaleFadeTextAnimation(
-      text: 'Character Scale Fade',
+      text: 'Char Scale Fade',
       textStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-    ),
-    const CharacterJumpTextAnimation(
-      text: 'Hello World',
-      textStyle: TextStyle(fontSize: 40),
     ),
     const WordScaleTextAnimation(
       text: 'Word Scale',
