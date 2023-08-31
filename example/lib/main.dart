@@ -33,11 +33,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final widgets = [
     const CharacterScaleFadeTextAnimation(
-      text: 'Sunny Sunny',
-      textStyle: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
+      text: 'Character Scale Fade',
+      textStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
     ),
     const CharacterJumpTextAnimation(
-      text: 'Sunny Sunny',
+      text: 'Hello World',
+      textStyle: TextStyle(fontSize: 40),
+    ),
+    const WordScaleTextAnimation(
+      text: 'Word Scale',
       textStyle: TextStyle(fontSize: 40),
     ),
   ];
@@ -47,20 +51,26 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       body: SafeArea(
         child: Center(
-          child: ListView.separated(
-            separatorBuilder: (context, index) => const SizedBox(
-              height: 10,
-            ),
-            itemCount: widgets.length,
-            itemBuilder: (context, index) {
-              return Center(
-                child: Container(
-                  decoration:
-                      BoxDecoration(border: Border.all(color: Colors.red)),
-                  child: widgets[index],
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  separatorBuilder: (context, index) => const SizedBox(
+                    height: 10,
+                  ),
+                  itemCount: widgets.length,
+                  itemBuilder: (context, index) {
+                    return Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                            border: Border.all(color: Colors.red)),
+                        child: widgets[index],
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),

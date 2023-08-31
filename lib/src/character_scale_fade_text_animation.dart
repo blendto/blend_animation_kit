@@ -1,133 +1,102 @@
-import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:custom_text_animations/custom_text_animations.dart';
-import 'package:custom_text_animations/src/helpers/scale_and_opacity_animation.dart';
 import 'package:flutter/material.dart';
 
-class CharacterScaleFadeTextAnimation extends TextAnimationWidget {
-  const CharacterScaleFadeTextAnimation(
-      {super.key, required super.text, required super.textStyle});
+import 'helpers/flutter_sequence_animation.dart';
 
-  String get renderedText => stripNewLine ? text.replaceAll("\n", " ") : text;
+class CharacterScaleFadeTextAnimation extends StatefulWidget {
+  final String text;
+  final TextStyle? textStyle;
+
+  const CharacterScaleFadeTextAnimation(
+      {super.key, required this.text, this.textStyle});
 
   @override
-  List<AnimatedText> get animations => [
-        ScaleOpacityCharacterAnimation(
-          text: renderedText,
-          speed: const Duration(milliseconds: 70),
-          fadeOutDuration: const Duration(seconds: 1),
-          fadeOutDelayDuration: const Duration(seconds: 1),
-          textStyle: textStyle,
-          scalingFactor: 2,
-          characterFadeInDuration: const Duration(milliseconds: 950),
-          characterScaleDuration: const Duration(milliseconds: 950),
-        ),
-      ];
+  State<CharacterScaleFadeTextAnimation> createState() =>
+      _CharacterScaleFadeTextAnimationState();
 }
 
-class ScaleOpacityCharacterAnimation extends AnimatedText {
-  final Curve curve;
-
-  final Duration speed;
-
-  final Duration characterFadeInDuration;
-  final Duration characterScaleDuration;
-  final Duration fadeOutDuration;
-  final Duration fadeOutDelayDuration;
-
-  final double scalingFactor;
+class _CharacterScaleFadeTextAnimationState
+    extends State<CharacterScaleFadeTextAnimation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final SequenceAnimation sequenceAnimation;
 
   @override
-  Widget completeText(BuildContext context) => Visibility.maintain(
-        visible: false,
-        child: Text.rich(
-          TextSpan(
-            children: textCharacters.map((e) {
-              return WidgetSpan(
-                child: Text(
-                  e,
-                  style: textStyle,
-                  textAlign: textAlign,
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      );
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+    final animationBuilder = SequenceAnimationBuilder();
 
-  ScaleOpacityCharacterAnimation({
-    required super.text,
-    super.textStyle,
-    super.textAlign,
-    this.scalingFactor = 2,
-    required this.characterFadeInDuration,
-    required this.characterScaleDuration,
-    required this.fadeOutDuration,
-    required this.fadeOutDelayDuration,
-    this.curve = Curves.easeOutExpo,
-    required this.speed,
-  }) : super(
-            duration: (speed * text.characters.length) +
-                fadeOutDelayDuration +
-                fadeOutDuration);
+    animationBuilder.addAnimatable(
+      animatable: ConstantTween(0.0),
+      from: Duration.zero,
+      to: Duration.zero,
+      tag: "character",
+    );
 
-  late Animation<int> _charsAnimation;
-  late Animation<double> _fadeOutAnimation;
+    for (var (index, _) in widget.text.characters.indexed) {
+      animationBuilder
+          .addAnimatableAfterLastOneWithTag(
+            animatable: Tween(begin: 0.0, end: 1.0),
+            tag: "opacity-$index",
+            delay: Duration(milliseconds: 70 * index),
+            duration: const Duration(milliseconds: 950),
+            curve: Curves.easeOutExpo,
+            lastTag: "character",
+          )
+          .addAnimatableAfterLastOneWithTag(
+            animatable: Tween(begin: 4.0, end: 1.0),
+            tag: "scale-$index",
+            delay: Duration(milliseconds: 70 * index),
+            duration: const Duration(milliseconds: 950),
+            curve: Curves.easeOutExpo,
+            lastTag: "character",
+          );
+    }
 
-  Duration get totalCharacterAnimationDuration =>
-      (speed * text.characters.length);
-
-  List<InlineSpan> charWidgets = [];
-
-  @override
-  void initAnimation(AnimationController controller) {
-    final fadeOutAnimationRatio =
-        fadeOutDuration.inMicroseconds / duration.inMicroseconds;
-
-    final characterAnimationsRatio =
-        (speed * text.characters.length).inMicroseconds /
-            duration.inMicroseconds;
-
-    _charsAnimation =
-        IntTween(begin: 0, end: textCharacters.length).animate(CurvedAnimation(
-      parent: controller,
-      curve: Interval(0, characterAnimationsRatio, curve: curve),
-    ));
-
-    _fadeOutAnimation = Tween(begin: 1.0, end: 0.0).animate(CurvedAnimation(
-      parent: controller,
-      curve: Interval(1 - fadeOutAnimationRatio, 1.0, curve: curve),
-    ));
+    sequenceAnimation = animationBuilder
+        .addAnimatableAfterLastOne(
+          curve: Curves.easeOutExpo,
+          animatable: Tween(begin: 1.0, end: 0.0),
+          duration: const Duration(seconds: 1),
+          delay: const Duration(seconds: 1),
+          tag: "fadeOut",
+        )
+        .animate(_controller);
+    _controller.repeat();
   }
 
   @override
-  Widget animatedBuilder(BuildContext context, Widget? child) {
-    final count = _charsAnimation.value;
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
-    return Stack(
-      children: [
-        if (child != null)
-          Visibility.maintain(
-            visible: false,
-            child: child,
-          ),
-        Opacity(
-          opacity: _fadeOutAnimation.value,
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      builder: (context, child) {
+        return Opacity(
+          opacity: sequenceAnimation['fadeOut'].value,
           child: Text.rich(
             TextSpan(
-              children: text.characters.take(count).map((e) {
+              children: widget.text.characters.indexed.map((char) {
+                final index = char.$1;
+                final value = char.$2;
                 return WidgetSpan(
-                  child: ScaleAndOpacityAnimation(
-                    opacityDuration: characterFadeInDuration,
-                    scaleDuration: characterScaleDuration,
-                    scaleTween: Tween(begin: scalingFactor, end: 1),
-                    child: Text(e, style: textStyle, textAlign: textAlign),
+                  child: Opacity(
+                    opacity: sequenceAnimation['opacity-$index'].value,
+                    child: Transform.scale(
+                      scale: sequenceAnimation['scale-$index'].value,
+                      child: Text(value, style: widget.textStyle),
+                    ),
                   ),
                 );
               }).toList(),
             ),
           ),
-        )
-      ],
+        );
+      },
+      animation: _controller,
     );
   }
 }
