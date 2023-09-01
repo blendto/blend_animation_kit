@@ -1,10 +1,11 @@
+import 'package:custom_text_animations/src/helpers/flutter_sequence_animation/interval_animation.dart';
 import 'package:custom_text_animations/src/helpers/flutter_sequence_animation/sequence_animation_tag.dart';
 import 'package:flutter/material.dart';
 
 // Reference: https://github.com/sroddy/flutter_sequence_animation/tree/feature/type_safety
 
-class _AnimationInformation<T> {
-  _AnimationInformation({
+class AnimationInformation<T> {
+  AnimationInformation({
     required this.animatable,
     required this.from,
     required this.to,
@@ -33,7 +34,7 @@ class _AnimationInformation<T> {
 }
 
 class SequenceAnimationBuilder {
-  final List<_AnimationInformation> _animations = [];
+  final List<AnimationInformation> _animations = [];
 
   // Returns the duration of the current animation chain
   Duration getCurrentDuration() {
@@ -78,7 +79,7 @@ class SequenceAnimationBuilder {
     assert(_animations.isNotEmpty,
         "Can not add animatable after last one if there is no animatable yet");
     var start = _animations
-        .cast<_AnimationInformation?>()
+        .cast<AnimationInformation?>()
         .lastWhere((it) => it?.tag == lastTag, orElse: () => null)
         ?.to;
     assert(start != null,
@@ -183,7 +184,7 @@ class SequenceAnimationBuilder {
   }) {
     assert(T.toString() != 'Object');
     assert(to >= from);
-    _animations.add(_AnimationInformation<T>(
+    _animations.add(AnimationInformation<T>(
         animatable: animatable, from: from, to: to, curve: curve, tag: tag));
     return this;
   }
@@ -205,44 +206,16 @@ class SequenceAnimationBuilder {
     // Sets the duration of the controller
     controller.duration = Duration(microseconds: longestTimeMicro);
 
-    Map<SequenceAnimationTag, Animatable> animatables = {};
-    Map<SequenceAnimationTag, double> begins = {};
-    Map<SequenceAnimationTag, double> ends = {};
+    final IntervalAnimationBuilder intervalAnimationBuilder =
+        IntervalAnimationBuilder(animationController: controller);
 
     for (var info in _animations) {
-      assert(info.to.inMicroseconds <= longestTimeMicro);
-
-      double begin = info.from.inMicroseconds / longestTimeMicro;
-      double end = info.to.inMicroseconds / longestTimeMicro;
-      Interval intervalCurve = Interval(begin, end, curve: info.curve);
-      if (animatables[info.tag] == null) {
-        animatables[info.tag] = info.animatable.chainCurve(intervalCurve);
-        begins[info.tag] = begin;
-        ends[info.tag] = end;
-      } else {
-        assert(
-            ends[info.tag]! <= begin,
-            "When animating the same property you need to: \n"
-            "a) Have them not overlap \n"
-            "b) Add them in an ordered fashion\n"
-            "Animation with tag ${info.tag} ends at ${ends[info.tag]} but also begins at $begin");
-        animatables[info.tag] = info.createIntervalAnimatable(
-          animatable: animatables[info.tag]!,
-          defaultAnimatable: info.animatable.chainCurve(intervalCurve),
-          begin: begins[info.tag]!,
-          end: ends[info.tag]!,
-        );
-        ends[info.tag] = end;
-      }
+      intervalAnimationBuilder.add(info);
     }
 
-    Map<SequenceAnimationTag, Animation> result = {};
-
-    animatables.forEach((tag, animInfo) {
-      result[tag] = animInfo.animate(controller);
-    });
-
-    return SequenceAnimation._internal(result);
+    return SequenceAnimation._internal(
+      intervalAnimationBuilder.getAnimations(),
+    );
   }
 }
 
@@ -258,44 +231,5 @@ class SequenceAnimation {
         "There was no animatable with the tag: $tag");
 
     return _animations[tag]! as Animation<T>;
-  }
-}
-
-/// Evaluates [animatable] if the animation is in the time-frame of [begin] (inclusive) and [end] (inclusive),
-/// if not it evaluates the [defaultAnimatable]
-class IntervalAnimatable<T> extends Animatable<T> {
-  IntervalAnimatable({
-    required this.animatable,
-    required this.defaultAnimatable,
-    required this.begin,
-    required this.end,
-  });
-
-  final Animatable<T> animatable;
-  final Animatable<T> defaultAnimatable;
-
-  /// The relative begin to of [animatable]
-  /// If your [AnimationController] is running from 0->1, this needs to be a value between those two
-  final double begin;
-
-  /// The relative end to of [animatable]
-  /// If your [AnimationController] is running from 0->1, this needs to be a value between those two
-  final double end;
-
-  @override
-  T transform(double t) {
-    if (t >= begin && t <= end) {
-      return animatable.transform(t);
-    } else {
-      return defaultAnimatable.transform(t);
-    }
-  }
-}
-
-extension Chain<T> on Animatable<T> {
-  /// Chains an [Animatable] with a [CurveTween] and the given [Interval].
-  /// Basically, the animation is being constrained to the given interval
-  Animatable<T> chainCurve(Interval interval) {
-    return chain(CurveTween(curve: interval));
   }
 }

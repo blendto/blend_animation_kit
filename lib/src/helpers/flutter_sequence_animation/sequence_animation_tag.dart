@@ -1,10 +1,24 @@
+import 'dart:math';
+
 import 'package:custom_text_animations/src/helpers/flutter_sequence_animation/flutter_sequence_animation.dart';
 import 'package:flutter/material.dart';
+
+const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+Random _rnd = Random();
+
+String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
+    length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+
+String get randomStr => getRandomString(5);
 
 class SequenceAnimationTag<T> {
   const SequenceAnimationTag(this.id);
 
   final String id;
+
+  static SequenceAnimationTag random<T>() {
+    return SequenceAnimationTag<T>(randomStr);
+  }
 
   @override
   bool operator ==(Object other) =>

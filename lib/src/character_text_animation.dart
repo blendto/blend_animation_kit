@@ -5,35 +5,42 @@ import 'package:custom_text_animations/src/helpers/flutter_sequence_animation/se
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' show Quaternion, Vector3;
 
+enum CharacterTraversalType { forward, reverse }
+
 class CharacterTextAnimation extends StatefulWidget {
   final String text;
   final TextStyle? textStyle;
 
-  final Matrix4 initialMatrix4;
-  final double initialCharacterOpacity;
+  final Matrix4 initialMatrix4Transformation;
   final Curve curve;
 
   final Duration characterAnimationSpeed;
+  final Duration? characterExitAnimationSpeed;
 
   final Duration Function(int index)? characterPaintDelay;
-
-  final Curve fadeOutCurve;
+  final Duration Function(int index)? characterExitDelay;
 
   final Duration pauseDuration;
-  final Duration fadeOutDuration;
+
+  /// fadeOut will be used if [exitMatrix4Transformation] is null
+  final Matrix4? exitMatrix4Transformation;
+  final Curve exitCurve;
+  final Duration exitDuration;
 
   const CharacterTextAnimation({
     super.key,
     required this.text,
     this.textStyle,
-    required this.initialMatrix4,
-    this.initialCharacterOpacity = 0.0,
+    required this.initialMatrix4Transformation,
     this.curve = Curves.easeOutExpo,
     this.characterAnimationSpeed = const Duration(milliseconds: 950),
+    this.characterExitAnimationSpeed,
     this.characterPaintDelay,
-    this.fadeOutCurve = Curves.easeOutExpo,
-    this.fadeOutDuration = const Duration(seconds: 1),
+    this.characterExitDelay,
+    this.exitCurve = Curves.easeOutExpo,
+    this.exitDuration = const Duration(seconds: 1),
     this.pauseDuration = const Duration(seconds: 1),
+    this.exitMatrix4Transformation,
   });
 
   Matrix4 get initialDefaultMatrix => Matrix4.identity()..scale(4.0, 4.0);
@@ -43,7 +50,7 @@ class CharacterTextAnimation extends StatefulWidget {
       text: text ?? "Variant 1",
       textStyle: const TextStyle(fontSize: 40),
       curve: Curves.easeOutExpo,
-      initialMatrix4: Matrix4.identity()..scale(4.0),
+      initialMatrix4Transformation: Matrix4.identity()..scale(4.0),
     );
   }
 
@@ -51,7 +58,7 @@ class CharacterTextAnimation extends StatefulWidget {
     return CharacterTextAnimation(
       text: text ?? "Variant 2",
       textStyle: const TextStyle(fontSize: 40),
-      initialMatrix4: Matrix4.identity(),
+      initialMatrix4Transformation: Matrix4.identity(),
       characterAnimationSpeed: const Duration(milliseconds: 2250),
       characterPaintDelay: (index) => Duration(milliseconds: 150 * (index + 1)),
       curve: Curves.easeInOutQuad,
@@ -62,7 +69,7 @@ class CharacterTextAnimation extends StatefulWidget {
     return CharacterTextAnimation(
       text: text ?? "Variant 3",
       textStyle: const TextStyle(fontSize: 40),
-      initialMatrix4: Matrix4.identity()..scale(0.01),
+      initialMatrix4Transformation: Matrix4.identity()..scale(0.01),
       curve: Curves.easeInOutQuad,
       characterAnimationSpeed: const Duration(milliseconds: 1300),
       characterPaintDelay: (index) => Duration(milliseconds: index * 45),
@@ -73,7 +80,7 @@ class CharacterTextAnimation extends StatefulWidget {
     return CharacterTextAnimation(
       text: text ?? "Variant 4",
       textStyle: const TextStyle(fontSize: 40),
-      initialMatrix4: Matrix4.identity()..rotateY(-pi / 2),
+      initialMatrix4Transformation: Matrix4.identity()..rotateY(-pi / 2),
       curve: Curves.easeOutExpo,
       characterAnimationSpeed: const Duration(milliseconds: 1300),
       characterPaintDelay: (index) => Duration(milliseconds: index * 45),
@@ -81,7 +88,7 @@ class CharacterTextAnimation extends StatefulWidget {
   }
 
   static List<Widget> all(String? text) =>
-      [variant1(text), variant2(text), variant3(text), variant4(text)];
+      [variant1(text), variant2(text), variant3(text), variant4(text)].take(1).toList();
 
   @override
   State<CharacterTextAnimation> createState() => _CharacterTextAnimationState();
@@ -94,8 +101,6 @@ class _CharacterTextAnimationState extends State<CharacterTextAnimation>
 
   final sequenceStartPositionTag =
       const SequenceAnimationTag<double>('start-position');
-  final fadeOutAnimationTag =
-      const SequenceAnimationTag<double>('fade-out-animation');
   final charOpacityAnimations =
       SequenceAnimationTagList<double>(tagId: "char-opacity");
   final charScaleAnimations =
@@ -104,36 +109,43 @@ class _CharacterTextAnimationState extends State<CharacterTextAnimation>
       SequenceAnimationTagList<Matrix4>(tagId: "char-rotation");
   final charTranslateAnimations =
       SequenceAnimationTagList<Matrix4>(tagId: "char-translate");
+  final exitAnimationTag = const SequenceAnimationTag<double>('exit-animation');
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
+
+    SequenceAnimationBuilder animationBuilder =
+        generateSequenceAnimationBuilder();
+
+    sequenceAnimation = animationBuilder.animate(_controller);
+    _controller.repeat();
+  }
+
+  SequenceAnimationBuilder generateSequenceAnimationBuilder() {
     final animationBuilder = SequenceAnimationBuilder();
 
-    Vector3 translation = Vector3.zero();
-    Quaternion rotation = Quaternion.identity();
-    Vector3 scale = Vector3.zero();
+    final Vector3 translation = Vector3.zero();
+    final Quaternion rotation = Quaternion.identity();
+    final Vector3 scale = Vector3.zero();
 
-    widget.initialMatrix4.decompose(translation, rotation, scale);
+    widget.initialMatrix4Transformation.decompose(translation, rotation, scale);
 
+    final identityMatrix4 = Matrix4.identity();
     final Matrix4Tween rotationMatrixTween = Matrix4Tween(
-        begin: Matrix4.identity()..setRotation(rotation.asRotationMatrix()),
-        end: Matrix4.identity());
+      begin: Matrix4.identity()..setRotation(rotation.asRotationMatrix()),
+      end: identityMatrix4,
+    );
 
     final Matrix4Tween scaleMatrixTween = Matrix4Tween(
-      begin: Matrix4.identity()
-        ..setFromTranslationRotationScale(
-          Vector3.zero(),
-          Quaternion.identity(),
-          scale,
-        ),
-      end: Matrix4.identity(),
+      begin: Matrix4.identity()..scale(scale),
+      end: identityMatrix4,
     );
 
     final Matrix4Tween translateMatrixTween = Matrix4Tween(
       begin: Matrix4.identity()..setTranslation(translation),
-      end: Matrix4.identity(),
+      end: identityMatrix4,
     );
 
     /// Point where all animations should start
@@ -147,7 +159,7 @@ class _CharacterTextAnimationState extends State<CharacterTextAnimation>
     for (var (index, _) in widget.text.characters.indexed) {
       final opacityAnimationTag = charOpacityAnimations.addTag();
       animationBuilder.addAnimatableAfterLastOneWithTag(
-        animatable: Tween(begin: widget.initialCharacterOpacity, end: 1.0),
+        animatable: Tween(begin: 0.0, end: 1.0),
         tag: opacityAnimationTag,
         delay: characterDelay(index),
         duration: widget.characterAnimationSpeed,
@@ -185,21 +197,62 @@ class _CharacterTextAnimationState extends State<CharacterTextAnimation>
       );
     }
 
-    sequenceAnimation = animationBuilder
-        .addAnimatableAfterLastOne(
-          curve: widget.fadeOutCurve,
-          animatable: Tween(begin: 1.0, end: 0.0),
-          duration: widget.fadeOutDuration,
-          delay: widget.pauseDuration,
-          tag: fadeOutAnimationTag,
-        )
-        .animate(_controller);
-    _controller.repeat();
+    /// Position to start exit animation
+    animationBuilder.addAnimatableAfterLastOne(
+      animatable: ConstantTween(0.0),
+      duration: Duration.zero,
+      delay: widget.pauseDuration,
+      tag: exitAnimationTag,
+    );
+
+    for (var (index, _) in widget.text.characters.indexed) {
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: Tween(begin: 1.0, end: 0.0),
+        tag: charOpacityAnimations.getTag(index),
+        delay: characterExitDelay(index),
+        duration: widget.exitDuration,
+        curve: widget.exitCurve,
+        lastTag: exitAnimationTag,
+      );
+
+      // animationBuilder.addAnimatableAfterLastOneWithTag(
+      //   animatable: scaleMatrixTween,
+      //   tag: charScaleAnimations.getTag(index),
+      //   delay: characterDelay(index),
+      //   duration: widget.exitDuration,
+      //   curve: widget.curve,
+      //   lastTag: exitAnimationTag,
+      // );
+      //
+      // animationBuilder.addAnimatableAfterLastOneWithTag(
+      //   animatable: rotationMatrixTween,
+      //   tag: charRotateAnimations.getTag(index),
+      //   delay: characterDelay(index),
+      //   duration: widget.exitDuration,
+      //   curve: widget.curve,
+      //   lastTag: exitAnimationTag,
+      // );
+      //
+      // final translateAnimationTag = charTranslateAnimations.addTag();
+      // animationBuilder.addAnimatableAfterLastOneWithTag(
+      //   animatable: translateMatrixTween,
+      //   tag: translateAnimationTag,
+      //   delay: characterDelay(index),
+      //   duration: widget.exitDuration,
+      //   curve: widget.curve,
+      //   lastTag: exitAnimationTag,
+      // );
+    }
+
+    return animationBuilder;
   }
 
   Duration characterDelay(int index) =>
       widget.characterPaintDelay?.call(index) ??
       Duration(milliseconds: 70 * index);
+
+  Duration characterExitDelay(int index) =>
+      widget.characterExitDelay?.call(index) ?? Duration.zero;
 
   @override
   void dispose() {
@@ -207,42 +260,44 @@ class _CharacterTextAnimationState extends State<CharacterTextAnimation>
     super.dispose();
   }
 
+  Widget _generateCharacterAnimation(String character, int index) {
+    return Opacity(
+      opacity:
+          charOpacityAnimations.getAnimation(sequenceAnimation, index).value,
+      child: Transform(
+        alignment: Alignment.center,
+        transform: charTranslateAnimations
+            .getAnimation(sequenceAnimation, index)
+            .value,
+        child: Transform(
+          alignment: Alignment.center,
+          transform:
+              charRotateAnimations.getAnimation(sequenceAnimation, index).value,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: charScaleAnimations
+                .getAnimation(sequenceAnimation, index)
+                .value,
+            child: Text(character, style: widget.textStyle),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       builder: (context, child) {
-        return Opacity(
-          opacity: sequenceAnimation.get(fadeOutAnimationTag).value,
-          child: Text.rich(
-            TextSpan(
-              children: widget.text.characters.indexed.map((char) {
-                final index = char.$1;
-                final value = char.$2;
-                return WidgetSpan(
-                  child: Opacity(
-                    opacity: charOpacityAnimations
-                        .getAnimation(sequenceAnimation, index)
-                        .value,
-                    child: Transform(
-                      transform: charTranslateAnimations
-                          .getAnimation(sequenceAnimation, index)
-                          .value,
-                      child: Transform(
-                        transform: charScaleAnimations
-                            .getAnimation(sequenceAnimation, index)
-                            .value,
-                        child: Transform(
-                          transform: charRotateAnimations
-                              .getAnimation(sequenceAnimation, index)
-                              .value,
-                          child: Text(value, style: widget.textStyle),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+        return Text.rich(
+          TextSpan(
+            children: widget.text.characters.indexed.map((char) {
+              final index = char.$1;
+              final value = char.$2;
+              return WidgetSpan(
+                child: _generateCharacterAnimation(value, index),
+              );
+            }).toList(),
           ),
         );
       },
