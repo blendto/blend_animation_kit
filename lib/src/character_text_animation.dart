@@ -26,6 +26,7 @@ class CharacterTextAnimation extends StatefulWidget {
   final Matrix4? exitMatrix4Transformation;
   final Curve exitCurve;
   final Duration exitDuration;
+  final double exitCharacterOpacity;
 
   const CharacterTextAnimation({
     super.key,
@@ -41,6 +42,7 @@ class CharacterTextAnimation extends StatefulWidget {
     this.exitDuration = const Duration(seconds: 1),
     this.pauseDuration = const Duration(seconds: 1),
     this.exitMatrix4Transformation,
+    this.exitCharacterOpacity = 0.0,
   });
 
   Matrix4 get initialDefaultMatrix => Matrix4.identity()..scale(4.0, 4.0);
@@ -87,8 +89,26 @@ class CharacterTextAnimation extends StatefulWidget {
     );
   }
 
-  static List<Widget> all(String? text) =>
-      [variant1(text), variant2(text), variant3(text), variant4(text)].take(1).toList();
+  static CharacterTextAnimation variant5(String? text) {
+    return CharacterTextAnimation(
+      text: text ?? "Variant 5",
+      textStyle: const TextStyle(fontSize: 40),
+      initialMatrix4Transformation: Matrix4.identity()..rotateY(-pi / 2),
+      curve: Curves.easeOutExpo,
+      exitMatrix4Transformation: Matrix4.identity()..rotateX(-pi / 2),
+      characterAnimationSpeed: const Duration(milliseconds: 1300),
+      exitCharacterOpacity: 1.0,
+      characterPaintDelay: (index) => Duration(milliseconds: index * 45),
+    );
+  }
+
+  static List<Widget> all(String? text) => [
+        variant1(text),
+        variant2(text),
+        variant3(text),
+        variant4(text),
+        variant5(text),
+      ];
 
   @override
   State<CharacterTextAnimation> createState() => _CharacterTextAnimationState();
@@ -205,9 +225,30 @@ class _CharacterTextAnimationState extends State<CharacterTextAnimation>
       tag: exitAnimationTag,
     );
 
+    final Vector3 reverseTranslation = Vector3.zero();
+    final Quaternion reverseRotation = Quaternion.identity();
+    final Vector3 reverseScale = Vector3.zero();
+    (widget.exitMatrix4Transformation ?? Matrix4.identity())
+        .decompose(reverseTranslation, reverseRotation, reverseScale);
+
+    final Matrix4Tween exitRotationMatrixTween = Matrix4Tween(
+      end: Matrix4.identity()..setRotation(reverseRotation.asRotationMatrix()),
+      begin: identityMatrix4,
+    );
+
+    final Matrix4Tween exitScaleMatrixTween = Matrix4Tween(
+      end: Matrix4.identity()..scale(reverseScale),
+      begin: identityMatrix4,
+    );
+
+    final Matrix4Tween exitTranslateMatrixTween = Matrix4Tween(
+      end: Matrix4.identity()..setTranslation(reverseTranslation),
+      begin: identityMatrix4,
+    );
+
     for (var (index, _) in widget.text.characters.indexed) {
       animationBuilder.addAnimatableAfterLastOneWithTag(
-        animatable: Tween(begin: 1.0, end: 0.0),
+        animatable: Tween(begin: 1.0, end: widget.exitCharacterOpacity),
         tag: charOpacityAnimations.getTag(index),
         delay: characterExitDelay(index),
         duration: widget.exitDuration,
@@ -215,33 +256,73 @@ class _CharacterTextAnimationState extends State<CharacterTextAnimation>
         lastTag: exitAnimationTag,
       );
 
-      // animationBuilder.addAnimatableAfterLastOneWithTag(
-      //   animatable: scaleMatrixTween,
-      //   tag: charScaleAnimations.getTag(index),
-      //   delay: characterDelay(index),
-      //   duration: widget.exitDuration,
-      //   curve: widget.curve,
-      //   lastTag: exitAnimationTag,
-      // );
-      //
-      // animationBuilder.addAnimatableAfterLastOneWithTag(
-      //   animatable: rotationMatrixTween,
-      //   tag: charRotateAnimations.getTag(index),
-      //   delay: characterDelay(index),
-      //   duration: widget.exitDuration,
-      //   curve: widget.curve,
-      //   lastTag: exitAnimationTag,
-      // );
-      //
-      // final translateAnimationTag = charTranslateAnimations.addTag();
-      // animationBuilder.addAnimatableAfterLastOneWithTag(
-      //   animatable: translateMatrixTween,
-      //   tag: translateAnimationTag,
-      //   delay: characterDelay(index),
-      //   duration: widget.exitDuration,
-      //   curve: widget.curve,
-      //   lastTag: exitAnimationTag,
-      // );
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: exitScaleMatrixTween,
+        tag: charScaleAnimations.getTag(index),
+        delay: characterDelay(index),
+        duration: widget.exitDuration,
+        curve: widget.curve,
+        lastTag: exitAnimationTag,
+      );
+
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: exitRotationMatrixTween,
+        tag: charRotateAnimations.getTag(index),
+        delay: characterDelay(index),
+        duration: widget.exitDuration,
+        curve: widget.curve,
+        lastTag: exitAnimationTag,
+      );
+
+      final translateAnimationTag = charTranslateAnimations.addTag();
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: exitTranslateMatrixTween,
+        tag: translateAnimationTag,
+        delay: characterDelay(index),
+        duration: widget.exitDuration,
+        curve: widget.curve,
+        lastTag: exitAnimationTag,
+      );
+    }
+
+    /// Revert to default
+    for (var (index, _) in widget.text.characters.indexed) {
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: ConstantTween(0.0),
+        tag: charOpacityAnimations.getTag(index),
+        delay: characterExitDelay(index),
+        duration: Duration.zero,
+        curve: widget.exitCurve,
+        lastTag: charOpacityAnimations.getTag(index),
+      );
+
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: ConstantTween(Matrix4.identity()),
+        tag: charScaleAnimations.getTag(index),
+        delay: Duration.zero,
+        duration: Duration.zero,
+        curve: widget.curve,
+        lastTag: charScaleAnimations.getTag(index),
+      );
+
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: ConstantTween(Matrix4.identity()),
+        tag: charRotateAnimations.getTag(index),
+        delay: Duration.zero,
+        duration: Duration.zero,
+        curve: widget.curve,
+        lastTag: charRotateAnimations.getTag(index),
+      );
+
+      final translateAnimationTag = charTranslateAnimations.getTag(index);
+      animationBuilder.addAnimatableAfterLastOneWithTag(
+        animatable: ConstantTween(Matrix4.identity()),
+        tag: translateAnimationTag,
+        delay: Duration.zero,
+        duration: Duration.zero,
+        curve: widget.curve,
+        lastTag: translateAnimationTag,
+      );
     }
 
     return animationBuilder;
