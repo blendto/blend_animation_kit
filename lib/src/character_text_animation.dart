@@ -53,7 +53,7 @@ class CharacterTextAnimation extends StatefulWidget {
       textStyle: const TextStyle(fontSize: 40),
       initialMatrix4: Matrix4.identity(),
       characterAnimationSpeed: const Duration(milliseconds: 2250),
-      characterPaintDelay: (index) => Duration(milliseconds: 150 * (index + 1)),
+      characterPaintDelay: (index) => Duration(milliseconds: 150 * (index)),
       curve: Curves.easeInOutQuad,
     );
   }
