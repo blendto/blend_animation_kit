@@ -37,7 +37,11 @@ class _MyHomePageState extends State<MyHomePage> {
           text: customText ?? 'Word Scale',
           textStyle: const TextStyle(fontSize: 40),
         ),
+        variant1(customText ?? "Variant 1", const TextStyle(fontSize: 40)),
         variant2(customText ?? "Variant 2", const TextStyle(fontSize: 40)),
+        // variant3(customText ?? "Variant 3", const TextStyle(fontSize: 40)),
+        // variant4(customText ?? "Variant 4", const TextStyle(fontSize: 40)),
+        // variant5(customText ?? "Variant 5", const TextStyle(fontSize: 40)),
       ];
 
   String? customText;

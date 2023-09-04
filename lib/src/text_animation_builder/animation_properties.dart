@@ -29,3 +29,58 @@ class OpacityProperty extends CustomMovieTweenProperty<double> {
   @override
   final fallbackValue = 1.0;
 }
+
+abstract class SceneItem {
+  Duration get duration;
+
+  Duration get from;
+
+  void attachToScene(MovieTween tween);
+}
+
+class ScenePropertyItem implements SceneItem {
+  final CustomMovieTweenProperty property;
+  final Animatable<dynamic> tween;
+  final Curve curve;
+  @override
+  final Duration from;
+
+  @override
+  final Duration duration;
+
+  const ScenePropertyItem({
+    required this.property,
+    required this.tween,
+    required this.curve,
+    required this.from,
+    required this.duration,
+  });
+
+  @override
+  void attachToScene(MovieTween movieTween) {
+    movieTween.tween(
+      property,
+      tween,
+      curve: curve,
+      begin: from,
+      duration: duration,
+    );
+  }
+}
+
+class PauseScene implements SceneItem {
+  @override
+  final Duration duration;
+  @override
+  final Duration from;
+
+  const PauseScene({required this.duration, required this.from});
+
+  @override
+  void attachToScene(MovieTween movieTween) {
+    movieTween.scene(
+      begin: from,
+      duration: duration,
+    );
+  }
+}

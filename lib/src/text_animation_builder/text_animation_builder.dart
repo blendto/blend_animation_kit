@@ -26,12 +26,11 @@ class TextAnimationBuilder {
 
   /// Adds delay for next animations for a [duration]
   TextAnimationBuilder delay(Duration delay) {
-    final begin = _begin + tween.duration;
-
+    final newBegin = delay + tween.duration;
     return copyWith(
-      begin: begin,
+      begin: newBegin,
       sceneItems: List.from(sceneItems)
-        ..add(PauseScene(duration: delay, begin: begin)),
+        ..add(PauseScene(duration: delay, from: tween.duration)),
     );
   }
 
@@ -98,7 +97,7 @@ class TextAnimationBuilder {
 
   TextAnimationBuilder transform({
     required Matrix4 initialMatrix,
-    required Duration characterAnimationSpeed,
+    required Duration speed,
     required Duration stepInterval,
     required Curve curve,
     required Matrix4 finalMatrix,
@@ -110,8 +109,8 @@ class TextAnimationBuilder {
         property: property,
         tween: Matrix4Tween(begin: initialMatrix, end: finalMatrix),
         curve: curve,
-        begin: _begin + (stepInterval * index),
-        duration: characterAnimationSpeed,
+        from: _begin + (stepInterval * index),
+        duration: speed,
       ));
     }
 
@@ -132,7 +131,7 @@ class TextAnimationBuilder {
         property: property,
         tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
         curve: curve,
-        begin: _begin + (stepInterval * index),
+        from: _begin + (stepInterval * index),
         duration: speed,
       ));
     }
@@ -167,61 +166,6 @@ class TextAnimationBuilder {
         );
       },
       duration: tween.duration,
-    );
-  }
-}
-
-abstract class SceneItem {
-  Duration get duration;
-
-  Duration get begin;
-
-  void attachToScene(MovieTween tween);
-}
-
-class ScenePropertyItem implements SceneItem {
-  final CustomMovieTweenProperty property;
-  final Animatable<dynamic> tween;
-  final Curve curve;
-  @override
-  final Duration begin;
-
-  @override
-  final Duration duration;
-
-  const ScenePropertyItem({
-    required this.property,
-    required this.tween,
-    required this.curve,
-    required this.begin,
-    required this.duration,
-  });
-
-  @override
-  void attachToScene(MovieTween movieTween) {
-    movieTween.tween(
-      property,
-      tween,
-      curve: curve,
-      begin: begin,
-      duration: duration,
-    );
-  }
-}
-
-class PauseScene implements SceneItem {
-  @override
-  final Duration duration;
-  @override
-  final Duration begin;
-
-  const PauseScene({required this.duration, required this.begin});
-
-  @override
-  void attachToScene(MovieTween movieTween) {
-    movieTween.scene(
-      begin: begin,
-      duration: duration,
     );
   }
 }
