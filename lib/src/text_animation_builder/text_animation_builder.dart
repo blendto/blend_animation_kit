@@ -3,29 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
 
-typedef CharacterDelayCallback = Duration Function(int);
+enum BreakType { character, word }
 
 @immutable
-class CharacterAnimationBuilder {
+class TextAnimationBuilder {
   final String text;
   final TextStyle? textStyle;
 
-  final Iterable<OpacityProperty> _characterOpacityProperties;
+  late final Iterable<OpacityProperty> _characterOpacityProperties;
 
-  final Iterable<TransformationProperty> _characterTransformProperties;
+  late final Iterable<TransformationProperty> _characterTransformProperties;
 
-  final Iterable<SceneItem> sceneItems;
+  late final Iterable<SceneItem> sceneItems;
 
-  final Duration _begin;
+  late final Duration _begin;
 
   /// Waits for previous animations
-  CharacterAnimationBuilder wait() {
+  TextAnimationBuilder wait() {
     final begin = tween.duration;
     return copyWith(begin: begin);
   }
 
   /// Adds delay for next animations for a [duration]
-  CharacterAnimationBuilder delay(Duration delay) {
+  TextAnimationBuilder delay(Duration delay) {
     final begin = _begin + tween.duration;
 
     return copyWith(
@@ -37,38 +37,54 @@ class CharacterAnimationBuilder {
 
   late final MovieTween tween = _generateTween();
 
-  CharacterAnimationBuilder({required this.text, this.textStyle})
-      : _characterOpacityProperties = List.generate(
-          text.characters.length,
-          (index) => OpacityProperty(),
-        ).toList(),
-        _characterTransformProperties = List.generate(
-          text.characters.length,
-          (index) => TransformationProperty(),
-        ).toList(),
-        _begin = Duration.zero,
-        sceneItems = [];
+  late final Iterable<String> _groups;
 
-  CharacterAnimationBuilder._custom({
+  TextAnimationBuilder(
+      {required this.text, this.textStyle, required BreakType breakType}) {
+    _begin = Duration.zero;
+    sceneItems = [];
+    switch (breakType) {
+      case BreakType.character:
+        _groups = text.characters;
+        break;
+      case BreakType.word:
+        final words = text.split("\\s+").toList();
+        for (var i = 1; i < words.length - 1; i++) {
+          words.add(" ");
+        }
+        _groups = words;
+      default:
+        throw UnimplementedError("Unimplemented breakType");
+    }
+    _characterOpacityProperties =
+        List.generate(_groups.length, (index) => OpacityProperty());
+    _characterTransformProperties =
+        List.generate(_groups.length, (index) => TransformationProperty());
+  }
+
+  TextAnimationBuilder._custom({
     required Iterable<OpacityProperty> opacityProperties,
     required Iterable<TransformationProperty> transformProperties,
     this.textStyle,
     required this.text,
     required this.sceneItems,
     required Duration begin,
-  })  : _characterTransformProperties = transformProperties,
+    required Iterable<String> groups,
+  })  : _groups = groups,
+        _characterTransformProperties = transformProperties,
         _characterOpacityProperties = opacityProperties,
         _begin = begin;
 
-  CharacterAnimationBuilder copyWith(
+  TextAnimationBuilder copyWith(
       {Iterable<SceneItem>? sceneItems, Duration? begin}) {
-    return CharacterAnimationBuilder._custom(
+    return TextAnimationBuilder._custom(
       opacityProperties: _characterOpacityProperties,
       transformProperties: _characterTransformProperties,
+      sceneItems: sceneItems ?? this.sceneItems,
       text: text,
       textStyle: textStyle,
-      sceneItems: sceneItems ?? this.sceneItems,
       begin: begin ?? _begin,
+      groups: _groups,
     );
   }
 
@@ -80,21 +96,21 @@ class CharacterAnimationBuilder {
     return movieTween;
   }
 
-  CharacterAnimationBuilder transform({
+  TextAnimationBuilder transform({
     required Matrix4 initialMatrix,
     required Duration characterAnimationSpeed,
-    required CharacterDelayCallback characterPaintDelay,
+    required Duration stepInterval,
     required Curve curve,
     required Matrix4 finalMatrix,
   }) {
     final newSceneItems = List.of(sceneItems);
-    for (var (index, _) in text.characters.indexed) {
+    for (var (index, _) in _groups.indexed) {
       final property = _characterTransformProperties.elementAt(index);
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Matrix4Tween(begin: initialMatrix, end: finalMatrix),
         curve: curve,
-        begin: _begin + characterPaintDelay(index),
+        begin: _begin + (stepInterval * index),
         duration: characterAnimationSpeed,
       ));
     }
@@ -102,22 +118,22 @@ class CharacterAnimationBuilder {
     return copyWith(sceneItems: newSceneItems);
   }
 
-  CharacterAnimationBuilder opacity({
+  TextAnimationBuilder opacity({
     required double initialOpacity,
-    required Duration characterAnimationSpeed,
-    required CharacterDelayCallback characterDelay,
+    required Duration speed,
+    required Duration stepInterval,
     required Curve curve,
     required double finalOpacity,
   }) {
     final newSceneItems = List.of(sceneItems);
-    for (var (index, _) in text.characters.indexed) {
+    for (var (index, _) in _groups.indexed) {
       final property = _characterOpacityProperties.elementAt(index);
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
         curve: curve,
-        begin: _begin + characterDelay(index),
-        duration: characterAnimationSpeed,
+        begin: _begin + (stepInterval * index),
+        duration: speed,
       ));
     }
     return copyWith(sceneItems: newSceneItems);
@@ -129,7 +145,7 @@ class CharacterAnimationBuilder {
       builder: (context, movie, _) {
         return Text.rich(
           TextSpan(
-            children: text.characters.indexed.map((char) {
+            children: _groups.indexed.map((char) {
               final index = char.$1;
               final value = char.$2;
 
