@@ -98,8 +98,11 @@ const generatePreview = async (
   // TODO: This is for async migration, delete this in the near future
   const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  fireAndForget(() =>
-    recipeService.migrateBackground(body.recipeId, body.variant)
+  fireAndForget(
+    () => recipeService.migrateBackground(body.recipeId, body.variant),
+    {
+      operationName: "RECIPE_BACKGROUND_MIGRATION",
+    }
   ).catch();
 
   const previewService = diContainer.get<PreviewService>(TYPES.PreviewService);
