@@ -1,4 +1,5 @@
 import 'package:custom_text_animations/src/text_animation_builder/animation_properties.dart';
+import 'package:custom_text_animations/src/text_animation_builder/matrix4_alignment_tween.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
@@ -101,13 +102,18 @@ class TextAnimationBuilder {
     required Duration speed,
     required Duration stepInterval,
     required Curve curve,
+    Alignment transformAlignment = Alignment.center,
   }) {
     final newSceneItems = List.of(sceneItems);
     for (var (index, _) in _groups.indexed) {
       final property = _characterTransformProperties.elementAt(index);
       newSceneItems.add(ScenePropertyItem(
         property: property,
-        tween: Matrix4Tween(begin: initialMatrix, end: finalMatrix),
+        tween: Matrix4WithAlignmentTween(
+          begin: initialMatrix,
+          end: finalMatrix,
+          transformAlignment: transformAlignment,
+        ),
         curve: curve,
         from: _begin + (stepInterval * index),
         duration: speed,
@@ -138,30 +144,6 @@ class TextAnimationBuilder {
     return copyWith(sceneItems: newSceneItems);
   }
 
-  TextAnimationBuilder opacityAndTransform({
-    required double initialOpacity,
-    required double finalOpacity,
-    required Matrix4 initialMatrix,
-    required Matrix4 finalMatrix,
-    required Duration speed,
-    required Duration stepInterval,
-    required Curve curve,
-  }) {
-    return opacity(
-      initialOpacity: initialOpacity,
-      speed: speed,
-      stepInterval: stepInterval,
-      curve: curve,
-      finalOpacity: finalOpacity,
-    ).transform(
-      initialMatrix: initialMatrix,
-      finalMatrix: finalMatrix,
-      speed: speed,
-      stepInterval: stepInterval,
-      curve: curve,
-    );
-  }
-
   Widget generateWidget() {
     return LoopAnimationBuilder(
       tween: tween,
@@ -176,11 +158,17 @@ class TextAnimationBuilder {
                 child: Opacity(
                   opacity: _characterOpacityProperties
                       .elementAt(index)
-                      .fromOrDefault(movie),
+                      .fromOrDefault(movie)
+                      .clamp(0, 1),
                   child: Transform(
+                    alignment: _characterTransformProperties
+                        .elementAt(index)
+                        .fromOrDefault(movie)
+                        .transformAlignment,
                     transform: _characterTransformProperties
                         .elementAt(index)
-                        .fromOrDefault(movie),
+                        .fromOrDefault(movie)
+                        .matrix,
                     child: Text(value, style: textStyle),
                   ),
                 ),

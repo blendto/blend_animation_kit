@@ -1,3 +1,4 @@
+import 'package:custom_text_animations/src/text_animation_builder/matrix4_alignment_tween.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:simple_animations/simple_animations.dart';
 
@@ -20,9 +21,11 @@ abstract class CustomMovieTweenProperty<T> extends MovieTweenProperty<T> {
   }
 }
 
-class TransformationProperty extends CustomMovieTweenProperty<Matrix4> {
+class TransformationProperty
+    extends CustomMovieTweenProperty<Matrix4WithAlignment> {
   @override
-  final fallbackValue = Matrix4.identity();
+  final fallbackValue = Matrix4WithAlignment(
+      matrix: Matrix4.identity(), transformAlignment: Alignment.center);
 }
 
 class OpacityProperty extends CustomMovieTweenProperty<double> {
