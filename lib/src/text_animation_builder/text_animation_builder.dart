@@ -11,10 +11,6 @@ class TextAnimationBuilder {
   final String text;
   final TextStyle? textStyle;
 
-  late final Iterable<OpacityProperty> _characterOpacityProperties;
-
-  late final Iterable<TransformationProperty> _characterTransformProperties;
-
   late final Iterable<SceneItem> sceneItems;
 
   late final Duration _begin;
@@ -37,55 +33,28 @@ class TextAnimationBuilder {
 
   late final MovieTween tween = _generateTween();
 
-  late final Iterable<String> _groups;
+  Iterable<String> get _groups => animationInput.groups;
 
-  TextAnimationBuilder(
-      {required this.text, this.textStyle, required BreakType breakType}) {
-    _begin = Duration.zero;
-    sceneItems = [];
-    switch (breakType) {
-      case BreakType.character:
-        _groups = text.characters;
-        break;
-      case BreakType.word:
-        final words = text.split("\\s+").toList();
-        for (var i = 1; i < words.length - 1; i++) {
-          words.add(" ");
-        }
-        _groups = words;
-      default:
-        throw UnimplementedError("Unimplemented breakType");
-    }
-    _characterOpacityProperties =
-        List.generate(_groups.length, (index) => OpacityProperty());
-    _characterTransformProperties =
-        List.generate(_groups.length, (index) => TransformationProperty());
-  }
+  Iterable<OpacityProperty> get opacityProperties =>
+      animationInput.opacityProperties;
 
-  TextAnimationBuilder._custom({
-    required Iterable<OpacityProperty> opacityProperties,
-    required Iterable<TransformationProperty> transformProperties,
-    this.textStyle,
-    required this.text,
-    required this.sceneItems,
-    required Duration begin,
-    required Iterable<String> groups,
-  })  : _groups = groups,
-        _characterTransformProperties = transformProperties,
-        _characterOpacityProperties = opacityProperties,
-        _begin = begin;
+  Iterable<TransformationProperty> get transformProperties =>
+      animationInput.transformProperties;
+
+  final CharacterAnimationInput animationInput;
+
+  TextAnimationBuilder(this.animationInput)
+      : text = animationInput.text,
+        textStyle = animationInput.textStyle,
+        _begin = animationInput.begin,
+        sceneItems = animationInput.sceneItems;
 
   TextAnimationBuilder copyWith(
       {Iterable<SceneItem>? sceneItems, Duration? begin}) {
-    return TextAnimationBuilder._custom(
-      opacityProperties: _characterOpacityProperties,
-      transformProperties: _characterTransformProperties,
-      sceneItems: sceneItems ?? this.sceneItems,
-      text: text,
-      textStyle: textStyle,
-      begin: begin ?? _begin,
-      groups: _groups,
-    );
+    return TextAnimationBuilder(animationInput.copyWith(
+      sceneItems: sceneItems,
+      begin: begin,
+    ));
   }
 
   MovieTween _generateTween() {
@@ -106,7 +75,7 @@ class TextAnimationBuilder {
   }) {
     final newSceneItems = List.of(sceneItems);
     for (var (index, _) in _groups.indexed) {
-      final property = _characterTransformProperties.elementAt(index);
+      final property = transformProperties.elementAt(index);
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Matrix4WithAlignmentTween(
@@ -132,7 +101,7 @@ class TextAnimationBuilder {
   }) {
     final newSceneItems = List.of(sceneItems);
     for (var (index, _) in _groups.indexed) {
-      final property = _characterOpacityProperties.elementAt(index);
+      final property = opacityProperties.elementAt(index);
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
@@ -156,16 +125,16 @@ class TextAnimationBuilder {
 
               return WidgetSpan(
                 child: Opacity(
-                  opacity: _characterOpacityProperties
+                  opacity: opacityProperties
                       .elementAt(index)
                       .fromOrDefault(movie)
                       .clamp(0, 1),
                   child: Transform(
-                    alignment: _characterTransformProperties
+                    alignment: transformProperties
                         .elementAt(index)
                         .fromOrDefault(movie)
                         .transformAlignment,
-                    transform: _characterTransformProperties
+                    transform: transformProperties
                         .elementAt(index)
                         .fromOrDefault(movie)
                         .matrix,
@@ -178,6 +147,80 @@ class TextAnimationBuilder {
         );
       },
       duration: tween.duration,
+    );
+  }
+}
+
+class CharacterAnimationInput {
+  final String text;
+  final TextStyle? textStyle;
+
+  final Iterable<SceneItem> sceneItems;
+
+  final Duration begin;
+
+  Iterable<String> get groups => text.characters;
+
+  late final Iterable<OpacityProperty> opacityProperties;
+
+  late final Iterable<TransformationProperty> transformProperties;
+
+  CharacterAnimationInput({
+    required this.text,
+    this.textStyle,
+    this.sceneItems = const [],
+    this.begin = Duration.zero,
+    Iterable<OpacityProperty>? opacityProperties,
+    Iterable<TransformationProperty>? transformProperties,
+  }) {
+    this.opacityProperties = opacityProperties ??
+        List.generate(groups.length, (index) => OpacityProperty());
+    this.transformProperties = transformProperties ??
+        List.generate(groups.length, (index) => TransformationProperty());
+  }
+
+  CharacterAnimationInput copyWith(
+      {Iterable<SceneItem>? sceneItems, Duration? begin}) {
+    return CharacterAnimationInput(
+      opacityProperties: opacityProperties,
+      transformProperties: transformProperties,
+      sceneItems: sceneItems ?? this.sceneItems,
+      text: text,
+      textStyle: textStyle,
+      begin: begin ?? this.begin,
+    );
+  }
+}
+
+class WordAnimationInput extends CharacterAnimationInput {
+  @override
+  Iterable<String> get groups {
+    final words = text.split("\\s+").toList();
+    for (var i = 1; i < words.length - 1; i++) {
+      words.add(" ");
+    }
+    return words;
+  }
+
+  WordAnimationInput(
+      {required super.text,
+      super.textStyle,
+      super.sceneItems = const [],
+      super.begin = Duration.zero,
+      super.opacityProperties,
+      super.transformProperties})
+      : super();
+
+  @override
+  WordAnimationInput copyWith(
+      {Iterable<SceneItem>? sceneItems, Duration? begin}) {
+    return WordAnimationInput(
+      opacityProperties: opacityProperties,
+      transformProperties: transformProperties,
+      sceneItems: sceneItems ?? this.sceneItems,
+      text: text,
+      textStyle: textStyle,
+      begin: begin ?? this.begin,
     );
   }
 }

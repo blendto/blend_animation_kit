@@ -5,7 +5,7 @@ import 'package:custom_text_animations/src/text_animation_builder/text_animation
 import 'package:flutter/material.dart';
 
 Widget variant2(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        text: text, textStyle: textStyle, breakType: BreakType.character)
+        CharacterAnimationInput(text: text, textStyle: textStyle))
     .opacity(
       initialOpacity: 0.0,
       speed: const Duration(milliseconds: 2250),
@@ -17,7 +17,7 @@ Widget variant2(String text, TextStyle? textStyle) => TextAnimationBuilder(
     .generateWidget();
 
 Widget variant3(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        text: text, textStyle: textStyle, breakType: BreakType.character)
+        CharacterAnimationInput(text: text, textStyle: textStyle))
     .opacityAndTransform(
       initialOpacity: 1.0,
       initialMatrix: Matrix4.identity()..scale(0.001),
@@ -32,7 +32,7 @@ Widget variant3(String text, TextStyle? textStyle) => TextAnimationBuilder(
     .generateWidget();
 
 Widget variant4(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        text: text, textStyle: textStyle, breakType: BreakType.character)
+        CharacterAnimationInput(text: text, textStyle: textStyle))
     .opacityAndTransform(
       initialOpacity: 0.0,
       initialMatrix: Matrix4.identity()..translate(0.0, 15.0),
@@ -46,7 +46,7 @@ Widget variant4(String text, TextStyle? textStyle) => TextAnimationBuilder(
     .generateWidget();
 
 Widget variant5(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        text: text, textStyle: textStyle, breakType: BreakType.character)
+        CharacterAnimationInput(text: text, textStyle: textStyle))
     .opacityAndTransform(
       initialOpacity: 0.0,
       finalOpacity: 1.0,
@@ -60,7 +60,7 @@ Widget variant5(String text, TextStyle? textStyle) => TextAnimationBuilder(
     .generateWidget();
 
 Widget variant6(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        text: text, textStyle: textStyle, breakType: BreakType.character)
+        CharacterAnimationInput(text: text, textStyle: textStyle))
     .opacityAndTransform(
       initialOpacity: 0.0,
       finalOpacity: 1.0,
