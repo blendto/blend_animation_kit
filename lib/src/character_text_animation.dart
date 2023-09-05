@@ -5,6 +5,7 @@ import 'package:custom_text_animations/src/helpers/flutter_sequence_animation/se
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' show Quaternion, Vector3;
 
+@Deprecated("Remove this")
 class CharacterTextAnimation extends StatefulWidget {
   final String text;
   final TextStyle? textStyle;

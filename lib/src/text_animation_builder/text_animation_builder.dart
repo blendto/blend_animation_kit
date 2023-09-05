@@ -97,10 +97,10 @@ class TextAnimationBuilder {
 
   TextAnimationBuilder transform({
     required Matrix4 initialMatrix,
+    required Matrix4 finalMatrix,
     required Duration speed,
     required Duration stepInterval,
     required Curve curve,
-    required Matrix4 finalMatrix,
   }) {
     final newSceneItems = List.of(sceneItems);
     for (var (index, _) in _groups.indexed) {
@@ -136,6 +136,30 @@ class TextAnimationBuilder {
       ));
     }
     return copyWith(sceneItems: newSceneItems);
+  }
+
+  TextAnimationBuilder opacityAndTransform({
+    required double initialOpacity,
+    required double finalOpacity,
+    required Matrix4 initialMatrix,
+    required Matrix4 finalMatrix,
+    required Duration speed,
+    required Duration stepInterval,
+    required Curve curve,
+  }) {
+    return opacity(
+      initialOpacity: initialOpacity,
+      speed: speed,
+      stepInterval: stepInterval,
+      curve: curve,
+      finalOpacity: finalOpacity,
+    ).transform(
+      initialMatrix: initialMatrix,
+      finalMatrix: finalMatrix,
+      speed: speed,
+      stepInterval: stepInterval,
+      curve: curve,
+    );
   }
 
   Widget generateWidget() {
