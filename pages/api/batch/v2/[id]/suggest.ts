@@ -4,15 +4,20 @@
 //       keep this and remove `pages/api/batch/[id]/suggest.ts`
 //       when old batch code is removed
 import { NextApiResponse } from "next";
+import Joi from "joi";
+
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import { SuggestionService } from "server/service/suggestion";
 import {
   ensureAuth,
   NextApiRequestExtended,
+  requestComponentToValidate,
+  validate,
   withReqHandler,
 } from "server/helpers/request";
 import { MethodNotAllowedError } from "server/base/errors";
+import { FlowType } from "server/base/models/recipe";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -26,16 +31,25 @@ export default withReqHandler(
   }
 );
 
+const requestSchema = Joi.object({
+  id: Joi.string().required(),
+  flow: Joi.string()
+    .optional()
+    .valid(FlowType.BATCH, FlowType.BATCH_360)
+    .default(FlowType.BATCH),
+});
+
 const suggestBatchRecipes = async (
   req: NextApiRequestExtended,
   res: NextApiResponse
 ) => {
-  const {
-    query: { id },
-  } = req;
+  const { id: batchId, flow } = validate(
+    req.query,
+    requestComponentToValidate.query,
+    requestSchema
+  ) as { id: string; flow?: FlowType };
 
   const { ip } = req;
-  const batchId = id as string;
 
   const service = diContainer.get<SuggestionService>(TYPES.SuggestionService);
 
@@ -43,7 +57,8 @@ const suggestBatchRecipes = async (
     req.buildVersion,
     req.uid,
     batchId,
-    ip
+    ip,
+    flow
   );
 
   return res.send(recipeLists);

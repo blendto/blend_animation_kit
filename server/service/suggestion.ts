@@ -59,7 +59,8 @@ export class SuggestionService {
     buildVersion: number,
     uid: string,
     batchId: string,
-    ip: string
+    ip: string,
+    flowType: FlowType = FlowType.BATCH
   ): Promise<RecipeList[]> {
     const heroImages = await this.selectFileKeysFromBatchPreview(uid, batchId);
     return (
@@ -68,7 +69,7 @@ export class SuggestionService {
         uid,
         heroImages.withoutBg,
         ip,
-        FlowType.BATCH
+        flowType
       )
     ).recipeLists;
   }
@@ -97,10 +98,14 @@ export class SuggestionService {
         (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
     );
 
-    recipeLists = await this.blendService.addRecentsToRecipeLists(
-      uid,
-      recipeLists
-    );
+    if (flow !== FlowType.BATCH_360) {
+      // For everything except batch 360, add recents
+      recipeLists = await this.blendService.addRecentsToRecipeLists(
+        uid,
+        recipeLists
+      );
+    }
+
     recipeLists = await this.brandingService.addToRecipeLists(
       buildVersion,
       uid,
