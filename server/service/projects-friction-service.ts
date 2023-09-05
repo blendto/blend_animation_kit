@@ -1,4 +1,5 @@
 import { DateTime } from "luxon";
+import objectHash from "object-hash";
 import { inject, injectable } from "inversify";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
@@ -57,20 +58,29 @@ export class ProjectsFrictionService implements IService {
     const userAccountActionQueue = diContainer.get<
       UserAccountActionQueue<QueueConfig>
     >(TYPES.UserAccountActionQueue);
-    const action = UserAccountActionType.CREATE_DELETION_PLAN_FOR_USER;
+    const action = UserAccountActionType.CREATE_DELETION_PLAN_BATCH;
     const userIdsArr = Array.from(userIds);
-    const batchSize = 10;
+    const userIdBatchSize = 10;
+    const qBatchSize = 10;
     const promises: Promise<void>[] = [];
     while (userIdsArr.length) {
+      let currentQBatchSize = 0;
+      const userIdBatches: string[][] = [];
+      while (userIdsArr.length && currentQBatchSize < qBatchSize) {
+        userIdBatches.push(userIdsArr.splice(0, userIdBatchSize));
+        currentQBatchSize += 1;
+      }
+      if (!userIdBatches.length) break;
       promises.push(
         userAccountActionQueue.writeMultipleMessages(
-          userIdsArr.splice(0, batchSize).map((userId) => {
-            const dedupId = `${action}-${userId}`;
+          userIdBatches.map((userIds) => {
+            const hash = objectHash.MD5(userIds);
+            const dedupId = `${action}-${hash}`;
             return {
               id: dedupId,
               message: {
                 action,
-                userId,
+                userIds,
               },
               attributes: {
                 MessageDeduplicationId: dedupId,
@@ -135,6 +145,10 @@ export class ProjectsFrictionService implements IService {
       );
     }
     return true;
+  }
+
+  async createDeletionPlanBatch(userIds: string[]): Promise<void> {
+    await Promise.all(userIds.map((userId) => this.createDeletionPlan(userId)));
   }
 
   async createDeletionPlan(userId: string): Promise<void> {
@@ -264,9 +278,7 @@ export class ProjectsFrictionService implements IService {
         attemptedDate: date,
         currentDate: now.toISODate(),
       });
-      throw new UserError(
-        "A deletion plan can't be executed before it's scheduled date"
-      );
+      return;
     }
 
     logger.info({
@@ -277,19 +289,31 @@ export class ProjectsFrictionService implements IService {
     const userAccountActionQueue = diContainer.get<
       UserAccountActionQueue<QueueConfig>
     >(TYPES.UserAccountActionQueue);
-    const action = UserAccountActionType.EXECUTE_DELETION_PLAN_FOR_USER;
-    const batchSize = 10;
+    const action = UserAccountActionType.EXECUTE_DELETION_PLAN_BATCH;
+    const planBatchSize = 10;
+    const qBatchSize = 10;
     const promises: Promise<void>[] = [];
     while (plans.length) {
+      let currentQBatchSize = 0;
+      const planBatches: {
+        userId: string;
+        createdAt: number;
+      }[][] = [];
+      while (plans.length && currentQBatchSize < qBatchSize) {
+        planBatches.push(plans.splice(0, planBatchSize));
+        currentQBatchSize += 1;
+      }
+      if (!planBatches.length) break;
       promises.push(
         userAccountActionQueue.writeMultipleMessages(
-          plans.splice(0, batchSize).map((plan) => {
-            const dedupId = `${action}-${plan.userId}-${plan.createdAt}`;
+          planBatches.map((plans) => {
+            const hash = objectHash.MD5(plans);
+            const dedupId = `${action}-${hash}`;
             return {
               id: dedupId,
               message: {
                 action,
-                ...plan,
+                plans,
               },
               attributes: {
                 MessageDeduplicationId: dedupId,
@@ -303,7 +327,15 @@ export class ProjectsFrictionService implements IService {
     await Promise.all(promises);
   }
 
-  async executeDeletionPlan(userId: string, createdAt: number) {
+  async executeDeletionPlanBatch(
+    plans: { userId: string; createdAt: number }[]
+  ) {
+    await Promise.all(
+      plans.map((plan) => this.executeDeletionPlan(plan.userId, plan.createdAt))
+    );
+  }
+
+  private async executeDeletionPlan(userId: string, createdAt: number) {
     if (await this.subscriptionService.hasProEntitlement(userId)) {
       await this.updateDeletionPlanStatus(
         userId,
@@ -322,6 +354,15 @@ export class ProjectsFrictionService implements IService {
       Key: { userId, createdAt },
     })) as DeletionPlan | null;
     if (!plan && plan.status !== DeletionPlanStatus.PENDING) {
+      return;
+    }
+    const now = DateTime.utc();
+    if (DateTime.fromISO(plan.deletionDate).diff(now, ["days"]).days > 0) {
+      logger.error({
+        op: "EARLY_EXECUTION_ATTEMPT_OF_DELETION_PLAN",
+        attemptedDate: plan.deletionDate,
+        currentDate: now.toISODate(),
+      });
       return;
     }
     await this.blendService.deleteBlends(plan.blendIds);

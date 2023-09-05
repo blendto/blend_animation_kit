@@ -29,14 +29,15 @@ export enum UserAccountActionType {
   DELETE = "DELETE",
   REVENUE_CAT_SYNC = "REVENUE_CAT_SYNC",
   CREATE_DELETION_PLANS = "CREATE_DELETION_PLANS",
-  CREATE_DELETION_PLAN_FOR_USER = "CREATE_DELETION_PLAN_FOR_USER",
+  CREATE_DELETION_PLAN_BATCH = "CREATE_DELETION_PLAN_BATCH",
   DELETE_FREE_RESOURCES = "DELETE_FREE_RESOURCES",
-  EXECUTE_DELETION_PLAN_FOR_USER = "EXECUTE_DELETION_PLAN_FOR_USER",
+  EXECUTE_DELETION_PLAN_BATCH = "EXECUTE_DELETION_PLAN_BATCH",
 }
 
 export interface UserAccountActionMessage extends QueueMessage {
   action: UserAccountActionType;
   userId?: string;
-  createdAt?: number;
+  userIds?: string[];
+  plans?: { userId: string; createdAt: number }[];
   date?: string;
 }
