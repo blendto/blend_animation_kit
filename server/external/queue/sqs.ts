@@ -43,12 +43,12 @@ export class SqsQueueConsumer implements QueueConsumer {
 export class SqsProvider implements QueueProvider<SqsQueueConfig> {
   writeToQueue(
     queueConfig: SqsQueueConfig,
-    data,
+    message: Record<string, unknown>,
     messageAttributes?: { [key: string]: string }
   ): Promise<unknown> {
     const req: SQS.Types.SendMessageRequest = {
       QueueUrl: queueConfig.getQueueUrl(),
-      MessageBody: JSON.stringify(data),
+      MessageBody: JSON.stringify(message),
     };
     const { MessageGroupId, MessageDeduplicationId, ...customAttributes } =
       messageAttributes;
@@ -85,6 +85,49 @@ export class SqsProvider implements QueueProvider<SqsQueueConfig> {
   ): QueueConsumer {
     return new SqsQueueConsumer(queueConfig, async (sqsMessage: SQSMessage) => {
       await onMessage(JSON.parse(sqsMessage.Body));
+    });
+  }
+
+  async writeMultipleToQueue(
+    queueConfig: SqsQueueConfig,
+    entries: {
+      id: string;
+      message: Record<string, unknown>;
+      attributes?: { [key: string]: string };
+    }[]
+  ): Promise<void> {
+    if (entries.length > 10) {
+      throw new Error("SQS can't send more than 10 messages per batch");
+    }
+    const req: SQS.Types.SendMessageBatchRequest = {
+      QueueUrl: queueConfig.getQueueUrl(),
+      Entries: entries.map((e) => {
+        const batchEntry: SQS.Types.SendMessageBatchRequestEntry = {
+          Id: e.id,
+          MessageBody: JSON.stringify(e.message),
+        };
+        const { MessageGroupId, MessageDeduplicationId, ...customAttributes } =
+          e.attributes;
+        if (MessageGroupId) {
+          batchEntry.MessageGroupId = MessageGroupId;
+        }
+        if (MessageDeduplicationId) {
+          batchEntry.MessageDeduplicationId = MessageDeduplicationId;
+        }
+        if (!isEmpty(customAttributes)) {
+          batchEntry.MessageAttributes =
+            this.sqsMessageAttributes(customAttributes);
+        }
+        return batchEntry;
+      }),
+    };
+    await new Promise((resolve, reject) => {
+      sqs.sendMessageBatch(req, (err, data) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(data);
+      });
     });
   }
 }

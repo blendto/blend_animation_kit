@@ -83,9 +83,18 @@ for (let i = 0; i < SIMULTANEOUS_QUEUE_COUNT; i++) {
             message.date
           );
           break;
+        case UserAccountActionType.CREATE_DELETION_PLAN_FOR_USER:
+          await projectsFrictionService.createDeletionPlan(message.userId);
+          break;
         case UserAccountActionType.DELETE_FREE_RESOURCES:
           await projectsFrictionService.executeScheduledDeletionPlans(
             message.date
+          );
+          break;
+        case UserAccountActionType.EXECUTE_DELETION_PLAN_FOR_USER:
+          await projectsFrictionService.executeDeletionPlan(
+            message.userId,
+            message.createdAt
           );
           break;
         case UserAccountActionType.REVENUE_CAT_SYNC:

@@ -18,6 +18,11 @@ export abstract class QueueProvider<C extends QueueConfig> {
     messageAttributes?: { [key: string]: string }
   ): Promise<unknown>;
 
+  abstract writeMultipleToQueue(
+    queueConfig: C,
+    entries: unknown[]
+  ): Promise<void>;
+
   abstract createQueueConsumer(
     queueConfig: C,
     onMessage: (message: unknown) => Promise<void>
@@ -46,6 +51,16 @@ export class BaseQueue<C extends QueueConfig, M extends QueueMessage>
     attributes?: { [key: string]: string }
   ): Promise<unknown> {
     return this.queueProvider.writeToQueue(this.config, message, attributes);
+  }
+
+  writeMultipleMessages(
+    entries: {
+      id: string;
+      message: M;
+      attributes?: { [key: string]: string };
+    }[]
+  ): Promise<void> {
+    return this.queueProvider.writeMultipleToQueue(this.config, entries);
   }
 
   createQueueConsumer(onMessage: (message: M) => Promise<void>): QueueConsumer {

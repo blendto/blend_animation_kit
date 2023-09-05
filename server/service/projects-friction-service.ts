@@ -1,4 +1,3 @@
-import Bottleneck from "bottleneck";
 import { DateTime } from "luxon";
 import { inject, injectable } from "inversify";
 import { diContainer } from "inversify.config";
@@ -43,6 +42,10 @@ export class ProjectsFrictionService implements IService {
   @inject(TYPES.HeroImageService) heroImageService: HeroImageService;
 
   async createDeletionPlansForInactiveUsers(date: string): Promise<void> {
+    logger.info({
+      op: "CREATING_DELETION_PLANS_FOR_INACTIVE_USERS",
+      date,
+    });
     const dateRightBeforeUnusedOffset = DateTime.fromISO(date)
       .minus({
         days: UNUSED_FOR_OFFSET_IN_DAYS + 1,
@@ -51,25 +54,34 @@ export class ProjectsFrictionService implements IService {
     const userIds = await this.fetchUserIdsWhoCreatedBlendsOn(
       dateRightBeforeUnusedOffset
     );
-    let usersFoundInactive = 0;
-    const bottleneck = new Bottleneck({ maxConcurrent: 10 });
-    const createDeletionPlanIfApplicable = async (userId: string) => {
-      if (await this.hasUserBeenInactive(userId)) {
-        usersFoundInactive += 1;
-        await this.createDeletionPlan(userId);
-      }
-    };
-    await Promise.all(
-      Array.from(userIds).map((userId) =>
-        bottleneck.schedule(() => createDeletionPlanIfApplicable(userId))
-      )
-    );
-    logger.info({
-      op: "CREATED_DELETION_PLANS_FOR_INACTIVE_USERS",
-      date,
-      totalUniqueUsers: userIds.size,
-      usersFoundInactive,
-    });
+    const userAccountActionQueue = diContainer.get<
+      UserAccountActionQueue<QueueConfig>
+    >(TYPES.UserAccountActionQueue);
+    const action = UserAccountActionType.CREATE_DELETION_PLAN_FOR_USER;
+    const userIdsArr = Array.from(userIds);
+    const batchSize = 10;
+    const promises: Promise<void>[] = [];
+    while (userIdsArr.length) {
+      promises.push(
+        userAccountActionQueue.writeMultipleMessages(
+          userIdsArr.splice(0, batchSize).map((userId) => {
+            const dedupId = `${action}-${userId}`;
+            return {
+              id: dedupId,
+              message: {
+                action,
+                userId,
+              },
+              attributes: {
+                MessageDeduplicationId: dedupId,
+                MessageGroupId: action,
+              },
+            };
+          })
+        )
+      );
+    }
+    await Promise.all(promises);
   }
 
   async fetchUserIdsWhoCreatedBlendsOn(
@@ -130,6 +142,9 @@ export class ProjectsFrictionService implements IService {
       await this.firebase.getUserById(userId);
     } catch (err) {
       // These were happening as a race condition when a user deletes their account
+      return;
+    }
+    if (!(await this.hasUserBeenInactive(userId))) {
       return;
     }
     if (await this.subscriptionService.hasProEntitlement(userId)) {
@@ -254,30 +269,59 @@ export class ProjectsFrictionService implements IService {
       );
     }
 
-    const plans = await this.getScheduledDeletionPlans(date);
-    const bottleneck = new Bottleneck({ maxConcurrent: 25 });
-    await Promise.all(
-      plans.map((plan) =>
-        bottleneck.schedule(() => this.executeDeletionPlan(plan))
-      )
-    );
     logger.info({
-      op: "EXECUTED_DELETION_PLANS_FOR_INACTIVE_USERS",
+      op: "EXECUTING_DELETION_PLANS_FOR_INACTIVE_USERS",
       date,
     });
+    const plans = await this.getScheduledDeletionPlans(date);
+    const userAccountActionQueue = diContainer.get<
+      UserAccountActionQueue<QueueConfig>
+    >(TYPES.UserAccountActionQueue);
+    const action = UserAccountActionType.EXECUTE_DELETION_PLAN_FOR_USER;
+    const batchSize = 10;
+    const promises: Promise<void>[] = [];
+    while (plans.length) {
+      promises.push(
+        userAccountActionQueue.writeMultipleMessages(
+          plans.splice(0, batchSize).map((plan) => {
+            const dedupId = `${action}-${plan.userId}-${plan.createdAt}`;
+            return {
+              id: dedupId,
+              message: {
+                action,
+                ...plan,
+              },
+              attributes: {
+                MessageDeduplicationId: dedupId,
+                MessageGroupId: action,
+              },
+            };
+          })
+        )
+      );
+    }
+    await Promise.all(promises);
   }
 
-  private async executeDeletionPlan(plan: DeletionPlan) {
-    if (await this.subscriptionService.hasProEntitlement(plan.userId)) {
+  async executeDeletionPlan(userId: string, createdAt: number) {
+    if (await this.subscriptionService.hasProEntitlement(userId)) {
       await this.updateDeletionPlanStatus(
-        plan.userId,
-        plan.createdAt,
+        userId,
+        createdAt,
         DeletionPlanStatus.SKIPPED_PRO_USER_DELETION_PLAN
       );
       logger.debug({
         op: "SKIPPED_DELETION_PLAN_AS_USER_TURNED_PRO",
-        plan,
+        userId,
+        createdAt,
       });
+      return;
+    }
+    const plan = (await this.dataStore.getItem({
+      TableName: ConfigProvider.DELETION_PLANS_DYNAMODB_TABLE,
+      Key: { userId, createdAt },
+    })) as DeletionPlan | null;
+    if (!plan && plan.status !== DeletionPlanStatus.PENDING) {
       return;
     }
     await this.blendService.deleteBlends(plan.blendIds);
@@ -325,7 +369,7 @@ export class ProjectsFrictionService implements IService {
 
   private async getScheduledDeletionPlans(
     date: string
-  ): Promise<DeletionPlan[]> {
+  ): Promise<{ userId: string; createdAt: number }[]> {
     let plans: DeletionPlan[] = [];
     let pageKeyObject: Record<string, unknown> = null;
     do {
@@ -343,6 +387,7 @@ export class ProjectsFrictionService implements IService {
           ":status": DeletionPlanStatus.PENDING,
         },
         ExclusiveStartKey: pageKeyObject,
+        ProjectionExpression: "userId, createdAt",
       });
       plans = plans.concat(data.Items as DeletionPlan[]);
       pageKeyObject = data.LastEvaluatedKey;
