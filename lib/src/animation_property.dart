@@ -1,4 +1,4 @@
-import 'package:custom_text_animations/src/text_animation_builder/matrix4_alignment_tween.dart';
+import 'package:custom_text_animations/src/matrix4_alignment_tween.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:simple_animations/simple_animations.dart';
 

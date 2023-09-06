@@ -1,6 +1,6 @@
-import 'package:custom_text_animations/src/text_animation_builder/animation_input.dart';
-import 'package:custom_text_animations/src/text_animation_builder/animation_property.dart';
-import 'package:custom_text_animations/src/text_animation_builder/matrix4_alignment_tween.dart';
+import 'package:custom_text_animations/src/animation_input.dart';
+import 'package:custom_text_animations/src/animation_property.dart';
+import 'package:custom_text_animations/src/matrix4_alignment_tween.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
