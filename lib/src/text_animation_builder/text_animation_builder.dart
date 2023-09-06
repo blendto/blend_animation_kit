@@ -7,12 +7,9 @@ import 'package:simple_animations/movie_tween/movie_tween.dart';
 
 @immutable
 class TextAnimationBuilder {
-  final String text;
-  final TextStyle? textStyle;
-
   late final Iterable<SceneItem> sceneItems;
 
-  late final Duration _begin;
+  late final Duration begin;
 
   /// Waits for previous animations
   TextAnimationBuilder wait() {
@@ -37,25 +34,30 @@ class TextAnimationBuilder {
   List<AnimationProperty> get animationProperties =>
       animationInput.animationProperties;
 
-  final CharacterAnimationInput animationInput;
+  final AnimationInput animationInput;
 
   TextAnimationBuilder(this.animationInput)
-      : text = animationInput.text,
-        textStyle = animationInput.textStyle,
-        _begin = animationInput.begin,
-        sceneItems = animationInput.sceneItems;
+      : begin = Duration.zero,
+        sceneItems = [];
+
+  TextAnimationBuilder._({
+    required this.animationInput,
+    required this.sceneItems,
+    required this.begin,
+  });
 
   TextAnimationBuilder copyWith(
       {List<SceneItem>? sceneItems, Duration? begin}) {
-    return TextAnimationBuilder(animationInput.copyWith(
-      sceneItems: sceneItems,
-      begin: begin,
-    ));
+    return TextAnimationBuilder._(
+      animationInput: animationInput,
+      sceneItems: sceneItems ?? this.sceneItems,
+      begin: begin ?? this.begin,
+    );
   }
 
   MovieTween _generateTween() {
     MovieTween movieTween = MovieTween();
-    for (var element in sceneItems) {
+    for (final element in sceneItems) {
       element.attachToScene(movieTween);
     }
     return movieTween;
@@ -80,7 +82,7 @@ class TextAnimationBuilder {
           transformAlignment: transformAlignment,
         ),
         curve: curve,
-        from: _begin + (stepInterval * index),
+        from: begin + (stepInterval * index),
         duration: speed,
       ));
     }
@@ -102,7 +104,7 @@ class TextAnimationBuilder {
         property: property,
         tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
         curve: curve,
-        from: _begin + (stepInterval * index),
+        from: begin + (stepInterval * index),
         duration: speed,
       ));
     }
@@ -132,7 +134,7 @@ class TextAnimationBuilder {
                     transform: animationProperty.transformation
                         .fromOrDefault(movie)
                         .matrix,
-                    child: Text(value, style: textStyle),
+                    child: Text(value, style: animationInput.textStyle),
                   ),
                 ),
               );
