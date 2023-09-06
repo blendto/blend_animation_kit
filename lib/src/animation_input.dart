@@ -18,7 +18,7 @@ class CharacterAnimationInput extends AnimationInput {
   final TextStyle? textStyle;
 
   @override
-  Iterable<String> get groups => text.characters;
+  final Iterable<String> groups;
 
   @override
   late final List<AnimationProperty> animationProperties;
@@ -26,7 +26,7 @@ class CharacterAnimationInput extends AnimationInput {
   CharacterAnimationInput({
     required this.text,
     this.textStyle,
-  }) {
+  }) : groups = text.characters {
     animationProperties =
         List.generate(groups.length, (index) => AnimationProperty());
   }
