@@ -1,4 +1,9 @@
 library custom_text_animations;
 
-export 'src/character_text_animation.dart';
-export 'src/word_scale_text_animation.dart';
+export 'package:simple_animations/animation_developer_tools/animation_developer_tools.dart';
+
+export 'src/animation_input.dart';
+export 'src/matrix4_alignment_tween.dart';
+export 'src/predefined_animations.dart';
+export 'src/text_animation_builder.dart';
+export 'src/text_animation_builder_extension.dart';

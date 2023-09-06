@@ -32,11 +32,13 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Widget> get widgets => [
-        ...CharacterTextAnimation.all(customText),
-        WordScaleTextAnimation(
-          text: customText ?? 'Word Scale',
-          textStyle: const TextStyle(fontSize: 40),
-        ),
+        variant2(customText ?? "Great Thinkers", const TextStyle(fontSize: 40)),
+        variant3(
+            customText ?? "Coffee mornings", const TextStyle(fontSize: 30)),
+        variant4(
+            customText ?? "Beautiful Questions", const TextStyle(fontSize: 30)),
+        variant5(customText ?? "Animation 6", const TextStyle(fontSize: 40)),
+        variant6(customText ?? "Animation 7", const TextStyle(fontSize: 40)),
       ];
 
   String? customText;
