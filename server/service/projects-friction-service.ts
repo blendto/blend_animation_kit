@@ -4,7 +4,6 @@ import { inject, injectable } from "inversify";
 import { diContainer } from "inversify.config";
 import { TYPES } from "server/types";
 import ConfigProvider from "server/base/ConfigProvider";
-import { UserError } from "server/base/errors";
 import logger from "server/base/Logger";
 import { UserAccountActionType } from "server/base/models/queue-messages";
 import DynamoDB from "server/external/dynamodb";
@@ -375,36 +374,6 @@ export class ProjectsFrictionService implements IService {
     logger.debug({
       op: "EXECUTED_DELETION_PLAN",
       userId: plan.userId,
-    });
-  }
-
-  async cleanupOldProjects(userId: string) {
-    if (await this.subscriptionService.hasProEntitlement(userId)) {
-      logger.debug({
-        op: "SKIPPED_INACTIVE_USER_PROJECTS_CLEANUP_AS_USER_IS_PRO",
-        userId,
-      });
-      return;
-    }
-    const now = DateTime.utc();
-    const unusedForOffset = now
-      .minus({ days: UNUSED_FOR_OFFSET_IN_DAYS })
-      .valueOf();
-    const unusedBlendIds = await this.blendService.getUnusedBlendIds(
-      userId,
-      unusedForOffset
-    );
-    const unusedImageIds = await this.heroImageService.getUnusedImageIds(
-      userId,
-      unusedForOffset
-    );
-    await this.blendService.deleteBlends(unusedBlendIds);
-    await this.heroImageService.deleteHeroImages(unusedImageIds);
-    logger.info({
-      op: "EXECUTED_INACTIVE_USER_PROJECTS_CLEANUP",
-      userId,
-      unusedBlendIds,
-      unusedImageIds,
     });
   }
 
