@@ -33,6 +33,11 @@ class OpacityProperty extends CustomMovieTweenProperty<double> {
   final fallbackValue = 1.0;
 }
 
+class AnimationProperty {
+  final transformation = TransformationProperty();
+  final opacity = OpacityProperty();
+}
+
 abstract class SceneItem {
   Duration get duration;
 

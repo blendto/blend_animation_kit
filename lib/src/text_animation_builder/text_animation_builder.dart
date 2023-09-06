@@ -1,10 +1,9 @@
-import 'package:custom_text_animations/src/text_animation_builder/animation_properties.dart';
+import 'package:custom_text_animations/src/text_animation_builder/animation_input.dart';
+import 'package:custom_text_animations/src/text_animation_builder/animation_property.dart';
 import 'package:custom_text_animations/src/text_animation_builder/matrix4_alignment_tween.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
-
-enum BreakType { character, word }
 
 @immutable
 class TextAnimationBuilder {
@@ -35,11 +34,8 @@ class TextAnimationBuilder {
 
   Iterable<String> get _groups => animationInput.groups;
 
-  Iterable<OpacityProperty> get opacityProperties =>
-      animationInput.opacityProperties;
-
-  Iterable<TransformationProperty> get transformProperties =>
-      animationInput.transformProperties;
+  List<AnimationProperty> get animationProperties =>
+      animationInput.animationProperties;
 
   final CharacterAnimationInput animationInput;
 
@@ -50,7 +46,7 @@ class TextAnimationBuilder {
         sceneItems = animationInput.sceneItems;
 
   TextAnimationBuilder copyWith(
-      {Iterable<SceneItem>? sceneItems, Duration? begin}) {
+      {List<SceneItem>? sceneItems, Duration? begin}) {
     return TextAnimationBuilder(animationInput.copyWith(
       sceneItems: sceneItems,
       begin: begin,
@@ -75,7 +71,7 @@ class TextAnimationBuilder {
   }) {
     final newSceneItems = List.of(sceneItems);
     for (var (index, _) in _groups.indexed) {
-      final property = transformProperties.elementAt(index);
+      final property = animationProperties.elementAt(index).transformation;
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Matrix4WithAlignmentTween(
@@ -101,7 +97,7 @@ class TextAnimationBuilder {
   }) {
     final newSceneItems = List.of(sceneItems);
     for (var (index, _) in _groups.indexed) {
-      final property = opacityProperties.elementAt(index);
+      final property = animationProperties.elementAt(index).opacity;
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
@@ -123,19 +119,17 @@ class TextAnimationBuilder {
               final index = char.$1;
               final value = char.$2;
 
+              final animationProperty = animationProperties.elementAt(index);
               return WidgetSpan(
                 child: Opacity(
-                  opacity: opacityProperties
-                      .elementAt(index)
+                  opacity: animationProperty.opacity
                       .fromOrDefault(movie)
                       .clamp(0, 1),
                   child: Transform(
-                    alignment: transformProperties
-                        .elementAt(index)
+                    alignment: animationProperty.transformation
                         .fromOrDefault(movie)
                         .transformAlignment,
-                    transform: transformProperties
-                        .elementAt(index)
+                    transform: animationProperty.transformation
                         .fromOrDefault(movie)
                         .matrix,
                     child: Text(value, style: textStyle),
@@ -147,80 +141,6 @@ class TextAnimationBuilder {
         );
       },
       duration: tween.duration,
-    );
-  }
-}
-
-class CharacterAnimationInput {
-  final String text;
-  final TextStyle? textStyle;
-
-  final Iterable<SceneItem> sceneItems;
-
-  final Duration begin;
-
-  Iterable<String> get groups => text.characters;
-
-  late final Iterable<OpacityProperty> opacityProperties;
-
-  late final Iterable<TransformationProperty> transformProperties;
-
-  CharacterAnimationInput({
-    required this.text,
-    this.textStyle,
-    this.sceneItems = const [],
-    this.begin = Duration.zero,
-    Iterable<OpacityProperty>? opacityProperties,
-    Iterable<TransformationProperty>? transformProperties,
-  }) {
-    this.opacityProperties = opacityProperties ??
-        List.generate(groups.length, (index) => OpacityProperty());
-    this.transformProperties = transformProperties ??
-        List.generate(groups.length, (index) => TransformationProperty());
-  }
-
-  CharacterAnimationInput copyWith(
-      {Iterable<SceneItem>? sceneItems, Duration? begin}) {
-    return CharacterAnimationInput(
-      opacityProperties: opacityProperties,
-      transformProperties: transformProperties,
-      sceneItems: sceneItems ?? this.sceneItems,
-      text: text,
-      textStyle: textStyle,
-      begin: begin ?? this.begin,
-    );
-  }
-}
-
-class WordAnimationInput extends CharacterAnimationInput {
-  @override
-  Iterable<String> get groups {
-    final words = text.split("\\s+").toList();
-    for (var i = 1; i < words.length - 1; i++) {
-      words.add(" ");
-    }
-    return words;
-  }
-
-  WordAnimationInput(
-      {required super.text,
-      super.textStyle,
-      super.sceneItems = const [],
-      super.begin = Duration.zero,
-      super.opacityProperties,
-      super.transformProperties})
-      : super();
-
-  @override
-  WordAnimationInput copyWith(
-      {Iterable<SceneItem>? sceneItems, Duration? begin}) {
-    return WordAnimationInput(
-      opacityProperties: opacityProperties,
-      transformProperties: transformProperties,
-      sceneItems: sceneItems ?? this.sceneItems,
-      text: text,
-      textStyle: textStyle,
-      begin: begin ?? this.begin,
     );
   }
 }

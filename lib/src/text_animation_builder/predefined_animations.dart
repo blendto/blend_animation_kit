@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:custom_text_animations/src/text_animation_builder/animation_input.dart';
 import 'package:custom_text_animations/src/text_animation_builder/text_animation_builder.dart';
 import 'package:custom_text_animations/src/text_animation_builder/text_animation_builder_extension.dart';
 import 'package:flutter/material.dart';
