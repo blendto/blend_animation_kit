@@ -38,6 +38,7 @@ dependencies:
   vector_math: ^2.1.4
   custom_text_animations:
     path: ../
+  shelf: ^1.4.1
 
 
 dev_dependencies:
