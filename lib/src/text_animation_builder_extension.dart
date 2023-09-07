@@ -7,22 +7,22 @@ extension TextAnimationBuilderExtension on TextAnimationBuilder {
     required double finalOpacity,
     required Matrix4 initialMatrix,
     required Matrix4 finalMatrix,
-    required Duration speed,
-    required Duration stepInterval,
+    required Duration stepDuration,
+    required Duration interStepDelay,
     required Curve curve,
     Alignment transformAlignment = Alignment.center,
   }) {
     return opacity(
       initialOpacity: initialOpacity,
-      speed: speed,
-      stepInterval: stepInterval,
+      stepDuration: stepDuration,
+      interStepDelay: interStepDelay,
       curve: curve,
       finalOpacity: finalOpacity,
     ).transform(
       initialMatrix: initialMatrix,
       finalMatrix: finalMatrix,
-      speed: speed,
-      stepInterval: stepInterval,
+      stepDuration: stepDuration,
+      interStepDelay: interStepDelay,
       curve: curve,
       transformAlignment: transformAlignment,
     );
@@ -35,8 +35,8 @@ extension TextAnimationBuilderExtension on TextAnimationBuilder {
   }) {
     return wait().delay(delay).opacity(
           initialOpacity: 1.0,
-          speed: fadeOutDuration,
-          stepInterval: Duration.zero,
+          stepDuration: fadeOutDuration,
+          interStepDelay: Duration.zero,
           curve: curve,
           finalOpacity: 0.0,
         );

@@ -9,8 +9,8 @@ Widget variant2(String text, TextStyle? textStyle) => TextAnimationBuilder(
         CharacterAnimationInput(text: text, textStyle: textStyle))
     .opacity(
       initialOpacity: 0.0,
-      speed: const Duration(milliseconds: 2250),
-      stepInterval: const Duration(milliseconds: 150),
+      stepDuration: const Duration(milliseconds: 2250),
+      interStepDelay: const Duration(milliseconds: 150),
       curve: Curves.easeInOutQuad,
       finalOpacity: 1.0,
     )
@@ -25,8 +25,8 @@ Widget variant3(String text, TextStyle? textStyle) => TextAnimationBuilder(
       finalOpacity: 1.0,
       finalMatrix: Matrix4.identity(),
       transformAlignment: Alignment.bottomLeft,
-      speed: const Duration(milliseconds: 1500),
-      stepInterval: const Duration(milliseconds: 45),
+      stepDuration: const Duration(milliseconds: 1500),
+      interStepDelay: const Duration(milliseconds: 45),
       curve: Curves.elasticOut,
     )
     .waitAndFadeOutAll()
@@ -39,8 +39,8 @@ Widget variant4(String text, TextStyle? textStyle) => TextAnimationBuilder(
       initialMatrix: Matrix4.identity()..translate(0.0, 15.0),
       finalOpacity: 1.0,
       finalMatrix: Matrix4.identity(),
-      speed: const Duration(milliseconds: 1000),
-      stepInterval: const Duration(milliseconds: 100),
+      stepDuration: const Duration(milliseconds: 1000),
+      interStepDelay: const Duration(milliseconds: 100),
       curve: Curves.elasticOut,
     )
     .waitAndFadeOutAll()
@@ -53,8 +53,8 @@ Widget variant5(String text, TextStyle? textStyle) => TextAnimationBuilder(
       finalOpacity: 1.0,
       initialMatrix: Matrix4.identity()..rotateY(-pi / 2),
       finalMatrix: Matrix4.identity(),
-      speed: const Duration(milliseconds: 1300),
-      stepInterval: const Duration(milliseconds: 45),
+      stepDuration: const Duration(milliseconds: 1300),
+      interStepDelay: const Duration(milliseconds: 45),
       curve: Curves.easeOutExpo,
     )
     .waitAndFadeOutAll()
@@ -67,8 +67,8 @@ Widget variant6(String text, TextStyle? textStyle) => TextAnimationBuilder(
       finalOpacity: 1.0,
       initialMatrix: Matrix4.identity()..translate(80.0),
       finalMatrix: Matrix4.identity(),
-      speed: const Duration(milliseconds: 2000),
-      stepInterval: const Duration(milliseconds: 30),
+      stepDuration: const Duration(milliseconds: 2000),
+      interStepDelay: const Duration(milliseconds: 30),
       curve: Curves.easeOutExpo,
     )
     .waitAndFadeOutAll()
@@ -89,8 +89,8 @@ Widget variant7(List<String> texts, TextStyle? textStyle) {
           finalOpacity: 1.0,
           finalMatrix: Matrix4.identity(),
           transformAlignment: Alignment.bottomLeft,
-          speed: const Duration(milliseconds: 1500),
-          stepInterval: const Duration(milliseconds: 45),
+          stepDuration: const Duration(milliseconds: 1500),
+          interStepDelay: const Duration(milliseconds: 45),
           curve: Curves.elasticOut,
         )
         .waitAndFadeOutAll();
