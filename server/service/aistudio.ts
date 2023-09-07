@@ -227,7 +227,12 @@ export class AIStudioService implements IService {
   ): AIStudioTopicListExternal[] {
     return lists.map((list) => ({
       ...list,
-      topics: topics.filter((topic) => list.topicIds.includes(topic.topicId)),
+      topics: topics
+        .filter((topic) => list.topicIds.includes(topic.topicId))
+        .sort(
+          (a, b) =>
+            list.topicIds.indexOf(a.topicId) - list.topicIds.indexOf(b.topicId)
+        ),
     }));
   }
 
