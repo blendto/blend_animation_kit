@@ -66,8 +66,8 @@ class TextAnimationBuilder {
   TextAnimationBuilder transform({
     required Matrix4 initialMatrix,
     required Matrix4 finalMatrix,
-    required Duration speed,
-    required Duration stepInterval,
+    required Duration stepDuration,
+    required Duration interStepDelay,
     required Curve curve,
     Alignment transformAlignment = Alignment.center,
   }) {
@@ -82,8 +82,8 @@ class TextAnimationBuilder {
           transformAlignment: transformAlignment,
         ),
         curve: curve,
-        from: begin + (stepInterval * index),
-        duration: speed,
+        from: begin + (interStepDelay * index),
+        duration: stepDuration,
       ));
     }
 
@@ -92,8 +92,8 @@ class TextAnimationBuilder {
 
   TextAnimationBuilder opacity({
     required double initialOpacity,
-    required Duration speed,
-    required Duration stepInterval,
+    required Duration stepDuration,
+    required Duration interStepDelay,
     required Curve curve,
     required double finalOpacity,
   }) {
@@ -104,8 +104,8 @@ class TextAnimationBuilder {
         property: property,
         tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
         curve: curve,
-        from: begin + (stepInterval * index),
-        duration: speed,
+        from: begin + (interStepDelay * index),
+        duration: stepDuration,
       ));
     }
     return copyWith(sceneItems: newSceneItems);
