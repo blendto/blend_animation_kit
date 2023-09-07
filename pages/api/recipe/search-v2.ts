@@ -1,3 +1,4 @@
+import { diContainer } from "inversify.config";
 import Joi from "joi";
 import { NextApiResponse } from "next";
 import { MethodNotAllowedError, UserError } from "server/base/errors";
@@ -13,6 +14,8 @@ import RecipeSearchService from "server/internal/recipe-search";
 import RecoEngineApi, {
   ProcessSearchResultsResponseBody,
 } from "server/internal/reco-engine";
+import { RecipeService } from "server/service/recipe";
+import { TYPES } from "server/types";
 
 export default withReqHandler(
   async (req: NextApiRequestExtended, res: NextApiResponse) => {
@@ -82,6 +85,7 @@ const searchRecipes = async (
   let processedResults: ProcessSearchResultsResponseBody = {
     suggestedRecipes: [],
   };
+  const recipeService = diContainer.get<RecipeService>(TYPES.RecipeService);
   switch (flowType) {
     case FlowType.ASSISTED_MOBILE:
       processedResults = await recoEngine.processSearchResults({
@@ -92,9 +96,19 @@ const searchRecipes = async (
       });
       break;
     case FlowType.START_WITH_A_TEMPLATE:
-      processedResults.suggestedRecipes = matchingRecipeLists.flatMap(
-        (l) => l.recipes
-      );
+      processedResults.suggestedRecipes = (
+        await recipeService.getRecipes(
+          matchingRecipeLists.flatMap((l) => l.recipes),
+          "id, variant, thumbnail, recipeDetails.isPremium"
+        )
+      ).map((r) => ({
+        id: r.id,
+        variant: r.variant,
+        extra: {
+          thumbnail: r.thumbnail,
+          isPremium: r.recipeDetails.isPremium,
+        },
+      }));
       break;
     default:
       throw new Error("UNSUPPORTED_FLOW_TYPE");

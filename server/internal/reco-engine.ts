@@ -3,7 +3,11 @@ import ConfigProvider from "server/base/ConfigProvider";
 import { RecipeList } from "server/base/models/recipeList";
 import { handleAxiosCall } from "server/helpers/network";
 import { UserAgentDetails } from "server/base/models/userAgentDetails";
-import { FlowType, SearchRecipeResponse } from "server/base/models/recipe";
+import {
+  FlowType,
+  Recipe,
+  SearchRecipeResponse,
+} from "server/base/models/recipe";
 import { DetectProductCategoryResponse } from "server/base/models/recoEngine";
 import {
   BgRemovedFileKeys,
@@ -68,6 +72,10 @@ export interface ProcessSearchResultsResponseBody {
   suggestedRecipes: {
     id: string;
     variant: string;
+    extra?: {
+      thumbnail: string;
+      isPremium: boolean;
+    };
   }[];
 }
 
