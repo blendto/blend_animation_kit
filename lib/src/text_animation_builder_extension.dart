@@ -1,4 +1,4 @@
-import 'package:custom_text_animations/src/text_animation_builder.dart';
+import 'package:blend_animation_kit/src/text_animation_builder.dart';
 import 'package:flutter/material.dart';
 
 extension TextAnimationBuilderExtension on TextAnimationBuilder {

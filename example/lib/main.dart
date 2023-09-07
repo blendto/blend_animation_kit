@@ -1,4 +1,4 @@
-import 'package:custom_text_animations/custom_text_animations.dart';
+import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:flutter/material.dart';
 
 void main() {
