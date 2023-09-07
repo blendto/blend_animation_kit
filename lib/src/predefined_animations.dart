@@ -73,3 +73,37 @@ Widget variant6(String text, TextStyle? textStyle) => TextAnimationBuilder(
     )
     .waitAndFadeOutAll()
     .generateWidget();
+
+Widget variant7(List<String> texts, TextStyle? textStyle) {
+  final widgets = <Widget>[];
+
+  Duration delay = Duration.zero;
+  final builders = <TextAnimationBuilder>[];
+  for (var text in texts) {
+    var input = WordAnimationInput(text: text, textStyle: textStyle);
+    final builder = TextAnimationBuilder(input)
+        .delay(delay)
+        .opacityAndTransform(
+          initialOpacity: 1.0,
+          initialMatrix: Matrix4.identity()..scale(0.001),
+          finalOpacity: 1.0,
+          finalMatrix: Matrix4.identity(),
+          transformAlignment: Alignment.bottomLeft,
+          speed: const Duration(milliseconds: 1500),
+          stepInterval: const Duration(milliseconds: 45),
+          curve: Curves.elasticOut,
+        )
+        .waitAndFadeOutAll();
+    builders.add(builder);
+    delay = builder.tween.duration;
+  }
+
+  final end = builders.last.tween.duration;
+
+  for (var builder in builders) {
+    final widget = builder.delay(end - builder.tween.duration).generateWidget();
+    widgets.add(Center(child: widget));
+  }
+
+  return Stack(children: widgets);
+}

@@ -39,6 +39,8 @@ class _MyHomePageState extends State<MyHomePage> {
             customText ?? "Beautiful Questions", const TextStyle(fontSize: 30)),
         variant5(customText ?? "Animation 6", const TextStyle(fontSize: 40)),
         variant6(customText ?? "Animation 7", const TextStyle(fontSize: 40)),
+        variant7(["Get", "Ready", "For", customText ?? "This"],
+            const TextStyle(fontSize: 40)),
       ];
 
   String? customText;
