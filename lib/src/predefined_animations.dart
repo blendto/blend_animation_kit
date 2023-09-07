@@ -88,7 +88,7 @@ Widget variant7(List<String> texts, TextStyle? textStyle) {
           initialMatrix: Matrix4.identity()..scale(0.001),
           finalOpacity: 1.0,
           finalMatrix: Matrix4.identity(),
-          transformAlignment: Alignment.bottomLeft,
+          transformAlignment: Alignment.center,
           stepDuration: const Duration(milliseconds: 1500),
           interStepDelay: const Duration(milliseconds: 45),
           curve: Curves.elasticOut,
