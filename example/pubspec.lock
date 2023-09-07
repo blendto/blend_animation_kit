@@ -50,7 +50,7 @@ packages:
     source: hosted
     version: "1.0.5"
   custom_text_animations:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       path: ".."
       relative: true
