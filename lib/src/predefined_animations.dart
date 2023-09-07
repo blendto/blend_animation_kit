@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:custom_text_animations/src/animation_input.dart';
-import 'package:custom_text_animations/src/text_animation_builder.dart';
-import 'package:custom_text_animations/src/text_animation_builder_extension.dart';
+import 'package:blend_animation_kit/src/animation_input.dart';
+import 'package:blend_animation_kit/src/text_animation_builder.dart';
+import 'package:blend_animation_kit/src/text_animation_builder_extension.dart';
 import 'package:flutter/material.dart';
 
 Widget variant2(String text, TextStyle? textStyle) => TextAnimationBuilder(

@@ -1,4 +1,4 @@
-import 'package:custom_text_animations/src/animation_property.dart';
+import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:flutter/material.dart';
 
 abstract class AnimationInput {

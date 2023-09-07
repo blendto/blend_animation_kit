@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "custom_text_animations",
+            "name": "blend_animation_kit",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "custom_text_animations (profile mode)",
+            "name": "blend_animation_kit (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "custom_text_animations (release mode)",
+            "name": "blend_animation_kit (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
