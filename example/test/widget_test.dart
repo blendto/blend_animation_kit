@@ -10,8 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
-const fps = 60;
-const paddingLength = 5;
+const fps = 24;
 
 TextAnimationBuilder testAnimation(String text, TextStyle? textStyle) =>
     TextAnimationBuilder(
@@ -29,11 +28,8 @@ TextAnimationBuilder testAnimation(String text, TextStyle? textStyle) =>
         .waitAndFadeOutAll();
 
 Future<Response> _echoRequest(Request request, WidgetTester tester) async {
-  final stop = Stopwatch()..start();
-  final file = await pumpAndGenerate(request.url.toString(), tester);
-  print("gen ${stop.elapsedMilliseconds}");
-  return Response.ok("file.readAsBytes().asStream()",
-      headers: {"Content-Type": "video/webm"});
+  final out = await pumpAndGenerate(request.url.toString(), tester);
+  return Response.ok(out, headers: {"Content-Type": "video/webm"});
 }
 
 void main() async {
@@ -47,18 +43,20 @@ void main() async {
     await fontLoader.load();
     return true;
   });
-  testWidgets("Some  test", (tester) async {
+  testWidgets("Some test", (tester) async {
     final server = await TestWidgetsFlutterBinding.instance.runAsync(() async {
       var handler = const Pipeline()
           .addMiddleware(logRequests())
           .addHandler((req) => _echoRequest(req, tester));
       return await shelf_io.serve(handler, 'localhost', 8080);
     });
+    print("Running Server: ${server?.address.address}:${server?.port}");
     await Completer().future;
-  });
+  }, timeout: Timeout.none);
 }
 
-Future<File> pumpAndGenerate(String text, WidgetTester tester) async {
+Future<Stream<List<int>>> pumpAndGenerate(
+    String text, WidgetTester tester) async {
   final testAnimationBuilder = testAnimation(
       text,
       const TextStyle(
@@ -75,7 +73,6 @@ Future<File> pumpAndGenerate(String text, WidgetTester tester) async {
     ),
   ));
 
-  int index = 0;
   final perFrameDuration = Duration(milliseconds: (1000 / (fps)).round());
 
   Duration currentDuration = Duration.zero;
@@ -87,28 +84,53 @@ Future<File> pumpAndGenerate(String text, WidgetTester tester) async {
     final image = await boundary.toImage();
     frames.add(FrameItem(image: image, duration: currentDuration));
     currentDuration += perFrameDuration;
-    index += 1;
     await TestWidgetsFlutterBinding.instance.pump(perFrameDuration);
   }
 
-  const filePath = "./captures/output.webm";
-  // final args = <String>[
-  //   "-r",
-  //   fps.toString(),
-  //   "-y",
-  //   "-i",
-  //   "./captures/img-%0${paddingLength}d.png",
-  //   filePath
-  // ];
-  // var result = await Process.run('ffmpeg', args);
-  return File(filePath);
+  final args = <String>[
+    '-f',
+    'image2pipe',
+    "-r",
+    fps.toString(),
+    "-y",
+    '-i',
+    'pipe:0',
+    '-f',
+    'webm',
+    'pipe:1',
+  ];
+  var ffmpegProcess = await Process.start('ffmpeg', args);
+
+  final images = await frames.waitForImages();
+  for (var element in images) {
+    ffmpegProcess.stdin.add(element);
+  }
+
+  await ffmpegProcess.stdin.close();
+
+  frames.dispose();
+  return ffmpegProcess.stdout;
 }
 
 class FrameItem {
   final ui.Image image;
   final Duration duration;
 
-  const FrameItem({required this.image, required this.duration});
+  late final Future<List<int>> rawImage;
+
+  FrameItem({required this.image, required this.duration}) {
+    rawImage = getRawImage();
+  }
+
+  Future<List<int>> getRawImage() async {
+    // TODO: Fix Slowest call
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List().toList();
+  }
+
+  void dispose() {
+    image.dispose();
+  }
 }
 
 class Frames {
@@ -116,5 +138,19 @@ class Frames {
 
   void add(FrameItem frameItem) {
     return frames.add(frameItem);
+  }
+
+  Stream<List<int>> imagesStream() {
+    return Stream.fromFutures(frames.map((e) => e.rawImage));
+  }
+
+  Future<List<List<int>>> waitForImages() {
+    return Future.wait(frames.map((e) => e.rawImage));
+  }
+
+  void dispose() {
+    for (var element in frames) {
+      element.dispose();
+    }
   }
 }
