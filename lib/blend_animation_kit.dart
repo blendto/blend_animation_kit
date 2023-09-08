@@ -1,4 +1,4 @@
-library custom_text_animations;
+library blend_animation_kit;
 
 export 'package:simple_animations/animation_developer_tools/animation_developer_tools.dart';
 

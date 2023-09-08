@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:custom_text_animations/custom_text_animations.dart';
+import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -22,8 +22,8 @@ TextAnimationBuilder testAnimation(String text, TextStyle? textStyle) =>
           finalOpacity: 1.0,
           finalMatrix: Matrix4.identity(),
           transformAlignment: Alignment.bottomLeft,
-          speed: const Duration(milliseconds: 1500),
-          stepInterval: const Duration(milliseconds: 45),
+          stepDuration: const Duration(milliseconds: 1500),
+          interStepDelay: const Duration(milliseconds: 45),
           curve: Curves.elasticOut,
         )
         .waitAndFadeOutAll();
