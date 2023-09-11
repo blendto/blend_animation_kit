@@ -111,35 +111,51 @@ class TextAnimationBuilder {
     return copyWith(sceneItems: newSceneItems);
   }
 
+  List<List<Widget>> getWidgets(Movie movie) {
+    final groups = _groups.indexed;
+    final List<List<Widget>> spans = [];
+    final innerSpan = <Widget>[];
+    for (final text in groups) {
+      final animationProperty = animationProperties.elementAt(text.$1);
+      innerSpan.add(Opacity(
+        opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
+        child: Transform(
+          alignment: animationProperty.transformation
+              .fromOrDefault(movie)
+              .transformAlignment,
+          transform:
+              animationProperty.transformation.fromOrDefault(movie).matrix,
+          child: Text(
+            text.$2,
+            style: animationInput.textStyle,
+          ),
+        ),
+      ));
+      if (text.$2 == " ") {
+        spans.add(innerSpan.toList());
+        innerSpan.clear();
+      }
+    }
+    if (innerSpan.isNotEmpty) {
+      spans.add(innerSpan);
+    }
+    return spans;
+  }
+
   Widget generateWidget() {
     return LoopAnimationBuilder(
       tween: tween,
       builder: (context, movie, _) {
-        return Text.rich(
-          TextSpan(
-            children: _groups.indexed.map((char) {
-              final index = char.$1;
-              final value = char.$2;
-
-              final animationProperty = animationProperties.elementAt(index);
-              return WidgetSpan(
-                child: Opacity(
-                  opacity: animationProperty.opacity
-                      .fromOrDefault(movie)
-                      .clamp(0, 1),
-                  child: Transform(
-                    alignment: animationProperty.transformation
-                        .fromOrDefault(movie)
-                        .transformAlignment,
-                    transform: animationProperty.transformation
-                        .fromOrDefault(movie)
-                        .matrix,
-                    child: Text(value, style: animationInput.textStyle),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+        return Wrap(
+          direction: Axis.horizontal,
+          children: getWidgets(movie)
+              .map((e) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: e,
+                  ))
+              .toList(),
         );
       },
       duration: tween.duration,
