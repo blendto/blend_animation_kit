@@ -52,6 +52,9 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  double sliderVal = 0;
+  bool sliderActive = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,16 +97,48 @@ class _MyHomePageState extends State<MyHomePage> {
                     itemCount: widgets.length,
                     itemBuilder: (context, index) {
                       return Center(
-                        child: Container(
-                          decoration: BoxDecoration(
-                              border: Border.all(color: Colors.red)),
-                          child: widgets[index],
-                        ),
+                        child: LayoutBuilder(builder: (context, constraints) {
+                          return Container(
+                            width: sliderActive
+                                ? constraints.maxWidth * sliderVal
+                                : null,
+                            decoration: BoxDecoration(
+                                border: Border.all(color: Colors.red)),
+                            child: widgets[index],
+                          );
+                        }),
                       );
                     },
                   ),
                 ),
               ),
+              Slider(
+                min: 0,
+                max: 1,
+                value: sliderVal,
+                onChanged: sliderActive
+                    ? (val) {
+                        setState(() {
+                          sliderVal = val;
+                        });
+                      }
+                    : null,
+              ),
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Change Width"),
+                    Checkbox(
+                        value: sliderActive,
+                        onChanged: (val) {
+                          setState(() {
+                            sliderActive = val ?? false;
+                          });
+                        }),
+                  ],
+                ),
+              )
             ],
           ),
         ),
