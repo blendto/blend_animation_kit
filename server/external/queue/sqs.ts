@@ -51,7 +51,7 @@ export class SqsProvider implements QueueProvider<SqsQueueConfig> {
       MessageBody: JSON.stringify(message),
     };
     const { MessageGroupId, MessageDeduplicationId, ...customAttributes } =
-      messageAttributes;
+      messageAttributes ?? {};
     if (MessageGroupId) {
       req.MessageGroupId = MessageGroupId;
     }
