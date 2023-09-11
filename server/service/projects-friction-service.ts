@@ -200,21 +200,21 @@ export class ProjectsFrictionService implements IService {
           createdAt: pendingPlan.createdAt,
         },
       });
-      // // - Retry plans scheduled on the same date
-      // const userAccountActionQueue = diContainer.get<
-      //   UserAccountActionQueue<QueueConfig>
-      // >(TYPES.UserAccountActionQueue);
-      // const action = UserAccountActionType.DELETE_FREE_RESOURCES;
-      // await userAccountActionQueue.writeMessage(
-      //   {
-      //     action,
-      //     date: pendingPlan.deletionDate,
-      //   },
-      //   {
-      //     MessageDeduplicationId: `${action}-${pendingPlan.deletionDate}`,
-      //     MessageGroupId: action,
-      //   }
-      // );
+      // - Retry plans scheduled on the same date
+      const userAccountActionQueue = diContainer.get<
+        UserAccountActionQueue<QueueConfig>
+      >(TYPES.UserAccountActionQueue);
+      const action = UserAccountActionType.DELETE_FREE_RESOURCES;
+      await userAccountActionQueue.writeMessage(
+        {
+          action,
+          date: pendingPlan.deletionDate,
+        },
+        {
+          MessageDeduplicationId: `${action}-${pendingPlan.deletionDate}`,
+          MessageGroupId: action,
+        }
+      );
     }
     return null;
   }
