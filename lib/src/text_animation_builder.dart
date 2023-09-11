@@ -1,5 +1,6 @@
 import 'package:blend_animation_kit/src/animation_input.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
+import 'package:blend_animation_kit/src/extensions.dart';
 import 'package:blend_animation_kit/src/matrix4_alignment_tween.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
@@ -127,6 +128,7 @@ class TextAnimationBuilder {
               animationProperty.transformation.fromOrDefault(movie).matrix,
           child: Text(
             text.$2,
+            textAlign: TextAlign.center,
             style: animationInput.textStyle,
           ),
         ),
@@ -142,11 +144,12 @@ class TextAnimationBuilder {
     return spans;
   }
 
-  Widget generateWidget() {
+  Widget generateWidget({TextAlign textAlign = TextAlign.start}) {
     return LoopAnimationBuilder(
       tween: tween,
       builder: (context, movie, _) {
         return Wrap(
+          alignment: textAlign.toWrapAlignment(),
           direction: Axis.horizontal,
           children: getWidgets(movie)
               .map((e) => Row(
