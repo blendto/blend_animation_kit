@@ -14,7 +14,8 @@ final variant2Pipeline = OpacityStep(
   finalOpacity: 1.0,
 ).chain(PipelineHelpers.waitAndFadeOutAll());
 
-Widget variant2(String text, TextStyle? textStyle) => TextAnimationWidget(
+Widget variant2(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
       animationInput: CharacterAnimationInput(text: text),
       textStyle: textStyle,
       pipelineStep: variant2Pipeline,
@@ -31,7 +32,8 @@ final variant3Pipeline = PipelineHelpers.opacityAndTransform(
   curve: Curves.elasticOut,
 ).chain(PipelineHelpers.waitAndFadeOutAll());
 
-Widget variant3(String text, TextStyle? textStyle) => TextAnimationWidget(
+Widget variant3(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
       animationInput: CharacterAnimationInput(text: text),
       textStyle: textStyle,
       pipelineStep: variant3Pipeline,
@@ -47,7 +49,8 @@ final variant4Pipeline = PipelineHelpers.opacityAndTransform(
   curve: Curves.elasticOut,
 ).chain(PipelineHelpers.waitAndFadeOutAll());
 
-Widget variant4(String text, TextStyle? textStyle) => TextAnimationWidget(
+Widget variant4(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
       animationInput: CharacterAnimationInput(text: text),
       textStyle: textStyle,
       pipelineStep: variant4Pipeline,
@@ -63,7 +66,8 @@ final variant5Pipeline = PipelineHelpers.opacityAndTransform(
   curve: Curves.easeOutExpo,
 ).chain(PipelineHelpers.waitAndFadeOutAll());
 
-Widget variant5(String text, TextStyle? textStyle) => TextAnimationWidget(
+Widget variant5(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
       animationInput: CharacterAnimationInput(text: text),
       textStyle: textStyle,
       pipelineStep: variant5Pipeline,
@@ -79,7 +83,8 @@ final variant6Pipeline = PipelineHelpers.opacityAndTransform(
   curve: Curves.easeOutExpo,
 ).chain(PipelineHelpers.waitAndFadeOutAll());
 
-Widget variant6(String text, TextStyle? textStyle) => TextAnimationWidget(
+Widget variant6(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
       animationInput: CharacterAnimationInput(text: text),
       textStyle: textStyle,
       pipelineStep: variant6Pipeline,

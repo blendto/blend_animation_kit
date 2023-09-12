@@ -1,28 +1,37 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
 
 class TextAnimationWidget extends StatelessWidget {
-  final PipelineStep pipelineStep;
-  final AnimationInput animationInput;
   final TextStyle? textStyle;
 
-  final TextAnimationBuilder _builder;
+  final TextAnimationBuilder builder;
 
-  TextAnimationWidget({
+  const TextAnimationWidget({
     super.key,
-    required this.pipelineStep,
-    required this.animationInput,
+    required this.builder,
     this.textStyle,
-  }) : _builder = TextAnimationBuilder(animationInput).add(pipelineStep);
+  });
 
-  MovieTween get tween => _builder.tween;
+  factory TextAnimationWidget.fromInput({
+    required CharacterAnimationInput animationInput,
+    TextStyle? textStyle,
+    required PipelineStep pipelineStep,
+  }) {
+    return TextAnimationWidget(
+      builder: TextAnimationBuilder(animationInput).add(pipelineStep),
+      textStyle: textStyle,
+    );
+  }
+
+  MovieTween get tween => builder.tween;
 
   List<AnimationProperty> get animationProperties =>
-      _builder.animationProperties;
+      builder.animationProperties;
+
+  AnimationInput get animationInput => builder.animationInput;
 
   @override
   Widget build(BuildContext context) {
