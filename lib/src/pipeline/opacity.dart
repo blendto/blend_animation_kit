@@ -3,14 +3,14 @@ import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:flutter/widgets.dart';
 
-class Opacity extends PipelineStep {
+class OpacityStep extends PipelineStep {
   final double initialOpacity;
   final Duration stepDuration;
   final Duration interStepDelay;
   final Curve curve;
   final double finalOpacity;
 
-  Opacity({
+  const OpacityStep({
     required this.initialOpacity,
     required this.stepDuration,
     required this.interStepDelay,
@@ -20,8 +20,12 @@ class Opacity extends PipelineStep {
   }) : super(nextStep: nextStep);
 
   @override
-  Opacity copyWith({PipelineStep? nextStep}) {
-    return Opacity(
+  String get tag =>
+      "Opacity $initialOpacity-$finalOpacity:${stepDuration.inMilliseconds}";
+
+  @override
+  OpacityStep copyWith({PipelineStep? nextStep}) {
+    return OpacityStep(
       initialOpacity: initialOpacity,
       stepDuration: stepDuration,
       interStepDelay: interStepDelay,

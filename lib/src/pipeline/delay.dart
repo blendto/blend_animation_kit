@@ -2,17 +2,17 @@ import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:blend_animation_kit/src/text_animation_builder.dart';
 
-class Delay extends PipelineStep {
+class DelayStep extends PipelineStep {
   final Duration delay;
 
-  Delay(
+  const DelayStep(
     this.delay, {
     PipelineStep? nextStep,
   }) : super(nextStep: nextStep);
 
   @override
   PipelineStep copyWith({PipelineStep? nextStep}) {
-    return Delay(delay, nextStep: nextStep ?? this.nextStep);
+    return DelayStep(delay, nextStep: nextStep ?? this.nextStep);
   }
 
   @override
@@ -24,4 +24,7 @@ class Delay extends PipelineStep {
         ..add(PauseScene(duration: delay, from: builder.tween.duration)),
     );
   }
+
+  @override
+  String get tag => "Delay ${delay.inMilliseconds}";
 }

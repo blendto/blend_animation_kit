@@ -3,7 +3,7 @@ import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:flutter/widgets.dart';
 
-class Transform extends PipelineStep {
+class TransformStep extends PipelineStep {
   final Matrix4 initialMatrix;
   final Matrix4 finalMatrix;
   final Duration stepDuration;
@@ -11,7 +11,7 @@ class Transform extends PipelineStep {
   final Curve curve;
   final Alignment transformAlignment;
 
-  Transform({
+  const TransformStep({
     required this.initialMatrix,
     required this.finalMatrix,
     required this.stepDuration,
@@ -22,8 +22,11 @@ class Transform extends PipelineStep {
   }) : super(nextStep: nextStep);
 
   @override
-  Transform copyWith({PipelineStep? nextStep}) {
-    throw Transform(
+  String get tag => "Transform :${stepDuration.inMilliseconds}";
+
+  @override
+  TransformStep copyWith({PipelineStep? nextStep}) {
+    return TransformStep(
       initialMatrix: initialMatrix,
       finalMatrix: finalMatrix,
       stepDuration: stepDuration,
