@@ -42,13 +42,13 @@ abstract class PipelineStep {
     return stringBuffer.toString();
   }
 
-  List<Map<String, String?>> get flattened {
-    List<Map<String, String?>> list = [serialised];
+  List<Map<String, dynamic>> get flattened {
+    List<Map<String, dynamic>> list = [serialised];
     if (nextStep != null) {
       list.addAll(nextStep!.flattened);
     }
     return list;
   }
 
-  Map<String, String?> get serialised;
+  Map<String, dynamic> get serialised;
 }

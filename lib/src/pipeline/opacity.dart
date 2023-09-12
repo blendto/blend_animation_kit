@@ -54,17 +54,33 @@ class OpacityStep extends PipelineStep {
   }
 
   @override
-  Map<String, String> get serialised {
-    Map<String, String> obj = HashMap();
+  Map<String, dynamic> get serialised {
+    Map<String, dynamic> obj = HashMap();
 
     obj.putIfAbsent("name", () => "Opacity");
-    obj.putIfAbsent("initialOpacity", () => initialOpacity.toString());
-    obj.putIfAbsent(
-        "stepDuration", () => stepDuration.inMilliseconds.toString());
-    obj.putIfAbsent(
-        "interStepDelay", () => interStepDelay.inMilliseconds.toString());
-    obj.putIfAbsent("finalOpacity", () => finalOpacity.toString());
+    obj.putIfAbsent("initialOpacity", () => initialOpacity);
+    obj.putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
+    obj.putIfAbsent("interStepDelay", () => interStepDelay.inMilliseconds);
+    obj.putIfAbsent("finalOpacity", () => finalOpacity);
 
     return obj;
+  }
+
+  static OpacityStep deserialise(
+    Map<String, dynamic> obj,
+    PipelineStep nextStep,
+  ) {
+    double initialOpacity = obj["initialOpacity"];
+    Duration stepDuration = Duration(milliseconds: obj["stepDuration"]);
+    Duration interStepDelay = Duration(milliseconds: obj["interStepDelay"]);
+    double finalOpacity = obj["finalOpacity"];
+
+    return OpacityStep(
+      initialOpacity: initialOpacity,
+      stepDuration: stepDuration,
+      interStepDelay: interStepDelay,
+      finalOpacity: finalOpacity,
+      nextStep: nextStep,
+    );
   }
 }

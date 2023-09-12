@@ -21,7 +21,11 @@ class WaitStep extends PipelineStep {
   }
 
   @override
-  Map<String, String> get serialised {
+  Map<String, dynamic> get serialised {
     return HashMap()..putIfAbsent("name", () => "Wait");
+  }
+
+  static WaitStep deserialise(Map<String, dynamic> obj, PipelineStep nextStep) {
+    return WaitStep(nextStep: nextStep);
   }
 }

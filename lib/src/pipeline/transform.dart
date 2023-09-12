@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:typed_data';
 
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
@@ -61,16 +62,30 @@ class TransformStep extends PipelineStep {
   }
 
   @override
-  Map<String, String?> get serialised {
-    Map<String, String?> obj = HashMap();
+  Map<String, dynamic> get serialised {
+    Map<String, dynamic> obj = HashMap();
 
-    obj.putIfAbsent("initialMatrix", () => initialMatrix?.storage.join(","));
-    obj.putIfAbsent("finalMatrix", () => finalMatrix?.storage.join(","));
-    obj.putIfAbsent(
-        "stepDuration", () => stepDuration.inMilliseconds.toString());
-    obj.putIfAbsent(
-        "interStepDelay", () => interStepDelay.inMilliseconds.toString());
+    obj.putIfAbsent("initialMatrix", () => initialMatrix?.storage);
+    obj.putIfAbsent("finalMatrix", () => finalMatrix?.storage);
+    obj.putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
+    obj.putIfAbsent("interStepDelay", () => interStepDelay.inMilliseconds);
 
     return obj;
+  }
+
+  static TransformStep deserialise(
+    Map<String, dynamic> obj,
+    PipelineStep nextStep,
+  ) {
+    Float64List initialStorage = obj["initialMatrix"];
+    Float64List finalMatrix = obj["finalMatrix"];
+
+    return TransformStep(
+      initialMatrix: Matrix4.fromFloat64List(initialStorage),
+      finalMatrix: Matrix4.fromFloat64List(finalMatrix),
+      stepDuration: Duration(milliseconds: obj["stepDuration"]),
+      interStepDelay: Duration(milliseconds: obj["interStepDelay"]),
+      nextStep: nextStep,
+    );
   }
 }
