@@ -3,19 +3,19 @@ import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:flutter/widgets.dart';
 
 class TransformStep extends PipelineStep {
-  final Matrix4 initialMatrix;
-  final Matrix4 finalMatrix;
+  final Matrix4? initialMatrix;
+  final Matrix4? finalMatrix;
   final Duration stepDuration;
   final Duration interStepDelay;
   final Curve curve;
   final Alignment transformAlignment;
 
   const TransformStep({
-    required this.initialMatrix,
-    required this.finalMatrix,
-    required this.stepDuration,
-    required this.interStepDelay,
-    required this.curve,
+    this.initialMatrix,
+    this.finalMatrix,
+    this.stepDuration = const Duration(milliseconds: 1500),
+    this.interStepDelay = const Duration(milliseconds: 30),
+    this.curve = Curves.easeInOutQuad,
     this.transformAlignment = Alignment.center,
     PipelineStep? nextStep,
   }) : super(nextStep: nextStep);
@@ -45,8 +45,8 @@ class TransformStep extends PipelineStep {
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Matrix4WithAlignmentTween(
-          begin: initialMatrix,
-          end: finalMatrix,
+          begin: initialMatrix ?? Matrix4.identity(),
+          end: finalMatrix ?? Matrix4.identity(),
           transformAlignment: transformAlignment,
         ),
         curve: curve,

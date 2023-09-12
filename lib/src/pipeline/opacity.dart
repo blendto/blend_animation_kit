@@ -10,11 +10,11 @@ class OpacityStep extends PipelineStep {
   final double finalOpacity;
 
   const OpacityStep({
-    required this.initialOpacity,
-    required this.stepDuration,
-    required this.interStepDelay,
-    required this.curve,
-    required this.finalOpacity,
+    this.initialOpacity = 1.0,
+    this.stepDuration = const Duration(milliseconds: 1500),
+    this.interStepDelay = const Duration(milliseconds: 30),
+    this.curve = Curves.easeInOutQuad,
+    this.finalOpacity = 1.0,
     PipelineStep? nextStep,
   }) : super(nextStep: nextStep);
 
