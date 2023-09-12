@@ -7,6 +7,8 @@ import 'package:blend_animation_kit/src/text_animation_builder.dart';
 class DelayStep extends PipelineStep {
   final Duration delay;
 
+  static String get wireName => "Delay";
+
   const DelayStep(
     this.delay, {
     PipelineStep? nextStep,
@@ -33,13 +35,13 @@ class DelayStep extends PipelineStep {
   @override
   Map<String, dynamic> get serialised {
     return HashMap()
-      ..putIfAbsent("name", () => "Delay")
+      ..putIfAbsent("name", () => wireName)
       ..putIfAbsent("delay", () => delay.inMilliseconds);
   }
 
   static DelayStep deserialise(
     Map<String, dynamic> obj,
-    PipelineStep nextStep,
+    PipelineStep? nextStep,
   ) {
     final delay = Duration(milliseconds: obj["delay"]);
     return DelayStep(delay, nextStep: nextStep);

@@ -11,6 +11,8 @@ class OpacityStep extends PipelineStep {
   final Curve curve;
   final double finalOpacity;
 
+  static String get wireName => "Opacity";
+
   const OpacityStep({
     this.initialOpacity = 1.0,
     this.stepDuration = const Duration(milliseconds: 1500),
@@ -57,7 +59,7 @@ class OpacityStep extends PipelineStep {
   Map<String, dynamic> get serialised {
     Map<String, dynamic> obj = HashMap();
 
-    obj.putIfAbsent("name", () => "Opacity");
+    obj.putIfAbsent("name", () => wireName);
     obj.putIfAbsent("initialOpacity", () => initialOpacity);
     obj.putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
     obj.putIfAbsent("interStepDelay", () => interStepDelay.inMilliseconds);
@@ -68,7 +70,7 @@ class OpacityStep extends PipelineStep {
 
   static OpacityStep deserialise(
     Map<String, dynamic> obj,
-    PipelineStep nextStep,
+    PipelineStep? nextStep,
   ) {
     double initialOpacity = obj["initialOpacity"];
     Duration stepDuration = Duration(milliseconds: obj["stepDuration"]);

@@ -4,6 +4,8 @@ import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:blend_animation_kit/src/text_animation_builder.dart';
 
 class WaitStep extends PipelineStep {
+  static String get wireName => "Wait";
+
   const WaitStep({PipelineStep? nextStep}) : super(nextStep: nextStep);
 
   @override
@@ -22,10 +24,13 @@ class WaitStep extends PipelineStep {
 
   @override
   Map<String, dynamic> get serialised {
-    return HashMap()..putIfAbsent("name", () => "Wait");
+    return HashMap()..putIfAbsent("name", () => wireName);
   }
 
-  static WaitStep deserialise(Map<String, dynamic> obj, PipelineStep nextStep) {
+  static WaitStep deserialise(
+    Map<String, dynamic> obj,
+    PipelineStep? nextStep,
+  ) {
     return WaitStep(nextStep: nextStep);
   }
 }

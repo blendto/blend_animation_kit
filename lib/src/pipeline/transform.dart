@@ -13,6 +13,8 @@ class TransformStep extends PipelineStep {
   final Curve curve;
   final Alignment transformAlignment;
 
+  static String get wireName => "Transform";
+
   const TransformStep({
     this.initialMatrix,
     this.finalMatrix,
@@ -65,6 +67,7 @@ class TransformStep extends PipelineStep {
   Map<String, dynamic> get serialised {
     Map<String, dynamic> obj = HashMap();
 
+    obj.putIfAbsent("name", () => wireName);
     obj.putIfAbsent("initialMatrix", () => initialMatrix?.storage);
     obj.putIfAbsent("finalMatrix", () => finalMatrix?.storage);
     obj.putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
@@ -75,7 +78,7 @@ class TransformStep extends PipelineStep {
 
   static TransformStep deserialise(
     Map<String, dynamic> obj,
-    PipelineStep nextStep,
+    PipelineStep? nextStep,
   ) {
     Float64List initialStorage = obj["initialMatrix"];
     Float64List finalMatrix = obj["finalMatrix"];

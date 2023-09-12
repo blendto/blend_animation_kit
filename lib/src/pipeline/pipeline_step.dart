@@ -52,5 +52,35 @@ abstract class PipelineStep {
     return list;
   }
 
+  static PipelineStep deserialise(
+    Map<String, dynamic> element,
+    PipelineStep? step,
+  ) {
+    String name = element["name"];
+    if (name == OpacityStep.wireName) {
+      return OpacityStep.deserialise(element, step);
+    }
+    if (name == TransformStep.wireName) {
+      return TransformStep.deserialise(element, step);
+    }
+    if (name == DelayStep.wireName) {
+      return DelayStep.deserialise(element, step);
+    }
+    if (name == WaitStep.wireName) {
+      return WaitStep.deserialise(element, step);
+    }
+
+    throw UnsupportedError("Unrecognised wireName: $name");
+  }
+
+  PipelineStep? fromList(List<Map<String, dynamic>> flattened) {
+    PipelineStep? step;
+    for (final element in flattened.reversed) {
+      step = deserialise(element, step);
+    }
+
+    return step;
+  }
+
   Map<String, dynamic> get serialised;
 }
