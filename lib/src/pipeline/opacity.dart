@@ -1,6 +1,5 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:flutter/widgets.dart';
 
 class OpacityStep extends PipelineStep {
@@ -10,7 +9,7 @@ class OpacityStep extends PipelineStep {
   final Curve curve;
   final double finalOpacity;
 
-   OpacityStep({
+  const OpacityStep({
     required this.initialOpacity,
     required this.stepDuration,
     required this.interStepDelay,

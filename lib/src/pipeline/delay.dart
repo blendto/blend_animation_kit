@@ -5,7 +5,7 @@ import 'package:blend_animation_kit/src/text_animation_builder.dart';
 class DelayStep extends PipelineStep {
   final Duration delay;
 
-  DelayStep(
+  const DelayStep(
     this.delay, {
     PipelineStep? nextStep,
   }) : super(nextStep: nextStep);

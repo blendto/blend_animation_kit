@@ -10,7 +10,7 @@ class TransformStep extends PipelineStep {
   final Curve curve;
   final Alignment transformAlignment;
 
-  TransformStep({
+  const TransformStep({
     required this.initialMatrix,
     required this.finalMatrix,
     required this.stepDuration,
