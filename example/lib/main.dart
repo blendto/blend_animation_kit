@@ -52,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  double sliderVal = 0;
+  double sliderVal = 1;
   bool sliderActive = false;
 
   @override
@@ -134,6 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         onChanged: (val) {
                           setState(() {
                             sliderActive = val ?? false;
+                            sliderVal = 1.0;
                           });
                         }),
                   ],
