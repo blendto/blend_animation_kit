@@ -21,13 +21,13 @@ class PipelineHelpers {
   }
 
   static PipelineStep opacityAndTransform({
-    required double initialOpacity,
-    required double finalOpacity,
-    required Matrix4 initialMatrix,
-    required Matrix4 finalMatrix,
-    required Duration stepDuration,
-    required Duration interStepDelay,
-    required Curve curve,
+    double initialOpacity = 1.0,
+    double finalOpacity = 1.0,
+    Matrix4? initialMatrix,
+    Matrix4? finalMatrix,
+    Duration stepDuration = const Duration(milliseconds: 1500),
+    Duration interStepDelay = const Duration(milliseconds: 30),
+    Curve curve = Curves.easeInOutQuad,
     Alignment transformAlignment = Alignment.center,
   }) {
     return OpacityStep(
