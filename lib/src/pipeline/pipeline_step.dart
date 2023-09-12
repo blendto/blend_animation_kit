@@ -10,6 +10,9 @@ abstract class PipelineStep {
   TextAnimationBuilder updatedBuilder(TextAnimationBuilder builder);
 
   PipelineStep chain(PipelineStep next) {
+    if (nextStep != null) {
+      return copyWith(nextStep: nextStep!.chain(next));
+    }
     return copyWith(nextStep: next);
   }
 
