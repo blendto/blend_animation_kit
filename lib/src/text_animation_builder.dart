@@ -1,6 +1,7 @@
 import 'package:blend_animation_kit/src/animation_input.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/matrix4_alignment_tween.dart';
+import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
@@ -10,22 +11,6 @@ class TextAnimationBuilder {
   late final Iterable<SceneItem> sceneItems;
 
   late final Duration begin;
-
-  /// Waits for previous animations
-  TextAnimationBuilder wait() {
-    final begin = tween.duration;
-    return copyWith(begin: begin);
-  }
-
-  /// Adds delay for next animations for a [duration]
-  TextAnimationBuilder delay(Duration delay) {
-    final newBegin = delay + tween.duration;
-    return copyWith(
-      begin: newBegin,
-      sceneItems: List.from(sceneItems)
-        ..add(PauseScene(duration: delay, from: tween.duration)),
-    );
-  }
 
   late final MovieTween tween = _generateTween();
 
@@ -63,52 +48,14 @@ class TextAnimationBuilder {
     return movieTween;
   }
 
-  TextAnimationBuilder transform({
-    required Matrix4 initialMatrix,
-    required Matrix4 finalMatrix,
-    required Duration stepDuration,
-    required Duration interStepDelay,
-    required Curve curve,
-    Alignment transformAlignment = Alignment.center,
-  }) {
-    final newSceneItems = List.of(sceneItems);
-    for (var (index, _) in _groups.indexed) {
-      final property = animationProperties.elementAt(index).transformation;
-      newSceneItems.add(ScenePropertyItem(
-        property: property,
-        tween: Matrix4WithAlignmentTween(
-          begin: initialMatrix,
-          end: finalMatrix,
-          transformAlignment: transformAlignment,
-        ),
-        curve: curve,
-        from: begin + (interStepDelay * index),
-        duration: stepDuration,
-      ));
+  TextAnimationBuilder add(final PipelineStep pipelineStep) {
+    PipelineStep? pipelineIterator = pipelineStep;
+    TextAnimationBuilder updatedBuilder = this;
+    while (pipelineIterator != null) {
+      updatedBuilder = pipelineIterator.updatedBuilder(updatedBuilder);
+      pipelineIterator = pipelineIterator.nextStep;
     }
-
-    return copyWith(sceneItems: newSceneItems);
-  }
-
-  TextAnimationBuilder opacity({
-    required double initialOpacity,
-    required Duration stepDuration,
-    required Duration interStepDelay,
-    required Curve curve,
-    required double finalOpacity,
-  }) {
-    final newSceneItems = List.of(sceneItems);
-    for (var (index, _) in _groups.indexed) {
-      final property = animationProperties.elementAt(index).opacity;
-      newSceneItems.add(ScenePropertyItem(
-        property: property,
-        tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
-        curve: curve,
-        from: begin + (interStepDelay * index),
-        duration: stepDuration,
-      ));
-    }
-    return copyWith(sceneItems: newSceneItems);
+    return updatedBuilder;
   }
 
   Widget generateWidget() {
