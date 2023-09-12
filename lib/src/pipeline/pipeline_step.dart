@@ -11,7 +11,7 @@ abstract class PipelineStep {
 
   PipelineStep chain(PipelineStep next) {
     if (nextStep != null) {
-      return copyWith(nextStep: nextStep!.chain(next));
+      return copyWith(nextStep: nextStep! + next);
     }
     return copyWith(nextStep: next);
   }
