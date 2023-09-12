@@ -10,7 +10,7 @@ class OpacityStep extends PipelineStep {
   final Curve curve;
   final double finalOpacity;
 
-  const OpacityStep({
+   OpacityStep({
     required this.initialOpacity,
     required this.stepDuration,
     required this.interStepDelay,

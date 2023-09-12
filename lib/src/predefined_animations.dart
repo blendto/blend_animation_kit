@@ -6,10 +6,10 @@ import 'package:blend_animation_kit/src/pipeline/pipeline_helpers.dart';
 import 'package:blend_animation_kit/src/text_animation_widget.dart';
 import 'package:flutter/material.dart';
 
-final variant2Pipeline = const OpacityStep(
+final variant2Pipeline = OpacityStep(
   initialOpacity: 0.0,
-  stepDuration: Duration(milliseconds: 2250),
-  interStepDelay: Duration(milliseconds: 150),
+  stepDuration: const Duration(milliseconds: 2250),
+  interStepDelay: const Duration(milliseconds: 150),
   curve: Curves.easeInOutQuad,
   finalOpacity: 1.0,
 ).chain(PipelineHelpers.waitAndFadeOutAll());

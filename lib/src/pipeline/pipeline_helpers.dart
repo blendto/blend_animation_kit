@@ -11,7 +11,7 @@ class PipelineHelpers {
     Duration delay = const Duration(seconds: 1),
     Curve curve = Curves.easeInOutQuad,
   }) {
-    return const WaitStep().chain(DelayStep(delay)).chain(OpacityStep(
+    return WaitStep().chain(DelayStep(delay)).chain(OpacityStep(
           initialOpacity: 1.0,
           stepDuration: fadeOutDuration,
           interStepDelay: Duration.zero,

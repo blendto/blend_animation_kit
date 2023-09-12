@@ -3,7 +3,7 @@ import 'package:blend_animation_kit/blend_animation_kit.dart';
 abstract class PipelineStep {
   final PipelineStep? nextStep;
 
-  const PipelineStep({this.nextStep});
+  PipelineStep({this.nextStep});
 
   String get tag;
 

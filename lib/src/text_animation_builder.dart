@@ -1,6 +1,4 @@
-import 'package:blend_animation_kit/src/animation_input.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
 
@@ -53,9 +51,6 @@ class TextAnimationBuilder {
       updatedBuilder = pipelineIterator.updatedBuilder(updatedBuilder);
       pipelineIterator = pipelineIterator.nextStep;
     }
-    print(variant4Pipeline);
-
-    print("${animationInput.text}:-> $pipelineStep");
     return updatedBuilder;
   }
 }

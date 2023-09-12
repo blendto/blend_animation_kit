@@ -1,6 +1,5 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:flutter/widgets.dart';
 
 class TransformStep extends PipelineStep {
@@ -11,7 +10,7 @@ class TransformStep extends PipelineStep {
   final Curve curve;
   final Alignment transformAlignment;
 
-  const TransformStep({
+  TransformStep({
     required this.initialMatrix,
     required this.finalMatrix,
     required this.stepDuration,
