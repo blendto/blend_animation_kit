@@ -41,4 +41,14 @@ abstract class PipelineStep {
     }
     return stringBuffer.toString();
   }
+
+  List<Map<String, String?>> get flattened {
+    List<Map<String, String?>> list = [serialised];
+    if (nextStep != null) {
+      list.addAll(nextStep!.flattened);
+    }
+    return list;
+  }
+
+  Map<String, String?> get serialised;
 }

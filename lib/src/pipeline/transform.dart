@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:flutter/widgets.dart';
@@ -56,5 +58,19 @@ class TransformStep extends PipelineStep {
     }
 
     return builder.copyWith(sceneItems: newSceneItems);
+  }
+
+  @override
+  Map<String, String?> get serialised {
+    Map<String, String?> obj = HashMap();
+
+    obj.putIfAbsent("initialMatrix", () => initialMatrix?.storage.join(","));
+    obj.putIfAbsent("finalMatrix", () => finalMatrix?.storage.join(","));
+    obj.putIfAbsent(
+        "stepDuration", () => stepDuration.inMilliseconds.toString());
+    obj.putIfAbsent(
+        "interStepDelay", () => interStepDelay.inMilliseconds.toString());
+
+    return obj;
   }
 }
