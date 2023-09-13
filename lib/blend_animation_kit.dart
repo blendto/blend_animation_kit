@@ -12,3 +12,4 @@ export 'src/pipeline/transform.dart';
 export 'src/pipeline/wait.dart';
 export 'src/predefined_animations.dart';
 export 'src/text_animation_builder.dart';
+export 'src/text_animation_widget.dart';
