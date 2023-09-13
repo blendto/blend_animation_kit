@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 abstract class AnimationInput {
   String get text;
 
-  TextStyle? get textStyle;
-
   Iterable<String> get groups;
 
   List<AnimationProperty> get animationProperties;
@@ -14,8 +12,6 @@ abstract class AnimationInput {
 class CharacterAnimationInput extends AnimationInput {
   @override
   final String text;
-  @override
-  final TextStyle? textStyle;
 
   @override
   final Iterable<String> groups;
@@ -25,7 +21,6 @@ class CharacterAnimationInput extends AnimationInput {
 
   CharacterAnimationInput({
     required this.text,
-    this.textStyle,
   }) : groups = text.characters {
     animationProperties =
         List.generate(groups.length, (index) => AnimationProperty());
@@ -42,12 +37,8 @@ class WordAnimationInput extends AnimationInput {
   @override
   final String text;
 
-  @override
-  final TextStyle? textStyle;
-
   WordAnimationInput({
     required this.text,
-    this.textStyle,
   }) {
     final re = RegExp(r"\w+|\s+|[^\s\w]+");
     groups = re.allMatches(text).map((m) => m.group(0) ?? '');
