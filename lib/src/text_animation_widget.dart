@@ -23,10 +23,12 @@ class TextAnimationWidget extends StatelessWidget {
     required CharacterAnimationInput animationInput,
     TextStyle? textStyle,
     required PipelineStep pipelineStep,
+    TextAlign textAlign = TextAlign.center,
   }) {
     return TextAnimationWidget(
       builder: TextAnimationBuilder(animationInput).add(pipelineStep),
       textStyle: textStyle,
+      textAlign: textAlign,
     );
   }
 
