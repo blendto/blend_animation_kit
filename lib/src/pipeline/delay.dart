@@ -46,4 +46,14 @@ class DelayStep extends PipelineStep {
     final delay = Duration(milliseconds: obj["delay"]);
     return DelayStep(delay, nextStep: nextStep);
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DelayStep &&
+        delay == other.delay &&
+        nextStep == other.nextStep;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([delay, nextStep]);
 }

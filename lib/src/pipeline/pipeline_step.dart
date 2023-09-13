@@ -16,7 +16,7 @@ abstract class PipelineStep {
     return copyWith(nextStep: next);
   }
 
-  operator +(PipelineStep other) => chain(other);
+  PipelineStep operator +(PipelineStep other) => chain(other);
 
   PipelineStep copyWith({PipelineStep? nextStep});
 

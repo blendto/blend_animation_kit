@@ -85,4 +85,26 @@ class OpacityStep extends PipelineStep {
       nextStep: nextStep,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is OpacityStep &&
+        initialOpacity == other.initialOpacity &&
+        curve == other.curve &&
+        stepDuration == other.stepDuration &&
+        finalOpacity == other.finalOpacity &&
+        interStepDelay == other.interStepDelay &&
+        nextStep == other.nextStep;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        initialOpacity,
+        finalOpacity,
+        curve,
+        stepDuration,
+        interStepDelay,
+        curve,
+        nextStep,
+      ]);
 }

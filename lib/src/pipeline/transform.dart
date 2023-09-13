@@ -5,6 +5,8 @@ import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:flutter/widgets.dart';
 
+final identityMatrixStorage = Matrix4.identity().storage;
+
 class TransformStep extends PipelineStep {
   final Matrix4? initialMatrix;
   final Matrix4? finalMatrix;
@@ -68,11 +70,12 @@ class TransformStep extends PipelineStep {
     Map<String, dynamic> obj = HashMap();
 
     obj.putIfAbsent("name", () => wireName);
-    obj.putIfAbsent("initialMatrix", () => initialMatrix?.storage);
-    obj.putIfAbsent("finalMatrix", () => finalMatrix?.storage);
+    obj.putIfAbsent(
+        "initialMatrix", () => initialMatrix?.storage ?? identityMatrixStorage);
+    obj.putIfAbsent(
+        "finalMatrix", () => finalMatrix?.storage ?? identityMatrixStorage);
     obj.putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
     obj.putIfAbsent("interStepDelay", () => interStepDelay.inMilliseconds);
-
     return obj;
   }
 
@@ -80,15 +83,39 @@ class TransformStep extends PipelineStep {
     Map<String, dynamic> obj,
     PipelineStep? nextStep,
   ) {
-    Float64List initialStorage = obj["initialMatrix"];
-    Float64List finalMatrix = obj["finalMatrix"];
+    Float64List initialMatrixStorage =
+        obj["initialMatrix"] ?? identityMatrixStorage;
+    Float64List finalMatrixStorage =
+        obj["finalMatrix"] ?? identityMatrixStorage;
 
     return TransformStep(
-      initialMatrix: Matrix4.fromFloat64List(initialStorage),
-      finalMatrix: Matrix4.fromFloat64List(finalMatrix),
+      initialMatrix: Matrix4.fromFloat64List(initialMatrixStorage),
+      finalMatrix: Matrix4.fromFloat64List(finalMatrixStorage),
       stepDuration: Duration(milliseconds: obj["stepDuration"]),
       interStepDelay: Duration(milliseconds: obj["interStepDelay"]),
       nextStep: nextStep,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TransformStep &&
+        initialMatrix == other.initialMatrix &&
+        curve == other.curve &&
+        stepDuration == other.stepDuration &&
+        finalMatrix == other.finalMatrix &&
+        interStepDelay == other.interStepDelay &&
+        nextStep == other.nextStep;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        initialMatrix,
+        finalMatrix,
+        curve,
+        stepDuration,
+        interStepDelay,
+        curve,
+        nextStep
+      ]);
 }

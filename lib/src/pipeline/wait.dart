@@ -33,4 +33,12 @@ class WaitStep extends PipelineStep {
   ) {
     return WaitStep(nextStep: nextStep);
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is WaitStep && nextStep == other.nextStep;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([nextStep]);
 }

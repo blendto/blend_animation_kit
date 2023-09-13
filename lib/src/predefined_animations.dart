@@ -3,10 +3,11 @@ import 'dart:math';
 import 'package:blend_animation_kit/src/animation_input.dart';
 import 'package:blend_animation_kit/src/pipeline/opacity.dart';
 import 'package:blend_animation_kit/src/pipeline/pipeline_helpers.dart';
+import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
 import 'package:blend_animation_kit/src/text_animation_widget.dart';
 import 'package:flutter/material.dart';
 
-final variant2Pipeline = const OpacityStep(
+final PipelineStep variant2Pipeline = const OpacityStep(
       initialOpacity: 0.0,
       stepDuration: Duration(milliseconds: 2250),
       interStepDelay: Duration(milliseconds: 150),
@@ -22,7 +23,7 @@ Widget variant2(String text, TextStyle? textStyle) =>
       pipelineStep: variant2Pipeline,
     );
 
-final variant3Pipeline = PipelineHelpers.opacityAndTransform(
+final PipelineStep variant3Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 1.0,
       initialMatrix: Matrix4.identity()..scale(0.001),
       finalOpacity: 1.0,
@@ -41,7 +42,7 @@ Widget variant3(String text, TextStyle? textStyle) =>
       pipelineStep: variant3Pipeline,
     );
 
-final variant4Pipeline = PipelineHelpers.opacityAndTransform(
+final PipelineStep variant4Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
       initialMatrix: Matrix4.identity()..translate(0.0, 15.0),
       finalOpacity: 1.0,
@@ -59,7 +60,7 @@ Widget variant4(String text, TextStyle? textStyle) =>
       pipelineStep: variant4Pipeline,
     );
 
-final variant5Pipeline = PipelineHelpers.opacityAndTransform(
+final PipelineStep variant5Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
       finalOpacity: 1.0,
       initialMatrix: Matrix4.identity()..rotateY(-pi / 2),
@@ -77,7 +78,7 @@ Widget variant5(String text, TextStyle? textStyle) =>
       pipelineStep: variant5Pipeline,
     );
 
-final variant6Pipeline = PipelineHelpers.opacityAndTransform(
+final PipelineStep variant6Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
       finalOpacity: 1.0,
       initialMatrix: Matrix4.identity()..translate(80.0),
