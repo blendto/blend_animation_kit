@@ -59,7 +59,7 @@ class TextAnimationWidget extends StatelessWidget {
         ),
       ));
       if (text.$2 == " ") {
-        spans.add(innerSpan.toList());
+        spans.add(innerSpan);
         innerSpan.clear();
       }
     }
@@ -84,7 +84,7 @@ class TextAnimationWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: e,
                   ))
-              .toList(),
+              .toList(growable: false),
         );
       },
       duration: tween.duration,
