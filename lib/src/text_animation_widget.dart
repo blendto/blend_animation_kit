@@ -59,7 +59,7 @@ class TextAnimationWidget extends StatelessWidget {
         ),
       ));
       if (text.$2 == " ") {
-        spans.add(innerSpan);
+        spans.add(innerSpan.toList(growable: false));
         innerSpan.clear();
       }
     }
