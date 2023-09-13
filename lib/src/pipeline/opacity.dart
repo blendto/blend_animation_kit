@@ -101,7 +101,6 @@ class OpacityStep extends PipelineStep {
   int get hashCode => Object.hashAll([
         initialOpacity,
         finalOpacity,
-        curve,
         stepDuration,
         interStepDelay,
         curve,

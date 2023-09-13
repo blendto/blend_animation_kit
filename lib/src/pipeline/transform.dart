@@ -104,6 +104,7 @@ class TransformStep extends PipelineStep {
         curve == other.curve &&
         stepDuration == other.stepDuration &&
         finalMatrix == other.finalMatrix &&
+        transformAlignment == other.transformAlignment &&
         interStepDelay == other.interStepDelay &&
         nextStep == other.nextStep;
   }
@@ -115,7 +116,7 @@ class TransformStep extends PipelineStep {
         curve,
         stepDuration,
         interStepDelay,
-        curve,
+        transformAlignment,
         nextStep
       ]);
 }
