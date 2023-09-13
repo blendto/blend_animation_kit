@@ -73,7 +73,7 @@ abstract class PipelineStep {
     throw UnsupportedError("Unrecognised wireName: $name");
   }
 
-  PipelineStep? fromList(List<Map<String, dynamic>> flattened) {
+  static PipelineStep? fromList(List<Map<String, dynamic>> flattened) {
     PipelineStep? step;
     for (final element in flattened.reversed) {
       step = deserialise(element, step);
