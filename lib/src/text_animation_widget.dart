@@ -72,7 +72,7 @@ class TextAnimationWidget extends StatelessWidget {
         boxes.add((character: text[i], box: selectionRects.first, index: i));
       }
     }
-
+    textPainter.dispose();
     return (boxes: boxes, overallBoxSize: textPainter.size);
   }
 
