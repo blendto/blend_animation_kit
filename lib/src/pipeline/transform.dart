@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
+import 'package:blend_animation_kit/src/serializers/alignment.dart';
+import 'package:blend_animation_kit/src/serializers/cubic.dart';
 import 'package:flutter/widgets.dart';
 
 final identityMatrixStorage = Matrix4.identity().storage;
@@ -76,6 +78,9 @@ class TransformStep extends PipelineStep {
         "finalMatrix", () => finalMatrix?.storage ?? identityMatrixStorage);
     obj.putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
     obj.putIfAbsent("interStepDelay", () => interStepDelay.inMilliseconds);
+    obj.putIfAbsent("curve", () => CurveSerializer.serialize(curve));
+    obj.putIfAbsent("transformAlignment",
+        () => AlignmentSerializer.serialize(transformAlignment));
     return obj;
   }
 
@@ -87,13 +92,15 @@ class TransformStep extends PipelineStep {
         obj["initialMatrix"] ?? identityMatrixStorage;
     Float64List finalMatrixStorage =
         obj["finalMatrix"] ?? identityMatrixStorage;
-
     return TransformStep(
       initialMatrix: Matrix4.fromFloat64List(initialMatrixStorage),
       finalMatrix: Matrix4.fromFloat64List(finalMatrixStorage),
       stepDuration: Duration(milliseconds: obj["stepDuration"]),
       interStepDelay: Duration(milliseconds: obj["interStepDelay"]),
       nextStep: nextStep,
+      transformAlignment:
+          AlignmentSerializer.deserialize(obj['transformAlignment']),
+      curve: CurveSerializer.deserialize(obj['curve']),
     );
   }
 

@@ -15,6 +15,7 @@ void main() {
           initialOpacity: 0.0,
           finalOpacity: 1.0,
           stepDuration: Duration(milliseconds: 800),
+          curve: Curves.easeInOutQuad,
           interStepDelay: Duration(milliseconds: 50),
         ) +
         TransformStep(
@@ -22,6 +23,8 @@ void main() {
           finalMatrix: Matrix4.identity(),
           stepDuration: const Duration(milliseconds: 800),
           interStepDelay: const Duration(milliseconds: 50),
+          curve: Curves.bounceIn,
+          transformAlignment: Alignment.bottomCenter,
         ) +
         const WaitStep() +
         const DelayStep(Duration(seconds: 1));
