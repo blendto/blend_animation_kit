@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 
 extension WrapAlignmentExtension on TextAlign {
-  WrapAlignment toWrapAlignment() {
+  Alignment toAlignment() {
     switch (this) {
-      case TextAlign.start:
-        return WrapAlignment.start;
       case TextAlign.center:
-        return WrapAlignment.center;
+        return Alignment.center;
       case TextAlign.end:
       case TextAlign.right:
-        return WrapAlignment.end;
+        return Alignment.centerRight;
       default:
-        return WrapAlignment.spaceAround;
+        return Alignment.centerLeft;
     }
   }
 }

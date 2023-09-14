@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
+import 'package:blend_animation_kit/src/extensions.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
@@ -27,7 +28,7 @@ class TextAnimationWidget extends StatelessWidget {
     required CharacterAnimationInput animationInput,
     TextStyle? textStyle,
     required PipelineStep pipelineStep,
-    TextAlign textAlign = TextAlign.start,
+    TextAlign textAlign = TextAlign.center,
   }) {
     return TextAnimationWidget(
       builder: TextAnimationBuilder(animationInput).add(pipelineStep),
@@ -96,26 +97,29 @@ class TextAnimationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final boxInfo = getCharacterDetails(context, constraints);
-      return SizedBox.fromSize(
-        size: boxInfo.overallBoxSize,
-        child: LoopAnimationBuilder(
-          tween: tween,
-          builder: (context, movie, child) {
-            return Stack(
-              clipBehavior: Clip.none,
-              children: boxInfo.boxes
-                  .mapIndexed(
-                    (i, e) => renderCharacterAnimation(e, movie),
-                  )
-                  .toList(growable: false),
-            );
-          },
-          duration: tween.duration,
-        ),
-      );
-    });
+    return Align(
+      alignment: textAlign.toAlignment(),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final boxInfo = getCharacterDetails(context, constraints);
+        return SizedBox.fromSize(
+          size: boxInfo.overallBoxSize,
+          child: LoopAnimationBuilder(
+            tween: tween,
+            builder: (context, movie, child) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: boxInfo.boxes
+                    .mapIndexed(
+                      (i, e) => renderCharacterAnimation(e, movie),
+                    )
+                    .toList(growable: false),
+              );
+            },
+            duration: tween.duration,
+          ),
+        );
+      }),
+    );
   }
 
   Positioned renderCharacterAnimation(TextBoxInfo info, Movie movie) {
