@@ -78,23 +78,6 @@ class TextAnimationWidget extends StatelessWidget {
     return (boxes: boxes, overallBoxSize: boxSize);
   }
 
-  Widget renderCharacter(
-      AnimationProperty animationProperty, Movie movie, TextBoxInfo info) {
-    return Opacity(
-      opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
-      child: Transform(
-        alignment: animationProperty.transformation
-            .fromOrDefault(movie)
-            .transformAlignment,
-        transform: animationProperty.transformation.fromOrDefault(movie).matrix,
-        child: Text.rich(
-          TextSpan(text: info.character),
-          style: textStyle,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -123,11 +106,24 @@ class TextAnimationWidget extends StatelessWidget {
   }
 
   Positioned renderCharacterAnimation(TextBoxInfo info, Movie movie) {
+    final animationProperty = animationProperties.elementAt(info.index);
     return Positioned(
       top: info.box.top,
       left: info.box.left,
-      child: renderCharacter(
-          animationProperties.elementAt(info.index), movie, info),
+      child: Opacity(
+        opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
+        child: Transform(
+          alignment: animationProperty.transformation
+              .fromOrDefault(movie)
+              .transformAlignment,
+          transform:
+              animationProperty.transformation.fromOrDefault(movie).matrix,
+          child: Text.rich(
+            TextSpan(text: info.character),
+            style: textStyle,
+          ),
+        ),
+      ),
     );
   }
 }
