@@ -5,9 +5,58 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'dart:convert';
+
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+final json = [
+  {
+    "initialOpacity": 1,
+    "name": "Opacity",
+    "finalOpacity": 1,
+    "curve": "elasticOut",
+    "stepDuration": 1500,
+    "interStepDelay": 45
+  },
+  {
+    "transformAlignment": "-1.0,1.0",
+    "curve": "elasticOut",
+    "stepDuration": 1500,
+    "interStepDelay": 45,
+    "name": "Transform",
+    "initialMatrix": [
+      0.001,
+      0,
+      0,
+      0,
+      0,
+      0.001,
+      0,
+      0,
+      0,
+      0,
+      0.001,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "finalMatrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+  },
+  {"name": "Wait"},
+  {"name": "Delay", "delay": 1000},
+  {
+    "initialOpacity": 1,
+    "name": "Opacity",
+    "finalOpacity": 0,
+    "curve": "easeInOutQuad",
+    "stepDuration": 1000,
+    "interStepDelay": 0
+  }
+];
 
 void main() {
   test("Pipeline steps serialization deserialization", () {
@@ -33,52 +82,12 @@ void main() {
   });
 
   test("serialize/deserialize json", () {
-    final json = [
-      {
-        "initialOpacity": 1,
-        "name": "Opacity",
-        "finalOpacity": 1,
-        "curve": "elasticOut",
-        "stepDuration": 1500,
-        "interStepDelay": 45
-      },
-      {
-        "transformAlignment": "-1.0,1.0",
-        "curve": "elasticOut",
-        "stepDuration": 1500,
-        "interStepDelay": 45,
-        "name": "Transform",
-        "initialMatrix": [
-          0.001,
-          0,
-          0,
-          0,
-          0,
-          0.001,
-          0,
-          0,
-          0,
-          0,
-          0.001,
-          0,
-          0,
-          0,
-          0,
-          1
-        ],
-        "finalMatrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-      },
-      {"name": "Wait"},
-      {"name": "Delay", "delay": 1000},
-      {
-        "initialOpacity": 1,
-        "name": "Opacity",
-        "finalOpacity": 0,
-        "curve": "easeInOutQuad",
-        "stepDuration": 1000,
-        "interStepDelay": 0
-      }
-    ];
     expect(PipelineStep.fromList(json)!.flattened, json);
+  });
+
+  test("serialize/deserialize with jsonEncode ", () {
+    final map =
+        (jsonDecode(jsonEncode(json)) as List).cast<Map<String, dynamic>>();
+    expect(PipelineStep.fromList(map)!.flattened, json);
   });
 }
