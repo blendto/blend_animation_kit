@@ -6,11 +6,11 @@ import 'package:blend_animation_kit/src/serializers/cubic.dart';
 import 'package:flutter/widgets.dart';
 
 class OpacityStep extends PipelineStep {
-  final num initialOpacity;
+  final double initialOpacity;
   final Duration stepDuration;
   final Duration interStepDelay;
   final Curve curve;
-  final num finalOpacity;
+  final double finalOpacity;
 
   static String get wireName => "Opacity";
 
@@ -46,8 +46,7 @@ class OpacityStep extends PipelineStep {
       final property = builder.animationProperties.elementAt(index).opacity;
       newSceneItems.add(ScenePropertyItem(
         property: property,
-        tween: Tween<double>(
-            begin: initialOpacity.toDouble(), end: finalOpacity.toDouble()),
+        tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
         curve: curve,
         from: builder.begin + (interStepDelay * index),
         duration: stepDuration,
@@ -75,10 +74,10 @@ class OpacityStep extends PipelineStep {
     Map<String, dynamic> obj,
     PipelineStep? nextStep,
   ) {
-    num initialOpacity = obj["initialOpacity"];
+    double initialOpacity = double.parse(obj["initialOpacity"].toString());
     Duration stepDuration = Duration(milliseconds: obj["stepDuration"]);
     Duration interStepDelay = Duration(milliseconds: obj["interStepDelay"]);
-    num finalOpacity = obj["finalOpacity"];
+    double finalOpacity = double.parse(obj["finalOpacity"].toString());
     Curve curve = CurveSerializer.deserialize(obj['curve']);
 
     return OpacityStep(
