@@ -94,10 +94,10 @@ class TransformStep extends PipelineStep {
     PipelineStep? nextStep,
   ) {
     Float64List? initialMatrixStorage = obj['initialMatrix'] != null
-        ? matrixDecoder(obj["initialMatrix"])
+        ? matrixDecoder((obj["initialMatrix"] as Iterable).cast<num>())
         : identityMatrixStorage;
     Float64List? finalMatrixStorage = obj['finalMatrix'] != null
-        ? matrixDecoder(obj["finalMatrix"])
+        ? matrixDecoder((obj["finalMatrix"] as Iterable).cast<num>())
         : identityMatrixStorage;
 
     return TransformStep(
