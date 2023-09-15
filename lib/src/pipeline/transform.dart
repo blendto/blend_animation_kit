@@ -88,10 +88,15 @@ class TransformStep extends PipelineStep {
     Map<String, dynamic> obj,
     PipelineStep? nextStep,
   ) {
-    Float64List initialMatrixStorage =
-        obj["initialMatrix"] ?? identityMatrixStorage;
-    Float64List finalMatrixStorage =
-        obj["finalMatrix"] ?? identityMatrixStorage;
+    Float64List? initialMatrixStorage = obj['initialMatrix'] != null
+        ? Float64List.fromList(
+            List.of(obj["initialMatrix"], growable: false).cast<double>())
+        : identityMatrixStorage;
+    Float64List? finalMatrixStorage = obj['finalMatrix'] != null
+        ? Float64List.fromList(
+            List.of(obj["finalMatrix"], growable: false).cast<double>())
+        : identityMatrixStorage;
+
     return TransformStep(
       initialMatrix: Matrix4.fromFloat64List(initialMatrixStorage),
       finalMatrix: Matrix4.fromFloat64List(finalMatrixStorage),
