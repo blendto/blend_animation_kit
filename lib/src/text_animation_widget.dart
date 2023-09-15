@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/extensions.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
@@ -92,9 +91,7 @@ class TextAnimationWidget extends StatelessWidget {
               return Stack(
                 clipBehavior: Clip.none,
                 children: boxInfo.boxes
-                    .mapIndexed(
-                      (i, e) => renderCharacterAnimation(e, movie),
-                    )
+                    .map((info) => renderCharacterAnimation(info, movie))
                     .toList(growable: false),
               );
             },
