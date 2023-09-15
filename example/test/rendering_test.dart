@@ -12,20 +12,10 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 
 const fps = 24;
 
-TextAnimationBuilder testAnimation(String text, TextStyle? textStyle) =>
-    TextAnimationBuilder(
-            CharacterAnimationInput(text: text, textStyle: textStyle))
-        .opacityAndTransform(
-          initialOpacity: 1.0,
-          initialMatrix: Matrix4.identity()..scale(0.001),
-          finalOpacity: 1.0,
-          finalMatrix: Matrix4.identity(),
-          transformAlignment: Alignment.bottomLeft,
-          stepDuration: const Duration(milliseconds: 1500),
-          interStepDelay: const Duration(milliseconds: 45),
-          curve: Curves.elasticOut,
-        )
-        .waitAndFadeOutAll();
+TextAnimationBuilder testAnimation(String text, TextStyle? textStyle) {
+  return TextAnimationBuilder(CharacterAnimationInput(text: 'text'))
+      .add(variant3Pipeline);
+}
 
 Future<Response> _echoRequest(Request request, WidgetTester tester) async {
   final out = await pumpAndGenerate(request.url.toString(), tester);
@@ -68,7 +58,7 @@ Future<Stream<List<int>>> pumpAndGenerate(
     home: Material(
       child: RepaintBoundary(
         key: key,
-        child: testAnimationBuilder.generateWidget(),
+        child: TextAnimationWidget(builder: testAnimationBuilder),
       ),
     ),
   ));

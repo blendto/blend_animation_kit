@@ -1,25 +1,29 @@
 import 'dart:math';
 
 import 'package:blend_animation_kit/src/animation_input.dart';
-import 'package:blend_animation_kit/src/text_animation_builder.dart';
-import 'package:blend_animation_kit/src/text_animation_builder_extension.dart';
+import 'package:blend_animation_kit/src/pipeline/opacity.dart';
+import 'package:blend_animation_kit/src/pipeline/pipeline_helpers.dart';
+import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
+import 'package:blend_animation_kit/src/text_animation_widget.dart';
 import 'package:flutter/material.dart';
 
-Widget variant2(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        CharacterAnimationInput(text: text, textStyle: textStyle))
-    .opacity(
+final PipelineStep variant2Pipeline = const OpacityStep(
       initialOpacity: 0.0,
-      stepDuration: const Duration(milliseconds: 2250),
-      interStepDelay: const Duration(milliseconds: 150),
+      stepDuration: Duration(milliseconds: 2250),
+      interStepDelay: Duration(milliseconds: 150),
       curve: Curves.easeInOutQuad,
       finalOpacity: 1.0,
-    )
-    .waitAndFadeOutAll()
-    .generateWidget();
+    ) +
+    PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant3(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        CharacterAnimationInput(text: text, textStyle: textStyle))
-    .opacityAndTransform(
+Widget variant2(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
+      animationInput: CharacterAnimationInput(text: text),
+      textStyle: textStyle,
+      pipelineStep: variant2Pipeline,
+    );
+
+final PipelineStep variant3Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 1.0,
       initialMatrix: Matrix4.identity()..scale(0.001),
       finalOpacity: 1.0,
@@ -28,13 +32,17 @@ Widget variant3(String text, TextStyle? textStyle) => TextAnimationBuilder(
       stepDuration: const Duration(milliseconds: 1500),
       interStepDelay: const Duration(milliseconds: 45),
       curve: Curves.elasticOut,
-    )
-    .waitAndFadeOutAll()
-    .generateWidget();
+    ) +
+    PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant4(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        CharacterAnimationInput(text: text, textStyle: textStyle))
-    .opacityAndTransform(
+Widget variant3(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
+      animationInput: CharacterAnimationInput(text: text),
+      textStyle: textStyle,
+      pipelineStep: variant3Pipeline,
+    );
+
+final PipelineStep variant4Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
       initialMatrix: Matrix4.identity()..translate(0.0, 15.0),
       finalOpacity: 1.0,
@@ -42,13 +50,17 @@ Widget variant4(String text, TextStyle? textStyle) => TextAnimationBuilder(
       stepDuration: const Duration(milliseconds: 1000),
       interStepDelay: const Duration(milliseconds: 100),
       curve: Curves.elasticOut,
-    )
-    .waitAndFadeOutAll()
-    .generateWidget();
+    ) +
+    PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant5(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        CharacterAnimationInput(text: text, textStyle: textStyle))
-    .opacityAndTransform(
+Widget variant4(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
+      animationInput: CharacterAnimationInput(text: text),
+      textStyle: textStyle,
+      pipelineStep: variant4Pipeline,
+    );
+
+final PipelineStep variant5Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
       finalOpacity: 1.0,
       initialMatrix: Matrix4.identity()..rotateY(-pi / 2),
@@ -56,13 +68,17 @@ Widget variant5(String text, TextStyle? textStyle) => TextAnimationBuilder(
       stepDuration: const Duration(milliseconds: 1300),
       interStepDelay: const Duration(milliseconds: 45),
       curve: Curves.easeOutExpo,
-    )
-    .waitAndFadeOutAll()
-    .generateWidget();
+    ) +
+    PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant6(String text, TextStyle? textStyle) => TextAnimationBuilder(
-        CharacterAnimationInput(text: text, textStyle: textStyle))
-    .opacityAndTransform(
+Widget variant5(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
+      animationInput: CharacterAnimationInput(text: text),
+      textStyle: textStyle,
+      pipelineStep: variant5Pipeline,
+    );
+
+final PipelineStep variant6Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
       finalOpacity: 1.0,
       initialMatrix: Matrix4.identity()..translate(80.0),
@@ -70,40 +86,12 @@ Widget variant6(String text, TextStyle? textStyle) => TextAnimationBuilder(
       stepDuration: const Duration(milliseconds: 2000),
       interStepDelay: const Duration(milliseconds: 30),
       curve: Curves.easeOutExpo,
-    )
-    .waitAndFadeOutAll()
-    .generateWidget();
+    ) +
+    PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant7(List<String> texts, TextStyle? textStyle) {
-  final widgets = <Widget>[];
-
-  Duration delay = Duration.zero;
-  final builders = <TextAnimationBuilder>[];
-  for (var text in texts) {
-    var input = WordAnimationInput(text: text, textStyle: textStyle);
-    final builder = TextAnimationBuilder(input)
-        .delay(delay)
-        .opacityAndTransform(
-          initialOpacity: 1.0,
-          initialMatrix: Matrix4.identity()..scale(0.001),
-          finalOpacity: 1.0,
-          finalMatrix: Matrix4.identity(),
-          transformAlignment: Alignment.center,
-          stepDuration: const Duration(milliseconds: 1500),
-          interStepDelay: const Duration(milliseconds: 45),
-          curve: Curves.elasticOut,
-        )
-        .waitAndFadeOutAll();
-    builders.add(builder);
-    delay = builder.tween.duration;
-  }
-
-  final end = builders.last.tween.duration;
-
-  for (var builder in builders) {
-    final widget = builder.delay(end - builder.tween.duration).generateWidget();
-    widgets.add(Center(child: widget));
-  }
-
-  return Stack(children: widgets);
-}
+Widget variant6(String text, TextStyle? textStyle) =>
+    TextAnimationWidget.fromInput(
+      animationInput: CharacterAnimationInput(text: text),
+      textStyle: textStyle,
+      pipelineStep: variant6Pipeline,
+    );

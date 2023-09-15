@@ -39,8 +39,6 @@ class _MyHomePageState extends State<MyHomePage> {
             customText ?? "Beautiful Questions", const TextStyle(fontSize: 30)),
         variant5(customText ?? "Animation 6", const TextStyle(fontSize: 40)),
         variant6(customText ?? "Animation 7", const TextStyle(fontSize: 40)),
-        variant7(["Get", "Ready", "For", customText ?? "This"],
-            const TextStyle(fontSize: 40)),
       ];
 
   String? customText;
@@ -51,6 +49,9 @@ class _MyHomePageState extends State<MyHomePage> {
     textFieldController.dispose();
     super.dispose();
   }
+
+  double sliderVal = 1;
+  bool sliderActive = false;
 
   @override
   Widget build(BuildContext context) {
@@ -94,16 +95,49 @@ class _MyHomePageState extends State<MyHomePage> {
                     itemCount: widgets.length,
                     itemBuilder: (context, index) {
                       return Center(
-                        child: Container(
-                          decoration: BoxDecoration(
-                              border: Border.all(color: Colors.red)),
-                          child: widgets[index],
-                        ),
+                        child: LayoutBuilder(builder: (context, constraints) {
+                          return Container(
+                            width: sliderActive
+                                ? constraints.maxWidth * sliderVal
+                                : null,
+                            decoration: BoxDecoration(
+                                border: Border.all(color: Colors.red)),
+                            child: widgets[index],
+                          );
+                        }),
                       );
                     },
                   ),
                 ),
               ),
+              Slider(
+                min: 0,
+                max: 1,
+                value: sliderVal,
+                onChanged: sliderActive
+                    ? (val) {
+                        setState(() {
+                          sliderVal = val;
+                        });
+                      }
+                    : null,
+              ),
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Change Width"),
+                    Checkbox(
+                        value: sliderActive,
+                        onChanged: (val) {
+                          setState(() {
+                            sliderActive = val ?? false;
+                            sliderVal = 1.0;
+                          });
+                        }),
+                  ],
+                ),
+              )
             ],
           ),
         ),
