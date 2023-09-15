@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
+import 'package:blend_animation_kit/src/serializers/cubic.dart';
 import 'package:flutter/widgets.dart';
 
 class OpacityStep extends PipelineStep {
@@ -64,6 +65,7 @@ class OpacityStep extends PipelineStep {
     obj.putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
     obj.putIfAbsent("interStepDelay", () => interStepDelay.inMilliseconds);
     obj.putIfAbsent("finalOpacity", () => finalOpacity);
+    obj.putIfAbsent("curve", () => CurveSerializer.serialize(curve));
 
     return obj;
   }
@@ -76,6 +78,7 @@ class OpacityStep extends PipelineStep {
     Duration stepDuration = Duration(milliseconds: obj["stepDuration"]);
     Duration interStepDelay = Duration(milliseconds: obj["interStepDelay"]);
     double finalOpacity = obj["finalOpacity"];
+    Curve curve = CurveSerializer.deserialize(obj['curve']);
 
     return OpacityStep(
       initialOpacity: initialOpacity,
@@ -83,6 +86,7 @@ class OpacityStep extends PipelineStep {
       interStepDelay: interStepDelay,
       finalOpacity: finalOpacity,
       nextStep: nextStep,
+      curve: curve,
     );
   }
 

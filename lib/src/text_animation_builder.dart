@@ -1,8 +1,7 @@
+import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
-
-import '../blend_animation_kit.dart';
 
 @immutable
 class TextAnimationBuilder {
