@@ -31,4 +31,54 @@ void main() {
 
     expect(pipeline, PipelineStep.fromList(pipeline.flattened));
   });
+
+  test("serialize/deserialize json", () {
+    final json = [
+      {
+        "initialOpacity": 1,
+        "name": "Opacity",
+        "finalOpacity": 1,
+        "curve": "elasticOut",
+        "stepDuration": 1500,
+        "interStepDelay": 45
+      },
+      {
+        "transformAlignment": "-1.0,1.0",
+        "curve": "elasticOut",
+        "stepDuration": 1500,
+        "interStepDelay": 45,
+        "name": "Transform",
+        "initialMatrix": [
+          0.001,
+          0,
+          0,
+          0,
+          0,
+          0.001,
+          0,
+          0,
+          0,
+          0,
+          0.001,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "finalMatrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+      },
+      {"name": "Wait"},
+      {"name": "Delay", "delay": 1000},
+      {
+        "initialOpacity": 1,
+        "name": "Opacity",
+        "finalOpacity": 0,
+        "curve": "easeInOutQuad",
+        "stepDuration": 1000,
+        "interStepDelay": 0
+      }
+    ];
+    expect(PipelineStep.fromList(json)!.flattened, json);
+  });
 }

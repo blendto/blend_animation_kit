@@ -84,17 +84,20 @@ class TransformStep extends PipelineStep {
     return obj;
   }
 
+  static Float64List matrixDecoder(Iterable<num> nums) {
+    return Float64List.fromList(
+        nums.map((e) => e.toDouble()).toList(growable: false));
+  }
+
   static TransformStep deserialise(
     Map<String, dynamic> obj,
     PipelineStep? nextStep,
   ) {
     Float64List? initialMatrixStorage = obj['initialMatrix'] != null
-        ? Float64List.fromList(
-            List.of(obj["initialMatrix"], growable: false).cast<double>())
+        ? matrixDecoder(obj["initialMatrix"])
         : identityMatrixStorage;
     Float64List? finalMatrixStorage = obj['finalMatrix'] != null
-        ? Float64List.fromList(
-            List.of(obj["finalMatrix"], growable: false).cast<double>())
+        ? matrixDecoder(obj["finalMatrix"])
         : identityMatrixStorage;
 
     return TransformStep(
