@@ -5,6 +5,7 @@ import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/serializers/alignment.dart';
 import 'package:blend_animation_kit/src/serializers/cubic.dart';
+import 'package:blend_animation_kit/src/serializers/float_64_list.dart';
 import 'package:flutter/widgets.dart';
 
 final identityMatrixStorage = Matrix4.identity().storage;
@@ -84,20 +85,15 @@ class TransformStep extends PipelineStep {
     return obj;
   }
 
-  static Float64List matrixDecoder(Iterable<num> nums) {
-    return Float64List.fromList(
-        nums.map((e) => e.toDouble()).toList(growable: false));
-  }
-
   static TransformStep deserialise(
     Map<String, dynamic> obj,
     PipelineStep? nextStep,
   ) {
     Float64List? initialMatrixStorage = obj['initialMatrix'] != null
-        ? matrixDecoder((obj["initialMatrix"] as Iterable).cast<num>())
+        ? Float64ListSerializer.deserialize(obj['initialMatrix'])
         : identityMatrixStorage;
     Float64List? finalMatrixStorage = obj['finalMatrix'] != null
-        ? matrixDecoder((obj["finalMatrix"] as Iterable).cast<num>())
+        ? Float64ListSerializer.deserialize(obj['finalMatrix'])
         : identityMatrixStorage;
 
     return TransformStep(
