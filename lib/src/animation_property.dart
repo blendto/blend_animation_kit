@@ -46,9 +46,9 @@ abstract class SceneItem {
   void attachToScene(MovieTween tween);
 }
 
-class ScenePropertyItem implements SceneItem {
+class ScenePropertyItem<T> implements SceneItem {
   final CustomMovieTweenProperty property;
-  final Animatable<dynamic> tween;
+  final Animatable<T> tween;
   final Curve curve;
   @override
   final Duration from;

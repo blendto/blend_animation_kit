@@ -74,10 +74,10 @@ class OpacityStep extends PipelineStep {
     Map<String, dynamic> obj,
     PipelineStep? nextStep,
   ) {
-    double initialOpacity = double.parse(obj["initialOpacity"].toString());
+    double initialOpacity = double.parse("${obj["initialOpacity"]}");
+    double finalOpacity = double.parse("${obj["finalOpacity"]}");
     Duration stepDuration = Duration(milliseconds: obj["stepDuration"]);
     Duration interStepDelay = Duration(milliseconds: obj["interStepDelay"]);
-    double finalOpacity = double.parse(obj["finalOpacity"].toString());
     Curve curve = CurveSerializer.deserialize(obj['curve']);
 
     return OpacityStep(
