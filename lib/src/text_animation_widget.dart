@@ -4,8 +4,7 @@ import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/extensions.dart';
 import 'package:flutter/material.dart';
-import 'package:simple_animations/animation_builder/loop_animation_builder.dart';
-import 'package:simple_animations/movie_tween/movie_tween.dart';
+import 'package:simple_animations/simple_animations.dart';
 
 typedef TextBoxInfo = ({String character, TextBox box, int index});
 
@@ -16,11 +15,14 @@ class TextAnimationWidget extends StatelessWidget {
 
   final TextAlign textAlign;
 
+  final bool loop;
+
   const TextAnimationWidget({
     super.key,
     required this.builder,
     this.textStyle,
     this.textAlign = TextAlign.center,
+    this.loop = true,
   });
 
   factory TextAnimationWidget.fromInput({
@@ -85,8 +87,9 @@ class TextAnimationWidget extends StatelessWidget {
         final boxInfo = getCharacterDetails(context, constraints);
         return SizedBox.fromSize(
           size: boxInfo.overallBoxSize,
-          child: LoopAnimationBuilder(
+          child: CustomAnimationBuilder(
             tween: tween,
+            control: loop ? Control.loop : Control.play,
             builder: (context, movie, child) {
               return Stack(
                 clipBehavior: Clip.none,
