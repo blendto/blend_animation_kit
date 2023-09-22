@@ -16,7 +16,7 @@ extension WrapAlignmentExtension on TextAlign {
 }
 
 extension Vector3Extension on Vector3 {
-  Vector3 scaleXYTranslation(double scale) {
+  Vector3 scaleXY(double scale) {
     final newVec = Vector3.copy(this);
     newVec.x = x * scale;
     newVec.y = y * scale;

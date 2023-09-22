@@ -95,14 +95,13 @@ abstract class PipelineStep {
     if (step == null) return;
     if (step is TransformStep) {
       if (step.initialMatrix != null) {
-        final newTransform = step.initialMatrix!
-            .getTranslation()
-            .scaleXYTranslation(scaleFactor);
+        final newTransform =
+            step.initialMatrix!.getTranslation().scaleXY(scaleFactor);
         step.initialMatrix?.setTranslation(newTransform);
       }
       if (step.finalMatrix != null) {
         final newTransform =
-            step.finalMatrix!.getTranslation().scaleXYTranslation(scaleFactor);
+            step.finalMatrix!.getTranslation().scaleXY(scaleFactor);
         step.finalMatrix?.setTranslation(newTransform);
       }
     }
