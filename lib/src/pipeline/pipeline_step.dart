@@ -1,4 +1,5 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
+import 'package:blend_animation_kit/src/extensions.dart';
 
 abstract class PipelineStep {
   final PipelineStep? nextStep;
@@ -83,4 +84,28 @@ abstract class PipelineStep {
   }
 
   Map<String, dynamic> get serialised;
+
+  PipelineStep scaleTranslation(double scaleFactor) {
+    final copied = PipelineStep.fromList(flattened)!;
+    _scaleTranslation(copied, scaleFactor);
+    return copied;
+  }
+
+  static void _scaleTranslation(PipelineStep? step, double scaleFactor) {
+    if (step == null) return;
+    if (step is TransformStep) {
+      if (step.initialMatrix != null) {
+        final newTransform = step.initialMatrix!
+            .getTranslation()
+            .scaleXYTranslation(scaleFactor);
+        step.initialMatrix?.setTranslation(newTransform);
+      }
+      if (step.finalMatrix != null) {
+        final newTransform =
+            step.finalMatrix!.getTranslation().scaleXYTranslation(scaleFactor);
+        step.finalMatrix?.setTranslation(newTransform);
+      }
+    }
+    _scaleTranslation(step.nextStep, scaleFactor);
+  }
 }
