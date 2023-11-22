@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/extensions.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/simple_animations.dart';
 
@@ -63,17 +64,23 @@ class TextAnimationWidget extends StatelessWidget {
     textPainter.layout(maxWidth: constraints.maxWidth);
 
     final boxes = <TextBoxInfo>[];
-    for (int i = 0; i < text.length; i++) {
+    int charOffset = 0;
+    text.characters.forEachIndexed((i, char) {
       final selectionRects = textPainter.getBoxesForSelection(
-        TextSelection(baseOffset: i, extentOffset: i + 1),
+        TextSelection(
+            baseOffset: charOffset, extentOffset: charOffset + char.length),
         boxHeightStyle: BoxHeightStyle.max,
         boxWidthStyle: BoxWidthStyle.max,
       );
-
+      charOffset += char.length;
       if (selectionRects.isNotEmpty) {
-        boxes.add((character: text[i], box: selectionRects.first, index: i));
+        boxes.add((
+          character: text.characters.elementAt(i),
+          box: selectionRects.first,
+          index: i
+        ));
       }
-    }
+    });
     final boxSize = textPainter.size;
     textPainter.dispose();
     return (boxes: boxes, overallBoxSize: boxSize);
