@@ -74,11 +74,7 @@ class TextAnimationWidget extends StatelessWidget {
       );
       charOffset += char.length;
       if (selectionRects.isNotEmpty) {
-        boxes.add((
-          character: text.characters.elementAt(i),
-          box: selectionRects.first,
-          index: i
-        ));
+        boxes.add((character: char, box: selectionRects.first, index: i));
       }
     });
     final boxSize = textPainter.size;
