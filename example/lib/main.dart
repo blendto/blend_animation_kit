@@ -1,5 +1,6 @@
-// import 'package:example/text_demo.dart';
-import 'package:example/widget_effects_demo.dart';
+import 'package:example/text_demo.dart';
+
+// import 'package:example/widget_effects_demo.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark(
         useMaterial3: true,
       ),
-      home: const WidgetEffectsDemo(title: 'Flutter Demo Home Page'),
+      home: const TextDemo(title: 'Flutter Demo Home Page'),
     );
   }
 }

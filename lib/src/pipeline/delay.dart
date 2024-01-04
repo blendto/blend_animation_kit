@@ -1,26 +1,26 @@
 import 'dart:collection';
 
 import 'package:blend_animation_kit/src/animation_property.dart';
+import 'package:blend_animation_kit/src/base_animation_builder.dart';
 import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
-import 'package:blend_animation_kit/src/text_animation_builder.dart';
 
-class DelayStep extends PipelineStep {
+class DelayStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
   final Duration delay;
 
   static String get wireName => "Delay";
 
   const DelayStep(
     this.delay, {
-    PipelineStep? nextStep,
+    PipelineStep<T>? nextStep,
   }) : super(nextStep: nextStep);
 
   @override
-  PipelineStep copyWith({PipelineStep? nextStep}) {
+  PipelineStep<T> copyWith({PipelineStep<T>? nextStep}) {
     return DelayStep(delay, nextStep: nextStep ?? this.nextStep);
   }
 
   @override
-  TextAnimationBuilder updatedBuilder(TextAnimationBuilder builder) {
+  T updatedBuilder(T builder) {
     final newBegin = delay + builder.tween.duration;
     return builder.copyWith(
       begin: newBegin,
@@ -39,12 +39,12 @@ class DelayStep extends PipelineStep {
       ..putIfAbsent("delay", () => delay.inMilliseconds);
   }
 
-  static DelayStep deserialise(
+  static DelayStep<T> deserialise<T extends AnimationBuilder<T>>(
     Map<String, dynamic> obj,
-    PipelineStep? nextStep,
+    PipelineStep<T>? nextStep,
   ) {
     final delay = Duration(milliseconds: obj["delay"]);
-    return DelayStep(delay, nextStep: nextStep);
+    return DelayStep<T>(delay, nextStep: nextStep);
   }
 
   @override

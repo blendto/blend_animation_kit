@@ -60,14 +60,14 @@ final json = [
 
 void main() {
   test("Pipeline steps serialization deserialization", () {
-    final PipelineStep pipeline = const OpacityStep(
+    final PipelineStep pipeline = const OpacityStep<TextAnimationBuilder>(
           initialOpacity: 0.0,
           finalOpacity: 1.0,
           stepDuration: Duration(milliseconds: 800),
           curve: Curves.easeInOutQuad,
           interStepDelay: Duration(milliseconds: 50),
         ) +
-        TransformStep(
+        TransformStep<TextAnimationBuilder>(
           initialMatrix: Matrix4.identity()..translate(4.0),
           finalMatrix: Matrix4.identity(),
           stepDuration: const Duration(milliseconds: 800),
@@ -75,19 +75,20 @@ void main() {
           curve: Curves.bounceIn,
           transformAlignment: Alignment.bottomCenter,
         ) +
-        const WaitStep() +
-        const DelayStep(Duration(seconds: 1));
+        const WaitStep<TextAnimationBuilder>() +
+        const DelayStep<TextAnimationBuilder>(Duration(seconds: 1));
 
-    expect(pipeline, PipelineStep.fromList(pipeline.flattened));
+    expect(pipeline,
+        PipelineStep.fromList<TextAnimationBuilder>(pipeline.flattened));
   });
 
   test("serialize/deserialize json", () {
-    expect(PipelineStep.fromList(json)!.flattened, json);
+    expect(PipelineStep.fromList<TextAnimationBuilder>(json)!.flattened, json);
   });
 
   test("serialize/deserialize with jsonEncode ", () {
     final map =
         (jsonDecode(jsonEncode(json)) as List).cast<Map<String, dynamic>>();
-    expect(PipelineStep.fromList(map)!.flattened, json);
+    expect(PipelineStep.fromList<TextAnimationBuilder>(map)!.flattened, json);
   });
 }

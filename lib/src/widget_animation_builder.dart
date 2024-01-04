@@ -1,39 +1,39 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/base_animation_builder.dart';
+import 'package:blend_animation_kit/src/widget_animation_input.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
 
+import 'base_animation_builder.dart';
+
 @immutable
-class TextAnimationBuilder extends AnimationBuilder<TextAnimationBuilder> {
+class WidgetAnimationBuilder extends AnimationBuilder<WidgetAnimationBuilder> {
   @override
   late final Iterable<SceneItem> sceneItems;
 
-  @override
   late final Duration begin;
 
-  @override
   late final MovieTween tween = generateTween();
 
   List<AnimationProperty> get animationProperties =>
-      animationInput.animationProperties;
+      [animationInput.animationProperty];
 
-  final AnimationInput animationInput;
+  final WidgetAnimationInput animationInput;
 
-  TextAnimationBuilder(this.animationInput)
+  WidgetAnimationBuilder(this.animationInput)
       : begin = Duration.zero,
         sceneItems = [];
 
-  TextAnimationBuilder._({
+  WidgetAnimationBuilder._({
     required this.animationInput,
     required this.sceneItems,
     required this.begin,
   });
 
   @override
-  TextAnimationBuilder copyWith(
+  WidgetAnimationBuilder copyWith(
       {List<SceneItem>? sceneItems, Duration? begin}) {
-    return TextAnimationBuilder._(
+    return WidgetAnimationBuilder._(
       animationInput: animationInput,
       sceneItems: sceneItems ?? this.sceneItems,
       begin: begin ?? this.begin,
@@ -50,11 +50,10 @@ class TextAnimationBuilder extends AnimationBuilder<TextAnimationBuilder> {
   }
 
   @override
-  TextAnimationBuilder add(
-    final PipelineStep<TextAnimationBuilder> pipelineStep,
-  ) {
-    PipelineStep<TextAnimationBuilder>? pipelineIterator = pipelineStep;
-    TextAnimationBuilder updatedBuilder = this;
+  WidgetAnimationBuilder add(
+      final PipelineStep<WidgetAnimationBuilder> pipelineStep) {
+    PipelineStep<WidgetAnimationBuilder>? pipelineIterator = pipelineStep;
+    WidgetAnimationBuilder updatedBuilder = this;
     while (pipelineIterator != null) {
       updatedBuilder = pipelineIterator.updatedBuilder(updatedBuilder);
       pipelineIterator = pipelineIterator.nextStep;

@@ -29,7 +29,7 @@ class TextAnimationWidget extends StatelessWidget {
   factory TextAnimationWidget.fromInput({
     required CharacterAnimationInput animationInput,
     TextStyle? textStyle,
-    required PipelineStep pipelineStep,
+    required PipelineStep<TextAnimationBuilder> pipelineStep,
     TextAlign textAlign = TextAlign.center,
   }) {
     return TextAnimationWidget(
