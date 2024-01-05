@@ -15,4 +15,3 @@ export 'src/text_animation_builder.dart';
 export 'src/text_animation_widget.dart';
 export 'src/widget_animation_builder.dart';
 export 'src/widget_animation_input.dart';
-export 'src/widget_animation_widget.dart';

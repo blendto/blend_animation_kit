@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/base_animation_builder.dart';
 import 'package:blend_animation_kit/src/serializers/alignment.dart';
 import 'package:blend_animation_kit/src/serializers/cubic.dart';
 import 'package:blend_animation_kit/src/serializers/float_64_list.dart';
@@ -11,7 +10,7 @@ import 'package:flutter/widgets.dart';
 
 final identityMatrixStorage = Matrix4.identity().storage;
 
-class TransformStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
+class TransformStep extends PipelineStep {
   final Matrix4? initialMatrix;
   final Matrix4? finalMatrix;
   final Duration stepDuration;
@@ -28,14 +27,14 @@ class TransformStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
     this.interStepDelay = const Duration(milliseconds: 30),
     this.curve = Curves.easeInOutQuad,
     this.transformAlignment = Alignment.center,
-    PipelineStep<T>? nextStep,
+    PipelineStep? nextStep,
   }) : super(nextStep: nextStep);
 
   @override
   String get tag => "Transform :${stepDuration.inMilliseconds}";
 
   @override
-  TransformStep<T> copyWith({PipelineStep<T>? nextStep}) {
+  TransformStep copyWith({PipelineStep? nextStep}) {
     return TransformStep(
       initialMatrix: initialMatrix,
       finalMatrix: finalMatrix,
@@ -48,11 +47,11 @@ class TransformStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
   }
 
   @override
-  T updatedBuilder(T builder) {
+  BaseAnimationBuilder updatedBuilder(BaseAnimationBuilder builder) {
     final newSceneItems = List.of(builder.sceneItems);
-    var index = 0;
-    for (var animationProperty in builder.animationProperties) {
-      final property = animationProperty.transformation;
+    for (var (index, _) in builder.animationInput.groups.indexed) {
+      final property =
+          builder.animationProperties.elementAt(index).transformation;
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Matrix4WithAlignmentTween(
@@ -64,7 +63,6 @@ class TransformStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
         from: builder.begin + (interStepDelay * index),
         duration: stepDuration,
       ));
-      index++;
     }
 
     return builder.copyWith(sceneItems: newSceneItems);
@@ -87,9 +85,9 @@ class TransformStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
     return obj;
   }
 
-  static TransformStep<T> deserialise<T extends AnimationBuilder<T>>(
+  static TransformStep deserialise(
     Map<String, dynamic> obj,
-    PipelineStep<T>? nextStep,
+    PipelineStep? nextStep,
   ) {
     Float64List? initialMatrixStorage = obj['initialMatrix'] != null
         ? Float64ListSerializer.deserialize(obj['initialMatrix'])

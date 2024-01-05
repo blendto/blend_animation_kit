@@ -2,11 +2,10 @@ import 'dart:collection';
 
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/base_animation_builder.dart';
 import 'package:blend_animation_kit/src/serializers/cubic.dart';
 import 'package:flutter/widgets.dart';
 
-class OpacityStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
+class OpacityStep extends PipelineStep {
   final double initialOpacity;
   final Duration stepDuration;
   final Duration interStepDelay;
@@ -21,7 +20,7 @@ class OpacityStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
     this.interStepDelay = const Duration(milliseconds: 30),
     this.curve = Curves.easeInOutQuad,
     this.finalOpacity = 1.0,
-    PipelineStep<T>? nextStep,
+    PipelineStep? nextStep,
   }) : super(nextStep: nextStep);
 
   @override
@@ -29,7 +28,7 @@ class OpacityStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
       "Opacity $initialOpacity-$finalOpacity:${stepDuration.inMilliseconds}";
 
   @override
-  OpacityStep<T> copyWith({PipelineStep<T>? nextStep}) {
+  OpacityStep copyWith({PipelineStep? nextStep}) {
     return OpacityStep(
       initialOpacity: initialOpacity,
       stepDuration: stepDuration,
@@ -41,11 +40,10 @@ class OpacityStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
   }
 
   @override
-  T updatedBuilder(T builder) {
+  BaseAnimationBuilder updatedBuilder(BaseAnimationBuilder builder) {
     final newSceneItems = List.of(builder.sceneItems);
-    var index = 0;
-    for (var animationProperty in builder.animationProperties) {
-      final property = animationProperty.opacity;
+    for (var (index, _) in builder.animationInput.groups.indexed) {
+      final property = builder.animationProperties.elementAt(index).opacity;
       newSceneItems.add(ScenePropertyItem(
         property: property,
         tween: Tween<double>(begin: initialOpacity, end: finalOpacity),
@@ -53,7 +51,6 @@ class OpacityStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
         from: builder.begin + (interStepDelay * index),
         duration: stepDuration,
       ));
-      index++;
     }
 
     return builder.copyWith(sceneItems: newSceneItems);
@@ -73,9 +70,9 @@ class OpacityStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
     return obj;
   }
 
-  static OpacityStep<T> deserialise<T extends AnimationBuilder<T>>(
+  static OpacityStep deserialise(
     Map<String, dynamic> obj,
-    PipelineStep<T>? nextStep,
+    PipelineStep? nextStep,
   ) {
     double initialOpacity = double.parse("${obj["initialOpacity"]}");
     double finalOpacity = double.parse("${obj["finalOpacity"]}");

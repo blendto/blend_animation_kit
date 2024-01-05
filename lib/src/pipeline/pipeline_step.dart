@@ -1,29 +1,28 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
-import 'package:blend_animation_kit/src/base_animation_builder.dart';
 
-abstract class PipelineStep<T extends AnimationBuilder<T>> {
-  final PipelineStep<T>? nextStep;
+abstract class PipelineStep {
+  final PipelineStep? nextStep;
 
   const PipelineStep({this.nextStep});
 
   String get tag;
 
-  T updatedBuilder(T builder);
+  BaseAnimationBuilder updatedBuilder(BaseAnimationBuilder builder);
 
-  PipelineStep<T> chain(PipelineStep<T> next) {
+  PipelineStep chain(PipelineStep next) {
     if (nextStep != null) {
       return copyWith(nextStep: nextStep! + next);
     }
     return copyWith(nextStep: next);
   }
 
-  PipelineStep<T> operator +(PipelineStep<T> other) => chain(other);
+  PipelineStep operator +(PipelineStep other) => chain(other);
 
-  PipelineStep<T> copyWith({PipelineStep<T>? nextStep});
+  PipelineStep copyWith({PipelineStep? nextStep});
 
   int get length {
     int i = 0;
-    PipelineStep<T>? curr = this;
+    PipelineStep? curr = this;
     while (curr != null) {
       i += 1;
       curr = curr.nextStep;
@@ -34,7 +33,7 @@ abstract class PipelineStep<T extends AnimationBuilder<T>> {
   @override
   String toString() {
     final StringBuffer stringBuffer = StringBuffer();
-    PipelineStep<T>? curr = this;
+    PipelineStep? curr = this;
     while (curr != null) {
       stringBuffer.write(curr.tag);
       curr = curr.nextStep;
@@ -53,9 +52,9 @@ abstract class PipelineStep<T extends AnimationBuilder<T>> {
     return list;
   }
 
-  static PipelineStep<T> deserialise<T extends AnimationBuilder<T>>(
+  static PipelineStep deserialise(
     Map<String, dynamic> element,
-    PipelineStep<T>? step,
+    PipelineStep? step,
   ) {
     String name = element["name"];
     if (name == OpacityStep.wireName) {
@@ -74,11 +73,10 @@ abstract class PipelineStep<T extends AnimationBuilder<T>> {
     throw UnsupportedError("Unrecognised wireName: $name");
   }
 
-  static PipelineStep<T>? fromList<T extends AnimationBuilder<T>>(
-      List<Map<String, dynamic>> flattened) {
-    PipelineStep<T>? step;
+  static PipelineStep? fromList(List<Map<String, dynamic>> flattened) {
+    PipelineStep? step;
     for (final element in flattened.reversed) {
-      step = deserialise<T>(element, step);
+      step = deserialise(element, step);
     }
 
     return step;

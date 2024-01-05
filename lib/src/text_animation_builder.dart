@@ -1,18 +1,14 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/animation_property.dart';
-import 'package:blend_animation_kit/src/base_animation_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
 
 @immutable
-class TextAnimationBuilder extends AnimationBuilder<TextAnimationBuilder> {
-  @override
+class BaseAnimationBuilder {
   late final Iterable<SceneItem> sceneItems;
 
-  @override
   late final Duration begin;
 
-  @override
   late final MovieTween tween = generateTween();
 
   List<AnimationProperty> get animationProperties =>
@@ -20,27 +16,25 @@ class TextAnimationBuilder extends AnimationBuilder<TextAnimationBuilder> {
 
   final AnimationInput animationInput;
 
-  TextAnimationBuilder(this.animationInput)
+  BaseAnimationBuilder(this.animationInput)
       : begin = Duration.zero,
         sceneItems = [];
 
-  TextAnimationBuilder._({
+  BaseAnimationBuilder._({
     required this.animationInput,
     required this.sceneItems,
     required this.begin,
   });
 
-  @override
-  TextAnimationBuilder copyWith(
+  BaseAnimationBuilder copyWith(
       {List<SceneItem>? sceneItems, Duration? begin}) {
-    return TextAnimationBuilder._(
+    return BaseAnimationBuilder._(
       animationInput: animationInput,
       sceneItems: sceneItems ?? this.sceneItems,
       begin: begin ?? this.begin,
     );
   }
 
-  @override
   MovieTween generateTween() {
     MovieTween movieTween = MovieTween();
     for (final element in sceneItems) {
@@ -49,12 +43,11 @@ class TextAnimationBuilder extends AnimationBuilder<TextAnimationBuilder> {
     return movieTween;
   }
 
-  @override
-  TextAnimationBuilder add(
-    final PipelineStep<TextAnimationBuilder> pipelineStep,
+  BaseAnimationBuilder add(
+    final PipelineStep pipelineStep,
   ) {
-    PipelineStep<TextAnimationBuilder>? pipelineIterator = pipelineStep;
-    TextAnimationBuilder updatedBuilder = this;
+    PipelineStep? pipelineIterator = pipelineStep;
+    BaseAnimationBuilder updatedBuilder = this;
     while (pipelineIterator != null) {
       updatedBuilder = pipelineIterator.updatedBuilder(updatedBuilder);
       pipelineIterator = pipelineIterator.nextStep;

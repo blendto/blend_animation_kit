@@ -1,23 +1,23 @@
 import 'dart:collection';
 
-import 'package:blend_animation_kit/src/base_animation_builder.dart';
 import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
+import 'package:blend_animation_kit/src/text_animation_builder.dart';
 
-class WaitStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
+class WaitStep extends PipelineStep {
   static String get wireName => "Wait";
 
-  const WaitStep({PipelineStep<T>? nextStep}) : super(nextStep: nextStep);
+  const WaitStep({PipelineStep? nextStep}) : super(nextStep: nextStep);
 
   @override
   String get tag => "Wait";
 
   @override
-  PipelineStep<T> copyWith({PipelineStep<T>? nextStep}) {
+  PipelineStep copyWith({PipelineStep? nextStep}) {
     return WaitStep(nextStep: nextStep ?? this.nextStep);
   }
 
   @override
-  T updatedBuilder(T builder) {
+  BaseAnimationBuilder updatedBuilder(BaseAnimationBuilder builder) {
     final begin = builder.tween.duration;
     return builder.copyWith(begin: begin);
   }
@@ -27,9 +27,9 @@ class WaitStep<T extends AnimationBuilder<T>> extends PipelineStep<T> {
     return HashMap()..putIfAbsent("name", () => wireName);
   }
 
-  static WaitStep<T> deserialise<T extends AnimationBuilder<T>>(
+  static WaitStep deserialise(
     Map<String, dynamic> obj,
-    PipelineStep<T>? nextStep,
+    PipelineStep? nextStep,
   ) {
     return WaitStep(nextStep: nextStep);
   }

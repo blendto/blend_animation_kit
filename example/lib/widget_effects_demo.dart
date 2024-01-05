@@ -13,12 +13,13 @@ class WidgetEffectsDemo extends StatefulWidget {
 class _WidgetEffectsDemoState extends State<WidgetEffectsDemo> {
   @override
   Widget build(BuildContext context) {
-    final builder = WidgetAnimationBuilder(
-      WidgetAnimationInput(widget: const SampleIcon()),
-    );
+    final builder = BaseAnimationBuilder(
+      WidgetAnimationInput(
+          widget: const SampleIcon(), size: const Size(200, 200)),
+    ).add(variant2Pipeline);
     return SafeArea(
       child: Stack(children: [
-        AnimationWidget(builder: builder, boxSize: const Size(200, 200)),
+        AnimationWidget(builder: builder),
       ]),
     );
   }
