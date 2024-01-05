@@ -1,6 +1,6 @@
 import 'package:example/text_demo.dart';
 
-// import 'package:example/widget_effects_demo.dart';
+import 'package:example/widget_effects_demo.dart';
 import 'package:flutter/material.dart';
 
 void main() {

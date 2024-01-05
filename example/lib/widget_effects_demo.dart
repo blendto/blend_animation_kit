@@ -1,3 +1,4 @@
+import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:flutter/material.dart';
 
 class WidgetEffectsDemo extends StatefulWidget {
@@ -12,8 +13,13 @@ class WidgetEffectsDemo extends StatefulWidget {
 class _WidgetEffectsDemoState extends State<WidgetEffectsDemo> {
   @override
   Widget build(BuildContext context) {
-    return const SafeArea(
-      child: Stack(children: [SampleIcon()]),
+    final builder = WidgetAnimationBuilder(
+      WidgetAnimationInput(widget: const SampleIcon()),
+    );
+    return SafeArea(
+      child: Stack(children: [
+        AnimationWidget(builder: builder, boxSize: const Size(200, 200)),
+      ]),
     );
   }
 }
