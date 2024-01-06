@@ -47,7 +47,7 @@ class TransformStep extends PipelineStep {
   }
 
   @override
-  BaseAnimationBuilder updatedBuilder(BaseAnimationBuilder builder) {
+  BlendAnimationBuilder updatedBuilder(BlendAnimationBuilder builder) {
     final newSceneItems = List.of(builder.sceneItems);
     for (var (index, _) in builder.animationInput.groups.indexed) {
       final property =

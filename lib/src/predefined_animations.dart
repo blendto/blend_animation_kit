@@ -12,8 +12,8 @@ final PipelineStep variant2Pipeline = const OpacityStep(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant2(String text, TextStyle? textStyle) => AnimationWidget(
-    builder: BaseAnimationBuilder(CharacterAnimationInput(
+Widget variant2(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(CharacterAnimationInput(
             text: text, textStyle: textStyle, textAlign: TextAlign.end))
         .add(variant2Pipeline));
 
@@ -29,8 +29,8 @@ final PipelineStep variant3Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant3(String text, TextStyle? textStyle) => AnimationWidget(
-    builder: BaseAnimationBuilder(
+Widget variant3(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
             CharacterAnimationInput(text: text, textStyle: textStyle))
         .add(variant3Pipeline));
 
@@ -45,8 +45,8 @@ final PipelineStep variant4Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant4(String text, TextStyle? textStyle) => AnimationWidget(
-    builder: BaseAnimationBuilder(
+Widget variant4(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
             CharacterAnimationInput(text: text, textStyle: textStyle))
         .add(variant4Pipeline));
 
@@ -61,8 +61,8 @@ final PipelineStep variant5Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant5(String text, TextStyle? textStyle) => AnimationWidget(
-    builder: BaseAnimationBuilder(
+Widget variant5(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
             CharacterAnimationInput(text: text, textStyle: textStyle))
         .add(variant5Pipeline));
 
@@ -77,7 +77,7 @@ final PipelineStep variant6Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant6(String text, TextStyle? textStyle) => AnimationWidget(
-    builder: BaseAnimationBuilder(
+Widget variant6(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
             CharacterAnimationInput(text: text, textStyle: textStyle))
         .add(variant6Pipeline));

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
 
 @immutable
-class BaseAnimationBuilder {
+class BlendAnimationBuilder {
   late final Iterable<SceneItem> sceneItems;
 
   late final Duration begin;
@@ -16,19 +16,19 @@ class BaseAnimationBuilder {
 
   final AnimationInput animationInput;
 
-  BaseAnimationBuilder(this.animationInput)
+  BlendAnimationBuilder(this.animationInput)
       : begin = Duration.zero,
         sceneItems = [];
 
-  BaseAnimationBuilder._({
+  BlendAnimationBuilder._({
     required this.animationInput,
     required this.sceneItems,
     required this.begin,
   });
 
-  BaseAnimationBuilder copyWith(
+  BlendAnimationBuilder copyWith(
       {List<SceneItem>? sceneItems, Duration? begin}) {
-    return BaseAnimationBuilder._(
+    return BlendAnimationBuilder._(
       animationInput: animationInput,
       sceneItems: sceneItems ?? this.sceneItems,
       begin: begin ?? this.begin,
@@ -43,11 +43,11 @@ class BaseAnimationBuilder {
     return movieTween;
   }
 
-  BaseAnimationBuilder add(
+  BlendAnimationBuilder add(
     final PipelineStep pipelineStep,
   ) {
     PipelineStep? pipelineIterator = pipelineStep;
-    BaseAnimationBuilder updatedBuilder = this;
+    BlendAnimationBuilder updatedBuilder = this;
     while (pipelineIterator != null) {
       updatedBuilder = pipelineIterator.updatedBuilder(updatedBuilder);
       pipelineIterator = pipelineIterator.nextStep;

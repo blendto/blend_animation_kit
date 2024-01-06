@@ -1,19 +1,23 @@
 import 'dart:ui';
 
-class AnimationBoxInfo {
+class AnimationBoxInfo<T> {
+  final T subject;
+
   final Rect rect;
 
   final int index;
 
-  const AnimationBoxInfo({required this.rect, required this.index});
+  const AnimationBoxInfo({
+    required this.subject,
+    required this.rect,
+    required this.index,
+  });
 }
 
-class TextBoxInfo extends AnimationBoxInfo {
-  final String character;
+class GroupDetails<T> {
+  final Size overallBoxSize;
 
-  const TextBoxInfo({
-    required super.rect,
-    required super.index,
-    required this.character,
-  });
+  final List<AnimationBoxInfo<T>> boxes;
+
+  const GroupDetails(this.overallBoxSize, this.boxes);
 }

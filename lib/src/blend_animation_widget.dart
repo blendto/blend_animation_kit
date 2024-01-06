@@ -3,25 +3,25 @@ import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/simple_animations.dart';
 
-class AnimationWidget extends StatelessWidget {
-  final BaseAnimationBuilder builder;
+class BlendAnimationWidget extends StatelessWidget {
+  final BlendAnimationBuilder builder;
 
   final bool loop;
 
-  const AnimationWidget({
+  const BlendAnimationWidget({
     super.key,
     required this.builder,
     this.loop = true,
   });
 
-  factory AnimationWidget.fromInput({
+  factory BlendAnimationWidget.fromInput({
     required CharacterAnimationInput animationInput,
     TextStyle? textStyle,
     required PipelineStep pipelineStep,
     TextAlign textAlign = TextAlign.center,
   }) {
-    return AnimationWidget(
-      builder: BaseAnimationBuilder(animationInput).add(pipelineStep),
+    return BlendAnimationWidget(
+      builder: BlendAnimationBuilder(animationInput).add(pipelineStep),
     );
   }
 

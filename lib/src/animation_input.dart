@@ -8,22 +8,22 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_animations/simple_animations.dart';
 
-abstract class AnimationInput<G extends Iterable, I extends AnimationBoxInfo> {
-  G get groups;
+abstract class AnimationInput<G> {
+  Iterable<G> get groups;
 
   @nonVirtual
   late final List<AnimationProperty> animationProperties =
       groups.map((e) => AnimationProperty()).toList(growable: false);
 
-  ({Size overallBoxSize, Iterable<I> boxes}) getAnimationGroupDetails(
+  GroupDetails<G> getAnimationGroupDetails(
       BuildContext context, BoxConstraints constraints);
 
-  Widget renderGroupItem(I info);
+  Widget renderGroupItem(AnimationBoxInfo<G> info);
 
   Alignment get alignment => Alignment.center;
 
   @nonVirtual
-  Positioned renderAnimation(I info, Movie movie) {
+  Positioned renderAnimation(AnimationBoxInfo<G> info, Movie movie) {
     final animationProperty = animationProperties.elementAt(info.index);
     return Positioned(
       top: info.rect.top,
@@ -43,7 +43,7 @@ abstract class AnimationInput<G extends Iterable, I extends AnimationBoxInfo> {
   }
 }
 
-class CharacterAnimationInput extends AnimationInput<Characters, TextBoxInfo> {
+class CharacterAnimationInput extends AnimationInput<String> {
   final String text;
 
   final TextAlign textAlign;
@@ -54,10 +54,10 @@ class CharacterAnimationInput extends AnimationInput<Characters, TextBoxInfo> {
   Alignment get alignment => textAlign.toAlignment();
 
   @override
-  final Characters groups;
+  final Iterable<String> groups;
 
   @override
-  ({Size overallBoxSize, Iterable<TextBoxInfo> boxes}) getAnimationGroupDetails(
+  GroupDetails<String> getAnimationGroupDetails(
       BuildContext context, BoxConstraints constraints) {
     final defaultTextStyle = DefaultTextStyle.of(context);
     final textStyle = defaultTextStyle.style.merge(this.textStyle);
@@ -73,7 +73,7 @@ class CharacterAnimationInput extends AnimationInput<Characters, TextBoxInfo> {
     );
     textPainter.layout(maxWidth: constraints.maxWidth);
 
-    final boxes = <TextBoxInfo>[];
+    final boxes = <AnimationBoxInfo<String>>[];
     int charOffset = 0;
     text.characters.forEachIndexed((i, char) {
       final selectionRects = textPainter.getBoxesForSelection(
@@ -85,8 +85,8 @@ class CharacterAnimationInput extends AnimationInput<Characters, TextBoxInfo> {
       charOffset += char.length;
       if (selectionRects.isNotEmpty) {
         boxes.add(
-          TextBoxInfo(
-            character: char,
+          AnimationBoxInfo(
+            subject: char,
             index: i,
             rect: selectionRects.first.toRect(),
           ),
@@ -95,13 +95,13 @@ class CharacterAnimationInput extends AnimationInput<Characters, TextBoxInfo> {
     });
     final boxSize = textPainter.size;
     textPainter.dispose();
-    return (boxes: boxes, overallBoxSize: boxSize);
+    return GroupDetails(boxSize, boxes);
   }
 
   @override
-  Widget renderGroupItem(TextBoxInfo info) {
+  Widget renderGroupItem(AnimationBoxInfo<String> info) {
     return Text.rich(
-      TextSpan(text: info.character),
+      TextSpan(text: info.subject),
       style: textStyle,
     );
   }

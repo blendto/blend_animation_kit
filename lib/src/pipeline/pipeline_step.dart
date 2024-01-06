@@ -7,7 +7,7 @@ abstract class PipelineStep {
 
   String get tag;
 
-  BaseAnimationBuilder updatedBuilder(BaseAnimationBuilder builder);
+  BlendAnimationBuilder updatedBuilder(BlendAnimationBuilder builder);
 
   PipelineStep chain(PipelineStep next) {
     if (nextStep != null) {
