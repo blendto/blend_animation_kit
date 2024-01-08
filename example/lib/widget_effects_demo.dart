@@ -1,4 +1,5 @@
 import 'package:blend_animation_kit/blend_animation_kit.dart';
+import 'package:example/predefined_animations.dart';
 import 'package:flutter/material.dart';
 
 class WidgetEffectsDemo extends StatefulWidget {

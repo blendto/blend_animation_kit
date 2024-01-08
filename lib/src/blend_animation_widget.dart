@@ -15,10 +15,8 @@ class BlendAnimationWidget extends StatelessWidget {
   });
 
   factory BlendAnimationWidget.fromInput({
-    required CharacterAnimationInput animationInput,
-    TextStyle? textStyle,
+    required BlendAnimationInput animationInput,
     required PipelineStep pipelineStep,
-    TextAlign textAlign = TextAlign.center,
   }) {
     return BlendAnimationWidget(
       builder: BlendAnimationBuilder(animationInput).add(pipelineStep),
@@ -30,7 +28,7 @@ class BlendAnimationWidget extends StatelessWidget {
   List<AnimationProperty> get animationProperties =>
       builder.animationProperties;
 
-  AnimationInput get animationInput => builder.animationInput;
+  BlendAnimationInput get animationInput => builder.animationInput;
 
   @override
   Widget build(BuildContext context) {

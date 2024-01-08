@@ -3,7 +3,7 @@ import 'package:blend_animation_kit/src/box_info.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-class WidgetAnimationInput extends AnimationInput<Widget> {
+class WidgetAnimationInput extends BlendAnimationInput<Widget> {
   final Widget widget;
   final Size size;
 

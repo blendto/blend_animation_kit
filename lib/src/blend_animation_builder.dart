@@ -14,7 +14,7 @@ class BlendAnimationBuilder {
   List<AnimationProperty> get animationProperties =>
       animationInput.animationProperties;
 
-  final AnimationInput animationInput;
+  final BlendAnimationInput animationInput;
 
   BlendAnimationBuilder(this.animationInput)
       : begin = Duration.zero,

@@ -1,4 +1,4 @@
-import 'package:blend_animation_kit/blend_animation_kit.dart';
+import 'package:example/predefined_animations.dart';
 import 'package:flutter/material.dart';
 
 class TextDemo extends StatefulWidget {
@@ -12,14 +12,14 @@ class TextDemo extends StatefulWidget {
 
 class _TextDemoState extends State<TextDemo> {
   List<Widget> get widgets => [
-    variant2(customText ?? "Great Thinkers", const TextStyle(fontSize: 40)),
-    variant3(
-        customText ?? "Coffee mornings", const TextStyle(fontSize: 30)),
-    variant4(
-        customText ?? "Beautiful Questions", const TextStyle(fontSize: 30)),
-    variant5(customText ?? "Animation 6", const TextStyle(fontSize: 40)),
-    variant6(customText ?? "Animation 7", const TextStyle(fontSize: 40)),
-  ];
+        variant2(customText ?? "Great Thinkers", const TextStyle(fontSize: 40)),
+        variant3(
+            customText ?? "Coffee mornings", const TextStyle(fontSize: 30)),
+        variant4(
+            customText ?? "Beautiful Questions", const TextStyle(fontSize: 30)),
+        variant5(customText ?? "Animation 6", const TextStyle(fontSize: 40)),
+        variant6(customText ?? "Animation 7", const TextStyle(fontSize: 40)),
+      ];
 
   String? customText;
   final textFieldController = TextEditingController();
@@ -96,10 +96,10 @@ class _TextDemoState extends State<TextDemo> {
                 value: sliderVal,
                 onChanged: sliderActive
                     ? (val) {
-                  setState(() {
-                    sliderVal = val;
-                  });
-                }
+                        setState(() {
+                          sliderVal = val;
+                        });
+                      }
                     : null,
               ),
               Center(
