@@ -1,10 +1,6 @@
 import 'dart:math';
 
-import 'package:blend_animation_kit/src/animation_input.dart';
-import 'package:blend_animation_kit/src/pipeline/opacity.dart';
-import 'package:blend_animation_kit/src/pipeline/pipeline_helpers.dart';
-import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
-import 'package:blend_animation_kit/src/text_animation_widget.dart';
+import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:flutter/material.dart';
 
 final PipelineStep variant2Pipeline = const OpacityStep(
@@ -16,12 +12,10 @@ final PipelineStep variant2Pipeline = const OpacityStep(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant2(String text, TextStyle? textStyle) =>
-    TextAnimationWidget.fromInput(
-      animationInput: CharacterAnimationInput(text: text),
-      textStyle: textStyle,
-      pipelineStep: variant2Pipeline,
-    );
+Widget variant2(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(CharacterAnimationInput(
+            text: text, textStyle: textStyle, textAlign: TextAlign.end))
+        .add(variant2Pipeline));
 
 final PipelineStep variant3Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 1.0,
@@ -35,12 +29,10 @@ final PipelineStep variant3Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant3(String text, TextStyle? textStyle) =>
-    TextAnimationWidget.fromInput(
-      animationInput: CharacterAnimationInput(text: text),
-      textStyle: textStyle,
-      pipelineStep: variant3Pipeline,
-    );
+Widget variant3(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
+            CharacterAnimationInput(text: text, textStyle: textStyle))
+        .add(variant3Pipeline));
 
 final PipelineStep variant4Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
@@ -53,12 +45,10 @@ final PipelineStep variant4Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant4(String text, TextStyle? textStyle) =>
-    TextAnimationWidget.fromInput(
-      animationInput: CharacterAnimationInput(text: text),
-      textStyle: textStyle,
-      pipelineStep: variant4Pipeline,
-    );
+Widget variant4(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
+            CharacterAnimationInput(text: text, textStyle: textStyle))
+        .add(variant4Pipeline));
 
 final PipelineStep variant5Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
@@ -71,12 +61,10 @@ final PipelineStep variant5Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant5(String text, TextStyle? textStyle) =>
-    TextAnimationWidget.fromInput(
-      animationInput: CharacterAnimationInput(text: text),
-      textStyle: textStyle,
-      pipelineStep: variant5Pipeline,
-    );
+Widget variant5(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
+            CharacterAnimationInput(text: text, textStyle: textStyle))
+        .add(variant5Pipeline));
 
 final PipelineStep variant6Pipeline = PipelineHelpers.opacityAndTransform(
       initialOpacity: 0.0,
@@ -89,9 +77,7 @@ final PipelineStep variant6Pipeline = PipelineHelpers.opacityAndTransform(
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 
-Widget variant6(String text, TextStyle? textStyle) =>
-    TextAnimationWidget.fromInput(
-      animationInput: CharacterAnimationInput(text: text),
-      textStyle: textStyle,
-      pipelineStep: variant6Pipeline,
-    );
+Widget variant6(String text, TextStyle? textStyle) => BlendAnimationWidget(
+    builder: BlendAnimationBuilder(
+            CharacterAnimationInput(text: text, textStyle: textStyle))
+        .add(variant6Pipeline));

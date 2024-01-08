@@ -4,38 +4,38 @@ import 'package:flutter/material.dart';
 import 'package:simple_animations/movie_tween/movie_tween.dart';
 
 @immutable
-class TextAnimationBuilder {
+class BlendAnimationBuilder {
   late final Iterable<SceneItem> sceneItems;
 
   late final Duration begin;
 
-  late final MovieTween tween = _generateTween();
+  late final MovieTween tween = generateTween();
 
   List<AnimationProperty> get animationProperties =>
       animationInput.animationProperties;
 
-  final AnimationInput animationInput;
+  final BlendAnimationInput animationInput;
 
-  TextAnimationBuilder(this.animationInput)
+  BlendAnimationBuilder(this.animationInput)
       : begin = Duration.zero,
         sceneItems = [];
 
-  TextAnimationBuilder._({
+  BlendAnimationBuilder._({
     required this.animationInput,
     required this.sceneItems,
     required this.begin,
   });
 
-  TextAnimationBuilder copyWith(
+  BlendAnimationBuilder copyWith(
       {List<SceneItem>? sceneItems, Duration? begin}) {
-    return TextAnimationBuilder._(
+    return BlendAnimationBuilder._(
       animationInput: animationInput,
       sceneItems: sceneItems ?? this.sceneItems,
       begin: begin ?? this.begin,
     );
   }
 
-  MovieTween _generateTween() {
+  MovieTween generateTween() {
     MovieTween movieTween = MovieTween();
     for (final element in sceneItems) {
       element.attachToScene(movieTween);
@@ -43,9 +43,11 @@ class TextAnimationBuilder {
     return movieTween;
   }
 
-  TextAnimationBuilder add(final PipelineStep pipelineStep) {
+  BlendAnimationBuilder add(
+    final PipelineStep pipelineStep,
+  ) {
     PipelineStep? pipelineIterator = pipelineStep;
-    TextAnimationBuilder updatedBuilder = this;
+    BlendAnimationBuilder updatedBuilder = this;
     while (pipelineIterator != null) {
       updatedBuilder = pipelineIterator.updatedBuilder(updatedBuilder);
       pipelineIterator = pipelineIterator.nextStep;

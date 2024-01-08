@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:blend_animation_kit/src/animation_property.dart';
 import 'package:blend_animation_kit/src/pipeline/pipeline_step.dart';
-import 'package:blend_animation_kit/src/text_animation_builder.dart';
+import 'package:blend_animation_kit/src/blend_animation_builder.dart';
 
 class DelayStep extends PipelineStep {
   final Duration delay;
@@ -20,7 +20,7 @@ class DelayStep extends PipelineStep {
   }
 
   @override
-  TextAnimationBuilder updatedBuilder(TextAnimationBuilder builder) {
+  BlendAnimationBuilder updatedBuilder(BlendAnimationBuilder builder) {
     final newBegin = delay + builder.tween.duration;
     return builder.copyWith(
       begin: newBegin,

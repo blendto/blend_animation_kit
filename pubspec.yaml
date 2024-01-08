@@ -1,6 +1,6 @@
 name: blend_animation_kit
 description: A new Flutter package project.
-version: 0.0.4
+version: 0.1.0
 
 environment:
   sdk: '>=3.0.6 <4.0.0'
