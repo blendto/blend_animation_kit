@@ -1,5 +1,7 @@
 library blend_animation_kit;
 
+export 'package:simple_animations/animation_builder/custom_animation_builder.dart';
+export 'package:simple_animations/animation_controller_extension/animation_controller_extension.dart';
 export 'package:simple_animations/animation_developer_tools/animation_developer_tools.dart';
 
 export 'src/blend_animation_builder.dart';

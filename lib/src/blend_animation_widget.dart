@@ -8,10 +8,14 @@ class BlendAnimationWidget extends StatelessWidget {
 
   final bool loop;
 
+  /// [loop] is ignored when [control] is set
+  final Control? control;
+
   const BlendAnimationWidget({
     super.key,
     required this.builder,
     this.loop = true,
+    this.control,
   });
 
   factory BlendAnimationWidget.fromInput({
@@ -30,6 +34,8 @@ class BlendAnimationWidget extends StatelessWidget {
 
   BlendAnimationInput get animationInput => builder.animationInput;
 
+  Control get derivedControl => control ?? (loop ? Control.loop : Control.play);
+
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -41,7 +47,7 @@ class BlendAnimationWidget extends StatelessWidget {
           size: boxInfo.overallBoxSize,
           child: CustomAnimationBuilder(
             tween: tween,
-            control: loop ? Control.loop : Control.play,
+            control: derivedControl,
             builder: (context, movie, child) {
               return Stack(
                 clipBehavior: Clip.none,
