@@ -29,10 +29,9 @@ class BlendAnimationBuilder {
   BlendAnimationBuilder copyWith({
     List<SceneItem>? sceneItems,
     Duration? begin,
-    BlendAnimationInput? animationInput,
   }) {
     return BlendAnimationBuilder._(
-      animationInput: animationInput ?? this.animationInput,
+      animationInput: animationInput,
       sceneItems: sceneItems ?? this.sceneItems,
       begin: begin ?? this.begin,
     );

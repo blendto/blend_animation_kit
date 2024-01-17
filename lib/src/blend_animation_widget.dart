@@ -43,6 +43,17 @@ class BlendAnimationWidget extends StatelessWidget {
       child: LayoutBuilder(builder: (context, constraints) {
         final boxInfo =
             animationInput.getAnimationGroupDetails(context, constraints);
+        if (tween.duration == Duration.zero) {
+          return SizedBox.fromSize(
+              size: boxInfo.overallBoxSize,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: boxInfo.boxes
+                    .map((info) =>
+                        animationInput.renderAnimation(info, Movie(map: {})))
+                    .toList(growable: false),
+              ));
+        }
         return SizedBox.fromSize(
           size: boxInfo.overallBoxSize,
           child: CustomAnimationBuilder(
