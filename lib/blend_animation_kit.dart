@@ -3,7 +3,9 @@ library blend_animation_kit;
 export 'package:simple_animations/animation_builder/custom_animation_builder.dart';
 export 'package:simple_animations/animation_controller_extension/animation_controller_extension.dart';
 export 'package:simple_animations/animation_developer_tools/animation_developer_tools.dart';
+export 'package:simple_animations/movie_tween/movie_tween.dart';
 
+export 'src/animation_property.dart';
 export 'src/blend_animation_builder.dart';
 export 'src/blend_animation_input/blend_animation_input.dart';
 export 'src/blend_animation_widget.dart';
