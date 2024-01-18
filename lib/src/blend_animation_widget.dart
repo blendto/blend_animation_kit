@@ -56,18 +56,21 @@ class BlendAnimationWidget extends StatelessWidget {
         }
         return SizedBox.fromSize(
           size: boxInfo.overallBoxSize,
-          child: CustomAnimationBuilder(
-            tween: tween,
-            control: derivedControl,
-            builder: (context, movie, child) {
-              return Stack(
-                clipBehavior: Clip.none,
-                children: boxInfo.boxes
-                    .map((info) => animationInput.renderAnimation(info, movie))
-                    .toList(growable: false),
-              );
-            },
-            duration: tween.duration,
+          child: RepaintBoundary(
+            child: CustomAnimationBuilder(
+              tween: tween,
+              control: derivedControl,
+              builder: (context, movie, child) {
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: boxInfo.boxes
+                      .map(
+                          (info) => animationInput.renderAnimation(info, movie))
+                      .toList(growable: false),
+                );
+              },
+              duration: tween.duration,
+            ),
           ),
         );
       }),
