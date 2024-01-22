@@ -3,12 +3,9 @@ import 'dart:math';
 import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:flutter/material.dart';
 
-final PipelineStep variant2Pipeline = const OpacityStep(
-      initialOpacity: 0.0,
-      stepDuration: Duration(milliseconds: 2250),
-      interStepDelay: Duration(milliseconds: 150),
-      curve: Curves.easeInOutQuad,
-      finalOpacity: 1.0,
+final PipelineStep variant2Pipeline = const RectangularMaskStep(
+      initialFractionalEdgeInsets: EdgeInsets.fromLTRB(1, 1, 0, 0),
+      stepDuration: Duration(seconds: 1),
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 

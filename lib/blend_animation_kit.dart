@@ -12,3 +12,4 @@ export 'src/pipeline/pipeline_helpers.dart';
 export 'src/pipeline/pipeline_step.dart';
 export 'src/pipeline/transform.dart';
 export 'src/pipeline/wait.dart';
+export 'src/pipeline/rectangular_mask.dart';
