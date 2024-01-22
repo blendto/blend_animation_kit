@@ -63,6 +63,9 @@ abstract class PipelineStep {
     if (name == TransformStep.wireName) {
       return TransformStep.deserialise(element, step);
     }
+    if (name == RectangularMaskStep.wireName) {
+      return RectangularMaskStep.deserialise(element, step);
+    }
     if (name == DelayStep.wireName) {
       return DelayStep.deserialise(element, step);
     }

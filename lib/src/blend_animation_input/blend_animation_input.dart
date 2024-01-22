@@ -28,10 +28,10 @@ abstract class BlendAnimationInput<G> {
     return Positioned(
       top: info.rect.top,
       left: info.rect.left,
-      child: Opacity(
-        opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
-        child: ClipRect(
-          clipper: RectangleClipper(insets),
+      child: ClipRect(
+        clipper: RectangleClipper(insets),
+        child: Opacity(
+          opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
           child: Transform(
             alignment: animationProperty.transformation
                 .fromOrDefault(movie)
