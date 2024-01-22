@@ -33,9 +33,15 @@ class OpacityProperty extends CustomMovieTweenProperty<double> {
   final fallbackValue = 1.0;
 }
 
+class RectangularMaskProperty extends CustomMovieTweenProperty<EdgeInsets> {
+  @override
+  final fallbackValue = EdgeInsets.zero;
+}
+
 class AnimationProperty {
   final transformation = TransformationProperty();
   final opacity = OpacityProperty();
+  final rectangularMask = RectangularMaskProperty();
 }
 
 abstract class SceneItem {

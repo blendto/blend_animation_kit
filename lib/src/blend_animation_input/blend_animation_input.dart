@@ -24,20 +24,46 @@ abstract class BlendAnimationInput<G> {
   @nonVirtual
   Positioned renderAnimation(AnimationBoxInfo<G> info, Movie movie) {
     final animationProperty = animationProperties.elementAt(info.index);
+    final insets = animationProperty.rectangularMask.fromOrDefault(movie);
     return Positioned(
       top: info.rect.top,
       left: info.rect.left,
-      child: Opacity(
-        opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
-        child: Transform(
-          alignment: animationProperty.transformation
-              .fromOrDefault(movie)
-              .transformAlignment,
-          transform:
-              animationProperty.transformation.fromOrDefault(movie).matrix,
-          child: renderGroupItem(info),
+      child: ClipRect(
+        clipper: RectangleClipper(insets),
+        child: Opacity(
+          opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
+          child: Transform(
+            alignment: animationProperty.transformation
+                .fromOrDefault(movie)
+                .transformAlignment,
+            transform:
+                animationProperty.transformation.fromOrDefault(movie).matrix,
+            child: renderGroupItem(info),
+          ),
         ),
       ),
     );
   }
+}
+
+class RectangleClipper extends CustomClipper<Rect> {
+  final EdgeInsets insets;
+
+  const RectangleClipper(this.insets);
+
+  @override
+  Rect getClip(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Rect.fromLTRB(
+      w * insets.left,
+      h * insets.top,
+      w - w * insets.right,
+      h - h * insets.top,
+    );
+  }
+
+  @override
+  bool shouldReclip(covariant RectangleClipper oldClipper) =>
+      insets != oldClipper.insets;
 }
