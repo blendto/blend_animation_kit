@@ -13,7 +13,7 @@ class RectangularMaskStep extends PipelineStep {
   final EdgeInsets finalFractionalEdgeInsets;
   final Duration interStepDelay;
 
-  static String get wireName => "RectangularMask";
+  static String get wireName => "RectangularMaskStep";
 
   const RectangularMaskStep({
     this.initialFractionalEdgeInsets = EdgeInsets.zero,
@@ -29,6 +29,9 @@ class RectangularMaskStep extends PipelineStep {
     return RectangularMaskStep(
       stepDuration: stepDuration,
       curve: curve,
+      interStepDelay: interStepDelay,
+      initialFractionalEdgeInsets: initialFractionalEdgeInsets,
+      finalFractionalEdgeInsets: finalFractionalEdgeInsets,
       nextStep: nextStep ?? this.nextStep,
     );
   }
@@ -55,7 +58,7 @@ class RectangularMaskStep extends PipelineStep {
   }
 
   @override
-  String get tag => "RectangularMask ${stepDuration.inMilliseconds}";
+  String get tag => "RectangularMaskStep ${stepDuration.inMilliseconds}";
 
   @override
   Map<String, dynamic> get serialised {
@@ -78,14 +81,16 @@ class RectangularMaskStep extends PipelineStep {
                 finalFractionalEdgeInsets.bottom
               ])
       ..putIfAbsent("curve", () => CurveSerializer.serialize(curve))
-      ..putIfAbsent("duration", () => stepDuration.inMilliseconds);
+      ..putIfAbsent("interStepDelay", () => interStepDelay.inMilliseconds)
+      ..putIfAbsent("stepDuration", () => stepDuration.inMilliseconds);
   }
 
   static RectangularMaskStep deserialise(
     Map<String, dynamic> obj,
     PipelineStep? nextStep,
   ) {
-    final delay = Duration(milliseconds: obj["duration"]);
+    final stepDuration = Duration(milliseconds: obj["stepDuration"]);
+    final interStepDelay = Duration(milliseconds: obj["interStepDelay"]);
     final initialInsets =
         obj["initialFractionalEdgeInsetsLTRB"] as List<double>;
     final finalInsets = obj["finalFractionalEdgeInsetsLTRB"] as List<double>;
@@ -105,8 +110,9 @@ class RectangularMaskStep extends PipelineStep {
         finalInsets[3],
       ),
       curve: curve,
-      stepDuration: delay,
+      stepDuration: stepDuration,
       nextStep: nextStep,
+      interStepDelay: interStepDelay,
     );
   }
 

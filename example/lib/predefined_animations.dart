@@ -4,8 +4,9 @@ import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:flutter/material.dart';
 
 final PipelineStep variant2Pipeline = const RectangularMaskStep(
-      initialFractionalEdgeInsets: EdgeInsets.fromLTRB(1, 1, 0, 0),
-      stepDuration: Duration(seconds: 1),
+      finalFractionalEdgeInsets: EdgeInsets.fromLTRB(0, 0, 0, 0),
+      initialFractionalEdgeInsets: EdgeInsets.fromLTRB(0, 0, 1, 1),
+      stepDuration: Duration(milliseconds: 400),
     ) +
     PipelineHelpers.waitAndFadeOutAll();
 

@@ -24,14 +24,14 @@ abstract class BlendAnimationInput<G> {
   @nonVirtual
   Positioned renderAnimation(AnimationBoxInfo<G> info, Movie movie) {
     final animationProperty = animationProperties.elementAt(info.index);
-    final insets = animationProperty.rectangularMask.from(movie);
+    final insets = animationProperty.rectangularMask.fromOrDefault(movie);
     return Positioned(
       top: info.rect.top,
       left: info.rect.left,
-      child: ClipRect(
-        clipper: RectangleClipper(insets),
-        child: Opacity(
-          opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
+      child: Opacity(
+        opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
+        child: ClipRect(
+          clipper: RectangleClipper(insets),
           child: Transform(
             alignment: animationProperty.transformation
                 .fromOrDefault(movie)
@@ -49,7 +49,7 @@ abstract class BlendAnimationInput<G> {
 class RectangleClipper extends CustomClipper<Rect> {
   final EdgeInsets insets;
 
-  RectangleClipper(this.insets);
+  const RectangleClipper(this.insets);
 
   @override
   Rect getClip(Size size) {
@@ -64,5 +64,6 @@ class RectangleClipper extends CustomClipper<Rect> {
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => true;
+  bool shouldReclip(covariant RectangleClipper oldClipper) =>
+      insets != oldClipper.insets;
 }
