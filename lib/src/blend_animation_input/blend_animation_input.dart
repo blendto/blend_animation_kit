@@ -1,8 +1,7 @@
-import 'package:blend_animation_kit/src/animation_property.dart';
+import 'package:blend_animation_kit/blend_animation_kit.dart';
 import 'package:blend_animation_kit/src/box_info.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:simple_animations/simple_animations.dart';
 
 export 'character_animation_input.dart';
 export 'widget_animation_input.dart';
@@ -29,6 +28,7 @@ abstract class BlendAnimationInput<G> {
       top: info.rect.top,
       left: info.rect.left,
       child: ClipRect(
+        clipBehavior: insets == EdgeInsets.zero ? Clip.none : Clip.hardEdge,
         clipper: RectangleClipper(insets),
         child: Opacity(
           opacity: animationProperty.opacity.fromOrDefault(movie).clamp(0, 1),
@@ -43,6 +43,32 @@ abstract class BlendAnimationInput<G> {
         ),
       ),
     );
+  }
+}
+
+/// Only used for calculation purposes
+class DummyAnimationInput extends BlendAnimationInput {
+  final int groupLength;
+
+  DummyAnimationInput({required this.groupLength})
+      : groups = Iterable.generate(groupLength);
+
+  @override
+  final Iterable groups;
+
+  Duration calculateDuration(PipelineStep steps) {
+    return BlendAnimationBuilder(this).add(steps).tween.duration;
+  }
+
+  @override
+  GroupDetails getAnimationGroupDetails(
+      BuildContext context, BoxConstraints constraints) {
+    return const GroupDetails(Size.zero, []);
+  }
+
+  @override
+  Widget renderGroupItem(AnimationBoxInfo info) {
+    return const SizedBox.shrink();
   }
 }
 
